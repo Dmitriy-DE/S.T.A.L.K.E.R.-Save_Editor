@@ -122,6 +122,13 @@ Cloud: перед записью повторно сравнить SHA; один
 
 Основной язык — русский; внутренние ID показывать только в деталях, переводы оставлять в ресурсах. Resizable layout, keyboard navigation, видимые focus states, масштаб 100/150/200%, проверки на 1366×768 и 1920×1080.
 
+U07 фиксирует визуальный слой Qt: `ui/theme.py` задаёт charcoal/olive/rust
+palette через стандартный Fusion/QSS, а `MainWindow` собирает title bar,
+metadata/status bar, sidebar и snapshot-backed metric cards. Макет не является
+источником игровых данных: неизвестные поля остаются `—`, а filename, SHA,
+CRC, money и inventory берутся только из текущего `SaveInfo`; полная UE5 GVAS
+schema пока не подтверждена и не отображается как распознанная.
+
 ```text
 [Открыть .sav] [Steam Cloud]                         [Настройки]
 Сейв: имя • дата • источник • поддержка формата

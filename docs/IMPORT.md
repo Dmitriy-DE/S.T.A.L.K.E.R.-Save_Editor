@@ -7,6 +7,12 @@
 - v0.3 извлечён в корень. app.py, cli.py, save_format.py, steam_cloud.py, selftest и decoder побайтово совпали с архивом.
 - Обе версии пакетов скопированы в releases/legacy; бинарные релизы приложения на Windows отсутствуют.
 - Дубликаты handoff и старые инструкции сохранены в локальном архиве. Короткие проектные документы сохранены также в docs/history.
+- Дополнительные материалы `stitch_s.t.a.l.k.e.r._2_save_editor_ui_design.zip`,
+  `Music Creation Tool.zip` и `Music Creation Tool.make` прочитаны из Downloads
+  2026-09-13. Первый использован только как visual reference для U07; два
+  последних распознаны как отдельный Figma Make music-проект и в runtime не
+  импортированы. Хэши и граница переноса записаны в
+  [UI design evidence](evidence/UI_DESIGN_2026-09-13.md).
 - Прежняя версия v0.2 упоминается в handoff, но её архива не было.
 - Личные сейвы, скриншоты, cloud download URLs из полного handoff и helper tar.gz не публикуются в Git.
 

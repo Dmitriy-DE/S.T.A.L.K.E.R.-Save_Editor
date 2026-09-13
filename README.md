@@ -2,7 +2,7 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. B01 добавляет воспроизводимый PyInstaller builder для Linux `tar.gz`/`.deb` и Windows `zip`; локально подтверждён Linux bundle, Windows runner smoke ещё впереди. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор.
+**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell в Zone-теме для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. U07 добавляет тёмную палитру, metadata/CRC badges, sidebar и snapshot-backed summary cards без новых runtime-зависимостей. B01 добавляет воспроизводимый PyInstaller builder для Linux `tar.gz`/`.deb` и Windows `zip`; локально подтверждён Linux bundle, Windows runner smoke ещё впереди. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор.
 
 ## Что доступно
 
@@ -14,6 +14,8 @@
   backup restore и cloud transaction для Tk/CLI/Qt.
 - Qt Cloud tab не вызывает helper при старте: сначала явное подключение и список
   `Data/*.sav`, затем анализ выбранного slot и upload только его preview.
+- Qt shell использует визуальный референс Zone из U07: demo-данные макета не
+  копируются, а badges/cards заполняются только после реального snapshot.
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 

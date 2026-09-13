@@ -3,7 +3,7 @@
 ```text
 app.py / cli.py / save_format.py / steam_cloud.py   runtime v0.3
 editor/                                               UI-free service, storage, cloud transaction and platform paths
-ui/                                                   Tk-compatible Qt shell: inventory, changes, backups and Cloud tab
+ui/                                                   Tk-compatible Qt shell: Zone theme, inventory, changes, backups and Cloud tab
 vendor/ooz.abi3.so                                 original Linux decoder
 tests/selftest_real.py                             existing private-corpus selftest
 releases/legacy/                                   original source bundles + SHA256SUMS

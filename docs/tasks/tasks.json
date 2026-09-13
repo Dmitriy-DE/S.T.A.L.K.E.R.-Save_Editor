@@ -483,6 +483,36 @@
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43"
   },
   {
+    "id": "U07",
+    "title": "Интеграция Zone UI shell и темы из утверждённого макета",
+    "depends_on": [
+      "U06"
+    ],
+    "files": [
+      "ui/theme.py",
+      "ui/main_window.py",
+      "tests/test_ui_theme.py",
+      "docs/evidence/UI_DESIGN_2026-09-13.md"
+    ],
+    "contract": "Qt shell получает dependency-free QSS-тему, верхнюю metadata/status строку, sidebar-навигацию по существующим вкладкам и реальные empty/loading/error/summary состояния. Parser, EditorService и безопасный apply-контракт не меняются.",
+    "steps": [
+      "Разобрать приложенный статический референс как visual input: перенести только palette/layout hierarchy, не demo-значения и не код Figma Make.",
+      "Сделать responsive Qt Widgets shell с keyboard-accessible navigation; сохранить public widget attributes, на которые опираются существующие интеграции и tests.",
+      "Показывать в badges только данные текущего snapshot: source, filename, size/SHA, CRC и формат; неизвестные location/time остаются —.",
+      "Добавить regression tests для empty shell, tab navigation и metadata after real synthetic snapshot; записать provenance/evidence и отсутствие новых runtime dependencies."
+    ],
+    "checks": [
+      "QT_QPA_PLATFORM=offscreen python -m pytest tests/test_ui_theme.py -q",
+      "Полный Qt suite и make check; screenshot smoke без личных сейвов.",
+      "Проверить, что Music Creation Tool из приложенных файлов не импортируется и не добавляет web/runtime dependencies."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "in_progress",
+    "path": "docs/tasks/U07.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46"
+  },
+  {
     "id": "B01",
     "title": "Воспроизводимые standalone сборки",
     "depends_on": [

@@ -15,7 +15,9 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -24,6 +26,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
     QWidget,
+    QApplication,
 )
 
 from editor.service import EditorService
@@ -36,6 +39,7 @@ from .backups_view import BackupView, RestoreWorker
 from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
+from .theme import apply_theme
 
 
 def _human_size(size: int) -> str:
@@ -45,6 +49,17 @@ def _human_size(size: int) -> str:
             return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
         value /= 1024
     return f"{size} B"
+
+
+def _version_text() -> str:
+    """Read the repository version without introducing a packaging dependency."""
+
+    version_path = Path(__file__).resolve().parents[1] / "VERSION"
+    try:
+        value = version_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        value = "0.3.0-experimental"
+    return value or "0.3.0-experimental"
 
 
 @dataclass(frozen=True)
@@ -103,45 +118,142 @@ class MainWindow(QMainWindow):
         self._operation_kind: str | None = None
         self._cloud_busy = False
 
+        apply_theme(QApplication.instance())
         self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
-        self.resize(1100, 760)
-        self.setMinimumSize(860, 560)
+        self.resize(1280, 820)
+        self.setMinimumSize(960, 620)
         self._build_ui()
 
     def _build_ui(self) -> None:
         root = QWidget(self)
+        root.setObjectName("appRoot")
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        source_row = QHBoxLayout()
+        title_bar = QFrame()
+        title_bar.setObjectName("titleBar")
+        title_layout = QHBoxLayout(title_bar)
+        title_layout.setContentsMargins(18, 12, 18, 12)
+        title_layout.setSpacing(10)
+        self.app_title = QLabel("S.T.A.L.K.E.R. 2 Save Editor")
+        self.app_title.setObjectName("appTitle")
+        title_layout.addWidget(self.app_title)
+        self.version_badge = QLabel(f"v{_version_text()}")
+        self.version_badge.setObjectName("versionBadge")
+        title_layout.addWidget(self.version_badge)
+        title_layout.addStretch(1)
+        ui_hint = QLabel("ZONE / SAVE WORKBENCH")
+        ui_hint.setObjectName("sidebarStatus")
+        title_layout.addWidget(ui_hint)
+        layout.addWidget(title_bar)
+
+        meta_bar = QFrame()
+        meta_bar.setObjectName("metaBar")
+        meta_layout = QHBoxLayout(meta_bar)
+        meta_layout.setContentsMargins(18, 9, 18, 9)
+        meta_layout.setSpacing(10)
+        self.file_source_badge = QLabel("ФАЙЛ НЕ ВЫБРАН")
+        self.file_source_badge.setObjectName("sourceBadge")
+        meta_layout.addWidget(self.file_source_badge)
+        meta_text = QVBoxLayout()
+        meta_text.setSpacing(1)
+        self.meta_filename = QLabel("Сейв не выбран")
+        self.meta_filename.setObjectName("metaFilename")
+        meta_text.addWidget(self.meta_filename)
+        self.meta_details = QLabel("Открой локальный .sav для проверки CRC и структуры")
+        self.meta_details.setObjectName("metaDetails")
+        self.meta_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        meta_text.addWidget(self.meta_details)
+        meta_layout.addLayout(meta_text, 1)
+        self.integrity_badge = QLabel("CRC-32: —")
+        self.integrity_badge.setObjectName("integrityBadge")
+        meta_layout.addWidget(self.integrity_badge)
+        self.format_badge = QLabel("UE5 GVAS: —")
+        self.format_badge.setObjectName("formatBadge")
+        meta_layout.addWidget(self.format_badge)
         self.open_button = QPushButton("Открыть .sav…")
+        self.open_button.setObjectName("openButton")
         self.open_button.clicked.connect(self.open_local)
-        source_row.addWidget(self.open_button)
+        meta_layout.addWidget(self.open_button)
+        layout.addWidget(meta_bar)
+
+        # Retain the original public label for small integrations and tests;
+        # the shell presents the same facts as structured metadata above.
         self.source_label = QLabel("Сейв не выбран")
+        self.source_label.setObjectName("sourceLabel")
         self.source_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        source_row.addWidget(self.source_label, 1)
-        layout.addLayout(source_row)
+        self.source_label.setVisible(False)
 
         self.status_label = QLabel("Готово к локальному анализу")
         self.status_label.setObjectName("statusLabel")
-        layout.addWidget(self.status_label)
+        status_layout = QHBoxLayout()
+        status_layout.setContentsMargins(18, 8, 18, 8)
+        status_layout.addWidget(self.status_label)
+        layout.addLayout(status_layout)
         self.error_label = QLabel("")
+        self.error_label.setObjectName("errorLabel")
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet("color: #a11;")
         self.error_label.setVisible(False)
-        layout.addWidget(self.error_label)
+        error_layout = QHBoxLayout()
+        error_layout.setContentsMargins(18, 0, 18, 8)
+        error_layout.addWidget(self.error_label)
+        layout.addLayout(error_layout)
+
+        body = QHBoxLayout()
+        body.setContentsMargins(18, 0, 18, 12)
+        body.setSpacing(12)
+
+        self.sidebar = QFrame()
+        self.sidebar.setObjectName("sidebar")
+        self.sidebar.setFixedWidth(218)
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setContentsMargins(10, 12, 10, 10)
+        sidebar_layout.setSpacing(5)
+        sidebar_heading = QLabel("РАЗДЕЛЫ")
+        sidebar_heading.setObjectName("sidebarHeading")
+        sidebar_layout.addWidget(sidebar_heading)
+
+        content_panel = QFrame()
+        content_panel.setObjectName("contentPanel")
+        content_layout = QVBoxLayout(content_panel)
+        content_layout.setContentsMargins(12, 8, 12, 10)
+        content_layout.setSpacing(0)
 
         self.tabs = QTabWidget()
+        self.tabs.setObjectName("contentTabs")
         self.tabs.addTab(self._build_overview_tab(), "Обзор")
         self.tabs.addTab(self._build_inventory_tab(), "Инвентарь")
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
         self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
-        layout.addWidget(self.tabs, 1)
+        self.tabs.tabBar().setVisible(False)
+        content_layout.addWidget(self.tabs, 1)
+
+        self.nav_buttons: list[QPushButton] = []
+        for index, label in enumerate(
+            ("Обзор", "Инвентарь", "Изменения", "Резервные копии", "Steam Cloud")
+        ):
+            button = QPushButton(label)
+            button.setObjectName("navButton")
+            button.setCheckable(True)
+            button.setAutoExclusive(True)
+            button.clicked.connect(lambda _checked=False, i=index: self._select_tab(i))
+            sidebar_layout.addWidget(button)
+            self.nav_buttons.append(button)
+        sidebar_layout.addStretch(1)
+        self.decoder_status = QLabel("CORE: READY\nCRC / SHA / BACKUP включены")
+        self.decoder_status.setObjectName("sidebarStatus")
+        self.decoder_status.setWordWrap(True)
+        sidebar_layout.addWidget(self.decoder_status)
+
+        body.addWidget(self.sidebar)
+        body.addWidget(content_panel, 1)
+        layout.addLayout(body, 1)
 
         actions = QHBoxLayout()
+        actions.setContentsMargins(18, 0, 18, 14)
         actions.addStretch(1)
         self.preview_button = QPushButton("Предпросмотр")
         self.preview_button.setEnabled(False)
@@ -155,13 +267,56 @@ class MainWindow(QMainWindow):
         actions.addWidget(self.save_copy_button)
         layout.addLayout(actions)
 
-        self.setTabOrder(self.open_button, self.tabs)
+        self.tabs.currentChanged.connect(self._sync_nav_state)
+        self._sync_nav_state(0)
+
+        self.setTabOrder(self.open_button, self.nav_buttons[0])
         self.setTabOrder(self.tabs, self.preview_button)
         self.setTabOrder(self.preview_button, self.save_copy_button)
 
+    def _select_tab(self, index: int) -> None:
+        if 0 <= index < self.tabs.count():
+            self.tabs.setCurrentIndex(index)
+
+    def _sync_nav_state(self, index: int) -> None:
+        for button_index, button in enumerate(getattr(self, "nav_buttons", [])):
+            button.setChecked(button_index == index)
+
     def _build_overview_tab(self) -> QWidget:
         tab = QWidget()
-        form = QFormLayout(tab)
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(10)
+
+        cards = QFrame()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(8)
+        cards_layout.setVerticalSpacing(8)
+
+        def add_card(column: int, caption: str, initial: str) -> QLabel:
+            card = QFrame()
+            card.setObjectName("metricCard")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(12, 9, 12, 9)
+            card_layout.setSpacing(4)
+            caption_label = QLabel(caption)
+            caption_label.setObjectName("metricCaption")
+            card_layout.addWidget(caption_label)
+            value_label = QLabel(initial)
+            value_label.setObjectName("metricValue")
+            card_layout.addWidget(value_label)
+            cards_layout.addWidget(card, 0, column)
+            return value_label
+
+        self.location_card_value = add_card(0, "Локация", "—")
+        self.time_card_value = add_card(1, "Время", "—")
+        self.money_card_value = add_card(2, "Деньги", "—")
+        self.inventory_card_value = add_card(3, "Предметы", "—")
+        layout.addWidget(cards)
+
+        details = QWidget()
+        form = QFormLayout(details)
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         self.summary_label = QLabel("Открой локальный .sav для проверки CRC и структуры.")
         self.summary_label.setWordWrap(True)
@@ -192,6 +347,8 @@ class MainWindow(QMainWindow):
         money_row.addWidget(self.money_clear_button)
         money_form.addRow("Новая сумма", money_row)
         form.addRow(money_box)
+        layout.addWidget(details)
+        layout.addStretch(1)
         return tab
 
     def _build_inventory_tab(self) -> QWidget:
@@ -255,6 +412,12 @@ class MainWindow(QMainWindow):
 
         self._pending_path = path
         self.open_button.setEnabled(False)
+        if self.snapshot is None:
+            self.file_source_badge.setText("ЧТЕНИЕ ФАЙЛА")
+            self.meta_filename.setText(path.name)
+            self.meta_details.setText("Проверка CRC, SHA и структуры…")
+            self.integrity_badge.setText("CRC-32: …")
+            self.format_badge.setText("UE5 GVAS: анализ…")
         self.status_label.setText(f"Анализ: {path.name}…")
         self.error_label.clear()
         self.error_label.setVisible(False)
@@ -300,6 +463,22 @@ class MainWindow(QMainWindow):
         self.source_label.setText(
             f"Сейв: {snapshot.path.name} • {source_label} • {_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
+        self.file_source_badge.setText(
+            "STEAM CLOUD" if snapshot.source_kind == "cloud" else "ЛОКАЛЬНЫЙ ФАЙЛ"
+        )
+        self.meta_filename.setText(snapshot.path.name)
+        self.meta_details.setText(
+            f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+        )
+        self.integrity_badge.setText(f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}")
+        # The current parser validates the Kraken container and known fields;
+        # it does not prove a complete UE5 GVAS schema. Keep that distinction
+        # visible instead of copying the reference's demo success badge.
+        self.format_badge.setText("UE5 GVAS: НЕ ПОДТВЕРЖДЁН")
+        self.location_card_value.setText("—")
+        self.time_card_value.setText("—")
+        self.money_card_value.setText(money)
+        self.inventory_card_value.setText(str(len(info.inventory)))
         self.summary_label.setText(
             f"CRC: {crc}    Money: {money}    Inventory: {len(info.inventory)}    "
             f"Grid cells: {info.grid_cell_count}    Orphans: {len(info.orphans)}"
@@ -323,9 +502,11 @@ class MainWindow(QMainWindow):
     def _render_inventory(self, info: SaveInfo) -> None:
         self.inventory_view.set_items(info.inventory)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_money(self, info: SaveInfo) -> None:
         if info.money is None or info.money_anchor_count != 1:
+            self.money_card_value.setText("—")
             self.money_status_label.setText(
                 f"Только чтение: wallet anchor найден {info.money_anchor_count} раз(а)"
             )
@@ -334,6 +515,7 @@ class MainWindow(QMainWindow):
             self.money_clear_button.setEnabled(False)
             return
         effective = self.staged_money if self.staged_money is not None else info.money
+        self.money_card_value.setText(str(effective))
         self.money_status_label.setText(f"{info.money} → {effective}")
         self.money_spin.blockSignals(True)
         self.money_spin.setEnabled(True)

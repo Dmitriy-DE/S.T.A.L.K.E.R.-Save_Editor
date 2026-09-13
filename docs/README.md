@@ -12,6 +12,8 @@
 - [SAVE_FORMAT](SAVE_FORMAT.md): известные поля; применимость ограничена контрольными сейвами.
 - [EXPERIMENTAL](EXPERIMENTAL.md): смысл операций, не доказанный игровой результат.
 - [Evidence baseline](evidence/BASELINE_2026-09-13.md): текущая проверка.
+- [UI design evidence](evidence/UI_DESIGN_2026-09-13.md): разбор приложенных
+  макетов, хэши входных архивов и проверка U07.
 
 Статусы карточек: `waiting_dependencies` ждёт принятый входной gate,
 `in_progress` выполняется на ветке, `in_review` имеет открытый PR, а
