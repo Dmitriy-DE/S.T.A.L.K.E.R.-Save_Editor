@@ -29,6 +29,7 @@ from save_format import (
 )
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.prepare import prepare_edit
+from editor.storage import export_local
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
@@ -586,14 +587,16 @@ class App(tk.Tk):
         return prepare_edit(original, plan)
 
     def apply_local(self,out:Path,plan:EditPlan):
-        original=self.analysis_data; assert original is not None
-        stem=(self.analysis_local_path.stem if self.analysis_local_path else "local")
+        source_path=self.analysis_local_path; assert source_path is not None
         def job():
-            bp=self.backup_path(stem,"ORIGINAL"); bp.write_bytes(original); self.msgq.put(("log",f"Backup: {bp}"))
-            prepared=self.do_patch(original,plan); out.write_bytes(prepared.data); after=inspect_save(prepared.data,with_inventory=True)
-            self.msgq.put(("log",f"Local export OK: {out} ({human_size(len(prepared.data))})"))
-            self.msgq.put(("analysis",("local",None,out,after,prepared.data,decompress_save(prepared.data))))
-            self.msgq.put(("info",f"Готово.\nOutput: {out}\nBackup: {bp}\nCRC/Kraken round-trip: OK"))
+            source_data=source_path.read_bytes()
+            prepared=self.do_patch(source_data,plan)
+            receipt=export_local(source_path,out,prepared,BACKUP_DIR)
+            edited=receipt.output_path.read_bytes(); after=inspect_save(edited,with_inventory=True)
+            self.msgq.put(("log",f"Local export OK: {out} ({human_size(len(edited))})"))
+            self.msgq.put(("log",f"Backup: {receipt.backup_path}; journal: {receipt.backup_path.with_suffix('.json')}"))
+            self.msgq.put(("analysis",("local",None,out,after,edited,decompress_save(edited))))
+            self.msgq.put(("info",f"Готово.\nOutput: {out}\nBackup: {receipt.backup_path}\nCRC/Kraken round-trip: OK"))
         self.bg(job)
 
     def apply_cloud(self,plan:EditPlan):
