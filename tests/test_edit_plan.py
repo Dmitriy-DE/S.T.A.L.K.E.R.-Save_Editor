@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
 import hashlib
+from dataclasses import FrozenInstanceError
 
 import pytest
 
 import save_format as sf
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.prepare import prepare_edit
-
 
 STACK_HANDLE = 0x30000001
 ORPHAN_HANDLE = 0x30000003

@@ -2,5 +2,4 @@
 
 from ui.__main__ import diagnostic_main
 
-
 raise SystemExit(diagnostic_main())

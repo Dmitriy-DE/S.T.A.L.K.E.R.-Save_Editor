@@ -7,12 +7,13 @@ This validates format parsing/container rebuild; only the game can validate sema
 behaviour of experimental structural edits.
 """
 from __future__ import annotations
+
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-import save_format as sf
+import save_format as sf  # noqa: E402 - ROOT must be on sys.path first
 
 
 def main(path: Path) -> None:

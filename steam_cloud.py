@@ -2,16 +2,29 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import queue
 import subprocess
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any
 
+# Re-exported for app.py and ui/cloud_view.py, which import the helper lookup
+# from this module.  Keep it in __all__: an "unused import" cleanup that drops
+# it breaks both GUIs at import time.
 from editor.platforms import discover_helper
+
+__all__ = [
+    "APP_ID",
+    "SAVE_PREFIX",
+    "CloudFile",
+    "SteamCloudError",
+    "SteamWorker",
+    "discover_helper",
+]
 
 APP_ID = 1643320
 SAVE_PREFIX = "Stalker2/Saved/STEAM/SaveGames/Data/"

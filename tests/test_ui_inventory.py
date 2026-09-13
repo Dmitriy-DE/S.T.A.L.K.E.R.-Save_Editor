@@ -11,8 +11,8 @@ from PySide6.QtWidgets import QApplication
 
 from editor.service import EditorService
 from save_format import inspect_save
-from ui.main_window import LocalSnapshot, MainWindow
 from ui.inventory_model import InventoryTableModel
+from ui.main_window import LocalSnapshot, MainWindow
 
 
 def test_inventory_model_filters_and_sort_keep_handle_identity(synthetic_save: bytes) -> None:

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.models import PreparedEdit
-from save_format import InventoryItem, SaveInfo
+from save_format import SaveInfo
 
 
 class ChangesView(QWidget):

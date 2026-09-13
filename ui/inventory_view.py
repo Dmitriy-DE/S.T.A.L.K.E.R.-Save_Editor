@@ -6,11 +6,13 @@ from collections.abc import Iterable, Mapping
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QCheckBox,
     QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -18,8 +20,6 @@ from PySide6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QWidget,
-    QHeaderView,
-    QAbstractItemView,
 )
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
@@ -225,7 +225,8 @@ class InventoryView(QWidget):
     def _on_count_changed(self, _value: int) -> None:
         # The spin box range is the first validation layer.  Keeping the
         # stage button enabled here makes the current→new value explicit.
-        self.stage_button.setEnabled(self._selected_item() is not None and self._selected_item().editable_count)
+        item = self._selected_item()
+        self.stage_button.setEnabled(item is not None and bool(item.editable_count))
 
     def _stage_selected(self) -> None:
         item = self._selected_item()

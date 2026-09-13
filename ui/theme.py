@@ -11,7 +11,6 @@ from __future__ import annotations
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
-
 COLORS = {
     "bg_base": "#111516",
     "bg_panel": "#1B2220",

@@ -1,8 +1,8 @@
 import re
 from pathlib import Path
 
-
-WORKFLOWS_DIR = Path(__file__).parents[1] / ".github" / "workflows"
+ROOT = Path(__file__).parents[1]
+WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 WORKFLOW = WORKFLOWS_DIR / "test.yml"
 BUILD_WORKFLOW = WORKFLOWS_DIR / "build.yml"
 
@@ -75,3 +75,12 @@ def test_ci_runs_pinned_dependencies_and_full_suite() -> None:
     assert '"pytest"' in text
     assert '"tests"' in text
     assert "python -m py_compile" in text
+
+
+def test_ci_runs_the_static_analysis_gate() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+
+    assert '"ruff"' in text
+    assert '"mypy"' in text
+    assert (ROOT / "ruff.toml").is_file()
+    assert (ROOT / "mypy.ini").is_file()

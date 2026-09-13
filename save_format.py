@@ -5,11 +5,11 @@ import math
 import struct
 import zlib
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterable
 
-from editor.codec import CodecError, decompress as codec_decompress
+from editor.codec import CodecError
+from editor.codec import decompress as codec_decompress
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -176,7 +176,7 @@ def decompress_save(data: bytes) -> bytes:
     return bytes(raw)
 
 
-def _find_all(raw: bytes, needle: bytes) -> list[int]:
+def _find_all(raw: bytes | bytearray, needle: bytes) -> list[int]:
     out: list[int] = []
     start = 0
     while True:
@@ -187,7 +187,7 @@ def _find_all(raw: bytes, needle: bytes) -> list[int]:
         start = i + 1
 
 
-def locate_money(raw: bytes) -> tuple[int, int]:
+def locate_money(raw: bytes | bytearray) -> tuple[int, int]:
     positions = _find_all(raw, MONEY_ANCHOR)
     if len(positions) != 1:
         raise SaveError(
@@ -272,7 +272,7 @@ def locate_inventory_layout(raw: bytes) -> InventoryLayout:
             "Owned handle list содержит дубликаты: "
             + ", ".join(f"0x{h:08X}" for h in sorted(duplicate_owned))
         )
-    positions: dict[tuple[int, int], int] = {}
+    grid_positions: dict[tuple[int, int], int] = {}
     for i in range(grid_count):
         off = grid_off + i * GRID_RECORD_SIZE
         handle, x, y = struct.unpack_from("<IHH", raw, off)
@@ -289,14 +289,14 @@ def locate_inventory_layout(raw: bytes) -> InventoryLayout:
                 f"Grid cell #{i} вне поддерживаемых границ: handle=0x{handle:08X}, x={x}, y={y}"
             )
             continue
-        previous = positions.get((x, y))
+        previous = grid_positions.get((x, y))
         if previous is not None:
             unresolved.update((previous, handle))
             warnings.append(
                 f"Duplicate grid position {x},{y}: handles 0x{previous:08X} и 0x{handle:08X}"
             )
         else:
-            positions[(x, y)] = handle
+            grid_positions[(x, y)] = handle
         cells.append(GridCell(handle, x, y))
     if grid_count == 0:
         warnings.append("Inventory grid пуст: отображены только owned handles")
@@ -762,8 +762,10 @@ def scalar_candidates(raw: bytes, handle: int, limit: int = 1024) -> list[dict[s
 
 
 def diff_record(save_a_raw: bytes, save_b_raw: bytes, handle: int, limit: int = 2048) -> list[tuple[int, bytes, bytes]]:
-    base_a, a = record_hex(save_a_raw, handle, limit)
-    base_b, b = record_hex(save_b_raw, handle, limit)
+    # Offsets are reported relative to each record, so the absolute bases of
+    # the two saves are deliberately unused here.
+    _, a = record_hex(save_a_raw, handle, limit)
+    _, b = record_hex(save_b_raw, handle, limit)
     n = min(len(a), len(b))
     diffs = [i for i in range(n) if a[i] != b[i]]
     if len(a) != len(b):

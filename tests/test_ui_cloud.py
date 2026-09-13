@@ -8,7 +8,6 @@ import pytest
 pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
-from PySide6.QtCore import Qt
 
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService

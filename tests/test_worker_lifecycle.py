@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import time
+from pathlib import Path
 
 import pytest
 
 import steam_cloud as sc
-
 
 FAKE_HELPER = Path(__file__).with_name("fake_worker.py")
 

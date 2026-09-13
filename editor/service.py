@@ -13,11 +13,15 @@ from .storage import (
     BackupRecord,
     ExportReceipt,
     RestoreReceipt,
-    restore_backup as storage_restore_backup,
+)
+from .storage import (
     export_local as storage_export_local,
 )
-from .transactions import CloudTransport, upload_cloud as transactions_upload_cloud
-
+from .storage import (
+    restore_backup as storage_restore_backup,
+)
+from .transactions import CloudTransport
+from .transactions import upload_cloud as transactions_upload_cloud
 
 InspectFn = Callable[..., SaveInfo]
 PrepareFn = Callable[[bytes, EditPlan], PreparedEdit]

@@ -6,7 +6,6 @@ import pytest
 
 import save_format as sf
 
-
 STACK_HANDLE = 0x30000001
 VISIBLE_SINGLE_HANDLE = 0x30000002
 ORPHAN_HANDLE = 0x30000003
@@ -58,7 +57,7 @@ def test_money_patch_round_trip_changes_only_four_wallet_bytes(synthetic_save: b
     assert sf.locate_money(after)[1] == 900_000
     assert result.old_money == 100
     assert result.new_money == 900_000
-    changed = {i for i, (left, right) in enumerate(zip(before, after)) if left != right}
+    changed = {i for i, (left, right) in enumerate(zip(before, after, strict=True)) if left != right}
     assert changed <= set(range(money_offset, money_offset + 4))
     assert len(changed) > 0
     assert sf.inspect_save(result.data).crc_ok is True
@@ -77,7 +76,7 @@ def test_stack_patch_updates_count_and_cached_total_weight_only(synthetic_save: 
     assert result.changed_stacks == ((STACK_HANDLE, 2, 3),)
     allowed = set(range(stack.record_offset + sf.STACK_COUNT_OFFSET, stack.record_offset + sf.STACK_COUNT_OFFSET + 4))
     allowed |= set(range(stack.record_offset + sf.STACK_WEIGHT_OFFSET, stack.record_offset + sf.STACK_WEIGHT_OFFSET + 4))
-    changed = {i for i, (left, right) in enumerate(zip(before, after)) if left != right}
+    changed = {i for i, (left, right) in enumerate(zip(before, after, strict=True)) if left != right}
     assert changed <= allowed
     assert changed
 

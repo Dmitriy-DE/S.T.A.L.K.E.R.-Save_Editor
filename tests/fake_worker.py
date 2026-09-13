@@ -5,10 +5,9 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import sys
 import time
-
+from pathlib import Path
 
 MODE = os.environ.get("FAKE_WORKER_MODE", "normal")
 MARKER = Path(os.environ["FAKE_WORKER_MARKER"]) if os.environ.get("FAKE_WORKER_MARKER") else None
@@ -59,9 +58,7 @@ def main() -> int:
             emit({"type": "Files", "files": []})
         elif kind == "ReadFile":
             emit({"type": "FileData", "data": [1, 2, 3]})
-        elif kind == "WriteFile":
-            emit({"type": "Ok"})
-        elif kind == "SyncCloudFiles":
+        elif kind == "WriteFile" or kind == "SyncCloudFiles":
             emit({"type": "Ok"})
         elif kind == "Exit":
             emit({"type": "Ok"})

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import datetime as dt
 import hashlib
 import json
 import os
-from pathlib import Path
 import tempfile
-from typing import Iterable, Literal
 import uuid
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal, TypeGuard
 
 from save_format import SaveError
 
@@ -155,7 +156,7 @@ def _rewrite_journal(path: Path, payload: dict[str, object]) -> None:
 
 
 def _backup_path(source_path: Path, backup_dir: Path) -> Path:
-    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%S%fZ")
     token = uuid.uuid4().hex
     stem = source_path.stem or "save"
     return backup_dir / f"{stem}_{stamp}_{token}_ORIGINAL.sav"
@@ -172,7 +173,7 @@ def _operation_summary(plan: EditPlan) -> dict[str, object]:
     }
 
 
-def _is_sha256(value: object) -> bool:
+def _is_sha256(value: object) -> TypeGuard[str]:
     if not isinstance(value, str) or len(value) != 64:
         return False
     try:
@@ -532,7 +533,7 @@ def export_local(
             payload: dict[str, object] = {
                 "version": 1,
                 "status": "prepared",
-                "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "created_at": dt.datetime.now(dt.UTC).isoformat(),
                 "source_path": str(source_path),
                 "source_sha256": source_sha,
                 "output_path": str(output_path),

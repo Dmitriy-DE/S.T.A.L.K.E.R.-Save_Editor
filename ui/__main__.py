@@ -5,8 +5,8 @@ import importlib.metadata
 import importlib.util
 import json
 import platform
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def diagnostic_main(argv: list[str] | None = None) -> int:
@@ -76,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     from editor.service import EditorService
+
     from .main_window import MainWindow
 
     app = QApplication([sys.argv[0], *arguments])

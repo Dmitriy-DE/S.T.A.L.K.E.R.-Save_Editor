@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import importlib
 import platform
-from pathlib import Path
 import sys
+from collections.abc import Callable
+from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
-
+from typing import Any
 
 PYOOZ_VERSION = "0.0.8"
 MAX_UNPACKED_SIZE = 512 * 1024 * 1024

@@ -9,7 +9,6 @@ from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
 from editor.transactions import CloudTransactionError, upload_cloud
 
-
 REMOTE_PATH = "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
 
 
@@ -48,9 +47,7 @@ class FakeCloud:
 
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
         self.wait_calls.append((filename, expected_size, timeout))
-        if self.mode == "persist_timeout":
-            return False
-        return True
+        return self.mode != "persist_timeout"
 
 
 def _prepared(synthetic_save: bytes):

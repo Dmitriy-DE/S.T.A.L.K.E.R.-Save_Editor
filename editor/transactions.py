@@ -9,10 +9,11 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import os
-from pathlib import Path
 import re
-from typing import Callable, Protocol
 import uuid
+from collections.abc import Callable
+from pathlib import Path
+from typing import Protocol
 
 from .models import CloudReceipt, PreparedEdit
 
@@ -45,7 +46,7 @@ def _safe_stem(remote_path: str) -> str:
 
 
 def _artifact_paths(remote_path: str, backup_dir: Path) -> tuple[Path, Path]:
-    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%S%fZ")
     token = uuid.uuid4().hex
     stem = _safe_stem(remote_path)
     prefix = f"{stem}_{stamp}_{token}"

@@ -12,8 +12,8 @@ pytest.importorskip("pytestqt")
 from PySide6.QtCore import Qt
 
 from editor.service import EditorService
-from ui.main_window import MainWindow
 from ui.backups_view import BackupView
+from ui.main_window import MainWindow
 
 
 def _write_journal(journal: Path, backup_path: Path, sha256: str) -> None:

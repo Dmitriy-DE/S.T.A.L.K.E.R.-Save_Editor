@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from pathlib import Path
 import queue
 import sys
 import threading
 import traceback
 import webbrowser
+from pathlib import Path
+from typing import Literal
 
 try:
     import tkinter as tk
@@ -16,6 +17,10 @@ except Exception:
     print("Tkinter не установлен. Ubuntu/Debian: sudo apt install python3-tk", file=sys.stderr)
     raise
 
+from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.platforms import legacy_data_dir, user_data_dir
+from editor.service import EditorService
+from editor.transactions import CloudTransactionError
 from save_format import (
     InventoryItem,
     OrphanItem,
@@ -25,10 +30,6 @@ from save_format import (
     decompress_save,
     record_hex,
 )
-from editor.models import EditPlan, PreparedEdit, SourceRef
-from editor.platforms import legacy_data_dir, user_data_dir
-from editor.service import EditorService
-from editor.transactions import CloudTransactionError
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
@@ -76,7 +77,7 @@ class App(tk.Tk):
         self.busy = False
 
         # Analyzed source. source_kind = cloud/local.
-        self.source_kind: str | None = None
+        self.source_kind: Literal["local", "cloud"] | None = None
         self.analysis_cloud_name: str | None = None
         self.analysis_local_path: Path | None = None
         self.analysis_sha256: str | None = None
@@ -178,9 +179,9 @@ class App(tk.Tk):
                 elif kind == "status":
                     self.status_var.set(str(payload))
                 elif kind == "files":
-                    self.populate_saves(payload)  # type: ignore[arg-type]
+                    self.populate_saves(payload)
                 elif kind == "analysis":
-                    self.apply_analysis(*payload)  # type: ignore[arg-type]
+                    self.apply_analysis(*payload)
                 elif kind == "busy":
                     self.set_busy(bool(payload))
                 elif kind == "error":
@@ -387,7 +388,7 @@ class App(tk.Tk):
         self.bg(job)
 
     # ---------------- Analysis/staging ----------------
-    def apply_analysis(self, source_kind: str, cloud_name: str | None, local_path: Path | None, info: SaveInfo, data: bytes, raw: bytes):
+    def apply_analysis(self, source_kind: Literal["local", "cloud"], cloud_name: str | None, local_path: Path | None, info: SaveInfo, data: bytes, raw: bytes):
         self.source_kind=source_kind; self.analysis_cloud_name=cloud_name; self.analysis_local_path=local_path
         self.analysis_sha256=info.sha256; self.analysis_info=info; self.analysis_data=data; self.analysis_raw=raw
         self.clear_all_staged(refresh=False)
@@ -487,7 +488,7 @@ class App(tk.Tk):
             if not sel: raise SaveError("Выбери orphan/owned handle")
             o=self.orphan_by_iid[sel[0]]
             vals=tuple(int(v.get(),0) for v in (self.orphan_x_var,self.orphan_y_var,self.orphan_w_var,self.orphan_h_var))
-            self.staged_attach[o.handle]=vals  # type: ignore[assignment]
+            self.staged_attach[o.handle]=vals
             self.refresh_changes()
         except Exception as exc: messagebox.showerror(APP_NAME,str(exc))
 
@@ -530,7 +531,7 @@ class App(tk.Tk):
 
     def parse_new_money(self)->int:
         try: v=int(self.new_money_var.get().replace(" ",""),0)
-        except Exception: raise SaveError("Новые купоны должны быть целым числом")
+        except Exception as exc: raise SaveError("Новые купоны должны быть целым числом") from exc
         if not (0<=v<=2_000_000_000): raise SaveError("Сумма 0..2 000 000 000")
         return v
 
@@ -546,18 +547,21 @@ class App(tk.Tk):
             raise SaveError("Нет изменений")
         if (self.staged_moves or self.staged_detach or self.staged_attach or self.staged_raw) and not self.experimental_unlocked.get():
             raise SaveError("Есть experimental changes, но risk checkbox выключен")
+        source_kind: Literal["local", "cloud"]
         if self.source_kind == "local":
             if self.analysis_local_path is None:
                 raise SaveError("У локального сейва отсутствует путь источника")
             locator = str(self.analysis_local_path)
+            source_kind = "local"
         elif self.source_kind == "cloud":
             if not self.analysis_cloud_name:
                 raise SaveError("У cloud сейва отсутствует имя файла")
             locator = self.analysis_cloud_name
+            source_kind = "cloud"
         else:
             raise SaveError("Неизвестный source mode")
         return EditPlan(
-            source=SourceRef(kind=self.source_kind, locator=locator, sha256=self.analysis_sha256),
+            source=SourceRef(kind=source_kind, locator=locator, sha256=self.analysis_sha256),
             money=money,
             stacks=tuple(self.staged_counts.items()),
             moves=tuple((handle, x, y) for handle, (x, y) in self.staged_moves.items()),

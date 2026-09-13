@@ -90,6 +90,15 @@ jobs:
         shell: python
         run: python -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
+      - name: Run static analysis gate
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call([sys.executable, "-m", "ruff", "check", "."])
+          subprocess.check_call([sys.executable, "-m", "mypy"])
+
       - name: Run full test suite
         shell: python
         run: |

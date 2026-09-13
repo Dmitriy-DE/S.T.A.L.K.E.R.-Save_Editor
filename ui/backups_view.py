@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Qt, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
 
 from editor.service import EditorService
 from editor.storage import BackupRecord, RestoreReceipt, inspect_backup, list_backups
-
 
 _STATUS_TEXT = {
     "verified": "Проверено",

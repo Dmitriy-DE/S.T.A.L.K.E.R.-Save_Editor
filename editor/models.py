@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Literal
 
 from save_format import RawPatch
-
 
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 

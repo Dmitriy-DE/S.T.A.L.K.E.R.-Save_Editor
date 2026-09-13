@@ -1,13 +1,13 @@
 """Public editor API with lazy imports to keep codec loading acyclic."""
 
 __all__ = [
+    "BackupRecord",
     "CloudReceipt",
     "EditPlan",
-    "PreparedEdit",
-    "SourceRef",
-    "BackupRecord",
-    "RestoreReceipt",
     "EditorService",
+    "PreparedEdit",
+    "RestoreReceipt",
+    "SourceRef",
     "prepare_edit",
 ]
 

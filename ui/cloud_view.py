@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
-from PySide6.QtCore import QThread, Qt, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
@@ -28,7 +29,22 @@ from save_format import SaveError, SaveInfo
 from steam_cloud import APP_ID, SAVE_PREFIX, CloudFile, SteamWorker, discover_helper
 
 
-WorkerFactory = Callable[[Path], CloudTransport]
+class CloudSession(CloudTransport, Protocol):
+    """A transport this view also owns the lifecycle of.
+
+    ``editor.transactions.CloudTransport`` only describes what an upload needs.
+    The Cloud tab additionally starts, connects and closes the helper process,
+    so the widget-level contract is stated here instead of being assumed.
+    """
+
+    def start(self) -> None: ...
+
+    def connect(self, app_id: int) -> None: ...
+
+    def close(self) -> None: ...
+
+
+WorkerFactory = Callable[[Path], CloudSession]
 HelperFinder = Callable[[], Path | None]
 
 
@@ -56,7 +72,7 @@ class CloudOperationWorker(QThread):
         *,
         mode: str,
         helper_path: Path | None = None,
-        transport: CloudTransport | None = None,
+        transport: CloudSession | None = None,
         worker_factory: WorkerFactory = SteamWorker,
         cloud_file: CloudFile | None = None,
         prepared: PreparedEdit | None = None,
@@ -166,7 +182,7 @@ class CloudView(QWidget):
             else backup_dirs()[0]
         )
         self.app_id = app_id
-        self.transport: CloudTransport | None = None
+        self.transport: CloudSession | None = None
         self._files: tuple[CloudFile, ...] = ()
         self._snapshot: CloudSnapshot | None = None
         self._prepared: PreparedEdit | None = None
@@ -370,7 +386,7 @@ class CloudView(QWidget):
         worker.completed.connect(self._on_upload_ready)
         self._start_worker(worker)
 
-    def _on_transport_ready(self, transport: CloudTransport) -> None:
+    def _on_transport_ready(self, transport: CloudSession) -> None:
         self.transport = transport
 
     def _on_files_ready(self, files) -> None:

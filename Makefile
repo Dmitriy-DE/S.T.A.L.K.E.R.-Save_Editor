@@ -1,9 +1,15 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check test selftest run package-plan package
-check:
+.PHONY: check lint typecheck test selftest run package-plan package
+check: lint typecheck
 	$(PYTHON) -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
+
+lint:
+	$(PYTHON) -m ruff check .
+
+typecheck:
+	$(PYTHON) -m mypy
 
 test:
 	$(PYTHON) -m pytest tests

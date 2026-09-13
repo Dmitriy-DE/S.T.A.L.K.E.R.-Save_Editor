@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import os
 import platform
-from pathlib import Path
 import shutil
-from typing import Mapping
-
+from collections.abc import Mapping
+from pathlib import Path
 
 APP_DIR_NAME = "Stalker2SaveEditor"
 HELPER_ENV = "STALKER2_STEAM_HELPER"

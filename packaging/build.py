@@ -13,16 +13,15 @@ import hashlib
 import importlib.metadata
 import json
 import os
-from pathlib import Path
 import platform
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
-from typing import Iterable, Mapping
 import zipfile
-
+from collections.abc import Iterable, Mapping
+from pathlib import Path
 
 APP_NAME = "SaveEditor"
 DEBIAN_NAME = "stalker2-save-editor"
@@ -203,8 +202,7 @@ def build_manifest(*, root: Path, target: str, version: str) -> dict[str, object
 
 
 def _iter_tree(root: Path) -> Iterable[Path]:
-    for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
-        yield path
+    yield from sorted(root.rglob("*"), key=lambda item: item.as_posix())
 
 
 def scan_package_tree(root: Path) -> None:
@@ -304,8 +302,10 @@ def _make_tar(runtime: Path, destination: Path) -> None:
     with destination.open("wb") as raw_file:
         import gzip
 
-        with gzip.GzipFile(fileobj=raw_file, mode="wb", mtime=0) as gzip_file:
-            with tarfile.open(fileobj=gzip_file, mode="w") as archive:
+        with (
+            gzip.GzipFile(fileobj=raw_file, mode="wb", mtime=0) as gzip_file,
+            tarfile.open(fileobj=gzip_file, mode="w") as archive,
+        ):
                 _add_tar_entry(archive, runtime, APP_NAME)
                 for path in _iter_tree(runtime):
                     _add_tar_entry(archive, path, str(Path(APP_NAME) / path.relative_to(runtime)))
@@ -368,16 +368,16 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
     control_dir = stage / "DEBIAN"
     control_dir.mkdir(parents=True, exist_ok=True)
     (control_dir / "control").write_text(
-        """Package: stalker2-save-editor
-Version: {version}
+        f"""Package: stalker2-save-editor
+Version: {_debian_version(version)}
 Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors
-Depends: libc6 (>= {libc})
+Depends: libc6 (>= {libc_requirement()})
 Description: S.T.A.L.K.E.R. 2 save editor
  A local Qt editor with safe preview, backup and Steam Cloud workflows.
-""".format(version=_debian_version(version), libc=libc_requirement()),
+""",
         encoding="utf-8",
     )
     scan_package_tree(stage)

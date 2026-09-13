@@ -1,0 +1,31 @@
+# Static analysis gate for the save editor.
+#
+# The selection is deliberately about correctness, not formatting: this code
+# writes save files, so an unused name or a swallowed exception matters and a
+# 92-character line does not.  Rules that would only reflow existing legacy
+# style (E501, E701/E702 in app.py/cli.py) stay off so a lint gate never turns
+# into a repo-wide rewrite of working parser code.
+
+target-version = "py311"
+line-length = 100
+extend-exclude = ["vendor", "third_party", "releases", ".local"]
+
+[lint]
+select = ["F", "E4", "E7", "E9", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",    # line length: documented above, not a correctness signal here
+    "E701",    # legacy one-line style in app.py/cli.py
+    "E702",
+    "RUF001",  # Cyrillic text in user-facing strings is intentional
+    "RUF002",
+    "RUF003",
+    "SIM105",  # explicit try/except around fd and progress callbacks is clearer
+]
+
+[lint.per-file-ignores]
+# The `match=` patterns in these tests use deliberate `|` alternations so one
+# assertion accepts the Russian and English wording of the same error.
+"tests/*" = ["B011", "RUF043"]
+# Qt model overrides must keep the `parent: QModelIndex = QModelIndex()`
+# signature required by PySide6.
+"ui/inventory_model.py" = ["B008"]

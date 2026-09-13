@@ -11,7 +11,7 @@ pytest.importorskip("PySide6")
 
 from PySide6.QtGui import QCloseEvent
 
-from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 from save_format import SaveError, inspect_save
 from ui.main_window import LocalSnapshot, MainWindow

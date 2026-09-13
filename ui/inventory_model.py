@@ -131,7 +131,7 @@ class InventoryTableModel(QAbstractTableModel):
             return Qt.ItemFlag.NoItemFlags
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
-    def data(self, index: QModelIndex, role=Qt.ItemDataRole.DisplayRole):  # noqa: N802 - Qt API
+    def data(self, index: QModelIndex, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         item = self.item_at(index.row())
@@ -151,7 +151,7 @@ class InventoryTableModel(QAbstractTableModel):
             return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         return None
 
-    def sort(self, column: int, order=Qt.SortOrder.AscendingOrder) -> None:  # noqa: N802 - Qt API
+    def sort(self, column: int, order=Qt.SortOrder.AscendingOrder) -> None:
         if not 0 <= column < len(self.HEADERS):
             return
         self._sort_column = int(column)

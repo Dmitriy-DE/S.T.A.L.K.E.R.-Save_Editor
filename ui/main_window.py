@@ -9,15 +9,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
-from PySide6.QtCore import QThread, QUrl, Qt, Signal
+from PySide6.QtCore import Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QFormLayout,
     QFrame,
-    QGroupBox,
     QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -26,16 +28,15 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
     QWidget,
-    QApplication,
 )
 
-from editor.service import EditorService
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
+from editor.service import EditorService
 from save_format import SaveError, SaveInfo
 
-from .changes_view import ChangesView
 from .backups_view import BackupView, RestoreWorker
+from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
@@ -580,10 +581,11 @@ class MainWindow(QMainWindow):
             )
             return
         if not item.editable_count:
-            if item.count <= 1:
-                reason = "count=1"
-            else:
-                reason = f"неподтверждённый kind={item.kind_code}"
+            reason = (
+                "count=1"
+                if item.count <= 1
+                else f"неподтверждённый kind={item.kind_code}"
+            )
             self.inventory_view.show_editability_message(f"Только чтение: {reason}")
             return
 
@@ -669,9 +671,10 @@ class MainWindow(QMainWindow):
         locator = self.snapshot.locator or str(self.snapshot.path)
         if source_kind not in ("local", "cloud"):
             raise SaveError(f"Неизвестный source kind: {source_kind}")
+        kind: Literal["local", "cloud"] = "local" if source_kind == "local" else "cloud"
         return EditPlan(
             source=SourceRef(
-                kind=source_kind,
+                kind=kind,
                 locator=locator,
                 sha256=self.snapshot.info.sha256,
             ),
