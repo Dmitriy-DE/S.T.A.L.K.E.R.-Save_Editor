@@ -2,7 +2,7 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: standalone Windows build и реальный Windows/Steam smoke ещё впереди.
+**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. B01 добавляет воспроизводимый PyInstaller builder для Linux `tar.gz`/`.deb` и Windows `zip`; локально подтверждён Linux bundle, Windows runner smoke ещё впереди. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор.
 
 ## Что доступно
 
@@ -55,6 +55,32 @@ python3 -m ui
 backup можно восстановить в новый путь, а исходный сейв и backup остаются
 неизменными. На вкладке Steam Cloud upload показывает `verified` или `uncertain`;
 после `WriteFile` автоматического повтора нет.
+
+## Standalone-пакеты (B01)
+
+В исходном режиме Python нужен только для запуска проекта. Для пользователя
+готового bundle Python и `pip` не нужны: PyInstaller вкладывает интерпретатор,
+PySide6/Qt plugins и native decoder. Core parser/storage остаются на
+стандартной библиотеке; SteamCloudFileManager не вкладывается и выбирается как
+отдельный helper.
+
+Сборка выполняется на целевой ОС, потому что PyInstaller не cross-компилирует:
+
+```bash
+# Linux x86_64 (окружение с requirements-build.txt и dpkg-deb)
+python packaging/build.py --target linux --output-dir dist
+
+# Windows x64 (Windows Python 3.11 build environment)
+py -3 packaging/build.py --target windows --output-dir dist
+```
+
+Linux создаёт `SaveEditor-linux-x86_64-v*.tar.gz` и
+`stalker2-save-editor_*_amd64.deb`; Windows —
+`SaveEditor-windows-x86_64-v*.zip`. Каждый запуск создаёт `SHA256SUMS`, а
+внутри bundle лежат `BUILD_MANIFEST.json`, `SOURCE_COMMIT.txt`, notices и
+provenance native decoder. `SaveEditor-diagnostic --diagnostic` проверяет
+вложенный Qt/decoder без открытия окна. `dist/` не коммитится и автоматический
+GitHub Release до B02 не выполняется.
 
 Новые настройки и backups пишутся в platform user-data directory
 (`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на

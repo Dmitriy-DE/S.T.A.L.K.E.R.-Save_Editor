@@ -1,0 +1,127 @@
+name: standalone-build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.target }} / Python 3.11
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: linux
+          - os: windows-2022
+            target: windows
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Linux packaging tools
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes dpkg-dev python3-tk
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-ui.txt
+            requirements-dev.txt
+            requirements-build.txt
+
+      - name: Install test and build dependencies
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call(
+              [
+                  sys.executable,
+                  "-m",
+                  "pip",
+                  "install",
+                  "--requirement",
+                  "requirements.txt",
+                  "--requirement",
+                  "requirements-ui.txt",
+                  "--requirement",
+                  "requirements-build.txt",
+              ]
+          )
+
+      - name: Run source tests
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call([sys.executable, "-m", "pytest", "tests", "-q"])
+
+      - name: Build standalone artifacts
+        shell: python
+        env:
+          SAVE_EDITOR_TARGET: ${{ matrix.target }}
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call(
+              [
+                  sys.executable,
+                  "packaging/build.py",
+                  "--target",
+                  "${{ matrix.target }}",
+                  "--output-dir",
+                  "artifacts",
+              ]
+          )
+
+      - name: Export package version
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"VERSION={Path('VERSION').read_text(encoding='utf-8').strip()}\n")
+
+      - name: Smoke packaged diagnostic on Linux
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="artifacts/SaveEditor-linux-x86_64-v${VERSION}.tar.gz"
+          mkdir -p smoke
+          tar -xzf "$archive" -C smoke
+          smoke/SaveEditor/SaveEditor-diagnostic --diagnostic
+
+      - name: Smoke packaged diagnostic on Windows
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          $archive = "artifacts/SaveEditor-windows-x86_64-v$env:VERSION.zip"
+          New-Item -ItemType Directory -Force smoke | Out-Null
+          Expand-Archive -Path $archive -DestinationPath smoke -Force
+          & smoke/SaveEditor/SaveEditor-diagnostic.exe --diagnostic
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaveEditor-${{ matrix.target }}-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
