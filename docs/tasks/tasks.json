@@ -443,9 +443,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/U05.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42"
   },
   {
     "id": "U06",
@@ -458,22 +459,25 @@
     "files": [
       "ui/cloud_view.py",
       "ui/main_window.py",
+      "ui/__init__.py",
       "tests/test_ui_cloud.py"
     ],
-    "contract": "UI отображает CloudReceipt.status/reason; selected cloud path закреплён в SourceRef. Никаких Steam writes при открытии приложения.",
+    "contract": "CloudView подключается только по явному действию, показывает только Data/*.sav, создаёт CloudSnapshot с exact locator и запускает EditorService.upload_cloud только для совпадающего PreparedEdit; UI отображает CloudReceipt verified/uncertain и recovery paths.",
     "steps": [
       "Fake service scenarios: disconnected, empty list, changed slot, persisted wait, uncertain, verified.",
       "Выбор helper/connect/list/analyze; cloud write только из preview выбранного slot. Не путать Thumbnails и Data.",
       "Uncertain экран показывает original backup/recovery и перепроверку без повторной загрузки; verified не отображать до receipt.",
-      "Cloud restore использует тот же staged preview и transaction, с fresh SHA текущего slot. Manual live test вынести в B02."
+      "Cloud restore использует тот же staged preview и transaction, с fresh SHA текущего slot. Manual live test вынести в B02.",
+      "Все helper/transport/service boundaries инжектируются fake tests; packaged Windows smoke остаётся B01."
     ],
     "checks": [
       "python -m pytest tests/test_ui_cloud.py -v",
+      "QT_QPA_PLATFORM=offscreen python -m pytest tests/test_ui_cloud.py -v",
       "Wrong-slot test write_calls==0; timeout не green success; clear recovery paths."
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/U06.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15"
   },
