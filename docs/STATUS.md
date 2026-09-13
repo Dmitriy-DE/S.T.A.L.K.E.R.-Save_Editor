@@ -4,12 +4,12 @@
 
 Исходники v0.3.0 EXPERIMENTAL импортированы без изменения runtime. Linux self-test и синтаксис проверяются отдельно в [evidence](evidence/BASELINE_2026-09-13.md). Денежные значения контрольных файлов: 48645, 58870, 56995; ранее изменённый D639: 900000. Это проверка распаковки/структур, не запуск игры.
 
-В продукте уже есть Tkinter GUI и CLI. Общий UI-free `EditorService` связывает parser и safe writers для entry points. Qt shell принят через [PR #39](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39), inventory search/filter и staged money/stack forms — через [PR #40](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/40). U07 на ветке `task/ui-design-shell` добавляет поверх этого shell тёмную Zone-тему, structured metadata/CRC badges, sidebar и snapshot-backed summary cards; новые runtime-зависимости не добавляются. U04 принят через [PR #41](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41): immutable preview и local apply используют тот же service/storage, bytes до preview не меняются. U05 принят через [PR #42](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42): backup/hash browser и restore в новую локальную копию. U06 принят через [PR #43](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43): Qt Cloud tab с явным connect/list/analyze и verified/uncertain upload. Подтверждённого Windows-дистрибутива пока нет; B01 добавляет builder для Windows zip, Linux tar.gz и Debian package. S06 добавляет локально проверенную cloud transaction state machine, но end-to-end Steam/GFN при импорте не выполнялся. P03 добавляет обязательную GitHub Actions matrix для Linux/Windows и Python 3.11/3.12; код слит через [PR #37](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37), но пять запусков завершились `startup_failure` до создания jobs, поэтому runner evidence ещё ожидается. Baseline с исходниками: `2291832`.
+В продукте уже есть Tkinter GUI и CLI. Общий UI-free `EditorService` связывает parser и safe writers для entry points. Qt shell принят через [PR #39](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39), inventory search/filter и staged money/stack forms — через [PR #40](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/40). U07 принят через [PR #47](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47) (merge `658fe77`): поверх shell добавлены тёмная Zone-тема, structured metadata/CRC badges, sidebar и snapshot-backed summary cards; новые runtime-зависимости не добавляются. U04 принят через [PR #41](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41): immutable preview и local apply используют тот же service/storage, bytes до preview не меняются. U05 принят через [PR #42](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42): backup/hash browser и restore в новую локальную копию. U06 принят через [PR #43](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43): Qt Cloud tab с явным connect/list/analyze и verified/uncertain upload. Подтверждённого Windows-дистрибутива пока нет; B01 добавляет builder для Windows zip, Linux tar.gz и Debian package. S06 добавляет локально проверенную cloud transaction state machine, но end-to-end Steam/GFN при импорте не выполнялся. P03 добавляет обязательную GitHub Actions matrix для Linux/Windows и Python 3.11/3.12; код слит через [PR #37](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37), но пять запусков завершились `startup_failure` до создания jobs, поэтому runner evidence ещё ожидается. Baseline с исходниками: `2291832`.
 
 ## Найдено чтением исходников, требует regression-тестов
 
 Статусный список ниже сохраняет историю карточек и их evidence. Актуально на
-2026-09-13: U06 принята PR #43, U07 ведётся на issue #46, B01 принят по коду
+2026-09-13: U06 принята PR #43, U07 принята PR #47, B01 принят по коду
 PR #44, B02 ведёт текущую acceptance matrix; см. [`docs/evidence/BETA_ACCEPTANCE.md`](evidence/BETA_ACCEPTANCE.md)
 и [UI design evidence](evidence/UI_DESIGN_2026-09-13.md).
 
@@ -46,9 +46,10 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 
 Ранний файл 5967 читает 22645, скриншот показывает 30145. Причина не установлена; эти данные не составляют достоверную пару. Synthetic fixtures проверяют код, а не универсальность формата.
 
-## Текущий проход U07 / B02
+## Текущий проход B02
 
-U07 оформляет внедрение приложенного Stitch visual reference. В runtime
+U07 оформил внедрение приложенного Stitch visual reference и принят merge
+`658fe77` через PR #47. В runtime
 перенесены только palette/layout hierarchy и bindings к реальному snapshot;
 статические demo-значения и нерелевантный Figma Make music-проект исключены.
 Два новых regression-теста и полный Qt suite проходят локально; provenance и
@@ -65,6 +66,6 @@ bundle. Исходный core остаётся stdlib-only, `pytest` не поп
 не объявляется готовой.
 
 Implementation B01 принят через [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44),
-merge `3346167`. Текущий рабочий проход — U07 на фоне B02: acceptance matrix находится в
+merge `3346167`. Текущий рабочий проход — B02: acceptance matrix находится в
 [`docs/evidence/BETA_ACCEPTANCE.md`](evidence/BETA_ACCEPTANCE.md), release
 остаётся `blocked` до Windows/runner/DPI evidence.

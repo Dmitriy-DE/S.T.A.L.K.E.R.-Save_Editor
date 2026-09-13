@@ -508,9 +508,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/U07.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47"
   },
   {
     "id": "B01",
