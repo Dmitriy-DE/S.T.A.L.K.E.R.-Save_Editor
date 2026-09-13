@@ -8,9 +8,11 @@ import sys
 
 from editor.models import EditPlan, SourceRef
 from editor.platforms import user_data_dir
-from editor.prepare import prepare_edit
-from editor.storage import export_local
-from save_format import RawPatch, SaveError, decompress_save, diff_record, inspect_save, record_hex
+from editor.service import EditorService
+from save_format import RawPatch, SaveError, decompress_save, diff_record, record_hex
+
+
+EDITOR_SERVICE = EditorService()
 
 
 def parse_int(s: str) -> int:
@@ -85,19 +87,19 @@ src = Path(a.save)
 data = src.read_bytes()
 
 if a.cmd == "info":
-    x = inspect_save(data)
+    x = EDITOR_SERVICE.inspect(data)
     parsed_grid_handles = len({item.handle for item in x.inventory})
     print(f"CRC: OK\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid handles parsed/total: {parsed_grid_handles}/{x.grid_handle_count}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}\nUnresolved handles: {len(x.unresolved_handles)}")
     for warning in x.warnings:
         print(f"Warning: {warning}")
 elif a.cmd == "inventory":
-    x = inspect_save(data)
+    x = EDITOR_SERVICE.inspect(data)
     print("POS   SIZE  TYPE                 KEY     COUNT   WEIGHT    HANDLE       STATUS")
     for it in x.inventory:
         status = "editable" if it.editable_count else ("unresolved" if it.handle in x.unresolved_handles else "read-only")
         print(f"{it.position:<5} {it.size_text:<5} {it.category:<20} {it.type_key:<7} {it.count:>6} {it.total_weight:>9.3f}  {it.handle_hex}  {status}")
 elif a.cmd == "orphans":
-    x = inspect_save(data)
+    x = EDITOR_SERVICE.inspect(data)
     print("TYPE                 KEY     COUNT  RECORDPOS     HANDLE")
     for o in x.orphans:
         print(f"{o.category:<20} {o.type_key:<7} {o.count:>5}  {o.x:>5},{o.y:<5}  {o.handle_hex}")
@@ -145,13 +147,13 @@ else:
             attach=tuple((handle, x, y, width, height) for handle, (x, y, width, height) in attach.items()),
             raw=tuple(raw_patches),
         )
-        prepared = prepare_edit(data, plan)
+        prepared = EDITOR_SERVICE.prepare(data, plan)
         destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited.sav")
         backup_dir = Path(a.backup_dir) if a.backup_dir else DEFAULT_BACKUP_DIR
-        receipt = export_local(src, destination, prepared, backup_dir)
-        before = inspect_save(data, with_inventory=True)
+        receipt = EDITOR_SERVICE.export_local(src, destination, prepared, backup_dir)
+        before = EDITOR_SERVICE.inspect(data, with_inventory=True)
         edited_data = receipt.output_path.read_bytes()
-        after = inspect_save(edited_data, with_inventory=True)
+        after = EDITOR_SERVICE.inspect(edited_data, with_inventory=True)
         print(f"Output: {receipt.output_path}\nSize: {len(edited_data)}\nBackup: {receipt.backup_path}\nSHA256: {receipt.output_sha256}")
         if money is not None: print(f"Money: {before.money} -> {after.money}")
         before_by_handle = {item.handle: item for item in before.inventory}

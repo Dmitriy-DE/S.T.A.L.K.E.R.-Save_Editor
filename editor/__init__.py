@@ -1,6 +1,13 @@
 """Public editor API with lazy imports to keep codec loading acyclic."""
 
-__all__ = ["CloudReceipt", "EditPlan", "PreparedEdit", "SourceRef", "prepare_edit"]
+__all__ = [
+    "CloudReceipt",
+    "EditPlan",
+    "PreparedEdit",
+    "SourceRef",
+    "EditorService",
+    "prepare_edit",
+]
 
 
 def __getattr__(name: str):
@@ -17,4 +24,8 @@ def __getattr__(name: str):
         from .prepare import prepare_edit
 
         return prepare_edit
+    if name == "EditorService":
+        from .service import EditorService
+
+        return EditorService
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -10,6 +10,7 @@
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - GUI для локальных файлов и Steam Cloud; CLI для исследования.
 - Experimental: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
+- Общий UI-free `EditorService` связывает parser, immutable preview, local export и cloud transaction для Tk/CLI и будущего Qt.
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 
