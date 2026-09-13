@@ -4,15 +4,21 @@ import glob
 import json
 import os
 from pathlib import Path
+import queue
 import shutil
 import subprocess
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable
 
 APP_ID = 1643320
 SAVE_PREFIX = "Stalker2/Saved/STEAM/SaveGames/Data/"
+# A rebuilt local save is currently about 27 MB. The JSON Vec<u8> envelope is
+# larger, so allow a bounded margin while still rejecting runaway responses.
+MAX_RESPONSE_BYTES = 256 * 1024 * 1024
+MAX_FILE_BYTES = 64 * 1024 * 1024
 
 
 class SteamCloudError(RuntimeError):
@@ -58,20 +64,56 @@ class SteamWorker:
         self.log = log or (lambda _s: None)
         self.proc: subprocess.Popen[str] | None = None
         self._lock = threading.Lock()
+        self._responses: queue.Queue[object] | None = None
+        self._reader_thread: threading.Thread | None = None
+        self._stderr_thread: threading.Thread | None = None
+        self._stderr_tail: deque[str] = deque(maxlen=32)
 
-    def start(self) -> None:
-        if self.proc and self.proc.poll() is None:
+    def _reader_loop(
+        self, proc: subprocess.Popen[str], responses: queue.Queue[object]
+    ) -> None:
+        assert proc.stdout
+        try:
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    responses.put(SteamCloudError("Steam worker завершился/закрыл stdout"))
+                    return
+                if len(line.encode("utf-8", errors="replace")) > MAX_RESPONSE_BYTES:
+                    responses.put(
+                        SteamCloudError(
+                            f"Ответ Steam worker слишком большой (>{MAX_RESPONSE_BYTES} bytes)"
+                        )
+                    )
+                    return
+                responses.put(line)
+        except BaseException as exc:
+            responses.put(SteamCloudError(f"Reader Steam worker завершился: {exc}"))
+
+    def _stderr_loop(self, proc: subprocess.Popen[str]) -> None:
+        if not proc.stderr:
             return
+        try:
+            while True:
+                chunk = proc.stderr.read(4096)
+                if not chunk:
+                    return
+                self._stderr_tail.append(chunk[-4096:])
+        except Exception:
+            return
+
+    def _spawn_unlocked(self) -> subprocess.Popen[str]:
         p = Path(self.helper_path)
         if not p.exists():
             raise SteamCloudError(f"SteamCloudFileManager не найден: {p}")
+        if os.name != "nt":
+            try:
+                mode = p.stat().st_mode
+                p.chmod(mode | 0o111)
+            except OSError:
+                pass
         try:
-            mode = p.stat().st_mode
-            p.chmod(mode | 0o111)
-        except Exception:
-            pass
-        try:
-            self.proc = subprocess.Popen(
+            proc = subprocess.Popen(
                 [str(p), "--steam-worker"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -83,65 +125,120 @@ class SteamWorker:
         except Exception as exc:
             raise SteamCloudError(f"Не удалось запустить helper: {exc}") from exc
 
-        # worker supports Ping before Steam connection
-        resp = self.request({"type": "Ping"}, timeout=10)
-        if resp.get("type") != "Pong":
-            raise SteamCloudError(f"Helper не ответил Pong: {resp}")
+        responses: queue.Queue[object] = queue.Queue()
+        self.proc = proc
+        self._responses = responses
+        self._reader_thread = threading.Thread(
+            target=self._reader_loop, args=(proc, responses), name="steam-worker-reader", daemon=True
+        )
+        self._stderr_thread = threading.Thread(
+            target=self._stderr_loop, args=(proc,), name="steam-worker-stderr", daemon=True
+        )
+        self._reader_thread.start()
+        self._stderr_thread.start()
+        return proc
 
-    def _ensure(self):
-        if not self.proc or self.proc.poll() is not None:
-            self.start()
-        assert self.proc and self.proc.stdin and self.proc.stdout
+    def _stderr_context(self) -> str:
+        return "".join(self._stderr_tail)[-4000:]
+
+    def _invalidate_unlocked(self) -> None:
+        proc = self.proc
+        self.proc = None
+        self._responses = None
+        reader, stderr = self._reader_thread, self._stderr_thread
+        self._reader_thread = None
+        self._stderr_thread = None
+        if proc is not None:
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
+            try:
+                if proc.poll() is None:
+                    proc.terminate()
+                    proc.wait(timeout=1)
+            except Exception:
+                try:
+                    proc.kill()
+                    proc.wait(timeout=1)
+                except Exception:
+                    pass
+        current = threading.current_thread()
+        for thread in (reader, stderr):
+            if thread is not None and thread is not current:
+                thread.join(timeout=1)
+
+    def _decode_response(self, line: str) -> dict[str, Any]:
+        try:
+            resp = json.loads(line)
+        except Exception as exc:
+            self._invalidate_unlocked()
+            raise SteamCloudError(f"Steam worker вернул не JSON: {line[:500]!r}") from exc
+        if not isinstance(resp, dict):
+            self._invalidate_unlocked()
+            raise SteamCloudError("Steam worker вернул JSON не-объект")
+        if resp.get("type") == "Error":
+            raise SteamCloudError(resp.get("message", "Unknown worker error"))
+        return resp
+
+    def _wait_response_unlocked(self, timeout: float) -> dict[str, Any]:
+        responses = self._responses
+        if responses is None:
+            raise SteamCloudError("Steam worker session отсутствует")
+        try:
+            item = responses.get(timeout=timeout)
+        except queue.Empty as exc:
+            self._invalidate_unlocked()
+            raise SteamCloudError("Таймаут ответа Steam worker") from exc
+        if isinstance(item, BaseException):
+            message = str(item)
+            self._invalidate_unlocked()
+            stderr = self._stderr_context()
+            if stderr:
+                message += f" stderr={stderr[-1000:]}"
+            raise SteamCloudError(message)
+        if not isinstance(item, str):
+            self._invalidate_unlocked()
+            raise SteamCloudError("Steam worker вернул неизвестный тип ответа")
+        return self._decode_response(item)
+
+    def _ensure_unlocked(self) -> subprocess.Popen[str]:
+        if self.proc is not None and self.proc.poll() is None:
+            return self.proc
+        if self.proc is not None:
+            self._invalidate_unlocked()
+        self._spawn_unlocked()
+        try:
+            response = self._request_unlocked({"type": "Ping"}, timeout=10)
+            if response.get("type") != "Pong":
+                raise SteamCloudError(f"Helper не ответил Pong: {response}")
+        except Exception:
+            self._invalidate_unlocked()
+            raise
+        assert self.proc is not None
         return self.proc
 
-    def _readline_with_timeout(self, timeout: float) -> str:
-        proc = self._ensure()
-        assert proc.stdout
-        holder: list[str] = []
-        err: list[BaseException] = []
+    def start(self) -> None:
+        with self._lock:
+            self._ensure_unlocked()
 
-        def run():
-            try:
-                holder.append(proc.stdout.readline())
-            except BaseException as exc:
-                err.append(exc)
-
-        t = threading.Thread(target=run, daemon=True)
-        t.start()
-        t.join(timeout)
-        if t.is_alive():
-            raise SteamCloudError("Таймаут ответа Steam worker")
-        if err:
-            raise SteamCloudError(str(err[0]))
-        if not holder or not holder[0]:
-            stderr = ""
-            try:
-                if proc.stderr:
-                    stderr = proc.stderr.read(2000)
-            except Exception:
-                pass
-            raise SteamCloudError(f"Steam worker завершился/закрыл stdout. {stderr}")
-        return holder[0]
+    def _request_unlocked(self, obj: dict[str, Any], timeout: float) -> dict[str, Any]:
+        proc = self._ensure_unlocked() if self.proc is None else self.proc
+        assert proc.stdin
+        try:
+            proc.stdin.write(json.dumps(obj, separators=(",", ":")) + "\n")
+            proc.stdin.flush()
+        except Exception as exc:
+            self._invalidate_unlocked()
+            raise SteamCloudError(f"Ошибка записи в Steam worker: {exc}") from exc
+        return self._wait_response_unlocked(timeout)
 
     def request(self, obj: dict[str, Any], timeout: float = 45) -> dict[str, Any]:
         with self._lock:
-            proc = self._ensure()
-            assert proc.stdin
-            try:
-                proc.stdin.write(json.dumps(obj, separators=(",", ":")) + "\n")
-                proc.stdin.flush()
-            except Exception as exc:
-                raise SteamCloudError(f"Ошибка записи в Steam worker: {exc}") from exc
-            line = self._readline_with_timeout(timeout)
-            try:
-                resp = json.loads(line)
-            except Exception as exc:
-                raise SteamCloudError(
-                    f"Steam worker вернул не JSON: {line[:500]!r}"
-                ) from exc
-            if resp.get("type") == "Error":
-                raise SteamCloudError(resp.get("message", "Unknown worker error"))
-            return resp
+            self._ensure_unlocked()
+            return self._request_unlocked(obj, timeout)
 
     def connect(self, app_id: int = APP_ID) -> None:
         resp = self.request({"type": "Connect", "app_id": app_id}, timeout=30)
@@ -176,6 +273,12 @@ class SteamWorker:
         data = resp.get("data")
         if not isinstance(data, list):
             raise SteamCloudError("ReadFile: поле data отсутствует")
+        if len(data) > MAX_FILE_BYTES:
+            with self._lock:
+                self._invalidate_unlocked()
+            raise SteamCloudError(
+                f"ReadFile: файл слишком большой (>{MAX_FILE_BYTES} bytes)"
+            )
         try:
             return bytes(data)
         except Exception as exc:
@@ -187,7 +290,9 @@ class SteamWorker:
         # Stream one JSON line directly into the child's stdin in small chunks.
         # The Rust side still receives the same protocol, but our memory stays sane.
         with self._lock:
-            proc = self._ensure()
+            self._ensure_unlocked()
+            proc = self.proc
+            assert proc is not None
             assert proc.stdin
             try:
                 prefix = '{"type":"WriteFile","filename":' + json.dumps(filename) + ',"data":['
@@ -204,13 +309,10 @@ class SteamWorker:
                 proc.stdin.write("]}\n")
                 proc.stdin.flush()
             except Exception as exc:
+                self._invalidate_unlocked()
                 raise SteamCloudError(f"Ошибка streaming WriteFile в Steam worker: {exc}") from exc
 
-            line = self._readline_with_timeout(300)
-            try:
-                resp = json.loads(line)
-            except Exception as exc:
-                raise SteamCloudError(f"Steam worker вернул не JSON после WriteFile: {line[:500]!r}") from exc
+            resp = self._wait_response_unlocked(300)
             if resp.get("type") == "Error":
                 raise SteamCloudError(resp.get("message", "Unknown worker error"))
             if resp.get("type") != "Ok":
@@ -235,14 +337,11 @@ class SteamWorker:
         return False
 
     def close(self) -> None:
-        if not self.proc:
-            return
-        try:
-            self.request({"type": "Exit"}, timeout=2)
-        except Exception:
-            pass
-        try:
-            self.proc.terminate()
-        except Exception:
-            pass
-        self.proc = None
+        with self._lock:
+            if not self.proc:
+                return
+            try:
+                self._request_unlocked({"type": "Exit"}, timeout=2)
+            except Exception:
+                pass
+            self._invalidate_unlocked()
