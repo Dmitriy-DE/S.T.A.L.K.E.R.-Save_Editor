@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **B01 / issue #16**. S01–S06, P01 и P02, код P03, U01–U06 приняты в `main`; P03 runner gate остаётся открытым после startup failure запусков без jobs. U04 даёт immutable preview/local apply, U05 — журнал/hash browser и безопасное восстановление в новую копию, U06 — Steam Cloud UI со строгими verified/uncertain states. B01 добавляет standalone packaging; до фактического runner/build evidence он остаётся в работе. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **B02 / issue #17**. S01–S06, P01 и P02, код P03, U01–U06 приняты в `main`; B01 code принят через PR #44 и дал локальный Linux bundle, но Windows/runner gate ещё открыт. P03 runner gate остаётся открытым после startup failure запусков без jobs. U04 даёт immutable preview/local apply, U05 — журнал/hash browser и безопасное восстановление в новую копию, U06 — Steam Cloud UI со строгими verified/uncertain states. B02 ведёт acceptance matrix и release decision; до Windows/DPI/clean-machine evidence остаётся `in_progress`. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -19,8 +19,8 @@
 | [U04](U04.md) | Предпросмотр изменений и безопасный apply | U03 | accepted (PR #41) | [#13](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13), [PR #41](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41) |
 | [U05](U05.md) | Журнал backup и восстановление локальной копии | U04, S03 | accepted (PR #42) | [#14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14), [PR #42](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42) |
 | [U06](U06.md) | Qt Steam Cloud и состояния синхронизации | U04, U05, S06 | accepted (PR #43) | [#15](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15), [PR #43](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43) |
-| [B01](B01.md) | Воспроизводимые standalone сборки | U06, P03 | in_progress | [#16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16) |
-| [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | waiting_dependencies | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |
+| [B01](B01.md) | Воспроизводимые standalone сборки | U06, P03 | accepted (PR #44; Windows/runner gate pending) | [#16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16), [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44) |
+| [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | in_progress | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |
 | [R01](R01.md) | Контролируемый corpus и формат evidence | S01 | waiting_dependencies | [#18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/18) |
 | [R02](R02.md) | Каталог SID отдельно от доказанного save mapping | R01 | waiting_dependencies | [#19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/19) |
 | [R03](R03.md) | Найти и доказать поле прочности | R01 | waiting_dependencies | [#20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/20) |

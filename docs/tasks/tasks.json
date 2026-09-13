@@ -513,9 +513,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_review",
+    "status": "accepted",
     "path": "docs/tasks/B01.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44"
   },
   {
     "id": "B02",
@@ -542,7 +543,7 @@
     ],
     "gate": "manual",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/B02.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17"
   },

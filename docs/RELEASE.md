@@ -40,6 +40,15 @@ issue #9 оставлена открытой до появления насто�
 | Steam helper connect/list/download | обязательно для cloud claim | обязательно для cloud claim | pinned helper |
 | Live upload/persist/read-back/GFN load/re-save | только по поручению владельца | только по поручению владельца | disposable slot, game build записан |
 
+## Снимок B02 на 2026-09-13
+
+Код B01 принят через [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44),
+merge `3346167`. Linux bundle smoke на локальном x86_64 host PASS; точные
+hashes и NOT_RUN строки находятся в
+[`docs/evidence/BETA_ACCEPTANCE.md`](evidence/BETA_ACCEPTANCE.md). Windows
+build, target runner, native DPI/keyboard, Steam helper и game/GFN reload пока
+не доказаны, поэтому GitHub prerelease не создаётся.
+
 При отсутствии live cloud evidence можно выпустить обозначенную local-only experimental beta с отключённым или явно непроверенным cloud path; нельзя маркировать cloud verified. При отсутствии Windows evidence не объявлять cross-platform beta завершённой.
 
 ## Формат evidence
