@@ -2,14 +2,18 @@
 
 Дата отчёта: 2026-09-13. Source commit для локального package build:
 `14650ce83e8e4519d771b36b14a02ce73fc09d5f`. Этот файл фиксирует проверенное
-состояние и не превращает отсутствующие Windows/Steam данные в PASS.
+состояние и не превращает отсутствующие Windows/Steam данные в PASS. После
+локальной UI-интеграции U07 Qt regression suite содержит 105 тестов; package
+hashes ниже относятся к более раннему B01 source commit и не являются
+артефактами U07.
 
 ## Матрица
 
 | Gate | Linux x86_64 | Windows x64 | Evidence / причина |
 |---|---|---|---|
-| Source suite | **PASS** — 82 passed, 5 skipped | **NOT_RUN** | `python3 -m pytest tests -q`; GitHub runner jobs не стартуют |
-| Qt suite | **PASS** — 103 passed | **NOT_RUN** | `QT_QPA_PLATFORM=offscreen /tmp/save-editor-ui-venv/bin/python -m pytest tests -q` |
+| Source suite | **PASS** — 82 passed, 6 skipped | **NOT_RUN** | `python3 -m pytest tests -q`; optional Qt test module is skipped in the core environment; GitHub runner jobs не стартуют |
+| Qt suite | **PASS** — 105 passed | **NOT_RUN** | `QT_QPA_PLATFORM=offscreen /tmp/save-editor-ui-venv/bin/python -m pytest tests -q` |
+| U07 shell regression | **PASS** — 2 passed | **NOT_RUN** | Empty shell, sidebar navigation and snapshot-backed metadata; offscreen Linux |
 | `make check` | **PASS** | **NOT_RUN** | Python 3.14.4 host; Windows command не выполнялся |
 | Standalone build | **PASS** — tar.gz + `.deb` | **NOT_RUN** | B01 builder на Linux host; Windows должен собираться на Windows |
 | Packaged `--help`/diagnostic | **PASS** | **NOT_RUN** | оба Linux executables exit 0, `decoder=loaded` |
