@@ -25,9 +25,10 @@ from save_format import (
     SaveInfo,
     decompress_save,
     inspect_save,
-    patch_save,
     record_hex,
 )
+from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.prepare import prepare_edit
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
@@ -524,22 +525,49 @@ class App(tk.Tk):
         ts=dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         return BACKUP_DIR/f"{stem}_{ts}_{suffix}.sav"
 
-    def build_patch_args(self):
+    def build_edit_plan(self) -> EditPlan:
+        if not self.analysis_sha256:
+            raise SaveError("Сначала проанализируй сейв")
         money=self.parse_new_money() if self.money_enabled_var.get() else None
         if money is None and not (self.staged_counts or self.staged_moves or self.staged_detach or self.staged_attach or self.staged_raw):
             raise SaveError("Нет изменений")
         if (self.staged_moves or self.staged_detach or self.staged_attach or self.staged_raw) and not self.experimental_unlocked.get():
             raise SaveError("Есть experimental changes, но risk checkbox выключен")
-        return money
+        if self.source_kind == "local":
+            if self.analysis_local_path is None:
+                raise SaveError("У локального сейва отсутствует путь источника")
+            locator = str(self.analysis_local_path)
+        elif self.source_kind == "cloud":
+            if not self.analysis_cloud_name:
+                raise SaveError("У cloud сейва отсутствует имя файла")
+            locator = self.analysis_cloud_name
+        else:
+            raise SaveError("Неизвестный source mode")
+        return EditPlan(
+            source=SourceRef(kind=self.source_kind, locator=locator, sha256=self.analysis_sha256),
+            money=money,
+            stacks=tuple(self.staged_counts.items()),
+            moves=tuple((handle, x, y) for handle, (x, y) in self.staged_moves.items()),
+            detach=tuple(self.staged_detach.items()),
+            attach=tuple(
+                (handle, x, y, width, height)
+                for handle, (x, y, width, height) in self.staged_attach.items()
+            ),
+            raw=tuple(self.staged_raw),
+        )
+
+    def build_patch_args(self):
+        """Compatibility helper for callers that only need the money value."""
+        return self.build_edit_plan().money
 
     # ---------------- Apply/export/upload ----------------
     def apply_changes(self):
         try:
             if not self.analysis_info or not self.analysis_data or not self.analysis_sha256: raise SaveError("Сначала проанализируй сейв")
-            money=self.build_patch_args(); self.refresh_changes()
+            plan=self.build_edit_plan(); self.refresh_changes()
         except Exception as exc: messagebox.showerror(APP_NAME,str(exc)); return
 
-        experimental=bool(self.staged_moves or self.staged_detach or self.staged_attach or self.staged_raw)
+        experimental=bool(plan.moves or plan.detach or plan.attach or plan.raw)
         warning="\n\nВНИМАНИЕ: есть EXPERIMENTAL structural/raw edits." if experimental else ""
         if not messagebox.askyesno(APP_NAME,"Будет создан backup и выполнен full round-trip check."+warning+"\nПродолжить?"):
             return
@@ -548,47 +576,39 @@ class App(tk.Tk):
             default=(self.analysis_local_path.stem+"_EDITED.sav") if self.analysis_local_path else "edited.sav"
             out=filedialog.asksaveasfilename(title="Сохранить edited .sav",defaultextension=".sav",initialfile=default,filetypes=[("STALKER 2 save","*.sav")])
             if not out: return
-            self.apply_local(Path(out),money)
+            self.apply_local(Path(out),plan)
         elif self.source_kind=="cloud":
-            self.apply_cloud(money)
+            self.apply_cloud(plan)
         else:
             messagebox.showerror(APP_NAME,"Неизвестный source mode")
 
-    def do_patch(self, original:bytes, money:int|None):
-        return patch_save(
-            original,
-            new_money=money,
-            stack_counts=dict(self.staged_counts),
-            moves=dict(self.staged_moves),
-            detach=dict(self.staged_detach),
-            attach_orphans=dict(self.staged_attach),
-            raw_patches=tuple(self.staged_raw),
-        )
+    def do_patch(self, original:bytes, plan: EditPlan) -> PreparedEdit:
+        return prepare_edit(original, plan)
 
-    def apply_local(self,out:Path,money:int|None):
+    def apply_local(self,out:Path,plan:EditPlan):
         original=self.analysis_data; assert original is not None
         stem=(self.analysis_local_path.stem if self.analysis_local_path else "local")
         def job():
             bp=self.backup_path(stem,"ORIGINAL"); bp.write_bytes(original); self.msgq.put(("log",f"Backup: {bp}"))
-            r=self.do_patch(original,money); out.write_bytes(r.data); after=inspect_save(r.data,with_inventory=True)
-            self.msgq.put(("log",f"Local export OK: {out} ({human_size(len(r.data))})"))
-            self.msgq.put(("analysis",("local",None,out,after,r.data,decompress_save(r.data))))
+            prepared=self.do_patch(original,plan); out.write_bytes(prepared.data); after=inspect_save(prepared.data,with_inventory=True)
+            self.msgq.put(("log",f"Local export OK: {out} ({human_size(len(prepared.data))})"))
+            self.msgq.put(("analysis",("local",None,out,after,prepared.data,decompress_save(prepared.data))))
             self.msgq.put(("info",f"Готово.\nOutput: {out}\nBackup: {bp}\nCRC/Kraken round-trip: OK"))
         self.bg(job)
 
-    def apply_cloud(self,money:int|None):
+    def apply_cloud(self,plan:EditPlan):
         try:
             cloud=self.selected_cloud()
             if cloud.name!=self.analysis_cloud_name: raise SaveError("Выбранный cloud slot не совпадает с анализированным")
         except Exception as exc: messagebox.showerror(APP_NAME,str(exc)); return
-        analyzed_sha=self.analysis_sha256; assert analyzed_sha
+        analyzed_sha=plan.source.sha256
         def job():
             w=self.ensure_connection(); self.msgq.put(("log",f"1/8 fresh download {cloud.name}"))
             original=w.read_file(cloud.name); fresh=hashlib.sha256(original).hexdigest()
             if fresh!=analyzed_sha: raise SaveError("Cloud save изменился после анализа. Re-analyze; upload отменён.")
             bp=self.backup_path(Path(cloud.name).stem,"ORIGINAL"); bp.write_bytes(original); self.msgq.put(("log",f"2/8 backup {bp}"))
             before=inspect_save(original,with_inventory=True); self.msgq.put(("log",f"3/8 source verify OK money={before.money}"))
-            r=self.do_patch(original,money); edited=r.data; after=inspect_save(edited,with_inventory=True)
+            prepared=self.do_patch(original,plan); edited=prepared.data; after=inspect_save(edited,with_inventory=True)
             ep=self.backup_path(Path(cloud.name).stem,"EDITED"); ep.write_bytes(edited); self.msgq.put(("log",f"4/8 patch+roundtrip OK; recovery {ep}"))
             self.msgq.put(("log","5/8 WriteFile same Steam RemoteStorage path")); w.write_file(cloud.name,edited); w.sync()
             self.msgq.put(("log","6/8 wait persisted=true"))
