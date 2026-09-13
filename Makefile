@@ -1,9 +1,12 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check selftest run
+.PHONY: check test selftest run
 check:
 	$(PYTHON) -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
+
+test:
+	$(PYTHON) -m pytest tests
 
 selftest: check
 	@test -n "$(SAVE)" || (echo 'usage: make selftest SAVE=/path/to/file.sav' && exit 2)
