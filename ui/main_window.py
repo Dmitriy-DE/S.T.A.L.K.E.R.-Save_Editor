@@ -10,7 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Qt, Signal
+from PySide6.QtCore import QThread, QUrl, Qt, Signal
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
@@ -31,6 +32,7 @@ from editor.platforms import backup_dirs
 from save_format import SaveError, SaveInfo
 
 from .changes_view import ChangesView
+from .backups_view import BackupView, RestoreWorker
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
 
@@ -74,12 +76,13 @@ class InspectWorker(QThread):
 
 
 class MainWindow(QMainWindow):
-    """Qt shell for local analysis; editing tabs remain explicit placeholders."""
+    """Qt shell for local analysis, safe edits and local backup restore."""
 
     analysis_ready = Signal(object)
     analysis_failed = Signal(str)
     preview_ready = Signal(object)
     apply_ready = Signal(object)
+    restore_ready = Signal(object)
     operation_failed = Signal(str)
 
     def __init__(self, service: EditorService) -> None:
@@ -93,7 +96,7 @@ class MainWindow(QMainWindow):
         self._inspect_thread: QThread | None = None
         self._inspect_worker: InspectWorker | None = None
         self._pending_path: Path | None = None
-        self._operation_thread: OperationWorker | None = None
+        self._operation_thread: QThread | None = None
         self._operation_kind: str | None = None
 
         self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
@@ -130,7 +133,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_overview_tab(), "Обзор")
         self.tabs.addTab(self._build_inventory_tab(), "Инвентарь")
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
-        self.tabs.addTab(self._placeholder("Backup journal и restore flow подключаются в U05."), "Резервные копии")
+        self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
         layout.addWidget(self.tabs, 1)
 
         actions = QHBoxLayout()
@@ -203,6 +206,13 @@ class MainWindow(QMainWindow):
         self.changes_view.apply_requested.connect(self._choose_and_start_apply)
         self.changes_view.choose_output_requested.connect(self._choose_output)
         return self.changes_view
+
+    def _build_backups_tab(self) -> QWidget:
+        self.backups_view = BackupView(backup_dirs=backup_dirs(), parent=self)
+        self.backups_view.restore_requested.connect(self._start_restore)
+        self.backups_view.folder_open_requested.connect(self._open_backup_folder)
+        self.backups_view.refresh()
+        return self.backups_view
 
     @staticmethod
     def _placeholder(text: str) -> QWidget:
@@ -434,12 +444,14 @@ class MainWindow(QMainWindow):
             apply=can_apply,
             busy=busy,
         )
+        self.backups_view.set_busy(busy)
 
     def _show_operation_error(self, message: str) -> None:
         self.status_label.setText("Операция не выполнена")
         self.error_label.setText(message)
         self.error_label.setVisible(True)
         self.changes_view.set_error(message)
+        self.backups_view.set_error(message)
         self.operation_failed.emit(message)
 
     def _invalidate_preview(self, reason: str) -> None:
@@ -509,6 +521,7 @@ class MainWindow(QMainWindow):
     def _on_operation_progress(self, message: str) -> None:
         self.status_label.setText(message)
         self.changes_view.set_progress(message)
+        self.backups_view.set_progress(message)
 
     def _on_operation_failed(self, message: str) -> None:
         if "SHA256" in message or "Источник изменился" in message:
@@ -520,6 +533,7 @@ class MainWindow(QMainWindow):
         self._operation_thread = None
         self._operation_kind = None
         self.changes_view.set_busy(False)
+        self.backups_view.set_busy(False)
         self._update_action_buttons()
 
     def _choose_output(self) -> None:
@@ -592,6 +606,38 @@ class MainWindow(QMainWindow):
         self.changes_view.mark_applied(receipt)
         self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
         self.apply_ready.emit(receipt)
+
+    def _start_restore(self, record, output_path: Path) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            return
+        if getattr(record, "status", None) != "verified":
+            self._show_operation_error("Выбранный backup не прошёл проверку SHA256")
+            return
+        worker = RestoreWorker(self.service, record, Path(output_path), parent=self)
+        worker.completed.connect(self._on_restore_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "restore"
+        self._operation_thread = worker
+        self.backups_view.set_progress("Запуск restore…")
+        self.status_label.setText("Восстановление копии…")
+        self._update_action_buttons()
+        worker.start()
+
+    def _on_restore_ready(self, receipt) -> None:
+        self.backups_view.mark_restored(receipt)
+        self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
+        self.restore_ready.emit(receipt)
+
+    def _open_backup_folder(self, path: Path) -> None:
+        folder = Path(path).expanduser()
+        if not folder.is_dir():
+            self._show_operation_error(f"Папка backup не существует: {folder}")
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder))):
+            self._show_operation_error(f"Не удалось открыть папку backup: {folder}")
 
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
         if self._operation_thread is not None and self._operation_thread.isRunning():

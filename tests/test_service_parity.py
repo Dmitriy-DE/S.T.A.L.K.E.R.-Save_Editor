@@ -70,6 +70,21 @@ def test_service_inspect_and_dependencies_are_injectable(
     assert cloud_calls == [(tmp_path / "backup", 9)]
 
 
+def test_service_restore_dependency_is_injectable(tmp_path: Path) -> None:
+    calls: list[tuple[Path, Path]] = []
+
+    def restore(journal: Path, output: Path):
+        calls.append((journal, output))
+        return "restore-receipt"
+
+    service = EditorService(restore_fn=restore)
+    journal = tmp_path / "backup.json"
+    output = tmp_path / "restored.sav"
+
+    assert service.restore_local(journal, output) == "restore-receipt"
+    assert calls == [(journal, output)]
+
+
 def test_service_module_has_no_ui_imports() -> None:
     text = (Path(__file__).parents[1] / "editor" / "service.py").read_text(
         encoding="utf-8"

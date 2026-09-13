@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **U04 / issue #13**. S01–S06, P01 и P02, код P03, U01, U02 и U03 приняты в `main`; P03 runner gate остаётся открытым после четырёх `startup_failure` запусков без jobs. U04 добавляет immutable preview, stale-SHA guard и local apply через общий storage; backup/restore и Steam UI остаются U05/U06. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **U05 / issue #14**. S01–S06, P01 и P02, код P03, U01–U04 приняты в `main`; P03 runner gate остаётся открытым после startup failure запусков без jobs. U04 добавляет immutable preview и local apply через общий storage; U05 добавляет журнал/hash browser и безопасное восстановление в новую копию. Steam UI и standalone packaging остаются U06/B01. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -16,8 +16,8 @@
 | [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | accepted | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10), [PR #38](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/38) |
 | [U02](U02.md) | Qt shell и открытие локального сохранения | U01, P03 | accepted (local; P03/native gates pending) | [#11](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11), [PR #39](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39) |
 | [U03](U03.md) | Инвентарь: поиск, фильтры и редактирование стаков | U02, S04 | accepted | [#12](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12), [PR #40](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/40) |
-| [U04](U04.md) | Предпросмотр изменений и безопасный apply | U03 | in_progress | [#13](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13) |
-| [U05](U05.md) | Журнал backup и восстановление локальной копии | U04, S03 | waiting_dependencies | [#14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14) |
+| [U04](U04.md) | Предпросмотр изменений и безопасный apply | U03 | accepted (PR #41) | [#13](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13), [PR #41](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41) |
+| [U05](U05.md) | Журнал backup и восстановление локальной копии | U04, S03 | in_progress | [#14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14) |
 | [U06](U06.md) | Qt Steam Cloud и состояния синхронизации | U04, U05, S06 | waiting_dependencies | [#15](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15) |
 | [B01](B01.md) | Воспроизводимые standalone сборки | U06, P03 | waiting_dependencies | [#16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16) |
 | [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | waiting_dependencies | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |

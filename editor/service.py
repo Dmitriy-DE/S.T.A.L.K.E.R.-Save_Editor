@@ -9,7 +9,13 @@ from save_format import SaveInfo, inspect_save
 
 from .models import CloudReceipt, EditPlan, PreparedEdit
 from .prepare import prepare_edit
-from .storage import ExportReceipt, export_local as storage_export_local
+from .storage import (
+    BackupRecord,
+    ExportReceipt,
+    RestoreReceipt,
+    restore_backup as storage_restore_backup,
+    export_local as storage_export_local,
+)
 from .transactions import CloudTransport, upload_cloud as transactions_upload_cloud
 
 
@@ -17,6 +23,7 @@ InspectFn = Callable[..., SaveInfo]
 PrepareFn = Callable[[bytes, EditPlan], PreparedEdit]
 ExportFn = Callable[[Path, Path, PreparedEdit, Path], ExportReceipt]
 UploadFn = Callable[..., CloudReceipt]
+RestoreFn = Callable[[Path | BackupRecord, Path], RestoreReceipt]
 
 
 class EditorService:
@@ -34,11 +41,13 @@ class EditorService:
         prepare_fn: PrepareFn | None = None,
         export_fn: ExportFn | None = None,
         upload_fn: UploadFn | None = None,
+        restore_fn: RestoreFn | None = None,
     ) -> None:
         self._inspect_fn = inspect_fn or inspect_save
         self._prepare_fn = prepare_fn or prepare_edit
         self._export_fn = export_fn or storage_export_local
         self._upload_fn = upload_fn or transactions_upload_cloud
+        self._restore_fn = restore_fn or storage_restore_backup
 
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         """Return the read-only save snapshot used by every front end."""
@@ -79,6 +88,15 @@ class EditorService:
             persisted_timeout=persisted_timeout,
             on_stage=on_stage,
         )
+
+    def restore_local(
+        self,
+        journal_or_record: Path | BackupRecord,
+        output_path: Path,
+    ) -> RestoreReceipt:
+        """Restore a verified local backup through the shared storage boundary."""
+
+        return self._restore_fn(journal_or_record, output_path)
 
 
 __all__ = ["EditorService"]
