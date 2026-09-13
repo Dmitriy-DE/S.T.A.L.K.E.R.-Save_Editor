@@ -386,9 +386,14 @@ class App(tk.Tk):
         self.analysis_sha256=info.sha256; self.analysis_info=info; self.analysis_data=data; self.analysis_raw=raw
         self.clear_all_staged(refresh=False)
         src=Path(cloud_name).name if cloud_name else str(local_path)
-        self.analysis_var.set(f"{src} · money {fmt_int(info.money or 0)} · inventory {len(info.inventory)} · cells {info.grid_cell_count} · orphans {len(info.orphans)} · SHA {info.sha256[:12]}…")
+        parsed_handles = len({item.handle for item in info.inventory})
+        coverage = f"grid handles parsed/total {parsed_handles}/{info.grid_handle_count}"
+        unresolved = f" · unresolved {len(info.unresolved_handles)}" if info.unresolved_handles else ""
+        self.analysis_var.set(f"{src} · money {fmt_int(info.money or 0)} · inventory {len(info.inventory)} · {coverage} · cells {info.grid_cell_count} · orphans {len(info.orphans)}{unresolved} · SHA {info.sha256[:12]}…")
         self.populate_inventory(info.inventory); self.populate_orphans(info.orphans); self.refresh_changes()
-        self.log(f"Analysis OK: money={info.money}, inventory={len(info.inventory)}, owned={len(info.owned_handles)}, grid-cells={info.grid_cell_count}, orphans={len(info.orphans)}")
+        self.log(f"Analysis OK: money={info.money}, inventory={len(info.inventory)}, owned={len(info.owned_handles)}, grid-handles={parsed_handles}/{info.grid_handle_count}, grid-cells={info.grid_cell_count}, orphans={len(info.orphans)}, unresolved={len(info.unresolved_handles)}")
+        for warning in info.warnings:
+            self.log(f"Warning: {warning}")
 
     def populate_inventory(self, items: tuple[InventoryItem,...]):
         for iid in self.inv_tree.get_children(): self.inv_tree.delete(iid)
@@ -416,7 +421,8 @@ class App(tk.Tk):
         try:
             item=self.selected_inventory_item(); self.stack_count_var.set(str(self.staged_counts.get(item.handle,item.count)))
             self.move_x_var.set(str(self.staged_moves.get(item.handle,(item.x,item.y))[0])); self.move_y_var.set(str(self.staged_moves.get(item.handle,(item.x,item.y))[1]))
-            self.stack_selected_var.set(f"{item.category} {item.handle_hex} @ {item.position} {item.size_text} count={item.count} type-key={item.type_key}")
+            status = "editable" if item.editable_count else ("unresolved/read-only" if self.analysis_info and item.handle in self.analysis_info.unresolved_handles else "read-only")
+            self.stack_selected_var.set(f"{item.category} {item.handle_hex} @ {item.position} {item.size_text} count={item.count} type-key={item.type_key} [{status}]")
             self.show_record_hex(item)
         except Exception: pass
 

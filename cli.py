@@ -85,14 +85,16 @@ data = src.read_bytes()
 
 if a.cmd == "info":
     x = inspect_save(data)
-    print(f"CRC: OK\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}")
+    parsed_grid_handles = len({item.handle for item in x.inventory})
+    print(f"CRC: OK\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid handles parsed/total: {parsed_grid_handles}/{x.grid_handle_count}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}\nUnresolved handles: {len(x.unresolved_handles)}")
+    for warning in x.warnings:
+        print(f"Warning: {warning}")
 elif a.cmd == "inventory":
     x = inspect_save(data)
-    print("POS   SIZE  TYPE                 KEY     COUNT   WEIGHT    HANDLE       EDIT")
+    print("POS   SIZE  TYPE                 KEY     COUNT   WEIGHT    HANDLE       STATUS")
     for it in x.inventory:
-        if not a.all and not it.editable_count:
-            continue
-        print(f"{it.position:<5} {it.size_text:<5} {it.category:<20} {it.type_key:<7} {it.count:>6} {it.total_weight:>9.3f}  {it.handle_hex}  {'yes' if it.editable_count else 'no'}")
+        status = "editable" if it.editable_count else ("unresolved" if it.handle in x.unresolved_handles else "read-only")
+        print(f"{it.position:<5} {it.size_text:<5} {it.category:<20} {it.type_key:<7} {it.count:>6} {it.total_weight:>9.3f}  {it.handle_hex}  {status}")
 elif a.cmd == "orphans":
     x = inspect_save(data)
     print("TYPE                 KEY     COUNT  RECORDPOS     HANDLE")

@@ -42,7 +42,15 @@ def main(path: Path) -> None:
     assert movable.handle not in {c.handle for c in sf.locate_inventory_layout(raw).grid_cells}
     print("detach structural round-trip OK", movable.handle_hex)
 
-    orphan = next((o for o in info.orphans if o.x in (255, 65535) or o.y in (255, 65535)), None)
+    orphan = next(
+        (
+            o
+            for o in info.orphans
+            if (o.x in (255, 65535) or o.y in (255, 65535))
+            and o.kind_code in sf.KNOWN_KIND_CODES
+        ),
+        None,
+    )
     if orphan:
         r = sf.patch_save(data, attach_orphans={orphan.handle: (0, 20, 1, 1)})
         i = sf.inspect_save(r.data)

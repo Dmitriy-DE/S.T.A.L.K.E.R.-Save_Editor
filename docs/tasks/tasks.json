@@ -114,9 +114,10 @@
     ],
     "gate": "code",
     "priority": "P0",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/S04.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/32"
   },
   {
     "id": "S05",
