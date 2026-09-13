@@ -59,3 +59,13 @@ def test_plan_is_explicitly_non_cross_compiling(tmp_path: Path, monkeypatch: pyt
     result = build.plan(target="linux", output_dir=tmp_path, version="0.3.0-experimental")
     assert result["cross_compile"] is False
     assert result["artifacts"][0].endswith(".tar.gz")
+
+
+def test_debian_dependency_tracks_the_build_host_libc() -> None:
+    assert build.libc_requirement("2.39") == "2.39"
+    assert build.libc_requirement("2.35.0") == "2.35"
+    assert build.libc_requirement("") == build.FALLBACK_LIBC_VERSION
+    assert build.libc_requirement("unknown") == build.FALLBACK_LIBC_VERSION
+    manifest = build.build_manifest(root=ROOT, target="linux", version="test")
+    assert manifest["libc_minimum"] == build.libc_requirement()
+    assert build.build_manifest(root=ROOT, target="windows", version="test")["libc_minimum"] is None

@@ -163,6 +163,24 @@ def dependency_manifest(target: str) -> dict[str, str]:
     }
 
 
+# Debian dependency floor.  The bundle links against the glibc of the build
+# host, so a hard-coded minimum silently under-declares the requirement as soon
+# as the builder moves to a newer runner image.  2.35 (Ubuntu 22.04) is only the
+# fallback for hosts where the version cannot be detected.
+FALLBACK_LIBC_VERSION = "2.35"
+
+
+def libc_requirement(host_version: str | None = None) -> str:
+    """Return the libc6 minimum matching the host that produced the bundle."""
+
+    if host_version is None:
+        _, host_version = platform.libc_ver()
+    parts = (host_version or "").split(".")
+    if len(parts) >= 2 and all(part.isdigit() for part in parts[:2]):
+        return f"{int(parts[0])}.{int(parts[1])}"
+    return FALLBACK_LIBC_VERSION
+
+
 def build_manifest(*, root: Path, target: str, version: str) -> dict[str, object]:
     commit, dirty_paths = _git_state(root)
     return {
@@ -170,6 +188,7 @@ def build_manifest(*, root: Path, target: str, version: str) -> dict[str, object
         "version": version,
         "target": target,
         "architecture": "x86_64",
+        "libc_minimum": libc_requirement() if target == "linux" else None,
         "source_commit": commit,
         "source_dirty": bool(dirty_paths),
         "dirty_paths": list(dirty_paths),
@@ -355,10 +374,10 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors
-Depends: libc6 (>= 2.35)
+Depends: libc6 (>= {libc})
 Description: S.T.A.L.K.E.R. 2 save editor
  A local Qt editor with safe preview, backup and Steam Cloud workflows.
-""".format(version=_debian_version(version)),
+""".format(version=_debian_version(version), libc=libc_requirement()),
         encoding="utf-8",
     )
     scan_package_tree(stage)

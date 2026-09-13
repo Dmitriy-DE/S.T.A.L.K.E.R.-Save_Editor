@@ -18,13 +18,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          # Runner labels must name images GitHub still hosts.  A retired label
+          # (ubuntu-22.04, windows-2022) makes the whole run fail at startup
+          # before any job is created, which is how P03 produced five
+          # `startup_failure` results with an empty job list.
+          - os: ubuntu-24.04
             python: "3.11"
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             python: "3.12"
-          - os: windows-2022
+          - os: windows-2025
             python: "3.11"
-          - os: windows-2022
+          - os: windows-2025
             python: "3.12"
 
     steps:

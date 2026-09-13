@@ -17,9 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          # See .github/workflows/test.yml: only currently hosted runner labels
+          # are allowed.  The Linux bundle therefore targets the glibc of
+          # ubuntu-24.04; an Ubuntu 22.04 artifact needs a container build and
+          # is not claimed by this workflow.
+          - os: ubuntu-24.04
             target: linux
-          - os: windows-2022
+          - os: windows-2025
             target: windows
 
     steps:
