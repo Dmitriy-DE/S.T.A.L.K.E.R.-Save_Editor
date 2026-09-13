@@ -1,0 +1,3 @@
+# No pip dependencies for Linux x86_64 build.
+# tkinter comes from the OS package (python3-tk on Ubuntu/Debian).
+# vendor/ooz.abi3.so is bundled under GPL-3.0-compatible terms; see THIRD_PARTY_NOTICES.md.

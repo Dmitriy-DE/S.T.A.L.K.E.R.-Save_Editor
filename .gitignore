@@ -1,0 +1,20 @@
+# Private saves, captures, source conversations and local credentials
+.local/
+*.sav
+*.bak
+.env
+.env.*
+!.env.example
+# Python and build output
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+# Local editor configuration
+.idea/
+.vscode/

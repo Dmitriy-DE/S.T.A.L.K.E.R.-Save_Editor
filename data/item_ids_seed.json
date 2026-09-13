@@ -1,0 +1,25 @@
+{
+  "notice": "Seed/reference only. These are console SIDs from public sources; v0.3 does NOT yet map them to offline save object records automatically.",
+  "spawn_command": "XCreateItemInInventoryByID <SID> 0 <count> <durability>",
+  "items": [
+    {"sid":"Bandage","category":"consumable","name_en":"Bandage"},
+    {"sid":"Medkit","category":"consumable","name_en":"Medkit"},
+    {"sid":"ArmyMedkit","category":"consumable","name_en":"Army Medkit"},
+    {"sid":"AntiRad","category":"consumable","name_en":"Anti-Radiation Drugs"},
+    {"sid":"A545D","category":"ammo","name_en":"5.45x39 standard"},
+    {"sid":"A545A","category":"ammo","name_en":"5.45x39 AP"},
+    {"sid":"A545E","category":"ammo","name_en":"5.45x39 expanding"},
+    {"sid":"A918D","category":"ammo","name_en":"9x18 standard"},
+    {"sid":"A919D","category":"ammo","name_en":"9x19 standard"},
+    {"sid":"A045D","category":"ammo","name_en":".45 ACP FMJ"},
+    {"sid":"GunAK74_ST","category":"weapon","name_en":"AK-74"},
+    {"sid":"GunAKU_PP","category":"weapon","name_en":"AKS-74U"},
+    {"sid":"GunM16_ST","category":"weapon","name_en":"AR416/M16 family"},
+    {"sid":"GunDnipro_ST","category":"weapon","name_en":"Dnipro"},
+    {"sid":"GunKharod_ST","category":"weapon","name_en":"Kharod"},
+    {"sid":"GunGauss_SP","category":"weapon","name_en":"Gauss Rifle"},
+    {"sid":"GunObrez_SG","category":"weapon","name_en":"Boomstick/Sawed-off"},
+    {"sid":"GunRhino_HG","category":"weapon","name_en":"Rhino"},
+    {"sid":"GunM701_SP","category":"weapon","name_en":"M701"}
+  ]
+}
