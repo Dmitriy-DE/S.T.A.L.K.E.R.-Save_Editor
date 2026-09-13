@@ -283,7 +283,8 @@
     "status": "in_progress",
     "path": "docs/tasks/P03.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37",
+    "status_display": "in_progress (runner blocked)"
   },
   {
     "id": "U01",
@@ -350,7 +351,8 @@
     "status": "accepted",
     "path": "docs/tasks/U02.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39",
+    "status_display": "accepted (local; P03/native gates pending)"
   },
   {
     "id": "U03",
@@ -410,7 +412,8 @@
     "status": "accepted",
     "path": "docs/tasks/U04.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41",
+    "status_display": "accepted (PR #41)"
   },
   {
     "id": "U05",
@@ -446,7 +449,8 @@
     "status": "accepted",
     "path": "docs/tasks/U05.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42",
+    "status_display": "accepted (PR #42)"
   },
   {
     "id": "U06",
@@ -480,7 +484,8 @@
     "status": "accepted",
     "path": "docs/tasks/U06.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43",
+    "status_display": "accepted (PR #43)"
   },
   {
     "id": "U07",
@@ -511,7 +516,8 @@
     "status": "accepted",
     "path": "docs/tasks/U07.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47",
+    "status_display": "accepted (PR #47)"
   },
   {
     "id": "B01",
@@ -547,7 +553,8 @@
     "status": "accepted",
     "path": "docs/tasks/B01.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16",
-    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44",
+    "status_display": "accepted (PR #44; Windows/runner gate pending)"
   },
   {
     "id": "B02",

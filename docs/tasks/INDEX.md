@@ -2,6 +2,8 @@
 
 Текущий результат — **U07 принят через PR #47**, параллельно остаётся открытым **B02 / issue #17**. S01–S06, P01 и P02, код P03, U01–U07 приняты в `main`; B01 code принят через PR #44 и дал локальный Linux bundle, но Windows/runner gate ещё открыт. U07 добавляет визуальный Zone shell поверх существующего Qt workflow; B02 по-прежнему ведёт acceptance matrix и release decision. P03 runner gate остаётся открытым после startup failure запусков без jobs. До Windows/DPI/clean-machine evidence cross-platform beta остаётся `in_progress`. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Все 29 проектных issues отражены в карточках. Одна карточка — один PR.
 
+<!-- BEGIN GENERATED TASK TABLE -->
+
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
 | [S01](S01.md) | Переносимые fixtures и baseline-тесты | — | accepted | [#1](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/1), [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29) |
@@ -34,4 +36,8 @@
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
 
-[Машиночитаемые карточки](tasks.json) содержат те же ID, зависимости и issue URLs. [ROADMAP](../plans/ROADMAP.md) задаёт порядок этапов; [спецификация](../specs/CROSS_PLATFORM_EDITOR.md) — общие контракты. Статус меняется только по фактически принятому результату.
+<!-- END GENERATED TASK TABLE -->
+
+Таблица выше генерируется из [tasks.json](tasks.json) командой
+`python3 tools/render_task_index.py` (и проверяется `--check` в `make check` и в
+тестах). Правится tasks.json, не таблица. [ROADMAP](../plans/ROADMAP.md) задаёт порядок этапов; [спецификация](../specs/CROSS_PLATFORM_EDITOR.md) — общие контракты. Статус меняется только по фактически принятому результату.

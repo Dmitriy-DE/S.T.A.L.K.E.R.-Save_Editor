@@ -1,8 +1,8 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check lint typecheck test selftest run package-plan package
-check: lint typecheck
+.PHONY: check lint typecheck docs docs-check test selftest run package-plan package
+check: lint typecheck docs-check
 	$(PYTHON) -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
 lint:
@@ -10,6 +10,12 @@ lint:
 
 typecheck:
 	$(PYTHON) -m mypy
+
+docs:
+	$(PYTHON) tools/render_task_index.py
+
+docs-check:
+	$(PYTHON) tools/render_task_index.py --check
 
 test:
 	$(PYTHON) -m pytest tests
