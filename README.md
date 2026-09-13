@@ -40,8 +40,10 @@ sudo apt install python3 python3-tk
 `pyooz==0.0.8`; Linux при отсутствии pip wheel использует bundled fallback.
 При отсутствии execute-bit на Linux: `bash run.sh`. Steam нужен только для
 cloud-режима. Helper устанавливается отдельно; старый локальный tar.gz не
-является установленным приложением. Не выполняйте cloud-upload из
-автоматических тестов.
+является установленным приложением. Cloud-upload из автоматических
+тестов теперь блокируется в коде: `SteamWorker` отказывает в `Connect`/
+`WriteFile` для app_id игры под pytest, пока не выставлен
+`STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.
 
 Для нового Qt shell установи дополнительные зависимости и запусти модуль:
 

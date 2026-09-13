@@ -19,12 +19,37 @@ from editor.platforms import discover_helper
 
 __all__ = [
     "APP_ID",
+    "LIVE_WRITE_OVERRIDE_ENV",
     "SAVE_PREFIX",
     "CloudFile",
     "SteamCloudError",
     "SteamWorker",
     "discover_helper",
 ]
+
+LIVE_WRITE_OVERRIDE_ENV = "STALKER2_ALLOW_LIVE_CLOUD"
+
+
+def _refuse_automated_live_session(app_id: int, action: str) -> None:
+    """Block a real S.T.A.L.K.E.R. 2 cloud session started by a test run.
+
+    Project policy forbids cloud uploads from automated tests, but the only
+    thing enforcing it was a sentence in the README, and a test that reaches a
+    real SteamWorker overwrites a real save slot.  The guard keys on the game's
+    own app id, so lifecycle tests that drive the fake helper with a throwaway
+    id keep working and only the live game's cloud is protected.
+    """
+
+    if app_id != APP_ID or "PYTEST_CURRENT_TEST" not in os.environ:
+        return
+    if os.environ.get(LIVE_WRITE_OVERRIDE_ENV) == "1":
+        return
+    raise SteamCloudError(
+        f"Отказ: {action} для app_id={APP_ID} из автоматического теста. "
+        "Используй fake transport; для осознанного ручного прогона установи "
+        f"{LIVE_WRITE_OVERRIDE_ENV}=1."
+    )
+
 
 APP_ID = 1643320
 SAVE_PREFIX = "Stalker2/Saved/STEAM/SaveGames/Data/"
@@ -63,6 +88,9 @@ class SteamWorker:
         self._reader_thread: threading.Thread | None = None
         self._stderr_thread: threading.Thread | None = None
         self._stderr_tail: deque[str] = deque(maxlen=32)
+        # The app id of the last successful Connect, used by the live-session
+        # guard so a WriteFile is judged by the cloud it targets.
+        self.app_id: int | None = None
 
     def _reader_loop(
         self, proc: subprocess.Popen[str], responses: queue.Queue[object]
@@ -237,9 +265,11 @@ class SteamWorker:
             return self._request_unlocked(obj, timeout)
 
     def connect(self, app_id: int = APP_ID) -> None:
+        _refuse_automated_live_session(app_id, "Connect")
         resp = self.request({"type": "Connect", "app_id": app_id}, timeout=30)
         if resp.get("type") != "Connected":
             raise SteamCloudError(f"Неожиданный Connect response: {resp}")
+        self.app_id = app_id
 
     def list_files(self) -> list[CloudFile]:
         resp = self.request({"type": "GetFiles"}, timeout=45)
@@ -281,6 +311,7 @@ class SteamWorker:
             raise SteamCloudError("ReadFile: некорректный массив байт") from exc
 
     def write_file(self, filename: str, data: bytes) -> None:
+        _refuse_automated_live_session(self.app_id or 0, "WriteFile")
         # Worker IPC expects JSON Vec<u8>.  Never do list(data) for a 27 MB
         # rebuilt save: a Python list of 27 million ints can eat close to a GB.
         # Stream one JSON line directly into the child's stdin in small chunks.
