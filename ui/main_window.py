@@ -19,16 +19,16 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
+    QSpinBox,
     QTabWidget,
     QVBoxLayout,
     QWidget,
-    QHeaderView,
 )
 
 from editor.service import EditorService
 from save_format import SaveInfo
+
+from .inventory_view import InventoryView
 
 
 def _human_size(size: int) -> str:
@@ -79,6 +79,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.service = service
         self.snapshot: LocalSnapshot | None = None
+        self.staged_counts: dict[int, int] = {}
+        self.staged_money: int | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
         self._inspect_worker: InspectWorker | None = None
@@ -148,22 +150,40 @@ class MainWindow(QMainWindow):
         self.support_label = QLabel("Редактирование отключено до успешного анализа.")
         self.support_label.setWordWrap(True)
         form.addRow("Поддержка", self.support_label)
+
+        money_box = QGroupBox("Баланс (staged до preview)")
+        money_form = QFormLayout(money_box)
+        self.money_status_label = QLabel("Баланс не определён")
+        self.money_status_label.setWordWrap(True)
+        money_form.addRow("Текущее → новое", self.money_status_label)
+        money_row = QHBoxLayout()
+        self.money_spin = QSpinBox()
+        self.money_spin.setRange(0, 2_000_000_000)
+        self.money_spin.setEnabled(False)
+        self.money_spin.valueChanged.connect(self._on_money_value_changed)
+        money_row.addWidget(self.money_spin)
+        self.money_stage_button = QPushButton("Застейджить баланс")
+        self.money_stage_button.setEnabled(False)
+        self.money_stage_button.clicked.connect(self._stage_money)
+        money_row.addWidget(self.money_stage_button)
+        self.money_clear_button = QPushButton("Очистить")
+        self.money_clear_button.setEnabled(False)
+        self.money_clear_button.clicked.connect(self._clear_money)
+        money_row.addWidget(self.money_clear_button)
+        money_form.addRow("Новая сумма", money_row)
+        form.addRow(money_box)
         return tab
 
     def _build_inventory_tab(self) -> QWidget:
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-        self.inventory_table = QTableWidget(0, 7)
-        self.inventory_table.setHorizontalHeaderLabels(
-            ["Позиция", "Размер", "Категория", "Type-key", "Кол-во", "Вес", "Handle"]
-        )
-        self.inventory_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.inventory_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.inventory_table.setAlternatingRowColors(True)
-        header = self.inventory_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        layout.addWidget(self.inventory_table)
-        return tab
+        self.inventory_view = InventoryView(self)
+        self.inventory_view.stage_requested.connect(self._stage_stack_change)
+        self.inventory_view.clear_selected_requested.connect(self._clear_selected_stack)
+        self.inventory_view.clear_all_requested.connect(self._clear_all_stacks)
+        # Keep the old attribute available to small integrations while the
+        # actual view now uses a stable-handle QAbstractTableModel.
+        self.inventory_table = self.inventory_view.table
+        self.inventory_model = self.inventory_view.model
+        return self.inventory_view
 
     @staticmethod
     def _placeholder(text: str) -> QWidget:
@@ -223,7 +243,12 @@ class MainWindow(QMainWindow):
         self._inspect_worker = None
 
     def _render_snapshot(self, snapshot: LocalSnapshot) -> None:
+        # Keep the render helper safe for direct synthetic/UI tests as well as
+        # the signal path, where _on_analysis_ready already assigned it.
+        self.snapshot = snapshot
         info = snapshot.info
+        self.staged_counts.clear()
+        self.staged_money = None
         crc = "OK" if info.crc_ok else "FAIL"
         money = "unknown" if info.money is None else str(info.money)
         self.source_label.setText(
@@ -239,6 +264,7 @@ class MainWindow(QMainWindow):
             "Неизвестные handles остаются read-only."
             + (f" Предупреждения: {warnings}" if warnings else "")
         )
+        self._render_money(info)
         self._render_inventory(info)
         self.status_label.setText("Анализ завершён; snapshot готов")
         self.error_label.clear()
@@ -248,19 +274,110 @@ class MainWindow(QMainWindow):
         self.save_copy_button.setEnabled(True)
 
     def _render_inventory(self, info: SaveInfo) -> None:
-        self.inventory_table.setRowCount(len(info.inventory))
-        for row, item in enumerate(info.inventory):
-            values = (
-                item.position,
-                item.size_text,
-                item.category,
-                item.type_key,
-                str(item.count),
-                f"{item.total_weight:.3f}",
-                item.handle_hex,
+        self.inventory_view.set_items(info.inventory)
+        self.inventory_view.set_staged_counts(self.staged_counts)
+
+    def _render_money(self, info: SaveInfo) -> None:
+        if info.money is None or info.money_anchor_count != 1:
+            self.money_status_label.setText(
+                f"Только чтение: wallet anchor найден {info.money_anchor_count} раз(а)"
             )
-            for column, value in enumerate(values):
-                self.inventory_table.setItem(row, column, QTableWidgetItem(value))
+            self.money_spin.setEnabled(False)
+            self.money_stage_button.setEnabled(False)
+            self.money_clear_button.setEnabled(False)
+            return
+        effective = self.staged_money if self.staged_money is not None else info.money
+        self.money_status_label.setText(f"{info.money} → {effective}")
+        self.money_spin.blockSignals(True)
+        self.money_spin.setEnabled(True)
+        self.money_spin.setValue(effective)
+        self.money_spin.blockSignals(False)
+        self.money_stage_button.setEnabled(True)
+        self.money_clear_button.setEnabled(self.staged_money is not None)
+
+    def _on_money_value_changed(self, _value: int) -> None:
+        if self.snapshot is None or self.snapshot.info.money is None:
+            return
+        self.money_status_label.setText(
+            f"{self.snapshot.info.money} → {self.money_spin.value()}"
+        )
+
+    def _stage_money(self) -> None:
+        if self.snapshot is None:
+            return
+        info = self.snapshot.info
+        value = self.money_spin.value()
+        if info.money is None or info.money_anchor_count != 1:
+            self.money_status_label.setText("Только чтение: wallet anchor не подтверждён")
+            return
+        if not (0 <= value <= 2_000_000_000):
+            self.money_status_label.setText("Сумма отклонена: допустим диапазон 0..2000000000")
+            return
+        self.staged_money = None if value == info.money else value
+        self._render_money(info)
+        self.status_label.setText(
+            f"Staged: money={'нет' if self.staged_money is None else self.staged_money}, "
+            f"stacks={len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_money(self) -> None:
+        self.staged_money = None
+        if self.snapshot is not None:
+            self._render_money(self.snapshot.info)
+        self.status_label.setText("Staged balance очищен; bytes сейва не изменены")
+
+    def _find_inventory_item(self, handle: int):
+        if self.snapshot is None:
+            return None
+        return next(
+            (item for item in self.snapshot.info.inventory if item.handle == int(handle)),
+            None,
+        )
+
+    def _stage_stack_change(self, handle: int, new_count: int) -> None:
+        item = self._find_inventory_item(handle)
+        if item is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):08X} не найден в текущем snapshot"
+            )
+            return
+        if not (1 <= int(new_count) <= 1_000_000):
+            self.inventory_view.show_editability_message(
+                "Новое количество отклонено: допустим диапазон 1..1000000"
+            )
+            return
+        if not item.editable_count:
+            if item.count <= 1:
+                reason = "count=1"
+            else:
+                reason = f"неподтверждённый kind={item.kind_code}"
+            self.inventory_view.show_editability_message(f"Только чтение: {reason}")
+            return
+
+        value = int(new_count)
+        if value == item.count:
+            self.staged_counts.pop(item.handle, None)
+        else:
+            self.staged_counts[item.handle] = value
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.status_label.setText(
+            f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_selected_stack(self, handle: int) -> None:
+        self.staged_counts.pop(int(handle), None)
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.status_label.setText(
+            f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_all_stacks(self) -> None:
+        self.staged_counts.clear()
+        self.staged_money = None
+        if self.snapshot is not None:
+            self._render_money(self.snapshot.info)
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.status_label.setText("Все staged-правки очищены; bytes сейва не изменены")
 
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
