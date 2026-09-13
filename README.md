@@ -15,7 +15,7 @@
 
 Cloud-процесс в исходниках содержит fresh SHA, backup, persisted и read-back; worker lifecycle уже покрыт fake helper. Работа с реальным Steam/GFN в этом репозитории ещё не проверена. Локальный export использует общий backup/atomic path после S03. Остальные ограничения: [состояние и пробелы](docs/STATUS.md).
 
-## Запуск существующей версии на Linux
+## Запуск из исходников
 
 Требуются Python 3.10+ и Tkinter; проверялся локальный x86_64 Linux, не все дистрибутивы.
 
@@ -24,7 +24,18 @@ sudo apt install python3 python3-tk
 ./run.sh
 ```
 
-При отсутствии execute-bit: `bash run.sh`. Steam нужен только для cloud-режима. Helper устанавливается отдельно; старый локальный tar.gz не является установленным приложением. Не выполняйте cloud-upload из автоматических тестов.
+На Windows 11 x64 нужен Python 3.11+ с Tkinter; запусти `run.bat` из
+папки проекта (или `py -3 app.py`). Native decoder ставится зависимостью
+`pyooz==0.0.8`; Linux при отсутствии pip wheel использует bundled fallback.
+При отсутствии execute-bit на Linux: `bash run.sh`. Steam нужен только для
+cloud-режима. Helper устанавливается отдельно; старый локальный tar.gz не
+является установленным приложением. Не выполняйте cloud-upload из
+автоматических тестов.
+
+Новые настройки и backups пишутся в platform user-data directory
+(`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на
+Linux, `%APPDATA%\Stalker2SaveEditor` на Windows). Старый
+`~/Stalker2SaveEditor` читается как legacy fallback и не перемещается/удаляется.
 
 ```bash
 python3 cli.py info /path/to/save.sav

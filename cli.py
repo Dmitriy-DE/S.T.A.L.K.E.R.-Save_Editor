@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 from editor.models import EditPlan, SourceRef
+from editor.platforms import user_data_dir
 from editor.prepare import prepare_edit
 from editor.storage import export_local
 from save_format import RawPatch, SaveError, decompress_save, diff_record, inspect_save, record_hex
@@ -16,7 +17,7 @@ def parse_int(s: str) -> int:
     return int(s, 0)
 
 
-DEFAULT_BACKUP_DIR = Path.home() / "Stalker2SaveEditor" / "backups"
+DEFAULT_BACKUP_DIR = user_data_dir() / "backups"
 
 
 def add_export_args(parser: argparse.ArgumentParser) -> None:

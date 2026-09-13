@@ -222,6 +222,7 @@
     "files": [
       "editor/platforms.py",
       "app.py",
+      "cli.py",
       "steam_cloud.py",
       "run.bat",
       "run.sh",
@@ -241,9 +242,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/P02.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/35"
   },
   {
     "id": "P03",
