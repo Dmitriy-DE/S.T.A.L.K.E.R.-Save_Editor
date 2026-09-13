@@ -347,9 +347,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/U02.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39"
   },
   {
     "id": "U03",
@@ -376,7 +377,7 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/U03.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12"
   },
