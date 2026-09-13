@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **S05 / issue #5 / PR #33**. S01–S05 приняты в `main`; следующая активная карточка — P01, кросс-платформенный decoder loader. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **P01 / issue #7**. S01–S05 приняты в `main`; P01 выполняется на ветке и готовится к PR. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -10,7 +10,7 @@
 | [S04](S04.md) | Полнота разбора и read-only неизвестных записей | S01 | accepted | [#4](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4), [PR #32](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/32) |
 | [S05](S05.md) | Steam worker: restart, timeout и единственный reader | S01 | accepted | [#5](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/5), [PR #33](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/33) |
 | [S06](S06.md) | Cloud transaction и честное uncertain-состояние | S02, S03, S05 | waiting_dependencies | [#6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6) |
-| [P01](P01.md) | Decoder loader для Linux и Windows | S01 | waiting_dependencies | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7) |
+| [P01](P01.md) | Decoder loader для Linux и Windows | S01 | in_review | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7) |
 | [P02](P02.md) | Пути данных, launcher и helper на обеих ОС | P01, S05 | waiting_dependencies | [#8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8) |
 | [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | waiting_dependencies | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9) |
 | [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | waiting_dependencies | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10) |

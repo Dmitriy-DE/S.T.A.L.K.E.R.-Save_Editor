@@ -2,7 +2,10 @@
 
 ## pyooz / ooz
 
-This package includes `vendor/ooz.abi3.so`, extracted from the user-supplied `pyooz 0.0.8` Linux x86_64 wheel.
+The source tree includes `vendor/ooz.abi3.so`, extracted from the user-supplied
+`pyooz 0.0.8` Linux x86_64 wheel. Runtime installations use the matching
+platform `pyooz==0.0.8` wheel; the loader keeps the Linux binary as a legacy
+fallback and never presents it as a Windows dependency.
 
 Project: https://github.com/zao/pyooz
 PyPI: https://pypi.org/project/pyooz/
@@ -19,4 +22,4 @@ SteamCloudFileManager is **not bundled**. The application invokes a separately i
 
 ## Decoder source provenance
 
-The upstream pyooz 0.0.8 source distribution and file hashes are retained in [third_party/pyooz](third_party/pyooz/README.md). The bundled Linux decoder matches the supplied wheel; a byte-identical source rebuild has not been performed. Windows/Qt packaging remains planned and must include its actual dependencies and notices.
+The upstream pyooz 0.0.8 source distribution and file hashes are retained in [third_party/pyooz](third_party/pyooz/README.md). The bundled Linux decoder matches the supplied wheel; a byte-identical source rebuild has not been performed. The Windows wheel is provenance-checked but is not bundled in this source checkout; packaged builds must include its actual dependency and notices.

@@ -1,3 +1,5 @@
-# No pip dependencies for Linux x86_64 build.
+# Native decoder for supported Linux/Windows x86_64 wheels.
+# Linux also has a legacy vendor/ooz.abi3.so fallback for existing checkouts.
+pyooz==0.0.8
 # tkinter comes from the OS package (python3-tk on Ubuntu/Debian).
 # vendor/ooz.abi3.so is bundled under GPL-3.0-compatible terms; see THIRD_PARTY_NOTICES.md.
