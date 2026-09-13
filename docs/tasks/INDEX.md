@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **S06 / issue #6**. S01–S05, P01 и P02 приняты в `main`; S06 выполняется на ветке и готовится к PR. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **S06 / PR #36**. S01–S06, P01 и P02 приняты в `main`; следующая карточка — P03, CI для Linux и Windows без личных сейвов. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -9,7 +9,7 @@
 | [S03](S03.md) | Единая безопасная локальная запись для GUI и CLI | S02 | accepted | [#3](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/3), [PR #31](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/31) |
 | [S04](S04.md) | Полнота разбора и read-only неизвестных записей | S01 | accepted | [#4](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4), [PR #32](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/32) |
 | [S05](S05.md) | Steam worker: restart, timeout и единственный reader | S01 | accepted | [#5](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/5), [PR #33](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/33) |
-| [S06](S06.md) | Cloud transaction и честное uncertain-состояние | S02, S03, S05 | in_review | [#6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6) |
+| [S06](S06.md) | Cloud transaction и честное uncertain-состояние | S02, S03, S05 | accepted | [#6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6), [PR #36](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/36) |
 | [P01](P01.md) | Decoder loader для Linux и Windows | S01 | accepted | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7), [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34) |
 | [P02](P02.md) | Пути данных, launcher и helper на обеих ОС | P01, S05 | accepted | [#8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8), [PR #35](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/35) |
 | [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | waiting_dependencies | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9) |
