@@ -4,7 +4,7 @@
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
-| [S01](S01.md) | Переносимые fixtures и baseline-тесты | — | completed | [#1](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/1), [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29) |
+| [S01](S01.md) | Переносимые fixtures и baseline-тесты | — | in_review | [#1](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/1), [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29) |
 | [S02](S02.md) | Неизменяемый план правок и запрет опасного raw batch | S01 | waiting_dependencies | [#2](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/2) |
 | [S03](S03.md) | Единая безопасная локальная запись для GUI и CLI | S02 | waiting_dependencies | [#3](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/3) |
 | [S04](S04.md) | Полнота разбора и read-only неизвестных записей | S01 | waiting_dependencies | [#4](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4) |
