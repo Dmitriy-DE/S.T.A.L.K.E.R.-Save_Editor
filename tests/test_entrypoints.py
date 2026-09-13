@@ -13,9 +13,7 @@ import importlib
 
 import pytest
 
-# cli.py parses sys.argv at module level, so it cannot be imported yet; that is
-# tracked separately.
-CORE_MODULES = ("save_format", "steam_cloud", "editor", "editor.platforms")
+CORE_MODULES = ("save_format", "steam_cloud", "cli", "editor", "editor.platforms")
 QT_MODULES = ("ui", "ui.theme", "ui.cloud_view", "ui.main_window")
 
 
