@@ -13,7 +13,12 @@
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 
-Cloud-процесс в исходниках содержит fresh SHA, backup, persisted и read-back; worker lifecycle уже покрыт fake helper. Работа с реальным Steam/GFN в этом репозитории ещё не проверена. Локальный export использует общий backup/atomic path после S03. Остальные ограничения: [состояние и пробелы](docs/STATUS.md).
+Cloud-процесс использует fresh SHA, exclusive backup/recovery, persisted и
+read-back; после WriteFile state machine различает `verified` и `uncertain` и
+не повторяет upload автоматически. Worker lifecycle покрыт fake helper, но
+работа с реальным Steam/GFN в этом репозитории ещё не проверена. Локальный
+export использует общий backup/atomic path после S03. Остальные ограничения:
+[состояние и пробелы](docs/STATUS.md).
 
 ## Запуск из исходников
 

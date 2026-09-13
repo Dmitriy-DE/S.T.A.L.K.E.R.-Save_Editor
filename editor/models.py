@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 import re
 from typing import Literal
 
@@ -86,3 +87,27 @@ class PreparedEdit:
     plan: EditPlan
     data: bytes
     output_sha256: str
+
+
+@dataclass(frozen=True)
+class CloudReceipt:
+    """Result of one cloud transaction after its local recovery artifacts exist."""
+
+    status: Literal["verified", "uncertain"]
+    remote_path: str
+    backup_path: Path
+    recovery_path: Path
+    output_sha256: str
+    reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.status not in ("verified", "uncertain"):
+            raise ValueError(f"Unsupported cloud receipt status: {self.status!r}")
+        if not isinstance(self.remote_path, str) or not self.remote_path.strip():
+            raise ValueError("Cloud receipt remote_path must be non-empty")
+        if not isinstance(self.output_sha256, str) or not _SHA256_RE.fullmatch(
+            self.output_sha256
+        ):
+            raise ValueError("Cloud receipt output SHA256 must be 64 hex characters")
+        if self.status == "uncertain" and not self.reason:
+            raise ValueError("Uncertain cloud receipt requires a reason")

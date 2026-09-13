@@ -176,7 +176,7 @@
     ],
     "gate": "code",
     "priority": "P0",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/S06.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6"
   },
