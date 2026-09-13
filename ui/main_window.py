@@ -33,6 +33,7 @@ from save_format import SaveError, SaveInfo
 
 from .changes_view import ChangesView
 from .backups_view import BackupView, RestoreWorker
+from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
 
@@ -53,6 +54,8 @@ class LocalSnapshot:
     path: Path
     data: bytes
     info: SaveInfo
+    source_kind: str = "local"
+    locator: str | None = None
 
 
 class InspectWorker(QThread):
@@ -98,6 +101,7 @@ class MainWindow(QMainWindow):
         self._pending_path: Path | None = None
         self._operation_thread: QThread | None = None
         self._operation_kind: str | None = None
+        self._cloud_busy = False
 
         self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
         self.resize(1100, 760)
@@ -134,6 +138,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_inventory_tab(), "Инвентарь")
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
+        self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
         layout.addWidget(self.tabs, 1)
 
         actions = QHBoxLayout()
@@ -214,6 +219,15 @@ class MainWindow(QMainWindow):
         self.backups_view.refresh()
         return self.backups_view
 
+    def _build_cloud_tab(self) -> QWidget:
+        self.cloud_view = CloudView(self.service, backup_dir=backup_dirs()[0], parent=self)
+        self.cloud_view.snapshot_ready.connect(self._on_cloud_snapshot_ready)
+        self.cloud_view.upload_ready.connect(self._on_cloud_upload_ready)
+        self.cloud_view.operation_failed.connect(self._on_cloud_operation_failed)
+        self.cloud_view.operation_progress.connect(self._on_cloud_progress)
+        self.cloud_view.busy_changed.connect(self._on_cloud_busy)
+        return self.cloud_view
+
     @staticmethod
     def _placeholder(text: str) -> QWidget:
         box = QGroupBox()
@@ -279,10 +293,12 @@ class MainWindow(QMainWindow):
         self.staged_counts.clear()
         self.staged_money = None
         self.prepared_edit = None
+        self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
         money = "unknown" if info.money is None else str(info.money)
+        source_label = "Steam Cloud" if snapshot.source_kind == "cloud" else "локальный"
         self.source_label.setText(
-            f"Сейв: {snapshot.path.name} • локальный • {_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+            f"Сейв: {snapshot.path.name} • {source_label} • {_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
         self.summary_label.setText(
             f"CRC: {crc}    Money: {money}    Inventory: {len(info.inventory)}    "
@@ -433,7 +449,8 @@ class MainWindow(QMainWindow):
         return self.staged_money is not None or bool(self.staged_counts)
 
     def _update_action_buttons(self) -> None:
-        busy = self._operation_thread is not None and self._operation_thread.isRunning()
+        local_busy = self._operation_thread is not None and self._operation_thread.isRunning()
+        busy = local_busy or self._cloud_busy
         has_changes = self.edit_actions_enabled and self._has_staged_changes()
         can_preview = has_changes
         can_apply = self.prepared_edit is not None
@@ -445,6 +462,7 @@ class MainWindow(QMainWindow):
             busy=busy,
         )
         self.backups_view.set_busy(busy)
+        self.cloud_view.set_external_busy(local_busy if not self._cloud_busy else False)
 
     def _show_operation_error(self, message: str) -> None:
         self.status_label.setText("Операция не выполнена")
@@ -452,6 +470,7 @@ class MainWindow(QMainWindow):
         self.error_label.setVisible(True)
         self.changes_view.set_error(message)
         self.backups_view.set_error(message)
+        self.cloud_view.set_error(message)
         self.operation_failed.emit(message)
 
     def _invalidate_preview(self, reason: str) -> None:
@@ -461,13 +480,17 @@ class MainWindow(QMainWindow):
 
     def _build_edit_plan(self) -> EditPlan:
         if self.snapshot is None:
-            raise SaveError("Сначала проанализируй локальный сейв")
+            raise SaveError("Сначала проанализируй сейв")
         if not self._has_staged_changes():
             raise SaveError("Нет staged изменений")
+        source_kind = self.snapshot.source_kind
+        locator = self.snapshot.locator or str(self.snapshot.path)
+        if source_kind not in ("local", "cloud"):
+            raise SaveError(f"Неизвестный source kind: {source_kind}")
         return EditPlan(
             source=SourceRef(
-                kind="local",
-                locator=str(self.snapshot.path),
+                kind=source_kind,
+                locator=locator,
                 sha256=self.snapshot.info.sha256,
             ),
             money=self.staged_money,
@@ -475,7 +498,10 @@ class MainWindow(QMainWindow):
         )
 
     def _start_preview(self) -> None:
-        if self._operation_thread is not None and self._operation_thread.isRunning():
+        if (
+            (self._operation_thread is not None and self._operation_thread.isRunning())
+            or self._cloud_busy
+        ):
             return
         try:
             plan = self._build_edit_plan()
@@ -515,6 +541,7 @@ class MainWindow(QMainWindow):
             return
         self.prepared_edit = prepared
         self.changes_view.set_preview(prepared)
+        self.cloud_view.set_prepared(prepared)
         self.status_label.setText("Preview готов; можно выбрать путь и сохранить копию")
         self.preview_ready.emit(prepared)
 
@@ -545,6 +572,9 @@ class MainWindow(QMainWindow):
         if self.prepared_edit is None:
             self._show_operation_error("Сначала создай preview; запись без него запрещена")
             return
+        if self.snapshot is not None and self.snapshot.source_kind == "cloud":
+            self._start_cloud_upload()
+            return
         value = self.changes_view.destination_edit.text().strip()
         if not value:
             path = self.changes_view.choose_output()
@@ -555,13 +585,19 @@ class MainWindow(QMainWindow):
         self._start_apply(path)
 
     def _start_apply(self, output_path: Path, backup_dir: Path | None = None) -> None:
-        if self._operation_thread is not None and self._operation_thread.isRunning():
+        if (
+            (self._operation_thread is not None and self._operation_thread.isRunning())
+            or self._cloud_busy
+        ):
             return
         if self.prepared_edit is None:
             self._show_operation_error("Сначала создай preview; запись без него запрещена")
             return
         if self.snapshot is None:
             self._show_operation_error("Нет текущего snapshot для apply")
+            return
+        if self.snapshot.source_kind == "cloud":
+            self._start_cloud_upload()
             return
         try:
             current_plan = self._build_edit_plan()
@@ -631,6 +667,45 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
         self.restore_ready.emit(receipt)
 
+    def _on_cloud_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
+        local_snapshot = LocalSnapshot(
+            path=Path(snapshot.name),
+            data=snapshot.data,
+            info=snapshot.info,
+            source_kind="cloud",
+            locator=snapshot.name,
+        )
+        self._render_snapshot(local_snapshot)
+        self.analysis_ready.emit(local_snapshot)
+        self.status_label.setText(
+            f"Cloud snapshot готов: {snapshot.name}; выбери изменения и создай preview"
+        )
+
+    def _start_cloud_upload(self) -> None:
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview cloud-сейва")
+            return
+        self.status_label.setText("Cloud upload: подготовка…")
+        self.cloud_view.start_upload()
+
+    def _on_cloud_upload_ready(self, receipt) -> None:
+        self.prepared_edit = None
+        self.status_label.setText(
+            "Cloud: verified" if receipt.status == "verified" else "Cloud: uncertain — требуется reconciliation"
+        )
+        self._update_action_buttons()
+        self.apply_ready.emit(receipt)
+
+    def _on_cloud_operation_failed(self, message: str) -> None:
+        self._show_operation_error(message)
+
+    def _on_cloud_progress(self, message: str) -> None:
+        self.status_label.setText(message)
+
+    def _on_cloud_busy(self, busy: bool) -> None:
+        self._cloud_busy = busy
+        self._update_action_buttons()
+
     def _open_backup_folder(self, path: Path) -> None:
         folder = Path(path).expanduser()
         if not folder.is_dir():
@@ -646,9 +721,16 @@ class MainWindow(QMainWindow):
             )
             event.ignore()
             return
+        if self.cloud_view.is_busy:
+            self.status_label.setText(
+                "Cloud operation ещё выполняется; закрой окно после завершения"
+            )
+            event.ignore()
+            return
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             self._inspect_thread.quit()
             self._inspect_thread.wait(1_000)
+        self.cloud_view.close_transport()
         event.accept()
 
 

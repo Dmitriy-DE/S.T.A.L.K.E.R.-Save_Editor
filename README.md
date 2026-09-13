@@ -2,7 +2,7 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply и backup/hash browser с восстановлением в новую копию. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: Steam UI, standalone Windows build и реальный Windows smoke ещё впереди.
+**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: standalone Windows build и реальный Windows/Steam smoke ещё впереди.
 
 ## Что доступно
 
@@ -12,6 +12,8 @@
 - Experimental: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
 - Общий UI-free `EditorService` связывает parser, immutable preview, local export,
   backup restore и cloud transaction для Tk/CLI/Qt.
+- Qt Cloud tab не вызывает helper при старте: сначала явное подключение и список
+  `Data/*.sav`, затем анализ выбранного slot и upload только его preview.
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 
@@ -51,7 +53,8 @@ python3 -m ui
 застейджить подтверждённые money/stack изменения, нажать preview и сохранить
 новую копию. На вкладке резервных копий видны hash/status журнала; проверенный
 backup можно восстановить в новый путь, а исходный сейв и backup остаются
-неизменными.
+неизменными. На вкладке Steam Cloud upload показывает `verified` или `uncertain`;
+после `WriteFile` автоматического повтора нет.
 
 Новые настройки и backups пишутся в platform user-data directory
 (`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на
