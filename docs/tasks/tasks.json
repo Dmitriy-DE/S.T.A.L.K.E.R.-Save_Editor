@@ -12,7 +12,7 @@
     "contract": "tests/conftest.py: synthetic_save() -> bytes создаёт искусственный контейнер с MONEY_ANCHOR, 4 owned handles 0x30000001..04, двумя grid cells и однозначными object records. Никаких байтов личного сейва. Fixture не доказывает реальность глобальной структуры игры.",
     "steps": [
       "Сохранить текущий selftest_real.py как отдельный private-corpus test; прочитать save_format.py:218 и :286 до создания fixture.",
-      "Создать synthetic_save с money=100, owned_flag=1, четырьмя handles, grid handles 0x30000001/02 в (0,0)/(1,0), stack handle 0x30000001 count=2 weight=0.2 kind=4. Record size >=36, marker +18=0x38, x/y=0. Файл собрать через rebuild_uncompressed.",
+      "Создать synthetic_save с money=100, owned_flag=1, четырьмя handles, grid handles 0x30000001/02 в (0,0)/(1,0), stack handle 0x30000001 count=2 weight=0.2 kind=4. Record size >=36, marker +18=0x38; x/y совпадают с grid, у остальных handles FFFF/FFFF. Файл собрать через rebuild_uncompressed.",
       "Добавить тесты чтения, денег 100→900000, count 2→3 с весом 0.3, bad CRC, missing/duplicate anchor; проверить неизменность остальных raw bytes для money/stack.",
       "Зафиксировать pytest в requirements-dev.txt; make test запускает python -m pytest tests/test_*.py. Не менять runtime ради удобства fixture."
     ],
@@ -24,7 +24,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "ready",
-    "path": "docs/tasks/S01.md"
+    "path": "docs/tasks/S01.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/1"
   },
   {
     "id": "S02",
@@ -53,7 +54,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/S02.md"
+    "path": "docs/tasks/S02.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/2"
   },
   {
     "id": "S03",
@@ -81,7 +83,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/S03.md"
+    "path": "docs/tasks/S03.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/3"
   },
   {
     "id": "S04",
@@ -109,7 +112,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/S04.md"
+    "path": "docs/tasks/S04.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/4"
   },
   {
     "id": "S05",
@@ -136,7 +140,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/S05.md"
+    "path": "docs/tasks/S05.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/5"
   },
   {
     "id": "S06",
@@ -167,7 +172,8 @@
     "gate": "code",
     "priority": "P0",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/S06.md"
+    "path": "docs/tasks/S06.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6"
   },
   {
     "id": "P01",
@@ -196,7 +202,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/P01.md"
+    "path": "docs/tasks/P01.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7"
   },
   {
     "id": "P02",
@@ -228,7 +235,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/P02.md"
+    "path": "docs/tasks/P02.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8"
   },
   {
     "id": "P03",
@@ -262,7 +270,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/P03.md"
+    "path": "docs/tasks/P03.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9"
   },
   {
     "id": "U01",
@@ -294,7 +303,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U01.md"
+    "path": "docs/tasks/U01.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10"
   },
   {
     "id": "U02",
@@ -324,7 +334,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U02.md"
+    "path": "docs/tasks/U02.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11"
   },
   {
     "id": "U03",
@@ -352,7 +363,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U03.md"
+    "path": "docs/tasks/U03.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12"
   },
   {
     "id": "U04",
@@ -379,7 +391,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U04.md"
+    "path": "docs/tasks/U04.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13"
   },
   {
     "id": "U05",
@@ -407,7 +420,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U05.md"
+    "path": "docs/tasks/U05.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14"
   },
   {
     "id": "U06",
@@ -436,7 +450,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/U06.md"
+    "path": "docs/tasks/U06.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15"
   },
   {
     "id": "B01",
@@ -466,7 +481,8 @@
     "gate": "code",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/B01.md"
+    "path": "docs/tasks/B01.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16"
   },
   {
     "id": "B02",
@@ -494,7 +510,8 @@
     "gate": "manual",
     "priority": "P1",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/B02.md"
+    "path": "docs/tasks/B02.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17"
   },
   {
     "id": "R01",
@@ -522,7 +539,8 @@
     "gate": "code",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R01.md"
+    "path": "docs/tasks/R01.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/18"
   },
   {
     "id": "R02",
@@ -551,7 +569,8 @@
     "gate": "research",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R02.md"
+    "path": "docs/tasks/R02.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/19"
   },
   {
     "id": "R03",
@@ -578,7 +597,8 @@
     "gate": "research",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R03.md"
+    "path": "docs/tasks/R03.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/20"
   },
   {
     "id": "R04",
@@ -608,7 +628,8 @@
     "gate": "evidence",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R04.md"
+    "path": "docs/tasks/R04.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/21"
   },
   {
     "id": "R05",
@@ -636,7 +657,8 @@
     "gate": "research",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R05.md"
+    "path": "docs/tasks/R05.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/22"
   },
   {
     "id": "R06",
@@ -665,7 +687,8 @@
     "gate": "evidence",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R06.md"
+    "path": "docs/tasks/R06.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/23"
   },
   {
     "id": "R07",
@@ -694,7 +717,8 @@
     "gate": "evidence",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R07.md"
+    "path": "docs/tasks/R07.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/24"
   },
   {
     "id": "R08",
@@ -722,7 +746,8 @@
     "gate": "evidence",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R08.md"
+    "path": "docs/tasks/R08.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/25"
   },
   {
     "id": "R09",
@@ -750,7 +775,8 @@
     "gate": "research",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R09.md"
+    "path": "docs/tasks/R09.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26"
   },
   {
     "id": "R10",
@@ -779,7 +805,8 @@
     "gate": "evidence",
     "priority": "P2",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R10.md"
+    "path": "docs/tasks/R10.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27"
   },
   {
     "id": "R11",
@@ -808,6 +835,7 @@
     "gate": "research",
     "priority": "P3",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/R11.md"
+    "path": "docs/tasks/R11.md",
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28"
   }
 ]
