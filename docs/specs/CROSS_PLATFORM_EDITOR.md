@@ -75,6 +75,26 @@ class ExportReceipt:
     output_sha256: str
 
 @dataclass(frozen=True)
+class BackupRecord:
+    journal_path: Path
+    backup_path: Path
+    created_at: str
+    source_path: str
+    source_sha256: str
+    output_path: str | None
+    output_sha256: str | None
+    operation: dict[str, object]
+    status: Literal["verified", "missing", "corrupt"]
+    actual_sha256: str | None = None
+    error: str | None = None
+
+@dataclass(frozen=True)
+class RestoreReceipt:
+    output_path: Path
+    backup_path: Path
+    output_sha256: str
+
+@dataclass(frozen=True)
 class CloudReceipt:
     status: Literal["verified", "uncertain"]
     remote_path: str
@@ -86,7 +106,7 @@ class CloudReceipt:
 
 S02: `prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit` verifies source hash and rejects raw with attach/detach before calling existing patch_save. S03: `export_local(source_path: Path, output_path: Path, prepared: PreparedEdit, backup_dir: Path) -> ExportReceipt` rejects stale source and same-path exports by default. S06: `upload_cloud(worker: CloudTransport, prepared: PreparedEdit, backup_dir: Path) -> CloudReceipt`; remote path comes only from plan.source, failures before write raise an error, ambiguous outcomes after write return uncertain without automatic retry. CloudTransport provides read_file, write_file, sync, wait_persisted, list_files with existing worker meanings.
 
-U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. Dependencies must be injectable for tests; service imports no UI.
+U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 
 ## Запись и отмена
 

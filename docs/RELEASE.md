@@ -14,13 +14,13 @@
 sanitized log; workflow не подключает Steam, credentials или cloud upload.
 Приёмка P03 требует фактического PASS всех четырёх GitHub runner jobs и
 сохранённого run URL; локальный Linux PASS сам по себе это не заменяет. PR #37
-слит в `main`, но четыре PR-run завершились `startup_failure` с нулём jobs;
+слит в `main`, но пять PR-run завершились `startup_failure` с нулём jobs;
 issue #9 оставлена открытой до появления настоящего runner evidence.
 
 ## Будущая pipeline (B01, B02)
 
 1. Unit/behavior tests на Ubuntu 22.04 и Windows runner, Python 3.11/3.12. Synthetic fixtures, fake Steam worker, никаких credentials или live uploads.
-2. Binary packaging на Python 3.11: Windows runner → zip с `SaveEditor.exe` и зависимостями; Ubuntu 22.04 runner → portable tar.gz и Debian/Ubuntu `.deb` с тем же bundled runtime. Первым использовать PyInstaller onedir; `.deb` собирать через `dpkg-deb` из staging tree, onefile/AppImage/installer — только отдельной задачей при необходимости.
+2. Binary packaging на Python 3.11: Windows runner → zip с `SaveEditor.exe` и зависимостями; Ubuntu 22.04 runner → portable tar.gz и Debian/Ubuntu `.deb` с тем же bundled runtime. Первым использовать PyInstaller onedir; `.deb` собирать через `dpkg-deb` из staging tree, onefile/AppImage/installer — только отдельной задачей при необходимости. U05 уже даёт local backup/restore UI, поэтому B01 должен включить его в packaged smoke.
 3. Runtime dependency policy: ядро и storage остаются на стандартной библиотеке; `pyooz==0.0.8` и Qt/PySide6 вкладываются в standalone bundle, pytest остаётся dev-only. Native decoder/helper имеют pinned versions, source/license notices и SHA; helper отдельно до проверки его redistribution/ABI/protocol.
 4. Smoke запуск CLI и Qt из артефакта вне checkout: unicode/space path, no Python installed, missing helper, no Steam. Display tests выполняются на реальной desktop-сессии; offscreen CI не заменяет DPI/manual QA.
 5. SHA256SUMS, source commit/tag, dependency lock + source bundle, OS/architecture/minimum runtime, test evidence. Source/binary archives не включают .local, saves, .git или credentials.

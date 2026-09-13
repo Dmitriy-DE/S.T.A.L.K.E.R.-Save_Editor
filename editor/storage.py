@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from typing import Iterable, Literal
 import uuid
 
 from save_format import SaveError
@@ -17,6 +18,35 @@ from .models import EditPlan, PreparedEdit
 @dataclass(frozen=True)
 class ExportReceipt:
     """Receipt returned only after the destination has been read back."""
+
+    output_path: Path
+    backup_path: Path
+    output_sha256: str
+
+
+BackupStatus = Literal["verified", "missing", "corrupt"]
+
+
+@dataclass(frozen=True)
+class BackupRecord:
+    """One journal entry and the result of checking its recovery bytes."""
+
+    journal_path: Path
+    backup_path: Path
+    created_at: str
+    source_path: str
+    source_sha256: str
+    output_path: str | None
+    output_sha256: str | None
+    operation: dict[str, object]
+    status: BackupStatus
+    actual_sha256: str | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class RestoreReceipt:
+    """Receipt returned after a verified backup was copied to a new path."""
 
     output_path: Path
     backup_path: Path
@@ -140,6 +170,296 @@ def _operation_summary(plan: EditPlan) -> dict[str, object]:
         "attach_count": len(plan.attach),
         "raw_count": len(plan.raw),
     }
+
+
+def _is_sha256(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return True
+
+
+def _journal_backup_path(journal_path: Path, value: object) -> Path:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("backup_path must be a non-empty string")
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = journal_path.parent / path
+    return path
+
+
+def _record(
+    *,
+    journal_path: Path,
+    backup_path: Path,
+    created_at: str = "",
+    source_path: str = "",
+    source_sha256: str = "",
+    output_path: str | None = None,
+    output_sha256: str | None = None,
+    operation: dict[str, object] | None = None,
+    status: BackupStatus = "corrupt",
+    actual_sha256: str | None = None,
+    error: str | None = None,
+) -> BackupRecord:
+    return BackupRecord(
+        journal_path=journal_path,
+        backup_path=backup_path,
+        created_at=created_at,
+        source_path=source_path,
+        source_sha256=source_sha256,
+        output_path=output_path,
+        output_sha256=output_sha256,
+        operation=dict(operation or {}),
+        status=status,
+        actual_sha256=actual_sha256,
+        error=error,
+    )
+
+
+def inspect_backup(journal_path: Path) -> BackupRecord:
+    """Read and hash-check one backup journal without changing any file.
+
+    A journal is considered usable only when it is version 1, has the final
+    ``verified`` status, and its referenced backup bytes match the recorded
+    source SHA256.  Missing bytes and malformed/mismatched metadata remain
+    visible to the UI as explicit non-restorable states.
+    """
+
+    journal_path = Path(journal_path).expanduser()
+    fallback_backup = journal_path.with_suffix(".sav")
+    try:
+        payload = json.loads(journal_path.read_text("utf-8"))
+    except FileNotFoundError:
+        return _record(
+            journal_path=journal_path,
+            backup_path=fallback_backup,
+            error="Journal отсутствует",
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return _record(
+            journal_path=journal_path,
+            backup_path=fallback_backup,
+            error=f"Journal не читается: {exc}",
+        )
+
+    if not isinstance(payload, dict):
+        return _record(
+            journal_path=journal_path,
+            backup_path=fallback_backup,
+            error="Journal должен содержать JSON object",
+        )
+
+    try:
+        if payload.get("version") != 1:
+            raise ValueError("неподдерживаемая версия journal")
+        backup_path = _journal_backup_path(journal_path, payload.get("backup_path"))
+        source_sha256 = payload.get("source_sha256")
+        if not _is_sha256(source_sha256):
+            raise ValueError("source_sha256 имеет неверный формат")
+        status = payload.get("status")
+        if status != "verified":
+            raise ValueError(f"journal status={status!r} не является verified")
+        created_at = payload.get("created_at", "")
+        source_path = payload.get("source_path", "")
+        output_path = payload.get("output_path")
+        output_sha256 = payload.get("output_sha256")
+        operation = payload.get("operation", {})
+        if not isinstance(created_at, str) or not created_at.strip():
+            raise ValueError("created_at должен быть строкой")
+        if not isinstance(source_path, str) or not source_path.strip():
+            raise ValueError("source_path должен быть строкой")
+        if not isinstance(output_path, str) or not output_path.strip():
+            raise ValueError("output_path должен быть непустой строкой")
+        if not _is_sha256(output_sha256):
+            raise ValueError("output_sha256 имеет неверный формат")
+        if not isinstance(operation, dict):
+            raise ValueError("operation должен быть JSON object")
+    except (TypeError, ValueError) as exc:
+        return _record(
+            journal_path=journal_path,
+            backup_path=fallback_backup,
+            error=f"Journal повреждён: {exc}",
+        )
+
+    try:
+        data = backup_path.read_bytes()
+    except FileNotFoundError:
+        return _record(
+            journal_path=journal_path,
+            backup_path=backup_path,
+            created_at=created_at,
+            source_path=source_path,
+            source_sha256=source_sha256,
+            output_path=output_path,
+            output_sha256=output_sha256,
+            operation=operation,
+            status="missing",
+            error="Backup-файл отсутствует",
+        )
+    except OSError as exc:
+        return _record(
+            journal_path=journal_path,
+            backup_path=backup_path,
+            created_at=created_at,
+            source_path=source_path,
+            source_sha256=source_sha256,
+            output_path=output_path,
+            output_sha256=output_sha256,
+            operation=operation,
+            error=f"Backup не читается: {exc}",
+        )
+
+    actual_sha256 = _sha256(data)
+    if actual_sha256 != source_sha256.lower():
+        return _record(
+            journal_path=journal_path,
+            backup_path=backup_path,
+            created_at=created_at,
+            source_path=source_path,
+            source_sha256=source_sha256.lower(),
+            output_path=output_path,
+            output_sha256=output_sha256,
+            operation=operation,
+            actual_sha256=actual_sha256,
+            error=(
+                "Backup SHA256 не совпал: "
+                f"expected={source_sha256.lower()} actual={actual_sha256}"
+            ),
+        )
+    return _record(
+        journal_path=journal_path,
+        backup_path=backup_path,
+        created_at=created_at,
+        source_path=source_path,
+        source_sha256=source_sha256.lower(),
+        output_path=output_path,
+        output_sha256=output_sha256.lower() if isinstance(output_sha256, str) else None,
+        operation=operation,
+        status="verified",
+        actual_sha256=actual_sha256,
+    )
+
+
+def list_backups(backup_dirs: Iterable[Path]) -> tuple[BackupRecord, ...]:
+    """List journals and orphan original files from the supplied directories."""
+
+    records: list[BackupRecord] = []
+    known_backup_paths: set[str] = set()
+    seen_journals: set[str] = set()
+    directories: list[Path] = []
+    for value in backup_dirs:
+        directory = Path(value).expanduser()
+        key = _canonical(directory)
+        if key in {_canonical(item) for item in directories}:
+            continue
+        directories.append(directory)
+        if not directory.is_dir():
+            continue
+        for journal_path in sorted(directory.glob("*.json")):
+            journal_key = _canonical(journal_path)
+            if journal_key in seen_journals:
+                continue
+            seen_journals.add(journal_key)
+            record = inspect_backup(journal_path)
+            records.append(record)
+            known_backup_paths.add(_canonical(record.backup_path))
+
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for backup_path in sorted(directory.glob("*_ORIGINAL.sav")):
+            if _canonical(backup_path) in known_backup_paths:
+                continue
+            records.append(
+                _record(
+                    journal_path=backup_path.with_suffix(".json"),
+                    backup_path=backup_path,
+                    error="Для backup отсутствует journal",
+                )
+            )
+
+    records.sort(key=lambda record: (record.created_at, str(record.journal_path)), reverse=True)
+    return tuple(records)
+
+
+def restore_backup(journal_or_record: Path | BackupRecord, output_path: Path) -> RestoreReceipt:
+    """Restore one verified backup to a new, non-existing destination.
+
+    Existing destinations are rejected before any write.  The backup and its
+    journal remain untouched, so callers can retry with another path after an
+    interrupted or failed restore.
+    """
+
+    record = (
+        journal_or_record
+        if isinstance(journal_or_record, BackupRecord)
+        else inspect_backup(Path(journal_or_record))
+    )
+    if record.status != "verified":
+        detail = f": {record.error}" if record.error else ""
+        raise SaveError(f"Backup недоступен для восстановления ({record.status}){detail}")
+
+    output_path = Path(output_path).expanduser()
+    if _canonical(record.backup_path) == _canonical(output_path):
+        raise SaveError("Output восстановления не может совпадать с backup")
+    if os.path.lexists(output_path):
+        raise SaveError(f"Output уже существует: {output_path}")
+    if not output_path.parent.is_dir():
+        raise SaveError(f"Папка output не существует: {output_path.parent}")
+
+    try:
+        data = record.backup_path.read_bytes()
+    except OSError as exc:
+        raise SaveError(f"Не удалось прочитать backup: {exc}") from exc
+    actual_sha256 = _sha256(data)
+    if actual_sha256 != record.source_sha256:
+        raise SaveError(
+            "Backup изменился после проверки: "
+            f"expected={record.source_sha256} actual={actual_sha256}"
+        )
+
+    temp_path: Path | None = None
+    published = False
+    try:
+        temp_path = _make_temp_path(output_path.parent, output_path.name)
+        try:
+            _write_temp_bytes(temp_path, data)
+        except OSError as exc:
+            raise SaveError(f"Не удалось записать временный restore: {exc}") from exc
+        _publish_noreplace(temp_path, output_path)
+        published = True
+        _fsync_directory(output_path.parent)
+        try:
+            output_sha256 = _sha256(output_path.read_bytes())
+        except OSError as exc:
+            raise SaveError(f"Не удалось прочитать restored output: {exc}") from exc
+        if output_sha256 != record.source_sha256:
+            raise SaveError(
+                "Restored output SHA256 не совпал: "
+                f"expected={record.source_sha256} actual={output_sha256}"
+            )
+        return RestoreReceipt(
+            output_path=output_path,
+            backup_path=record.backup_path,
+            output_sha256=output_sha256,
+        )
+    except SaveError:
+        raise
+    except OSError as exc:
+        raise SaveError(f"Restore не удался: {exc}") from exc
+    finally:
+        if not published and temp_path is not None:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
+restore_local = restore_backup
 
 
 def export_local(

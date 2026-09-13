@@ -407,9 +407,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/U04.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/41"
   },
   {
     "id": "U05",
@@ -419,24 +420,30 @@
       "S03"
     ],
     "files": [
-      "ui/backups_view.py",
       "editor/storage.py",
-      "tests/test_restore.py"
+      "editor/__init__.py",
+      "editor/service.py",
+      "ui/backups_view.py",
+      "ui/main_window.py",
+      "tests/test_restore.py",
+      "tests/test_ui_backups.py"
     ],
-    "contract": "Восстановление — отдельный prepare/export через общий storage. По умолчанию восстановить в новый путь; backup browser не удаляет файлы автоматически.",
+    "contract": "inspect_backup/list_backups проверяют journal и SHA256; EditorService.restore_local публикует только verified backup в новый путь без overwrite; BackupView показывает verified/missing/corrupt и запускает restore worker.",
     "steps": [
       "Fixture journal с valid/missing/corrupt backup: показать отличимые состояния и hash check.",
       "Список дата/source/operation/hash/status; открыть папку, выбрать backup и preview restore.",
       "Restore не перезаписывает оригинал без отдельного подтверждённого flow; текущий файл сохраняется до явной замены.",
-      "Проверить прерывание restore и повторную операцию: никакой потери последней доступной копии."
+      "Проверить прерывание restore и повторную операцию: никакой потери последней доступной копии.",
+      "Отдельный UI worker не блокирует окно; packaged smoke перенесён в B01."
     ],
     "checks": [
       "python -m pytest tests/test_restore.py -v",
+      "QT_QPA_PLATFORM=offscreen python -m pytest tests/test_ui_backups.py -v",
       "Corrupt backup запрещён; valid restore побайтово равен backup; previous file не потерян."
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/U05.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14"
   },

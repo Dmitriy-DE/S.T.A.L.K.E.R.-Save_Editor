@@ -5,13 +5,29 @@ __all__ = [
     "EditPlan",
     "PreparedEdit",
     "SourceRef",
+    "BackupRecord",
+    "RestoreReceipt",
     "EditorService",
     "prepare_edit",
 ]
 
 
 def __getattr__(name: str):
-    if name in {"CloudReceipt", "EditPlan", "PreparedEdit", "SourceRef"}:
+    if name in {
+        "CloudReceipt",
+        "EditPlan",
+        "PreparedEdit",
+        "SourceRef",
+        "BackupRecord",
+        "RestoreReceipt",
+    }:
+        if name in {"BackupRecord", "RestoreReceipt"}:
+            from .storage import BackupRecord, RestoreReceipt
+
+            return {
+                "BackupRecord": BackupRecord,
+                "RestoreReceipt": RestoreReceipt,
+            }[name]
         from .models import CloudReceipt, EditPlan, PreparedEdit, SourceRef
 
         return {
