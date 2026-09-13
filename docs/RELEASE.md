@@ -4,7 +4,18 @@
 
 В Git хранятся исходники и неизменённые исторические пакеты releases/legacy. Standalone Windows/Linux beta ещё не собрана. Версия runtime остаётся 0.3.0-experimental; изменение документации не повышает её до готовой beta.
 
-## Будущая pipeline (P03, B01, B02)
+## Текущая CI pipeline (P03)
+
+`.github/workflows/test.yml` уже описывает обязательную matrix
+`ubuntu-22.04/windows-2022 × Python 3.11/3.12`. В каждой job включены только
+`contents: read`, устанавливаются версии из `requirements.txt` и
+`requirements-dev.txt`, проверяется чистый checkout без `.local`/сейвов,
+запускаются compile и полный pytest suite. При сбое публикуются JUnit и
+sanitized log; workflow не подключает Steam, credentials или cloud upload.
+Приёмка P03 требует фактического PASS всех четырёх GitHub runner jobs и
+сохранённого run URL; локальный Linux PASS сам по себе это не заменяет.
+
+## Будущая pipeline (B01, B02)
 
 1. Unit/behavior tests на Ubuntu 22.04 и Windows runner, Python 3.11/3.12. Synthetic fixtures, fake Steam worker, никаких credentials или live uploads.
 2. Binary packaging на Python 3.11: Windows runner → zip с .exe и зависимостями; Ubuntu 22.04 runner → tar.gz с launcher/runtime. Первым использовать PyInstaller onedir; onefile/AppImage/installer — только отдельной задачей при необходимости.

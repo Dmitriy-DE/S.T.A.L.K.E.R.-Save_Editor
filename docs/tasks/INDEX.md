@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **S06 / PR #36**. S01–S06, P01 и P02 приняты в `main`; следующая карточка — P03, CI для Linux и Windows без личных сейвов. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **P03 / issue #9**. S01–S06, P01 и P02 приняты в `main`; P03 добавляет CI для Linux и Windows без личных сейвов и ждёт фактического matrix run. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -12,7 +12,7 @@
 | [S06](S06.md) | Cloud transaction и честное uncertain-состояние | S02, S03, S05 | accepted | [#6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6), [PR #36](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/36) |
 | [P01](P01.md) | Decoder loader для Linux и Windows | S01 | accepted | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7), [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34) |
 | [P02](P02.md) | Пути данных, launcher и helper на обеих ОС | P01, S05 | accepted | [#8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8), [PR #35](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/35) |
-| [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | waiting_dependencies | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9) |
+| [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | in_progress | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9) |
 | [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | waiting_dependencies | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10) |
 | [U02](U02.md) | Qt shell и открытие локального сохранения | U01, P03 | waiting_dependencies | [#11](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11) |
 | [U03](U03.md) | Инвентарь: поиск, фильтры и редактирование стаков | U02, S04 | waiting_dependencies | [#12](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12) |
