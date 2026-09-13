@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import hashlib
 import json
 from pathlib import Path
 import queue
@@ -31,6 +30,7 @@ from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import legacy_data_dir, user_data_dir
 from editor.prepare import prepare_edit
 from editor.storage import export_local
+from editor.transactions import CloudTransactionError, upload_cloud
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
@@ -617,24 +617,53 @@ class App(tk.Tk):
             cloud=self.selected_cloud()
             if cloud.name!=self.analysis_cloud_name: raise SaveError("Выбранный cloud slot не совпадает с анализированным")
         except Exception as exc: messagebox.showerror(APP_NAME,str(exc)); return
-        analyzed_sha=plan.source.sha256
+
         def job():
-            w=self.ensure_connection(); self.msgq.put(("log",f"1/8 fresh download {cloud.name}"))
-            original=w.read_file(cloud.name); fresh=hashlib.sha256(original).hexdigest()
-            if fresh!=analyzed_sha: raise SaveError("Cloud save изменился после анализа. Re-analyze; upload отменён.")
-            bp=self.backup_path(Path(cloud.name).stem,"ORIGINAL"); bp.write_bytes(original); self.msgq.put(("log",f"2/8 backup {bp}"))
-            before=inspect_save(original,with_inventory=True); self.msgq.put(("log",f"3/8 source verify OK money={before.money}"))
-            prepared=self.do_patch(original,plan); edited=prepared.data; after=inspect_save(edited,with_inventory=True)
-            ep=self.backup_path(Path(cloud.name).stem,"EDITED"); ep.write_bytes(edited); self.msgq.put(("log",f"4/8 patch+roundtrip OK; recovery {ep}"))
-            self.msgq.put(("log","5/8 WriteFile same Steam RemoteStorage path")); w.write_file(cloud.name,edited); w.sync()
-            self.msgq.put(("log","6/8 wait persisted=true"))
-            if not w.wait_persisted(cloud.name,len(edited),timeout=180): raise SteamCloudError("WriteFile sent, but persisted=true not confirmed in 180s. Do NOT start GFN yet.")
-            fs=w.list_files(); self.files=fs; self.msgq.put(("files",fs)); self.msgq.put(("log","7/8 cloud persisted=true"))
-            fresh2=w.read_file(cloud.name); check=inspect_save(fresh2,with_inventory=True)
-            if hashlib.sha256(fresh2).hexdigest()!=hashlib.sha256(edited).hexdigest(): raise SteamCloudError("8/8 cloud read-back SHA mismatch")
-            self.msgq.put(("log","8/8 cloud read-back SHA/CRC/Kraken OK"))
-            self.msgq.put(("analysis",("cloud",cloud.name,None,check,fresh2,decompress_save(fresh2))))
-            self.msgq.put(("info",f"Cloud upload verified. persisted=true + read-back SHA OK.\nBackup: {bp}\nEdited recovery: {ep}"))
+            w=self.ensure_connection()
+            analyzed = self.analysis_data
+            if analyzed is None:
+                raise CloudTransactionError("Нет bytes анализированного cloud сейва")
+            prepared=self.do_patch(analyzed,plan)
+            labels = {
+                "fresh_read": f"1/7 fresh download + SHA {cloud.name}",
+                "backup_created": "2/7 original backup создан",
+                "recovery_created": "3/7 edited recovery создан",
+                "write_sent": "4/7 WriteFile отправлен в тот же RemoteStorage path",
+                "sync_requested": "5/7 SyncCloudFiles запрошен",
+                "persisted": "6/7 persisted=true подтверждён",
+                "readback_verified": "7/7 cloud read-back SHA совпал",
+            }
+
+            def progress(stage: str) -> None:
+                self.msgq.put(("log", labels.get(stage, stage)))
+
+            receipt = upload_cloud(
+                w,
+                prepared,
+                BACKUP_DIR,
+                persisted_timeout=180,
+                on_stage=progress,
+            )
+            if receipt.status == "uncertain":
+                self.msgq.put(("status", "Cloud: результат uncertain — требуется reconciliation"))
+                self.msgq.put(("log", f"Cloud upload uncertain: {receipt.reason}"))
+                self.msgq.put(
+                    (
+                        "info",
+                        "Cloud upload завершился с неопределённым результатом.\n"
+                        f"Причина: {receipt.reason}\n"
+                        f"Original backup: {receipt.backup_path}\n"
+                        f"Edited recovery: {receipt.recovery_path}\n"
+                        "Повторный WriteFile не выполнялся; сначала проверь cloud вручную.",
+                    )
+                )
+                return
+
+            edited = prepared.data
+            check = inspect_save(edited,with_inventory=True)
+            self.msgq.put(("status", "Cloud: verified"))
+            self.msgq.put(("analysis",("cloud",cloud.name,None,check,edited,decompress_save(edited))))
+            self.msgq.put(("info",f"Cloud upload verified. persisted=true + read-back SHA OK.\nBackup: {receipt.backup_path}\nEdited recovery: {receipt.recovery_path}"))
         self.bg(job)
 
     def on_close(self):
