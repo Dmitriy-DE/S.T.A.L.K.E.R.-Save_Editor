@@ -4,7 +4,7 @@
 
 Исходники v0.3.0 EXPERIMENTAL импортированы без изменения runtime. Linux self-test и синтаксис проверяются отдельно в [evidence](evidence/BASELINE_2026-09-13.md). Денежные значения контрольных файлов: 48645, 58870, 56995; ранее изменённый D639: 900000. Это проверка распаковки/структур, не запуск игры.
 
-В продукте уже есть Tkinter GUI и CLI. Отсутствует подтверждённый Windows-дистрибутив. S06 добавляет локально проверенную cloud transaction state machine, но end-to-end Steam/GFN при импорте не выполнялся. Baseline с исходниками: `2291832`.
+В продукте уже есть Tkinter GUI и CLI. Отсутствует подтверждённый Windows-дистрибутив. S06 добавляет локально проверенную cloud transaction state machine, но end-to-end Steam/GFN при импорте не выполнялся. P03 добавляет обязательную GitHub Actions matrix для Linux/Windows и Python 3.11/3.12; runner evidence ещё ожидается. Baseline с исходниками: `2291832`.
 
 ## Найдено чтением исходников, требует regression-тестов
 
@@ -26,8 +26,8 @@ S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S
 
 | Область | Сейчас | Задачи |
 |---|---|---|
-| Надёжность | Ограниченный self-test на личном файле, нет CI с переносимыми fixtures | S01–S06 |
-| Linux + Windows | P01 добавляет decoder, P02 — paths/launcher/helper; реальная Windows CI ещё впереди | P03, B01–B02 |
+| Надёжность | Ограниченный self-test на личном файле; P03 workflow запускает synthetic suite на четырёх runner комбинациях, фактический run ещё ожидается | S01–S06, P03 |
+| Linux + Windows | P01 добавляет decoder, P02 — paths/launcher/helper; P03 workflow добавлен, реальная Windows CI ещё впереди | P03, B01–B02 |
 | Удобный UI | Технические таблицы, handles/type-key, экспериментальная лаборатория | U01–U06 |
 | Восстановление | Файлы backup без полноценного журнала/restore flow | S03, U05 |
 | Названия и каталог | Маленький seed SID, связи с save не доказаны | R01–R02 |

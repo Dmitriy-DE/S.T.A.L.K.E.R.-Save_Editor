@@ -1,0 +1,131 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            python-version: "3.11"
+          - os: ubuntu-22.04
+            python-version: "3.12"
+          - os: windows-2022
+            python-version: "3.11"
+          - os: windows-2022
+            python-version: "3.12"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install pinned dependencies
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+          subprocess.check_call(
+              [
+                  sys.executable,
+                  "-m",
+                  "pip",
+                  "install",
+                  "--requirement",
+                  "requirements.txt",
+                  "--requirement",
+                  "requirements-dev.txt",
+              ]
+          )
+
+      - name: Reject private inputs
+        shell: python
+        run: |
+          from pathlib import Path
+          import sys
+
+          root = Path(".").resolve()
+          private = []
+          if (root / ".local").exists():
+              private.append(root / ".local")
+          for pattern in ("*.sav", "*.bak"):
+              private.extend(
+                  path
+                  for path in root.rglob(pattern)
+                  if ".git" not in path.parts
+              )
+          if private:
+              print("Private inputs found in checkout:")
+              for path in private:
+                  print(path.relative_to(root))
+              sys.exit(1)
+
+      - name: Compile Python sources
+        shell: python
+        run: python -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
+
+      - name: Run full test suite
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+
+          report_dir = Path("test-results")
+          report_dir.mkdir(exist_ok=True)
+          result = subprocess.run(
+              [
+                  sys.executable,
+                  "-m",
+                  "pytest",
+                  "tests",
+                  "--junitxml=test-results/junit.xml",
+              ],
+              capture_output=True,
+              text=True,
+          )
+          output = result.stdout + result.stderr
+          output = re.sub(
+              r"(?i)(authorization:\s*bearer\s+)[^\s]+",
+              r"\1[REDACTED]",
+              output,
+          )
+          output = re.sub(
+              r"(?i)(token|password|secret)(\s*[=:]\s*)\S+",
+              r"\1\2[REDACTED]",
+              output,
+          )
+          (report_dir / "pytest.log").write_text(output, encoding="utf-8")
+          print(output[-20000:])
+          raise SystemExit(result.returncode)
+
+      - name: Upload sanitized failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: test-results/
+          if-no-files-found: ignore
