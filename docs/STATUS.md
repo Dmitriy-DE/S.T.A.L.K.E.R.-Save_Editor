@@ -8,7 +8,7 @@
 
 ## Найдено чтением исходников, требует regression-тестов
 
-S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29): переносимый synthetic fixture и 9 baseline-тестов добавлены; runtime не изменялся. S02 сейчас выполняется на ветке `task/s02`; её цель — сделать immutable snapshot правок и закрыть опасную комбинацию raw + изменение длины inventory arrays до общего apply-слоя.
+S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29): переносимый synthetic fixture и 9 baseline-тестов добавлены; runtime не изменялся. S02 принята через [PR #30](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/30): immutable snapshot правок и запрет опасной комбинации raw + изменение длины inventory arrays подключены к общему apply-слою. Следующая активная задача — S03, единая безопасная локальная запись.
 
 Привязки относятся к импортированному baseline. Это конкретные ограничения, не исчерпывающий аудит безопасности.
 
