@@ -1,0 +1,813 @@
+[
+  {
+    "id": "S01",
+    "title": "Переносимые fixtures и baseline-тесты",
+    "depends_on": [],
+    "files": [
+      "tests/conftest.py",
+      "tests/test_save_baseline.py",
+      "requirements-dev.txt",
+      "Makefile"
+    ],
+    "contract": "tests/conftest.py: synthetic_save() -> bytes создаёт искусственный контейнер с MONEY_ANCHOR, 4 owned handles 0x30000001..04, двумя grid cells и однозначными object records. Никаких байтов личного сейва. Fixture не доказывает реальность глобальной структуры игры.",
+    "steps": [
+      "Сохранить текущий selftest_real.py как отдельный private-corpus test; прочитать save_format.py:218 и :286 до создания fixture.",
+      "Создать synthetic_save с money=100, owned_flag=1, четырьмя handles, grid handles 0x30000001/02 в (0,0)/(1,0), stack handle 0x30000001 count=2 weight=0.2 kind=4. Record size >=36, marker +18=0x38, x/y=0. Файл собрать через rebuild_uncompressed.",
+      "Добавить тесты чтения, денег 100→900000, count 2→3 с весом 0.3, bad CRC, missing/duplicate anchor; проверить неизменность остальных raw bytes для money/stack.",
+      "Зафиксировать pytest в requirements-dev.txt; make test запускает python -m pytest tests/test_*.py. Не менять runtime ради удобства fixture."
+    ],
+    "checks": [
+      "python -m pytest tests/test_save_baseline.py -v",
+      "Ожидается: минимум 7 сценариев PASS; corruption/ambiguous input отвергнуты, правильные данные читаются.",
+      "make selftest SAVE=/absolute/path/to/original-D639.sav — отдельно только при наличии private corpus."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "ready",
+    "path": "docs/tasks/S01.md"
+  },
+  {
+    "id": "S02",
+    "title": "Неизменяемый план правок и запрет опасного raw batch",
+    "depends_on": [
+      "S01"
+    ],
+    "files": [
+      "editor/__init__.py",
+      "editor/models.py",
+      "editor/prepare.py",
+      "app.py",
+      "tests/test_edit_plan.py"
+    ],
+    "contract": "SourceRef/EditPlan/PreparedEdit — точные frozen dataclass из спецификации. prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit проверяет SHA и возвращает только проверенные bytes.",
+    "steps": [
+      "Написать regression: raw offset после inventory arrays + detach в одном запросе должен отказать до patch_save; отдельно raw-only и detach-only остаются рабочими.",
+      "Покрыть stale source SHA и изменение UI staged dict после создания EditPlan: snapshot не меняется.",
+      "Вынести snapshot на UI thread до bg(job); временно отклонять любой raw+attach/detach batch. Запрет объяснять явной ошибкой, не silently drop.",
+      "Подключить prepare_edit к Tk GUI; никакого изменения MONEY_ANCHOR и patch semantics. CLI подключается в S03."
+    ],
+    "checks": [
+      "python -m pytest tests/test_edit_plan.py tests/test_save_baseline.py -v",
+      "Raw+length-change: SaveError и patch_save не вызван; stale SHA: отказ; raw-only: корректный round-trip."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/S02.md"
+  },
+  {
+    "id": "S03",
+    "title": "Единая безопасная локальная запись для GUI и CLI",
+    "depends_on": [
+      "S02"
+    ],
+    "files": [
+      "editor/storage.py",
+      "app.py",
+      "cli.py",
+      "tests/test_storage.py"
+    ],
+    "contract": "export_local(source_path: Path, output_path: Path, prepared: PreparedEdit, backup_dir: Path) -> ExportReceipt. По умолчанию output не существует и не равен source. Backup UUID/exclusive, prepared.plan.source SHA проверяется свежим read.",
+    "steps": [
+      "Написать отказ при -o=source, existing output, changed source, backup write failure и partial temp write. Оригинал и existing output должны остаться побайтово прежними.",
+      "Реализовать unique backup+hash, temporary file в destination directory, flush/fsync и atomic publish с защитой existing output. Уточнить no-overwrite race: не ограничиваться exists()→replace().",
+      "Journal JSON содержит source/output hashes, operation summary и backup path; ошибка journal до публикации не должна выдавать успех. Failed temp удалять, backup сохранять.",
+      "Подключить GUI/CLI; сохранить команды. Добавить --backup-dir для явного размещения; default через текущий APP_HOME до P02. В этой задаче in-place mode не добавлять."
+    ],
+    "checks": [
+      "python -m pytest tests/test_storage.py tests/test_edit_plan.py -v",
+      "Fault injection каждой стадии: нет ложного success, source неизменен; два backup за одну секунду различны; unicode path работает."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/S03.md"
+  },
+  {
+    "id": "S04",
+    "title": "Полнота разбора и read-only неизвестных записей",
+    "depends_on": [
+      "S01"
+    ],
+    "files": [
+      "save_format.py",
+      "app.py",
+      "cli.py",
+      "tests/test_parser_coverage.py"
+    ],
+    "contract": "Дополнить SaveInfo полями grid_handle_count: int, unresolved_handles: tuple[int,...], warnings: tuple[str,...] с defaults для совместимости. Сохранять существующие поля.",
+    "steps": [
+      "Fixture с неоднозначным/неподдержанным grid handle должен показать unresolved handle, а не полностью успешный инвентарь.",
+      "Проверить дубли grid cells, границы массива, footprint collision, отсутствующий owned reference и неизвестный kind.",
+      "Разделить inspect/read-only и mutation eligibility: unknown kind не становится editable_count по принципу not in (0,1,2). Известные категории опирать на существующие подтверждённые примеры.",
+      "Показывать parsed/total и причины блокировки в GUI/CLI. Count=1 не расширять без evidence; поведение пустого inventory описать честно, не вводить guessed format."
+    ],
+    "checks": [
+      "python -m pytest tests/test_parser_coverage.py tests/test_save_baseline.py -v",
+      "Неизвестные объекты видны как unresolved/read-only; подтверждённые money/stack cases продолжают проходить."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/S04.md"
+  },
+  {
+    "id": "S05",
+    "title": "Steam worker: restart, timeout и единственный reader",
+    "depends_on": [
+      "S01"
+    ],
+    "files": [
+      "steam_cloud.py",
+      "tests/fake_worker.py",
+      "tests/test_worker_lifecycle.py"
+    ],
+    "contract": "Сохранить публичные SteamWorker start/connect/request/read_file/write_file/close. После timeout текущий процесс считается непригодным; следующий явный connect создаёт новую сессию.",
+    "steps": [
+      "Создать fake helper с тем же line-delimited JSON; режимы crash, delayed reply, malformed JSON, stderr flood, chunked response.",
+      "Regression: request на умершем процессе не deadlock. Regression: delayed ответ после timeout не становится ответом следующего запроса.",
+      "Разделить start и locked request так, чтобы не было recursive Lock; использовать один управляемый reader и drain stderr; timeout закрывает pipes и reap process.",
+      "Убрать бесконечные blocking read/write paths, ограничить response size разумным documented пределом для 27 MB save. Не логировать byte arrays."
+    ],
+    "checks": [
+      "python -m pytest tests/test_worker_lifecycle.py -v",
+      "Каждый timeout/crash test имеет внешний time bound; нет orphan process/thread, нет real Steam calls."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/S05.md"
+  },
+  {
+    "id": "S06",
+    "title": "Cloud transaction и честное uncertain-состояние",
+    "depends_on": [
+      "S02",
+      "S03",
+      "S05"
+    ],
+    "files": [
+      "editor/transactions.py",
+      "editor/models.py",
+      "app.py",
+      "tests/test_cloud_transaction.py",
+      "docs/evidence/HELPER_PROTOCOL.md"
+    ],
+    "contract": "upload_cloud(worker: CloudTransport, prepared: PreparedEdit, backup_dir: Path) -> CloudReceipt, контракт в спецификации. До WriteFile — исключение без записи; после неоднозначной записи — status=uncertain, recovery сохранён.",
+    "steps": [
+      "Проверить исходники конкретного helper release: API ReadFile читает cache или server? Записать tag/commit и доказанный смысл is_persisted; протокол не выводить из README.",
+      "Fake transport tests: source changed, backup failed, wrong slot, write failed mid-operation, sync/persist timeout, wrong read-back SHA.",
+      "Вынести state machine из app.py. Source locator неизменяем, upload без автоповтора. Ошибка после WriteFile не обещает rollback. Успех только после всех проверок.",
+      "Отмена до отправки безопасна; после отправки UI показывает необходимость reconciliation. Перепроверка не выполняет WriteFile. Никаких live cloud mutation в этой задаче."
+    ],
+    "checks": [
+      "python -m pytest tests/test_cloud_transaction.py tests/test_worker_lifecycle.py -v",
+      "Stale SHA/backup failure: write_calls==0; wrong read-back/persist timeout: uncertain и recovery exists; verified только при полном успехе."
+    ],
+    "gate": "code",
+    "priority": "P0",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/S06.md"
+  },
+  {
+    "id": "P01",
+    "title": "Decoder loader для Linux и Windows",
+    "depends_on": [
+      "S01"
+    ],
+    "files": [
+      "editor/codec.py",
+      "save_format.py",
+      "requirements.txt",
+      "tests/test_codec.py",
+      "third_party/pyooz/provenance.json"
+    ],
+    "contract": "editor.codec.decompress(stream: bytes, unpacked_size: int) -> bytes; Linux legacy vendor fallback и platform-installed pyooz==0.0.8. Unsupported OS/arch → понятная ошибка.",
+    "steps": [
+      "Проверить provenance обоих wheels, не копировать .so в Windows. Windows получает native .pyd из win_amd64 wheel.",
+      "Сделать loader с injectable import для missing/wrong-arch tests; native decompression semantics не менять.",
+      "На Windows runner выполнить реальный decode/rebuild/decode synthetic container; Linux повторяет existing corpus selftest.",
+      "Ошибка codec объясняет platform/arch/dependency; не называет всякую ошибку требованием Linux."
+    ],
+    "checks": [
+      "python -m pytest tests/test_codec.py tests/test_save_baseline.py -v",
+      "Обязательно evidence real native import на обеих ОС через P03; Linux mock Windows не является Windows PASS."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/P01.md"
+  },
+  {
+    "id": "P02",
+    "title": "Пути данных, launcher и helper на обеих ОС",
+    "depends_on": [
+      "P01",
+      "S05"
+    ],
+    "files": [
+      "editor/platforms.py",
+      "app.py",
+      "steam_cloud.py",
+      "run.bat",
+      "run.sh",
+      "tests/test_platforms.py",
+      "docs/evidence/HELPER_COMPATIBILITY.md"
+    ],
+    "contract": "user_data_dir() -> Path; discover_helper() -> Path|None. Linux XDG_DATA_HOME/APPDATA on Windows; legacy ~/Stalker2SaveEditor читается без удаления/автомиграции backups.",
+    "steps": [
+      "Tests unicode/spaces, missing env, helper отсутствует, non-executable Linux helper, Windows exe + dependent DLLs.",
+      "Ввести platform paths и Windows launcher; исключить chmod для .exe. Выбор helper явный, запуск списком args без shell.",
+      "Сверить Windows/Linux assets и --steam-worker protocol pinned helper version; подтвердить Ping offline на каждой ОС, Steam connect выделить в manual gate.",
+      "Описать migration существующих config/backups: только явное копирование с hashes, никаких silent move/delete."
+    ],
+    "checks": [
+      "python -m pytest tests/test_platforms.py tests/test_worker_lifecycle.py -v",
+      "run.bat smoke на Windows; run.sh smoke на Linux; отсутствие Steam/helper не мешает открыть локальный файл."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/P02.md"
+  },
+  {
+    "id": "P03",
+    "title": "CI для Linux и Windows без личных сейвов",
+    "depends_on": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "P01",
+      "P02"
+    ],
+    "files": [
+      ".github/workflows/test.yml",
+      "requirements-dev.txt",
+      "docs/RELEASE.md"
+    ],
+    "contract": "Matrix: ubuntu-22.04/windows-2022 × Python 3.11/3.12; python -m pytest tests. Runtime/dev deps pinned; failure не continue-on-error.",
+    "steps": [
+      "Собрать workflow с read-only contents permissions; install native platform wheels.",
+      "Запустить unit/fake worker/codec tests; real selftest только явно вручную при private corpus, не пытаться скачать saves из старых URLs.",
+      "На CI сохранить junit и sanitized logs при ошибке. Не включать секреты или auto-upload.",
+      "Дождаться реального завершения всех matrix jobs, записать run URL и counts."
+    ],
+    "checks": [
+      "Все четыре matrix jobs PASS; отсутствие Windows runner evidence оставляет задачу незавершённой.",
+      "Проверить workflow на fresh clone, где .local не существует."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/P03.md"
+  },
+  {
+    "id": "U01",
+    "title": "Общий service слой для GUI и CLI",
+    "depends_on": [
+      "S02",
+      "S03",
+      "S04",
+      "S06",
+      "P02"
+    ],
+    "files": [
+      "editor/service.py",
+      "app.py",
+      "cli.py",
+      "tests/test_service_parity.py"
+    ],
+    "contract": "EditorService.inspect/prepare/export_local/upload_cloud по спецификации; models неизменны, service без tkinter/PySide imports.",
+    "steps": [
+      "Записать parity-test: одинаковые source bytes и EditPlan дают одинаковые prepared bytes через service и существующий patch_save.",
+      "Вынести оркестрацию в service, а не дублировать parser. Зависимости storage/cloud inject.",
+      "Подключить Tk и CLI, сохранив commands и confirmations. Передавать UI snapshots через main-thread boundary.",
+      "Сравнить before/after inventory/money/raw bytes на fixture и private corpus при наличии."
+    ],
+    "checks": [
+      "python -m pytest tests/test_service_parity.py tests/test_storage.py tests/test_cloud_transaction.py -v",
+      "Tk/CLI smoke продолжают работать; нет UI imports в editor/service.py."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U01.md"
+  },
+  {
+    "id": "U02",
+    "title": "Qt shell и открытие локального сохранения",
+    "depends_on": [
+      "U01",
+      "P03"
+    ],
+    "files": [
+      "ui/__init__.py",
+      "ui/__main__.py",
+      "ui/main_window.py",
+      "requirements-ui.txt",
+      "tests/test_ui_open.py"
+    ],
+    "contract": "python -m ui запускает Qt app. MainWindow принимает EditorService; локальный analyze в worker, результаты через signals. Старый app.py остаётся fallback.",
+    "steps": [
+      "Добавить pinned PySide6 и pytest-qt после проверки target Python. Создать навигацию Обзор/Инвентарь/Изменения/Резервные копии.",
+      "Open dialog → async inspect → имя/источник/CRC/support summary; cancel и malformed file не сбрасывают предыдущий корректный snapshot.",
+      "Показать loading/error/empty states, disabled editing до успешного inspect.",
+      "Проверить keyboard tab order, 1366×768 и DPI; hardcoded pixel layout не использовать."
+    ],
+    "checks": [
+      "python -m pytest tests/test_ui_open.py -v",
+      "Native Qt startup + local analyze на Linux/Windows; screenshot evidence без личных сейвов."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U02.md"
+  },
+  {
+    "id": "U03",
+    "title": "Инвентарь: поиск, фильтры и редактирование стаков",
+    "depends_on": [
+      "U02",
+      "S04"
+    ],
+    "files": [
+      "ui/inventory_model.py",
+      "ui/inventory_view.py",
+      "tests/test_ui_inventory.py"
+    ],
+    "contract": "QAbstractTableModel с immutable inventory snapshot; row selection и staged edits идентифицируются handle, не индексом после sort/filter.",
+    "steps": [
+      "Тест: отсортировать/отфильтровать таблицу и изменить выбранный stack — меняется тот же handle.",
+      "Колонки name/category/count/weight/support; unknown labels честные, handle в details. Поиск case-insensitive, category и changed-only filters.",
+      "Money/stack form показывает текущее→новое, валидация диапазона и eligibility, count=1/unknown read-only с причиной.",
+      "Добавить clear selected/all staged, не применять bytes до preview. Иконки только собственные/разрешённые, не скрейпить игровые ассеты."
+    ],
+    "checks": [
+      "python -m pytest tests/test_ui_inventory.py -v",
+      "Filter/sort не меняют handle; invalid count не staging; unknown names не выдуманы."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U03.md"
+  },
+  {
+    "id": "U04",
+    "title": "Предпросмотр изменений и безопасный apply",
+    "depends_on": [
+      "U03"
+    ],
+    "files": [
+      "ui/changes_view.py",
+      "ui/operation_worker.py",
+      "tests/test_ui_apply.py"
+    ],
+    "contract": "Preview хранит PreparedEdit и immutable EditPlan; apply использует тот же SHA/data. Изменение формы инвалидирует preview.",
+    "steps": [
+      "Тесты preview invalidation, double-click apply, worker error, закрытие окна во время операции.",
+      "Показать before→after, destination, размер, backup/recovery, experimental статус. Разделить Сохранить копию и Загрузить в Steam.",
+      "Во время job запретить mutable controls; progress и errors через signals. Local apply использует service/storage, не пишет через widget.",
+      "Advanced lab по явному включению: перенести move/detach/attach/raw preview с теми же safety gates; не добавлять raw+structural batch."
+    ],
+    "checks": [
+      "python -m pytest tests/test_ui_apply.py -v",
+      "Двойной click = один write; stale preview отвергнут; UI responsive; close не обрывает молча critical write."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U04.md"
+  },
+  {
+    "id": "U05",
+    "title": "Журнал backup и восстановление локальной копии",
+    "depends_on": [
+      "U04",
+      "S03"
+    ],
+    "files": [
+      "ui/backups_view.py",
+      "editor/storage.py",
+      "tests/test_restore.py"
+    ],
+    "contract": "Восстановление — отдельный prepare/export через общий storage. По умолчанию восстановить в новый путь; backup browser не удаляет файлы автоматически.",
+    "steps": [
+      "Fixture journal с valid/missing/corrupt backup: показать отличимые состояния и hash check.",
+      "Список дата/source/operation/hash/status; открыть папку, выбрать backup и preview restore.",
+      "Restore не перезаписывает оригинал без отдельного подтверждённого flow; текущий файл сохраняется до явной замены.",
+      "Проверить прерывание restore и повторную операцию: никакой потери последней доступной копии."
+    ],
+    "checks": [
+      "python -m pytest tests/test_restore.py -v",
+      "Corrupt backup запрещён; valid restore побайтово равен backup; previous file не потерян."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U05.md"
+  },
+  {
+    "id": "U06",
+    "title": "Qt Steam Cloud и состояния синхронизации",
+    "depends_on": [
+      "U04",
+      "U05",
+      "S06"
+    ],
+    "files": [
+      "ui/cloud_view.py",
+      "ui/main_window.py",
+      "tests/test_ui_cloud.py"
+    ],
+    "contract": "UI отображает CloudReceipt.status/reason; selected cloud path закреплён в SourceRef. Никаких Steam writes при открытии приложения.",
+    "steps": [
+      "Fake service scenarios: disconnected, empty list, changed slot, persisted wait, uncertain, verified.",
+      "Выбор helper/connect/list/analyze; cloud write только из preview выбранного slot. Не путать Thumbnails и Data.",
+      "Uncertain экран показывает original backup/recovery и перепроверку без повторной загрузки; verified не отображать до receipt.",
+      "Cloud restore использует тот же staged preview и transaction, с fresh SHA текущего slot. Manual live test вынести в B02."
+    ],
+    "checks": [
+      "python -m pytest tests/test_ui_cloud.py -v",
+      "Wrong-slot test write_calls==0; timeout не green success; clear recovery paths."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/U06.md"
+  },
+  {
+    "id": "B01",
+    "title": "Воспроизводимые standalone сборки",
+    "depends_on": [
+      "U06",
+      "P03"
+    ],
+    "files": [
+      "packaging/editor.spec",
+      "packaging/build.py",
+      ".github/workflows/build.yml",
+      "requirements-build.txt",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "contract": "PyInstaller onedir: Windows x64 zip и Linux x86_64 tar.gz. Артефакты содержат runtime, native decoder, Qt plugins, licenses/source metadata; user installs no Python.",
+    "steps": [
+      "Зафиксировать PyInstaller/Qt/dependency versions по проверенной комбинации; источник всех native binaries с hashes.",
+      "Добавить CI build на Windows и Ubuntu 22.04, Python 3.11. Packaging resources через explicit paths, не текущий cwd.",
+      "Запустить packaged --help/diagnostic и Qt startup вне repo, без глобального Python/pyooz; включить лицензии и исходники native dependency.",
+      "Создать SHA256SUMS и source commit manifest. Никаких automatic public release до B02, dist не коммитить."
+    ],
+    "checks": [
+      "python packaging/build.py — на каждой целевой ОС; обе сборки и clean-machine smoke PASS.",
+      "Архив scan: нет .sav/.local/.git/credentials; decoder загружается из bundle."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/B01.md"
+  },
+  {
+    "id": "B02",
+    "title": "Приёмка beta и GitHub prerelease",
+    "depends_on": [
+      "B01"
+    ],
+    "files": [
+      "docs/evidence/BETA_ACCEPTANCE.md",
+      "docs/RELEASE.md",
+      "VERSION",
+      "README.md"
+    ],
+    "contract": "Матрица docs/RELEASE.md обязательна. Package hash, commit и run URL точно связывают результат с версией.",
+    "steps": [
+      "Выполнить Linux/Windows local matrix на synthetic и разрешённом disposable save; проверить DPI/keyboard/restore.",
+      "Только с отдельным поручением владельца проверить реальный cloud upload и GFN load/re-save. При отсутствии поручения оставить cloud unverified.",
+      "Отделить local-only beta от cloud-verified release. Experimental research функции не promote по CRC.",
+      "После gates создать tag/prerelease, загрузить оба артефакта, source archive, notices, checksums и limitations; read-back release assets hashes."
+    ],
+    "checks": [
+      "Каждая строка acceptance имеет PASS/FAIL/NOT_RUN с причиной; обязательные local OS rows PASS.",
+      "Windows NOT_RUN запрещает утверждение cross-platform complete."
+    ],
+    "gate": "manual",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/B02.md"
+  },
+  {
+    "id": "R01",
+    "title": "Контролируемый corpus и формат evidence",
+    "depends_on": [
+      "S01"
+    ],
+    "files": [
+      "docs/research/CORPUS_PROTOCOL.md",
+      "docs/research/corpus.schema.json",
+      "tools/validate_corpus.py",
+      "tests/test_corpus_manifest.py"
+    ],
+    "contract": "Manifest хранит ID, game build, SHA-256, known UI fields, operation, same-handle relation, local file reference; payload не коммитится.",
+    "steps": [
+      "Описать отдельные эксперименты: +1 stack, move one cell, equip/unequip, weapon 3 durability states, acquire/drop one known item.",
+      "Схема и validator отклоняют missing game build/hash/controlled change, разные handles для durability.",
+      "Отметить 5967/30145 как mismatched evidence. Не считать 53 owned равным parsed inventory + displayed orphans без анализа coverage.",
+      "Для GFN предлагать обычные игровые действия; console spawn только при доступной локальной игре, не требовать её установки как единственный путь."
+    ],
+    "checks": [
+      "python -m pytest tests/test_corpus_manifest.py -v",
+      "python tools/validate_corpus.py /path/to/manifest.json; private data не попадает в git."
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R01.md"
+  },
+  {
+    "id": "R02",
+    "title": "Каталог SID отдельно от доказанного save mapping",
+    "depends_on": [
+      "R01"
+    ],
+    "files": [
+      "data/item_catalog.json",
+      "docs/research/PROTOTYPE_MAPPING.md",
+      "tools/validate_catalog.py",
+      "tests/test_catalog.py",
+      "ui/inventory_model.py"
+    ],
+    "contract": "Catalog entry: sid, display_name, category, source_url, source_revision. Mapping entry отдельно: save format/game build, parse rule, evidence IDs, confidence. Не использовать type-key как SID без доказательства.",
+    "steps": [
+      "Импортировать небольшой проверенный набор public SID с источниками; лицензии данных и изображений учитывать отдельно.",
+      "Исследовать >=3 контролируемых примера и competing encodings. Negative examples обязательны: один type-key не даёт universal mapping.",
+      "Validator запрещает confirmed mapping без evidence IDs и применимости. Unknown сохраняется как unknown.",
+      "Подключить human names только для confirmed entries; если mapping не найден, завершить каталог и зафиксировать blocker mapping, Add остаётся disabled."
+    ],
+    "checks": [
+      "python -m pytest tests/test_catalog.py -v",
+      "Catalog validation PASS; mapping gate PASS только при evidence, отсутствие evidence не подменяется public SID list."
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R02.md"
+  },
+  {
+    "id": "R03",
+    "title": "Найти и доказать поле прочности",
+    "depends_on": [
+      "R01"
+    ],
+    "files": [
+      "docs/research/DURABILITY.md",
+      "tools/analyze_durability.py",
+      "tests/test_durability_analysis.py"
+    ],
+    "contract": "Analysis tool получает 3 raw/save состояния одного handle с известными UI values и выдаёт кандидатов с exact offset/type/scale; не изменяет сейвы.",
+    "steps": [
+      "Проверить SHA, game build и same-handle для A/B/C; если данных нет — записать конкретно недостающие состояния, остановить вывод offset.",
+      "Сравнить record windows с учётом guessed boundaries; проверить f32, integer, normalized encodings и исключить другие поля.",
+      "Повторить для другого экземпляра той же категории; оружие и броня имеют отдельную applicability.",
+      "Сохранить table expected/raw/offset и альтернативы; game verification изменения поля по отдельному поручению."
+    ],
+    "checks": [
+      "python -m pytest tests/test_durability_analysis.py -v",
+      "Evidence gate: >=3 состояния, same handle, monotonic known values, independent instance и game load/re-save; иначе R04 blocked."
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R03.md"
+  },
+  {
+    "id": "R04",
+    "title": "Редактирование подтверждённой прочности",
+    "depends_on": [
+      "R03",
+      "U04"
+    ],
+    "files": [
+      "save_format.py",
+      "editor/models.py",
+      "ui/inventory_view.py",
+      "tests/test_durability_patch.py",
+      "docs/SAVE_FORMAT.md"
+    ],
+    "contract": "Новый typed durability operation вводится только по принятому R03 parse rule и applicability. Точный API фиксировать в R03 evidence до кода, не придумывать offset в этой карточке.",
+    "steps": [
+      "Проверить gate R03: evidence с типом, масштабом и областью применения. Без gate код не писать.",
+      "Regression на known values + wrong category/build/ambiguous record; патч меняет только доказанное поле.",
+      "Добавить UI процент/текущее→новое и bounds, unsupported read-only. Не использовать универсальный raw f32=1.0.",
+      "Провести round-trip и игровой re-save по поручению; только после этого отметить применимость confirmed."
+    ],
+    "checks": [
+      "python -m pytest tests/test_durability_patch.py -v",
+      "Byte diff ограничен разрешённым полем; wrong build/category fail closed; игровая проверка отдельно."
+    ],
+    "gate": "evidence",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R04.md"
+  },
+  {
+    "id": "R05",
+    "title": "Реестр объектов, allocator и prototype references",
+    "depends_on": [
+      "R01",
+      "R02"
+    ],
+    "files": [
+      "docs/research/OBJECT_REGISTRY.md",
+      "tools/analyze_registry.py",
+      "tests/test_registry_analysis.py"
+    ],
+    "contract": "Read-only analysis с кандидатами registry boundaries/count/allocator/reference graph; результат должен содержать точную схему и ограничения, не next-known-record guess.",
+    "steps": [
+      "Контролируемые acquire/drop/equip или console spawn при доступности локальной игры; >=3 разных SID.",
+      "Найти новые handles, all references, object count, length encoding, owner/prototype/instance identity. Проверить reuse и persistence after re-save.",
+      "Исключить false boundaries, offsets за известным window не считать свободным пространством.",
+      "Документировать allocator algorithm только при доказательствах; иначе указать missing inputs и держать R06/R07/R08 blocked."
+    ],
+    "checks": [
+      "python -m pytest tests/test_registry_analysis.py -v",
+      "Gate: parse whole affected registry, unique identity, references reconciled и controlled A/B/C evidence."
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R05.md"
+  },
+  {
+    "id": "R06",
+    "title": "Клонирование одного подтверждённого типа предмета",
+    "depends_on": [
+      "R05",
+      "U04"
+    ],
+    "files": [
+      "editor/object_mutations.py",
+      "save_format.py",
+      "tests/test_clone_item.py",
+      "docs/research/CLONE_ACCEPTANCE.md"
+    ],
+    "contract": "Первый clone ограничен классом, подтверждённым R05; новый handle и все self/owner/registry refs по принятой схеме. Никакого копирования guessed record window.",
+    "steps": [
+      "Проверить registry gate и сформулировать exact typed operation по схеме R05; missing schema = blocked.",
+      "Тесты duplicate handle rejection, allocator exhaustion, missing prototype, occupied footprint и unsupported components.",
+      "Добавить создание нового instance с registry/count/owned/grid updates как одну транзакцию; исходный item неизменен.",
+      "Контроль game load/re-save по поручению; повторно разобрать обе независимые identity."
+    ],
+    "checks": [
+      "python -m pytest tests/test_clone_item.py -v",
+      "Ровно один новый объект, уникальный handle, references resolved, исходный объект неизменен, game evidence."
+    ],
+    "gate": "evidence",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R06.md"
+  },
+  {
+    "id": "R07",
+    "title": "Добавление предмета по подтверждённому SID",
+    "depends_on": [
+      "R02",
+      "R06"
+    ],
+    "files": [
+      "editor/object_mutations.py",
+      "ui/add_item_dialog.py",
+      "tests/test_add_item.py",
+      "docs/research/ADD_ACCEPTANCE.md"
+    ],
+    "contract": "Add разрешает только SID с confirmed prototype mapping и доказанным constructor schema; catalog-only entries read-only.",
+    "steps": [
+      "Негативные тесты unknown SID, неподдержанный game build, недостаточное место, недоказанные components.",
+      "Использовать allocator/registry implementation R06, создавать корректные default components по evidence; не создавать template из случайного похожего предмета.",
+      "Dialog показывает applicability, amount и footprint; inventory preview до apply.",
+      "Game load/re-save для каждого поддержанного класса; расширение на оружие/броню отдельными reviewed cases."
+    ],
+    "checks": [
+      "python -m pytest tests/test_add_item.py -v",
+      "Unknown SID не меняет bytes; known SID порождает один корректный новый instance с доказанным именем."
+    ],
+    "gate": "evidence",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R07.md"
+  },
+  {
+    "id": "R08",
+    "title": "Настоящее удаление с анализом ссылок",
+    "depends_on": [
+      "R05",
+      "U04"
+    ],
+    "files": [
+      "editor/object_mutations.py",
+      "tests/test_delete_item.py",
+      "docs/research/DELETE_ACCEPTANCE.md"
+    ],
+    "contract": "Delete — registry removal + dependent reference cleanup по R05. Quest/equipped/unknown references блокируют операцию до отдельного evidence.",
+    "steps": [
+      "Сначала составить reference graph выбранного типа; unknown references запрещают deletion.",
+      "Тесты dangling reference, equipped item, quest item, unsupported graph, deletion last visible item.",
+      "Обновить counts/registry/owned/grid по точной схеме, проверить отсутствие dangling refs; detach оставить отдельной операцией.",
+      "Game load/re-save и повторный reference scan; GC assumptions не считать доказательством."
+    ],
+    "checks": [
+      "python -m pytest tests/test_delete_item.py -v",
+      "Нет dangling refs; failure output отсутствует; quest/equipped не удаляются; game evidence обязательно."
+    ],
+    "gate": "evidence",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R08.md"
+  },
+  {
+    "id": "R09",
+    "title": "Исследование attachments и upgrades",
+    "depends_on": [
+      "R01",
+      "R05"
+    ],
+    "files": [
+      "docs/research/ATTACHMENTS.md",
+      "tools/analyze_attachments.py",
+      "tests/test_attachments_analysis.py"
+    ],
+    "contract": "Read-only mapping components/slots/compatibility/upgrades с applicability на конкретные weapon classes.",
+    "steps": [
+      "Controlled attach/detach одного аксессуара и upgrade одной характеристики — разные серии, не смешивать.",
+      "Зафиксировать same weapon handle, attachment instance/prototype, slot refs и derived stats.",
+      "Сравнить >=3 состояния и независимый экземпляр; неизвестные references описать явно.",
+      "Подготовить точную patch schema/compatibility table или blocker."
+    ],
+    "checks": [
+      "python -m pytest tests/test_attachments_analysis.py -v",
+      "Gate: component/ref layout, known compatibility, controlled evidence; без gate R10 blocked."
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R09.md"
+  },
+  {
+    "id": "R10",
+    "title": "Редактирование доказанных attachments/upgrades",
+    "depends_on": [
+      "R09",
+      "U04"
+    ],
+    "files": [
+      "editor/object_mutations.py",
+      "ui/item_details.py",
+      "tests/test_attachments_patch.py",
+      "docs/SAVE_FORMAT.md"
+    ],
+    "contract": "Typed operation по принятой R09 схеме; compatibility и derived fields проверяются, unknown slots read-only.",
+    "steps": [
+      "Regression для несовместимого attachment, occupied slot, unsupported weapon и missing component.",
+      "Применить доказанные ref/component изменения одной транзакцией; не патчить только видимый scalar.",
+      "UI показывает текущий/новый slot и ограничения; upgrades отделены от attachments.",
+      "Game load/re-save подтверждает persistence и отсутствие дубликатов/потерь."
+    ],
+    "checks": [
+      "python -m pytest tests/test_attachments_patch.py -v",
+      "Negative cases fail closed; exact reference updates; game evidence."
+    ],
+    "gate": "evidence",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R10.md"
+  },
+  {
+    "id": "R11",
+    "title": "Компактная пересборка Kraken с безопасным fallback",
+    "depends_on": [
+      "S01",
+      "P01"
+    ],
+    "files": [
+      "editor/kraken_blocks.py",
+      "save_format.py",
+      "tests/test_compact_rebuild.py",
+      "docs/research/COMPACT_REBUILD.md"
+    ],
+    "contract": "Новый optional rebuild mode сохраняет исходные compressed blocks только при доказанных block boundaries/dependencies. Всегда доступен текущий deterministic full rebuild.",
+    "steps": [
+      "Исследовать restart/dependency boundaries на compressed corpus; нельзя заменять один блок, если последующие зависят от старого dictionary.",
+      "Тесты cross-block changes, raw length changes, last partial block, unsupported stream и no-op byte identity.",
+      "При неоднозначности full rebuild fallback с явным mode/size. Каждый результат full decompress==expected raw и CRC.",
+      "Сравнить output size/time на corpus и проверить game load/re-save; не обещать 6–7 MB для любого edit."
+    ],
+    "checks": [
+      "python -m pytest tests/test_compact_rebuild.py -v",
+      "Unsupported stream → valid full rebuild; compact/raw bytes identical after decompress; game acceptance отдельно."
+    ],
+    "gate": "research",
+    "priority": "P3",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/R11.md"
+  }
+]

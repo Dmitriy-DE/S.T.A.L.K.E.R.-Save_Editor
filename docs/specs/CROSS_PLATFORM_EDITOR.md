@@ -1,0 +1,130 @@
+# Linux/Windows Save Editor — проектное решение
+
+Статус: план по поручению владельца, 2026-09-13. Реализацию выполняет GPT-5.6 Luna по карточкам. Разработка новых функций в импорт не входит.
+
+## Продукт и платформы
+
+Одна настольная программа: открыть локальный файл или выбрать Steam Cloud save → увидеть поддерживаемые данные → подготовить изменения → проверить preview → backup → сохранить копию или загрузить в выбранный cloud slot → показать проверенный результат и путь восстановления.
+
+Целевые платформы первой beta: **Windows 11 x64 и Ubuntu 22.04/24.04 x86_64**. Python разработки: **3.11 и 3.12**; первоначальная binary build lane — **3.11**. Windows 10, ARM64, macOS и произвольные Linux-дистрибутивы не входят в проверенный baseline beta. Расширять матрицу только отдельной задачей с результатами тестов.
+
+Существующая v0.3 требует Python 3.10+ по синтаксису; это не обещание поддержки всех таких интерпретаторов. Конечному пользователю устанавливать Python не потребуется в packaged builds.
+
+## Варианты интерфейса
+
+| Подход | Плюсы | Издержки | Решение |
+|---|---|---|---|
+| Оставить Tkinter/ttk | Минимальные зависимости, уже работает | Много ручной работы с таблицами, DPI, моделями, сигналами | Сохраняется до Qt parity как fallback |
+| Python + PySide6/Qt Widgets | Один язык с ядром; таблицы/model-view, worker signals, native dialogs | Размер дистрибутива, Qt plugins и packaging | Рекомендуемый путь |
+| Tauri/Electron + web UI | Богатая веб-вёрстка | Второй стек, IPC и packaging Python sidecar, сложнее отдельные задачи | Не выбирать для этой версии |
+
+Qt UI переносится постепенно, без переписывания binary parser и без двух разных наборов правил правки. Qt Widgets достаточно; веб-сервер, аккаунты приложения и облачный backend не требуются.
+
+## Границы модулей
+
+Сначала сохранить app.py/cli.py/save_format.py/steam_cloud.py как совместимые entry points. Новые модули вводить только в соответствующей карточке:
+
+```text
+editor/models.py          immutable request/source/result types
+editor/storage.py         backup, atomic export, local stale protection
+editor/transactions.py    transport-independent cloud state machine
+editor/service.py         inspect / prepare / export / upload orchestration
+editor/codec.py           platform decoder resolution
+editor/platforms.py       user data paths / helper discovery
+ui/main_window.py          Qt navigation and selection
+ui/inventory_model.py      table/filter model with stable handles
+ui/changes_view.py         preview and operation progress
+ui/backups_view.py         journal and restore
+ui/cloud_view.py           source selection / sync states
+packaging/                 reproducible platform builds
+```
+
+Не разносить save_format.py по новым пакетам во время UI migration. CPU/IO работа идёт вне UI thread; UI получает immutable snapshots/events через сигналы. Никаких чтений Tk/Qt variables из фонового потока.
+
+## Контракты для первых задач
+
+Ниже проектируемые API, в текущем baseline их ещё нет. S02 фиксирует models; следующие задачи импортируют их, а не создают несовместимые дубликаты.
+
+```python
+@dataclass(frozen=True)
+class SourceRef:
+    kind: Literal["local", "cloud"]
+    locator: str   # absolute local path or exact remote path
+    sha256: str
+
+@dataclass(frozen=True)
+class EditPlan:
+    source: SourceRef
+    money: int | None = None
+    stacks: tuple[tuple[int, int], ...] = ()
+    moves: tuple[tuple[int, int, int], ...] = ()
+    detach: tuple[tuple[int, bool], ...] = ()
+    attach: tuple[tuple[int, int, int, int, int], ...] = ()
+    raw: tuple[RawPatch, ...] = ()
+
+@dataclass(frozen=True)
+class PreparedEdit:
+    plan: EditPlan
+    data: bytes
+    output_sha256: str
+
+@dataclass(frozen=True)
+class ExportReceipt:
+    output_path: Path
+    backup_path: Path
+    output_sha256: str
+
+@dataclass(frozen=True)
+class CloudReceipt:
+    status: Literal["verified", "uncertain"]
+    remote_path: str
+    backup_path: Path
+    recovery_path: Path
+    output_sha256: str
+    reason: str | None = None
+```
+
+S02: `prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit` verifies source hash and rejects raw with attach/detach before calling existing patch_save. S03: `export_local(source_path: Path, output_path: Path, prepared: PreparedEdit, backup_dir: Path) -> ExportReceipt` rejects stale source and same-path exports by default. S06: `upload_cloud(worker: CloudTransport, prepared: PreparedEdit, backup_dir: Path) -> CloudReceipt`; remote path comes only from plan.source, failures before write raise an error, ambiguous outcomes after write return uncertain without automatic retry. CloudTransport provides read_file, write_file, sync, wait_persisted, list_files with existing worker meanings.
+
+U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. Dependencies must be injectable for tests; service imports no UI.
+
+## Запись и отмена
+
+Инварианты: exact source SHA → unique verified backup → prepare/CRC/round-trip → output recovery copy → actual write → verification. Preview связан с теми же bytes и SHA, которые применяются. Повторное изменение формы требует нового preview.
+
+Сейчас выбрать простой запрет raw + attach/detach в одной операции; relocatable raw addressing — отдельное будущее расширение, не угадывать новые offsets. RAW хранит expected original context в evidence, не называется durability.
+
+Local: default edited-copy; атомарная замена destination только при явном намерении пользователя, с защитой existing destination. Backup создаётся exclusively и не перезаписывается; before/after hashes в JSON journal. После падения исходник доступен. Не обещать fsync directory на ОС без поддержки; документировать пределы durability.
+
+Cloud: перед записью повторно сравнить SHA; один upload за раз. Steam API не даёт нам атомарного compare-and-swap, поэтому остаётся окно внешней записи: GFN должен быть закрыт. Timeout после WriteFile означает «результат неизвестен», не «ничего не записано» и не «успех». Автоповтор upload запрещён. Restore проходит тот же preview/backup/verify pipeline. До WriteFile отмена безопасна; после отправки — продолжить проверку статуса, не обещать rollback.
+
+## UI specification
+
+Основной язык — русский; внутренние ID показывать только в деталях, переводы оставлять в ресурсах. Resizable layout, keyboard navigation, видимые focus states, масштаб 100/150/200%, проверки на 1366×768 и 1920×1080.
+
+```text
+[Открыть .sav] [Steam Cloud]                         [Настройки]
+Сейв: имя • дата • источник • поддержка формата
+[Обзор] [Инвентарь] [Изменения (2)] [Резервные копии]
+
+Купоны: 56 995       Новое значение: [900 000]
+[Поиск предметов] [Категория] [Только изменённые]
+Предмет / категория | Количество | Вес | Статус поддержки
+Выбранный предмет: текущее → новое; причина read-only
+
+[Сбросить изменения]       [Предпросмотр] [Сохранить копию]
+```
+
+Название неизвестного предмета: «Неизвестный предмет · 0x…»; не выдумывать human names из type-key. Пока нет доказанного SID mapping, каталог доступен как справочник, а Add не активен.
+
+Preview: путь назначения, локально/cloud, поля before→after, рассчитанный размер, backup path, experimental marker. Progress: чтение → backup → проверка → запись → подтверждение; ошибки понятным текстом с раскрываемыми technical details и кнопкой копирования отчёта без credentials/save bytes.
+
+Experimental lab скрыт по умолчанию за отдельным включением в настройках. Пользователь должен отличать detach от delete. Grid view сначала read-only; drag-and-drop mutation не входит в первую Qt parity beta. Текущие move/detach/attach/raw остаются доступны явно как experimental, CLI сохраняется.
+
+## Исследовательские gates
+
+SID mapping: несколько независимых контролируемых пар и точные источники config; public SID != bytes in save. Durability: тот же handle в трёх известных состояниях + игровая загрузка/повторный save. Registry: доказанные границы/count/allocator и ссылки, не окно до следующего известного handle. Clone/Add/Delete/attachments разрешаются только после соответствующего evidence gate. Если данные не получены, результат research-задачи — документированный blocker с конкретным запросом, а не фиктивная кнопка.
+
+## Проверенные внешние основания
+
+Проверено 2026-09-13: [pyooz 0.0.8](https://pypi.org/project/pyooz/0.0.8/) публикует win_amd64 и manylinux x86_64 wheels; это не доказательство запуска нашего приложения на Windows. [Qt + PyInstaller](https://doc.qt.io/qtforpython-6/deployment/deployment-pyinstaller.html) описывает упаковку PySide6. [PyInstaller](https://www.pyinstaller.org/en/stable/) требует собирать отдельно на целевых ОС. [SteamCloudFileManager](https://github.com/Fldicoahkiin/SteamCloudFileManager) — внешний helper; совместимость конкретного --steam-worker протокола должна быть проверена по pinned release в P02/S06.

@@ -1,0 +1,22 @@
+{
+  "version": "0.0.8",
+  "source": "https://pypi.org/pypi/pyooz/0.0.8/json",
+  "checked_on": "2026-09-13",
+  "files": [
+    {
+      "filename": "pyooz-0.0.8-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/2f/47/b62dc161151e7835d1a8cbd295ae9f8f27a1bff261fdb098bf5eb1991181/pyooz-0.0.8-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "2359d5183388ec89561a3b2358c5533570da352d1e1af4290a932c8d0cf1ec9e"
+    },
+    {
+      "filename": "pyooz-0.0.8-cp38-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/cf/5d/767b4cea8a864c558dad4df0ce3282abbc4d462dac415014bccd10605527/pyooz-0.0.8-cp38-abi3-win_amd64.whl",
+      "sha256": "9c0f22b8bec3277f807215a6256bdc6b77375e4d01067dfb580422c35b1d2d65"
+    },
+    {
+      "filename": "pyooz-0.0.8.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/97/95/025dc21dbfe92855d6ab7b3c960159a682f647f71ac748714f0512695af6/pyooz-0.0.8.tar.gz",
+      "sha256": "98916331773493764483bc6448c9c6166bf2440939abe77cd140509038cc3adf"
+    }
+  ]
+}
