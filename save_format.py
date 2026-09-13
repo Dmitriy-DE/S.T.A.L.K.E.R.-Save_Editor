@@ -3,24 +3,13 @@ from __future__ import annotations
 import hashlib
 import math
 import struct
-import sys
 import zlib
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-APP_DIR = Path(__file__).resolve().parent
-VENDOR = APP_DIR / "vendor"
-if str(VENDOR) not in sys.path:
-    sys.path.insert(0, str(VENDOR))
-
-try:
-    import ooz  # type: ignore
-except Exception as exc:  # pragma: no cover
-    raise RuntimeError(
-        "Не удалось загрузить vendor/ooz.abi3.so. Нужен Linux x86_64/glibc 2.17+."
-    ) from exc
+from editor.codec import CodecError, decompress as codec_decompress
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -177,8 +166,8 @@ def decompress_save(data: bytes) -> bytes:
     if unpacked_size <= 0 or unpacked_size > 512 * 1024 * 1024:
         raise SaveError(f"Подозрительный распакованный размер: {unpacked_size}")
     try:
-        raw = ooz.decompress(data[4:-4], unpacked_size)
-    except Exception as exc:
+        raw = codec_decompress(data[4:-4], unpacked_size)
+    except CodecError as exc:
         raise SaveError(f"Kraken/Oodle распаковка не удалась: {exc}") from exc
     if len(raw) != unpacked_size:
         raise SaveError(

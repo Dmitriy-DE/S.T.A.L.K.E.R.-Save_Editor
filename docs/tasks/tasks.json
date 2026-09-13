@@ -188,6 +188,7 @@
     ],
     "files": [
       "editor/codec.py",
+      "editor/__init__.py",
       "save_format.py",
       "requirements.txt",
       "tests/test_codec.py",
@@ -206,9 +207,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/P01.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34"
   },
   {
     "id": "P02",
