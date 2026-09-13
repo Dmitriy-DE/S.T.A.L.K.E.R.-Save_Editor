@@ -51,6 +51,16 @@ For the same object handle across nearby saves, the bytes at `+8..+10` are stabl
 
 Because owned/grid arrays are count-prefixed and contiguous, v0.3 can rebuild those arrays with changed lengths while leaving the rest of raw payload intact. This is how experimental detach/attach is implemented.
 
+## Inspection coverage and read-only rules
+
+`inspect_save()` также возвращает `grid_handle_count`, `unresolved_handles` и
+`warnings`. Некорректная grid-ссылка, duplicate position, отсутствующий object
+record или неполный footprint остаются видимыми как диагностика, но не
+считаются полностью разобранным объектом. Неизвестный `kind` показывается с
+его числовым кодом и имеет `editable_count=False`; подтверждённые stackable
+коды ограничены `4, 5, 7, 8`. Это coverage отчёт для текущей структуры, а не
+доказательство универсальности всех кампаний и версий игры.
+
 ## Not confirmed
 
 - root object registry count / full object record boundaries;

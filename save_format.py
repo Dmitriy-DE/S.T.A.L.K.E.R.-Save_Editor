@@ -26,6 +26,8 @@ BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
 GRID_RECORD_SIZE = 8
 GRID_WIDTH = 8
+KNOWN_KIND_CODES = frozenset({0, 1, 2, 4, 5, 7, 8})
+EDITABLE_STACK_KIND_CODES = frozenset({4, 5, 7, 8})
 
 # Confirmed in the user's real saves. This is a campaign/player structure anchor,
 # not a universal GSC guarantee; all mutating operations fail closed if it stops
@@ -66,6 +68,10 @@ class InventoryLayout:
     grid_offset: int
     grid_cells: tuple[GridCell, ...]
     grid_end_offset: int
+    declared_grid_count: int = 0
+    grid_handle_count: int = 0
+    unresolved_handles: tuple[int, ...] = ()
+    warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -139,6 +145,9 @@ class SaveInfo:
     owned_handles: tuple[int, ...] = ()
     grid_cell_count: int = 0
     orphans: tuple[OrphanItem, ...] = ()
+    grid_handle_count: int = 0
+    unresolved_handles: tuple[int, ...] = ()
+    warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -240,19 +249,19 @@ def locate_inventory_layout(raw: bytes) -> InventoryLayout:
     if count_off + 2 > len(raw):
         raise SaveError("Inventory owned-handle header выходит за payload")
     owned_count = struct.unpack_from("<H", raw, count_off)[0]
-    if not (1 <= owned_count <= 4096):
+    if not (0 <= owned_count <= 4096):
         raise SaveError(f"Подозрительный owned handle count: {owned_count}")
     handles_off = count_off + 2
     handles_end = handles_off + owned_count * 4
     if handles_end + 2 > len(raw):
         raise SaveError("Owned handle array выходит за payload")
-    owned = struct.unpack_from(f"<{owned_count}I", raw, handles_off)
-    if sum(1 for h in owned if (h >> 24) == 0x30) < max(4, owned_count // 2):
+    owned = struct.unpack_from(f"<{owned_count}I", raw, handles_off) if owned_count else ()
+    if owned and sum(1 for h in owned if (h >> 24) == 0x30) < max(4, owned_count // 2):
         raise SaveError("Owned handle array не похож на player object handles")
 
     grid_count_off = handles_end
     grid_count = struct.unpack_from("<H", raw, grid_count_off)[0]
-    if not (1 <= grid_count <= 8192):
+    if not (0 <= grid_count <= 8192):
         raise SaveError(f"Подозрительный grid cell count: {grid_count}")
     grid_off = grid_count_off + 2
     grid_end = grid_off + grid_count * GRID_RECORD_SIZE
@@ -260,14 +269,48 @@ def locate_inventory_layout(raw: bytes) -> InventoryLayout:
         raise SaveError("Inventory grid выходит за payload")
 
     cells: list[GridCell] = []
+    all_grid_handles: set[int] = set()
+    unresolved: set[int] = set()
+    warnings: list[str] = []
+    owned_set = set(owned)
+    # Real saves may pad the owned array with repeated 0xFFFFFFFF sentinels;
+    # keep that observed placeholder as a warning-free non-object value while
+    # still flagging duplicate live handles as unresolved.
+    duplicate_owned = {h for h in owned if h != 0xFFFFFFFF and owned.count(h) > 1}
+    if duplicate_owned:
+        unresolved.update(duplicate_owned)
+        warnings.append(
+            "Owned handle list содержит дубликаты: "
+            + ", ".join(f"0x{h:08X}" for h in sorted(duplicate_owned))
+        )
+    positions: dict[tuple[int, int], int] = {}
     for i in range(grid_count):
         off = grid_off + i * GRID_RECORD_SIZE
         handle, x, y = struct.unpack_from("<IHH", raw, off)
-        if (handle >> 24) != 0x30 or x >= GRID_WIDTH or y >= 128:
-            raise SaveError(
-                f"Grid cell #{i} выглядит неподдерживаемым: handle=0x{handle:08X}, x={x}, y={y}"
+        all_grid_handles.add(handle)
+        if handle not in owned_set:
+            unresolved.add(handle)
+            warnings.append(
+                f"Grid cell #{i} ссылается на handle, которого нет в owned list: 0x{handle:08X}"
             )
+            continue
+        if (handle >> 24) != 0x30 or x >= GRID_WIDTH or y >= 128:
+            unresolved.add(handle)
+            warnings.append(
+                f"Grid cell #{i} вне поддерживаемых границ: handle=0x{handle:08X}, x={x}, y={y}"
+            )
+            continue
+        previous = positions.get((x, y))
+        if previous is not None:
+            unresolved.update((previous, handle))
+            warnings.append(
+                f"Duplicate grid position {x},{y}: handles 0x{previous:08X} и 0x{handle:08X}"
+            )
+        else:
+            positions[(x, y)] = handle
         cells.append(GridCell(handle, x, y))
+    if grid_count == 0:
+        warnings.append("Inventory grid пуст: отображены только owned handles")
 
     return InventoryLayout(
         anchor_offset=anchor,
@@ -280,6 +323,10 @@ def locate_inventory_layout(raw: bytes) -> InventoryLayout:
         grid_offset=grid_off,
         grid_cells=tuple(cells),
         grid_end_offset=grid_end,
+        declared_grid_count=grid_count,
+        grid_handle_count=len(all_grid_handles),
+        unresolved_handles=tuple(sorted(unresolved)),
+        warnings=tuple(warnings),
     )
 
 
@@ -339,8 +386,10 @@ def _record_end_guesses(raw: bytes, starts: dict[int, int]) -> dict[int, int]:
     return result
 
 
-def locate_inventory(raw: bytes) -> tuple[InventoryItem, ...]:
-    layout = locate_inventory_layout(raw)
+def _inventory_details(
+    raw: bytes, layout: InventoryLayout | None = None
+) -> tuple[tuple[InventoryItem, ...], tuple[int, ...], tuple[str, ...]]:
+    layout = layout or locate_inventory_layout(raw)
     cells_by_handle: dict[int, list[tuple[int, int]]] = defaultdict(list)
     for c in layout.grid_cells:
         cells_by_handle[c.handle].append((c.x, c.y))
@@ -348,17 +397,38 @@ def locate_inventory(raw: bytes) -> tuple[InventoryItem, ...]:
     starts = _record_start_map(raw, layout.owned_handles)
     ends = _record_end_guesses(raw, starts)
     items: list[InventoryItem] = []
+    unresolved = set(layout.unresolved_handles)
+    warnings = list(layout.warnings)
     for handle, cells in cells_by_handle.items():
         candidates = _candidate_object_records(raw, handle)
         if len(candidates) != 1:
+            unresolved.add(handle)
+            warnings.append(
+                f"Inventory handle 0x{handle:08X}: object record candidates={len(candidates)}"
+            )
             continue
         rec_off, count, total_weight, kind = candidates[0]
         xs = [p[0] for p in cells]
         ys = [p[1] for p in cells]
         x0, y0 = min(xs), min(ys)
         width, height = max(xs) - x0 + 1, max(ys) - y0 + 1
+        expected_cells = {
+            (x, y)
+            for y in range(y0, y0 + height)
+            for x in range(x0, x0 + width)
+        }
+        if set(cells) != expected_cells or len(set(cells)) != len(cells):
+            unresolved.add(handle)
+            warnings.append(
+                f"Handle 0x{handle:08X}: footprint/коллизия grid cells не образует полный прямоугольник"
+            )
         unit_weight = total_weight / count if count else 0.0
-        editable = count > 1 and kind not in (0, 1, 2)
+        if kind not in KNOWN_KIND_CODES:
+            unresolved.add(handle)
+            warnings.append(
+                f"Handle 0x{handle:08X}: неизвестный object kind={kind}, только read-only"
+            )
+        editable = count > 1 and kind in EDITABLE_STACK_KIND_CODES and handle not in unresolved
         fingerprint = raw[rec_off + 4 : rec_off + 18].hex()
         # The 3 bytes at +8..+10 are stable across nearby saves and are useful
         # as a research key, but are NOT yet claimed to be a public SID/hash.
@@ -384,9 +454,23 @@ def locate_inventory(raw: bytes) -> tuple[InventoryItem, ...]:
             )
         )
     items.sort(key=lambda it: (it.y, it.x, it.handle))
-    if not items:
-        raise SaveError("Не удалось сопоставить inventory grid с object records")
-    return tuple(items)
+    if not items and layout.declared_grid_count:
+        warnings.append("Не удалось сопоставить ни одной grid cell с object record")
+    for handle in layout.owned_handles:
+        if handle == 0xFFFFFFFF or handle in {c.handle for c in layout.grid_cells} or handle in unresolved:
+            continue
+        candidates = _candidate_object_records(raw, handle)
+        if len(candidates) != 1:
+            unresolved.add(handle)
+            warnings.append(
+                f"Owned handle 0x{handle:08X}: отсутствует однозначный object record"
+            )
+    deduped_warnings = tuple(dict.fromkeys(warnings))
+    return tuple(items), tuple(sorted(unresolved)), deduped_warnings
+
+
+def locate_inventory(raw: bytes) -> tuple[InventoryItem, ...]:
+    return _inventory_details(raw)[0]
 
 
 def locate_orphans(raw: bytes) -> tuple[OrphanItem, ...]:
@@ -394,7 +478,7 @@ def locate_orphans(raw: bytes) -> tuple[OrphanItem, ...]:
     grid_handles = {c.handle for c in layout.grid_cells}
     out: list[OrphanItem] = []
     for h in layout.owned_handles:
-        if h in grid_handles:
+        if h == 0xFFFFFFFF or h in grid_handles or h in layout.unresolved_handles:
             continue
         c = _candidate_object_records(raw, h)
         if len(c) != 1:
@@ -432,13 +516,28 @@ def inspect_save(data: bytes, with_inventory: bool = True) -> SaveInfo:
     inventory: tuple[InventoryItem, ...] = ()
     owned: tuple[int, ...] = ()
     grid_cells = 0
+    grid_handles = 0
     orphans: tuple[OrphanItem, ...] = ()
+    unresolved: tuple[int, ...] = ()
+    warnings: list[str] = []
+    if anchor_count != 1:
+        warnings.append(f"Wallet anchor count={anchor_count}; money is not editable")
     if with_inventory:
         layout = locate_inventory_layout(raw)
         owned = layout.owned_handles
-        grid_cells = len(layout.grid_cells)
-        inventory = locate_inventory(raw)
+        grid_cells = layout.declared_grid_count
+        grid_handles = layout.grid_handle_count
+        inventory, unresolved, layout_warnings = _inventory_details(raw, layout)
+        warnings.extend(layout_warnings)
         orphans = locate_orphans(raw)
+        unresolved_set = set(unresolved)
+        for orphan in orphans:
+            if orphan.kind_code not in KNOWN_KIND_CODES:
+                unresolved_set.add(orphan.handle)
+                warnings.append(
+                    f"Handle 0x{orphan.handle:08X}: неизвестный orphan object kind={orphan.kind_code}, только read-only"
+                )
+        unresolved = tuple(sorted(unresolved_set))
     return SaveInfo(
         packed_size=len(data),
         unpacked_size=len(raw),
@@ -452,6 +551,9 @@ def inspect_save(data: bytes, with_inventory: bool = True) -> SaveInfo:
         owned_handles=owned,
         grid_cell_count=grid_cells,
         orphans=orphans,
+        grid_handle_count=grid_handles,
+        unresolved_handles=unresolved,
+        warnings=tuple(dict.fromkeys(warnings)),
     )
 
 
@@ -490,7 +592,13 @@ def _patch_stack_in_raw(raw: bytearray, handle: int, new_count: int) -> tuple[in
 def _patch_move_in_raw(raw: bytearray, handle: int, new_x: int, new_y: int) -> tuple[int, int, int, int]:
     if not (0 <= new_x < GRID_WIDTH and 0 <= new_y < 128):
         raise SaveError("Новая позиция вне допустимой inventory grid")
-    items = {it.handle: it for it in locate_inventory(bytes(raw))}
+    items_tuple, unresolved, _warnings = _inventory_details(bytes(raw))
+    if unresolved:
+        raise SaveError(
+            "Move остановлен: inventory содержит unresolved handles "
+            + ", ".join(f"0x{h:08X}" for h in unresolved)
+        )
+    items = {it.handle: it for it in items_tuple}
     item = items.get(handle)
     if item is None:
         raise SaveError(f"Inventory handle 0x{handle:08X} не найден")
@@ -532,6 +640,11 @@ def _rebuild_inventory_arrays(
     grid_cells: Iterable[GridCell] | None = None,
 ) -> bytes:
     layout = locate_inventory_layout(raw)
+    if layout.unresolved_handles:
+        raise SaveError(
+            "Нельзя пересобирать inventory при unresolved grid handles: "
+            + ", ".join(f"0x{h:08X}" for h in layout.unresolved_handles)
+        )
     owned = tuple(layout.owned_handles if owned_handles is None else owned_handles)
     cells = tuple(layout.grid_cells if grid_cells is None else grid_cells)
     if len(owned) > 0xFFFF or len(cells) > 0xFFFF:
@@ -548,6 +661,9 @@ def _rebuild_inventory_arrays(
 
 def _detach_in_raw(raw: bytes, handle: int, deep: bool) -> bytes:
     layout = locate_inventory_layout(raw)
+    _items, unresolved, _warnings = _inventory_details(raw, layout)
+    if handle in unresolved:
+        raise SaveError(f"Detach запрещён для unresolved handle 0x{handle:08X}")
     if not any(c.handle == handle for c in layout.grid_cells):
         raise SaveError(f"Handle 0x{handle:08X} уже отсутствует в inventory grid")
     rec_off, *_ = locate_object_record(raw, handle)
@@ -571,11 +687,18 @@ def _attach_orphan_in_raw(raw: bytes, handle: int, x: int, y: int, width: int, h
     if x + width > GRID_WIDTH or y + height > 128:
         raise SaveError("Footprint attach не помещается в grid")
     layout = locate_inventory_layout(raw)
+    if layout.unresolved_handles:
+        raise SaveError(
+            "Attach остановлен: inventory содержит unresolved grid handles "
+            + ", ".join(f"0x{h:08X}" for h in layout.unresolved_handles)
+        )
     if handle not in layout.owned_handles:
         raise SaveError("Attach допускает только handle, который уже есть в owned handle list")
     if any(c.handle == handle for c in layout.grid_cells):
         raise SaveError("Handle уже находится в grid")
-    locate_object_record(raw, handle)  # fail closed if ambiguous
+    _record_off, _count, _weight, kind = locate_object_record(raw, handle)
+    if kind not in KNOWN_KIND_CODES:
+        raise SaveError(f"Attach запрещён для неизвестного object kind={kind}")
     occupied = {(c.x, c.y) for c in layout.grid_cells}
     new_cells = [GridCell(handle, x + dx, y + dy) for dy in range(height) for dx in range(width)]
     for c in new_cells:
