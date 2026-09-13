@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import glob
 import json
 import os
 from pathlib import Path
 import queue
-import shutil
 import subprocess
 import threading
 import time
 from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable
+
+from editor.platforms import discover_helper
 
 APP_ID = 1643320
 SAVE_PREFIX = "Stalker2/Saved/STEAM/SaveGames/Data/"
@@ -34,24 +34,6 @@ class CloudFile:
     exists: bool
 
 
-def discover_helper() -> str | None:
-    for name in ("steam-cloud-file-manager", "SteamCloudFileManager"):
-        p = shutil.which(name)
-        if p:
-            return p
-    patterns = [
-        "~/Downloads/SteamCloudFileManager*.AppImage",
-        "~/Downloads/*steam*cloud*file*manager*.AppImage",
-        "~/Applications/SteamCloudFileManager*.AppImage",
-        "~/.local/bin/steam-cloud-file-manager",
-    ]
-    for pat in patterns:
-        hits = sorted(glob.glob(os.path.expanduser(pat)), reverse=True)
-        if hits:
-            return hits[0]
-    return None
-
-
 class SteamWorker:
     """JSON-RPC bridge to SteamCloudFileManager's --steam-worker mode.
 
@@ -59,7 +41,7 @@ class SteamWorker:
     SteamCloudFileManager itself.  We deliberately do not automate its GUI.
     """
 
-    def __init__(self, helper_path: str, log: Callable[[str], None] | None = None):
+    def __init__(self, helper_path: str | Path, log: Callable[[str], None] | None = None):
         self.helper_path = str(Path(helper_path).expanduser())
         self.log = log or (lambda _s: None)
         self.proc: subprocess.Popen[str] | None = None
@@ -106,7 +88,7 @@ class SteamWorker:
         p = Path(self.helper_path)
         if not p.exists():
             raise SteamCloudError(f"SteamCloudFileManager не найден: {p}")
-        if os.name != "nt":
+        if os.name != "nt" and p.suffix.lower() != ".exe":
             try:
                 mode = p.stat().st_mode
                 p.chmod(mode | 0o111)
@@ -118,6 +100,7 @@ class SteamWorker:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                shell=False,
                 text=True,
                 encoding="utf-8",
                 bufsize=1,

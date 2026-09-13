@@ -28,14 +28,17 @@ from save_format import (
     record_hex,
 )
 from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.platforms import legacy_data_dir, user_data_dir
 from editor.prepare import prepare_edit
 from editor.storage import export_local
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
-APP_HOME = Path.home() / "Stalker2SaveEditor"
+APP_HOME = user_data_dir()
+LEGACY_APP_HOME = legacy_data_dir()
 BACKUP_DIR = APP_HOME / "backups"
 CONFIG_PATH = APP_HOME / "config.json"
+LEGACY_CONFIG_PATH = LEGACY_APP_HOME / "config.json"
 RELEASES_URL = "https://github.com/Fldicoahkiin/SteamCloudFileManager/releases"
 
 
@@ -124,10 +127,14 @@ class App(tk.Tk):
 
     # ---------------- config/common ----------------
     def load_config(self) -> dict:
-        try:
-            return json.loads(CONFIG_PATH.read_text("utf-8"))
-        except Exception:
-            return {}
+        for path in (CONFIG_PATH, LEGACY_CONFIG_PATH):
+            try:
+                value = json.loads(path.read_text("utf-8"))
+            except Exception:
+                continue
+            if isinstance(value, dict):
+                return value
+        return {}
 
     def save_config(self):
         CONFIG_PATH.write_text(

@@ -8,7 +8,7 @@
 
 ## Найдено чтением исходников, требует regression-тестов
 
-S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29): переносимый synthetic fixture и 9 baseline-тестов добавлены; runtime не изменялся. S02 принята через [PR #30](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/30): immutable snapshot правок и запрет опасной комбинации raw + изменение длины inventory arrays подключены к общему apply-слою. S03 принята через [PR #31](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/31): единый безопасный local export подключён к Tk/CLI. S04 принята через [PR #32](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/32): parser coverage и read-only неизвестных записей подключены к GUI/CLI. S05 принята через [PR #33](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/33): worker lifecycle покрыт fake helper и bounded response handling. P01 принята через [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34): loader выбирает platform `pyooz==0.0.8`, Linux legacy fallback и явные ошибки unsupported target; Windows native smoke остаётся P03 evidence. Следующая активная задача — P02.
+S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/29): переносимый synthetic fixture и 9 baseline-тестов добавлены; runtime не изменялся. S02 принята через [PR #30](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/30): immutable snapshot правок и запрет опасной комбинации raw + изменение длины inventory arrays подключены к общему apply-слою. S03 принята через [PR #31](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/31): единый безопасный local export подключён к Tk/CLI. S04 принята через [PR #32](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/32): parser coverage и read-only неизвестных записей подключены к GUI/CLI. S05 принята через [PR #33](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/33): worker lifecycle покрыт fake helper и bounded response handling. P01 принята через [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34): loader выбирает platform `pyooz==0.0.8`, Linux legacy fallback и явные ошибки unsupported target; Windows native smoke остаётся P03 evidence. P02 в review: единые Linux/Windows user-data paths, legacy read-only fallback, launcher и helper discovery; реальный Windows/Steam smoke ещё не проверен.
 
 Привязки относятся к импортированному baseline. Это конкретные ограничения, не исчерпывающий аудит безопасности.
 
@@ -27,7 +27,7 @@ S01 принята в `main` через [PR #29](https://github.com/Dmitriy-DE/S
 | Область | Сейчас | Задачи |
 |---|---|---|
 | Надёжность | Ограниченный self-test на личном файле, нет CI с переносимыми fixtures | S01–S06 |
-| Linux + Windows | P01 добавляет platform-aware decoder; launcher, helper и реальная Windows CI ещё впереди | P02–P03, B01–B02 |
+| Linux + Windows | P01 добавляет decoder, P02 — paths/launcher/helper; реальная Windows CI ещё впереди | P03, B01–B02 |
 | Удобный UI | Технические таблицы, handles/type-key, экспериментальная лаборатория | U01–U06 |
 | Восстановление | Файлы backup без полноценного журнала/restore flow | S03, U05 |
 | Названия и каталог | Маленький seed SID, связи с save не доказаны | R01–R02 |
