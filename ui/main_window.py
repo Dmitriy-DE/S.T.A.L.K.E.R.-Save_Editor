@@ -26,9 +26,13 @@ from PySide6.QtWidgets import (
 )
 
 from editor.service import EditorService
-from save_format import SaveInfo
+from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.platforms import backup_dirs
+from save_format import SaveError, SaveInfo
 
+from .changes_view import ChangesView
 from .inventory_view import InventoryView
+from .operation_worker import OperationWorker
 
 
 def _human_size(size: int) -> str:
@@ -74,6 +78,9 @@ class MainWindow(QMainWindow):
 
     analysis_ready = Signal(object)
     analysis_failed = Signal(str)
+    preview_ready = Signal(object)
+    apply_ready = Signal(object)
+    operation_failed = Signal(str)
 
     def __init__(self, service: EditorService) -> None:
         super().__init__()
@@ -81,10 +88,13 @@ class MainWindow(QMainWindow):
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
+        self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
         self._inspect_worker: InspectWorker | None = None
         self._pending_path: Path | None = None
+        self._operation_thread: OperationWorker | None = None
+        self._operation_kind: str | None = None
 
         self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
         self.resize(1100, 760)
@@ -119,7 +129,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.addTab(self._build_overview_tab(), "Обзор")
         self.tabs.addTab(self._build_inventory_tab(), "Инвентарь")
-        self.tabs.addTab(self._placeholder("Изменения появятся после общего preview gate (U04)."), "Изменения")
+        self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._placeholder("Backup journal и restore flow подключаются в U05."), "Резервные копии")
         layout.addWidget(self.tabs, 1)
 
@@ -127,11 +137,13 @@ class MainWindow(QMainWindow):
         actions.addStretch(1)
         self.preview_button = QPushButton("Предпросмотр")
         self.preview_button.setEnabled(False)
-        self.preview_button.setToolTip("Будет подключено после U03/U04")
+        self.preview_button.setToolTip("Подготовить immutable preview из staged edits")
+        self.preview_button.clicked.connect(self._start_preview)
         actions.addWidget(self.preview_button)
         self.save_copy_button = QPushButton("Сохранить копию")
         self.save_copy_button.setEnabled(False)
-        self.save_copy_button.setToolTip("Будет подключено после U03/U04")
+        self.save_copy_button.setToolTip("Записать только ранее проверенный preview")
+        self.save_copy_button.clicked.connect(self._choose_and_start_apply)
         actions.addWidget(self.save_copy_button)
         layout.addLayout(actions)
 
@@ -184,6 +196,13 @@ class MainWindow(QMainWindow):
         self.inventory_table = self.inventory_view.table
         self.inventory_model = self.inventory_view.model
         return self.inventory_view
+
+    def _build_changes_tab(self) -> QWidget:
+        self.changes_view = ChangesView(self)
+        self.changes_view.preview_requested.connect(self._start_preview)
+        self.changes_view.apply_requested.connect(self._choose_and_start_apply)
+        self.changes_view.choose_output_requested.connect(self._choose_output)
+        return self.changes_view
 
     @staticmethod
     def _placeholder(text: str) -> QWidget:
@@ -249,6 +268,7 @@ class MainWindow(QMainWindow):
         info = snapshot.info
         self.staged_counts.clear()
         self.staged_money = None
+        self.prepared_edit = None
         crc = "OK" if info.crc_ok else "FAIL"
         money = "unknown" if info.money is None else str(info.money)
         self.source_label.setText(
@@ -266,12 +286,13 @@ class MainWindow(QMainWindow):
         )
         self._render_money(info)
         self._render_inventory(info)
+        self.changes_view.set_staged(info, self.staged_money, self.staged_counts)
+        self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
         self.error_label.clear()
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True
-        self.preview_button.setEnabled(True)
-        self.save_copy_button.setEnabled(True)
+        self._update_action_buttons()
 
     def _render_inventory(self, info: SaveInfo) -> None:
         self.inventory_view.set_items(info.inventory)
@@ -315,6 +336,8 @@ class MainWindow(QMainWindow):
             return
         self.staged_money = None if value == info.money else value
         self._render_money(info)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged значение баланса")
         self.status_label.setText(
             f"Staged: money={'нет' if self.staged_money is None else self.staged_money}, "
             f"stacks={len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
@@ -324,6 +347,8 @@ class MainWindow(QMainWindow):
         self.staged_money = None
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
+            self._render_changes()
+            self._invalidate_preview("staged баланс очищен")
         self.status_label.setText("Staged balance очищен; bytes сейва не изменены")
 
     def _find_inventory_item(self, handle: int):
@@ -360,6 +385,8 @@ class MainWindow(QMainWindow):
         else:
             self.staged_counts[item.handle] = value
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged значение stack")
         self.status_label.setText(
             f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
         )
@@ -367,6 +394,8 @@ class MainWindow(QMainWindow):
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self._render_changes()
+        self._invalidate_preview("staged stack очищен")
         self.status_label.setText(
             f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
         )
@@ -377,9 +406,200 @@ class MainWindow(QMainWindow):
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self._render_changes()
+        self._invalidate_preview("все staged-правки очищены")
         self.status_label.setText("Все staged-правки очищены; bytes сейва не изменены")
 
+    def _render_changes(self) -> None:
+        if self.snapshot is None:
+            return
+        self.changes_view.set_staged(
+            self.snapshot.info,
+            self.staged_money,
+            self.staged_counts,
+        )
+
+    def _has_staged_changes(self) -> bool:
+        return self.staged_money is not None or bool(self.staged_counts)
+
+    def _update_action_buttons(self) -> None:
+        busy = self._operation_thread is not None and self._operation_thread.isRunning()
+        has_changes = self.edit_actions_enabled and self._has_staged_changes()
+        can_preview = has_changes
+        can_apply = self.prepared_edit is not None
+        self.preview_button.setEnabled(can_preview and not busy)
+        self.save_copy_button.setEnabled(can_apply and not busy)
+        self.changes_view.set_actions_enabled(
+            preview=can_preview,
+            apply=can_apply,
+            busy=busy,
+        )
+
+    def _show_operation_error(self, message: str) -> None:
+        self.status_label.setText("Операция не выполнена")
+        self.error_label.setText(message)
+        self.error_label.setVisible(True)
+        self.changes_view.set_error(message)
+        self.operation_failed.emit(message)
+
+    def _invalidate_preview(self, reason: str) -> None:
+        self.prepared_edit = None
+        self.changes_view.invalidate_preview(reason)
+        self._update_action_buttons()
+
+    def _build_edit_plan(self) -> EditPlan:
+        if self.snapshot is None:
+            raise SaveError("Сначала проанализируй локальный сейв")
+        if not self._has_staged_changes():
+            raise SaveError("Нет staged изменений")
+        return EditPlan(
+            source=SourceRef(
+                kind="local",
+                locator=str(self.snapshot.path),
+                sha256=self.snapshot.info.sha256,
+            ),
+            money=self.staged_money,
+            stacks=tuple(sorted(self.staged_counts.items())),
+        )
+
+    def _start_preview(self) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            return
+        try:
+            plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+
+        self.prepared_edit = None
+        self._operation_kind = "preview"
+        self.changes_view.clear_error()
+        self.changes_view.set_progress("Запуск preview…")
+        self.status_label.setText("Preview: подготовка…")
+        worker = OperationWorker(
+            self.service,
+            mode="preview",
+            data=self.snapshot.data if self.snapshot is not None else b"",
+            plan=plan,
+            parent=self,
+        )
+        worker.preview_ready.connect(self._on_preview_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_thread = worker
+        self._update_action_buttons()
+        worker.start()
+
+    def _on_preview_ready(self, prepared: PreparedEdit) -> None:
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._on_operation_failed(str(exc))
+            return
+        if prepared.plan != current_plan:
+            self._on_operation_failed("Staged форма изменилась во время preview; повтори preview")
+            return
+        self.prepared_edit = prepared
+        self.changes_view.set_preview(prepared)
+        self.status_label.setText("Preview готов; можно выбрать путь и сохранить копию")
+        self.preview_ready.emit(prepared)
+
+    def _on_operation_progress(self, message: str) -> None:
+        self.status_label.setText(message)
+        self.changes_view.set_progress(message)
+
+    def _on_operation_failed(self, message: str) -> None:
+        if "SHA256" in message or "Источник изменился" in message:
+            self.prepared_edit = None
+            self.changes_view.invalidate_preview("source SHA изменился")
+        self._show_operation_error(message)
+
+    def _on_operation_finished(self) -> None:
+        self._operation_thread = None
+        self._operation_kind = None
+        self.changes_view.set_busy(False)
+        self._update_action_buttons()
+
+    def _choose_output(self) -> None:
+        path = self.changes_view.choose_output()
+        if path is not None:
+            self.changes_view.set_destination(path)
+
+    def _choose_and_start_apply(self) -> None:
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        value = self.changes_view.destination_edit.text().strip()
+        if not value:
+            path = self.changes_view.choose_output()
+            if path is None:
+                return
+        else:
+            path = Path(value)
+        self._start_apply(path)
+
+    def _start_apply(self, output_path: Path, backup_dir: Path | None = None) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            return
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Нет текущего snapshot для apply")
+            return
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+        if self.prepared_edit.plan != current_plan:
+            self._invalidate_preview("staged форма изменилась после preview")
+            self._show_operation_error("Preview устарел после изменения формы; создай его заново")
+            return
+
+        source_path = Path(self.snapshot.path)
+        output_path = Path(output_path).expanduser()
+        backup_path = Path(backup_dir).expanduser() if backup_dir is not None else backup_dirs()[0]
+        worker = OperationWorker(
+            self.service,
+            mode="apply",
+            data=self.snapshot.data,
+            plan=self.prepared_edit.plan,
+            source_path=source_path,
+            output_path=output_path,
+            backup_dir=backup_path,
+            parent=self,
+        )
+        worker.set_prepared(self.prepared_edit)
+        worker.preview_ready.connect(self._on_preview_ready)
+        worker.apply_ready.connect(self._on_apply_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "apply"
+        self._operation_thread = worker
+        self.changes_view.set_destination(output_path)
+        self.changes_view.set_progress("Запуск local export…")
+        self.status_label.setText("Сохранение копии…")
+        self._update_action_buttons()
+        worker.start()
+
+    def _on_apply_ready(self, receipt) -> None:
+        self.prepared_edit = None
+        self.changes_view.mark_applied(receipt)
+        self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
+        self.apply_ready.emit(receipt)
+
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            self.status_label.setText(
+                "Операция ещё выполняется; закрой окно после завершения, чтобы не оборвать запись"
+            )
+            event.ignore()
+            return
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             self._inspect_thread.quit()
             self._inspect_thread.wait(1_000)

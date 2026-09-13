@@ -377,9 +377,10 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/U03.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/40"
   },
   {
     "id": "U04",
@@ -390,6 +391,7 @@
     "files": [
       "ui/changes_view.py",
       "ui/operation_worker.py",
+      "ui/main_window.py",
       "tests/test_ui_apply.py"
     ],
     "contract": "Preview хранит PreparedEdit и immutable EditPlan; apply использует тот же SHA/data. Изменение формы инвалидирует preview.",
@@ -405,7 +407,7 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/U04.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13"
   },
