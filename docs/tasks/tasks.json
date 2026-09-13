@@ -264,7 +264,8 @@
     "files": [
       ".github/workflows/test.yml",
       "requirements-dev.txt",
-      "docs/RELEASE.md"
+      "docs/RELEASE.md",
+      "tests/test_ci_contract.py"
     ],
     "contract": "Matrix: ubuntu-22.04/windows-2022 × Python 3.11/3.12; python -m pytest tests. Runtime/dev deps pinned; failure не continue-on-error.",
     "steps": [
@@ -281,7 +282,8 @@
     "priority": "P1",
     "status": "in_progress",
     "path": "docs/tasks/P03.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37"
   },
   {
     "id": "U01",
@@ -295,6 +297,7 @@
     ],
     "files": [
       "editor/service.py",
+      "editor/__init__.py",
       "app.py",
       "cli.py",
       "tests/test_service_parity.py"
@@ -312,7 +315,7 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/U01.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10"
   },

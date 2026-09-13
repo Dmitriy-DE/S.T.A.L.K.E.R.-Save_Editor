@@ -13,7 +13,9 @@
 запускаются compile и полный pytest suite. При сбое публикуются JUnit и
 sanitized log; workflow не подключает Steam, credentials или cloud upload.
 Приёмка P03 требует фактического PASS всех четырёх GitHub runner jobs и
-сохранённого run URL; локальный Linux PASS сам по себе это не заменяет.
+сохранённого run URL; локальный Linux PASS сам по себе это не заменяет. PR #37
+слит в `main`, но его два PR-run завершились `startup_failure` с нулём jobs;
+issue #9 оставлена открытой до появления настоящего runner evidence.
 
 ## Будущая pipeline (B01, B02)
 

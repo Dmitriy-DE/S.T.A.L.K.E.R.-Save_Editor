@@ -23,14 +23,12 @@ from save_format import (
     SaveError,
     SaveInfo,
     decompress_save,
-    inspect_save,
     record_hex,
 )
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import legacy_data_dir, user_data_dir
-from editor.prepare import prepare_edit
-from editor.storage import export_local
-from editor.transactions import CloudTransactionError, upload_cloud
+from editor.service import EditorService
+from editor.transactions import CloudTransactionError
 from steam_cloud import APP_ID, CloudFile, SteamCloudError, SteamWorker, discover_helper
 
 APP_NAME = "STALKER 2 Cloud Save Editor v0.3 EXPERIMENTAL"
@@ -40,6 +38,7 @@ BACKUP_DIR = APP_HOME / "backups"
 CONFIG_PATH = APP_HOME / "config.json"
 LEGACY_CONFIG_PATH = LEGACY_APP_HOME / "config.json"
 RELEASES_URL = "https://github.com/Fldicoahkiin/SteamCloudFileManager/releases"
+EDITOR_SERVICE = EditorService()
 
 
 def human_size(n: int) -> str:
@@ -374,7 +373,7 @@ class App(tk.Tk):
         except Exception as exc: messagebox.showerror(APP_NAME,str(exc)); return
         def job():
             w=self.ensure_connection(); self.msgq.put(("log",f"Скачиваю: {cloud.name}"))
-            data=w.read_file(cloud.name); info=inspect_save(data,with_inventory=True); raw=decompress_save(data)
+            data=w.read_file(cloud.name); info=EDITOR_SERVICE.inspect(data,with_inventory=True); raw=decompress_save(data)
             self.msgq.put(("analysis",("cloud",cloud.name,None,info,data,raw)))
         self.bg(job)
 
@@ -383,7 +382,7 @@ class App(tk.Tk):
         if not p: return
         path=Path(p)
         def job():
-            data=path.read_bytes(); info=inspect_save(data,with_inventory=True); raw=decompress_save(data)
+            data=path.read_bytes(); info=EDITOR_SERVICE.inspect(data,with_inventory=True); raw=decompress_save(data)
             self.msgq.put(("analysis",("local",None,path,info,data,raw)))
         self.bg(job)
 
@@ -597,15 +596,15 @@ class App(tk.Tk):
             messagebox.showerror(APP_NAME,"Неизвестный source mode")
 
     def do_patch(self, original:bytes, plan: EditPlan) -> PreparedEdit:
-        return prepare_edit(original, plan)
+        return EDITOR_SERVICE.prepare(original, plan)
 
     def apply_local(self,out:Path,plan:EditPlan):
         source_path=self.analysis_local_path; assert source_path is not None
         def job():
             source_data=source_path.read_bytes()
             prepared=self.do_patch(source_data,plan)
-            receipt=export_local(source_path,out,prepared,BACKUP_DIR)
-            edited=receipt.output_path.read_bytes(); after=inspect_save(edited,with_inventory=True)
+            receipt=EDITOR_SERVICE.export_local(source_path,out,prepared,BACKUP_DIR)
+            edited=receipt.output_path.read_bytes(); after=EDITOR_SERVICE.inspect(edited,with_inventory=True)
             self.msgq.put(("log",f"Local export OK: {out} ({human_size(len(edited))})"))
             self.msgq.put(("log",f"Backup: {receipt.backup_path}; journal: {receipt.backup_path.with_suffix('.json')}"))
             self.msgq.put(("analysis",("local",None,out,after,edited,decompress_save(edited))))
@@ -637,7 +636,7 @@ class App(tk.Tk):
             def progress(stage: str) -> None:
                 self.msgq.put(("log", labels.get(stage, stage)))
 
-            receipt = upload_cloud(
+            receipt = EDITOR_SERVICE.upload_cloud(
                 w,
                 prepared,
                 BACKUP_DIR,
@@ -660,7 +659,7 @@ class App(tk.Tk):
                 return
 
             edited = prepared.data
-            check = inspect_save(edited,with_inventory=True)
+            check = EDITOR_SERVICE.inspect(edited,with_inventory=True)
             self.msgq.put(("status", "Cloud: verified"))
             self.msgq.put(("analysis",("cloud",cloud.name,None,check,edited,decompress_save(edited))))
             self.msgq.put(("info",f"Cloud upload verified. persisted=true + read-back SHA OK.\nBackup: {receipt.backup_path}\nEdited recovery: {receipt.recovery_path}"))
