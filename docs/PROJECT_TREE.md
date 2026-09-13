@@ -15,9 +15,13 @@ docs/tasks/                                       individual execution cards + i
 docs/evidence/                                    reproducible result reports
 docs/history/                                     historical project docs
 .local/                                           ignored originals, saves and work logs
-packaging/                                        reserved for standalone builds in B01
+packaging/build.py                                stdlib-only standalone builder
+packaging/editor.spec                             PyInstaller onedir spec (GUI + diagnostic)
+packaging/gui_entry.py / diagnostic.py            packaged entry points
 ```
 
-`packaging/` пока не создан, а CI workflow P03 существует, но его GitHub runner
-запуски завершаются `startup_failure` до jobs. Standalone `.exe`, `.deb` и
-portable Linux archive появятся только после B01.
+`packaging/` теперь содержит builder и spec B01. Локально на Linux x86_64
+получены portable archive и `.deb`; Windows artifact и GitHub runner evidence
+остаются обязательным внешним gate. P03 workflow запуски завершаются
+`startup_failure` до jobs, поэтому этот локальный результат не объявляет
+cross-platform beta готовой.

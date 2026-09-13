@@ -36,7 +36,7 @@ ui/inventory_model.py      table/filter model with stable handles
 ui/changes_view.py         preview and operation progress
 ui/backups_view.py         journal and restore
 ui/cloud_view.py           source selection / sync states
-packaging/                 reproducible platform builds
+packaging/                 reproducible platform builds and diagnostic entrypoint
 ```
 
 Не разносить save_format.py по новым пакетам во время UI migration. CPU/IO работа идёт вне UI thread; UI получает immutable snapshots/events через сигналы. Никаких чтений Tk/Qt variables из фонового потока.
@@ -147,4 +147,4 @@ SID mapping: несколько независимых контролируем�
 
 ## Проверенные внешние основания
 
-Проверено 2026-09-13: [pyooz 0.0.8](https://pypi.org/project/pyooz/0.0.8/) публикует win_amd64 и manylinux x86_64 wheels; это не доказательство запуска нашего приложения на Windows. [Qt + PyInstaller](https://doc.qt.io/qtforpython-6/deployment/deployment-pyinstaller.html) описывает упаковку PySide6. [PyInstaller](https://www.pyinstaller.org/en/stable/) требует собирать отдельно на целевых ОС. [SteamCloudFileManager](https://github.com/Fldicoahkiin/SteamCloudFileManager) — внешний helper; совместимость конкретного --steam-worker протокола должна быть проверена по pinned release в P02/S06.
+Проверено 2026-09-13: [pyooz 0.0.8](https://pypi.org/project/pyooz/0.0.8/) публикует win_amd64 и manylinux x86_64 wheels; это не доказательство запуска нашего приложения на Windows. [Qt + PyInstaller](https://doc.qt.io/qtforpython-6/deployment/deployment-pyinstaller.html) описывает упаковку PySide6. [PyInstaller](https://www.pyinstaller.org/en/stable/) требует собирать отдельно на целевых ОС; B01 закрепляет `PyInstaller==6.22.3` и добавляет onedir spec/manifest/checksum flow. [SteamCloudFileManager](https://github.com/Fldicoahkiin/SteamCloudFileManager) — внешний helper; совместимость конкретного --steam-worker протокола должна быть проверена по pinned release в P02/S06.

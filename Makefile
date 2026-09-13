@@ -1,7 +1,7 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check test selftest run
+.PHONY: check test selftest run package-plan package
 check:
 	$(PYTHON) -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
@@ -14,3 +14,9 @@ selftest: check
 
 run:
 	./run.sh
+
+package-plan:
+	$(PYTHON) packaging/build.py --plan
+
+package:
+	$(PYTHON) packaging/build.py --target auto --output-dir dist

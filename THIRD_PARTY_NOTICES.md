@@ -20,6 +20,23 @@ License: GPL-3.0.
 
 SteamCloudFileManager is **not bundled**. The application invokes a separately installed/downloaded copy as a local helper using its `--steam-worker` IPC mode.
 
+## PySide6 / Qt
+
+The standalone desktop bundle includes `PySide6==6.11.2` and the Qt runtime
+plugins selected by PyInstaller. PySide6 is distributed by Qt Group under the
+LGPL/GPL and commercial licensing options; the applicable license texts and
+notices shipped by the wheel are retained in the generated bundle. See the
+[PySide6 licensing documentation](https://doc.qt.io/qtforpython-6/licenses.html)
+before redistributing a binary package.
+
+## PyInstaller
+
+Builds use `PyInstaller==6.22.3`. PyInstaller is a build-time tool and is not
+required by the source editor at runtime. Its bootloader and license notice
+are included in the generated artifact according to the PyInstaller license.
+The pinned build input is recorded in `requirements-build.txt` and
+`BUILD_MANIFEST.json`.
+
 ## Decoder source provenance
 
 The upstream pyooz 0.0.8 source distribution and file hashes are retained in [third_party/pyooz](third_party/pyooz/README.md). The bundled Linux decoder matches the supplied wheel; a byte-identical source rebuild has not been performed. The Windows wheel is provenance-checked but is not bundled in this source checkout; packaged builds must include its actual dependency and notices.

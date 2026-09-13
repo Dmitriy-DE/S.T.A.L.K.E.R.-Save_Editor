@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).parents[1]
+SPEC = importlib.util.spec_from_file_location("save_editor_build", ROOT / "packaging" / "build.py")
+assert SPEC and SPEC.loader
+build = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(build)
+
+
+def test_resolve_target_rejects_cross_os_build() -> None:
+    assert build.resolve_target("auto", host="Linux") == "linux"
+    assert build.resolve_target("windows", host="Windows") == "windows"
+    with pytest.raises(build.BuildError, match="не является cross-compiler"):
+        build.resolve_target("windows", host="Linux")
+
+
+def test_artifact_names_include_architecture_and_version() -> None:
+    assert build.artifact_names("0.3.0-experimental", "linux") == (
+        "SaveEditor-linux-x86_64-v0.3.0-experimental.tar.gz",
+        "stalker2-save-editor_0.3.0-experimental_amd64.deb",
+    )
+    assert build.artifact_names("0.3.0-experimental", "windows") == (
+        "SaveEditor-windows-x86_64-v0.3.0-experimental.zip",
+    )
+
+
+def test_scan_package_tree_rejects_private_inputs(tmp_path: Path) -> None:
+    safe = tmp_path / "safe.txt"
+    safe.write_text("ok", encoding="utf-8")
+    build.scan_package_tree(tmp_path)
+    (tmp_path / "copied.sav").write_bytes(b"private")
+    with pytest.raises(build.BuildError, match="private input"):
+        build.scan_package_tree(tmp_path)
+    (tmp_path / "copied.sav").unlink()
+    (tmp_path / "credentials.json").write_text("private", encoding="utf-8")
+    with pytest.raises(build.BuildError, match="private input"):
+        build.scan_package_tree(tmp_path)
+
+
+def test_manifest_is_machine_readable_and_declares_runtime_policy(tmp_path: Path) -> None:
+    manifest = build.build_manifest(root=ROOT, target="linux", version="test")
+    path = tmp_path / "BUILD_MANIFEST.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["architecture"] == "x86_64"
+    assert loaded["runtime_policy"]["core"] == "Python standard library"
+    assert loaded["runtime_policy"]["steam_helper"] == "external executable; never bundled"
+
+
+def test_plan_is_explicitly_non_cross_compiling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(build, "host_target", lambda system=None: "linux")
+    result = build.plan(target="linux", output_dir=tmp_path, version="0.3.0-experimental")
+    assert result["cross_compile"] is False
+    assert result["artifacts"][0].endswith(".tar.gz")

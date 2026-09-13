@@ -1,0 +1,6 @@
+# Build environment for standalone bundles (Python 3.11 on target runners).
+# PyInstaller is invoked only during packaging; it is not a runtime dependency
+# of the parser, storage layer or source checkout.
+PyInstaller==6.22.3
+PySide6==6.11.2
+pyooz==0.0.8
