@@ -14,7 +14,7 @@
       "Сохранить текущий selftest_real.py как отдельный private-corpus test; прочитать save_format.py:218 и :286 до создания fixture.",
       "Создать synthetic_save с money=100, owned_flag=1, четырьмя handles, grid handles 0x30000001/02 в (0,0)/(1,0), stack handle 0x30000001 count=2 weight=0.2 kind=4. Record size >=36, marker +18=0x38; x/y совпадают с grid, у остальных handles FFFF/FFFF. Файл собрать через rebuild_uncompressed.",
       "Добавить тесты чтения, денег 100→900000, count 2→3 с весом 0.3, bad CRC, missing/duplicate anchor; проверить неизменность остальных raw bytes для money/stack.",
-      "Зафиксировать pytest в requirements-dev.txt; make test запускает python -m pytest tests/test_*.py. Не менять runtime ради удобства fixture."
+      "Зафиксировать pytest в requirements-dev.txt; make test запускает python -m pytest tests. Не менять runtime ради удобства fixture."
     ],
     "checks": [
       "python -m pytest tests/test_save_baseline.py -v",
@@ -23,7 +23,7 @@
     ],
     "gate": "code",
     "priority": "P0",
-    "status": "ready",
+    "status": "completed",
     "path": "docs/tasks/S01.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/1"
   },
