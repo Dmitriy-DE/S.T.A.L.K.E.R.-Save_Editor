@@ -2,7 +2,7 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter и staged изменения количества распознанных стаков, platform-aware decoder loader. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: preview/apply, standalone Windows build и реальный Windows smoke ещё впереди.
+**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell для локального анализа, inventory search/filter, staged money/stack edits и immutable preview/local-copy apply, platform-aware decoder loader. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: backup browser, Steam UI, standalone Windows build и реальный Windows smoke ещё впереди.
 
 ## Что доступно
 
@@ -10,7 +10,7 @@
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - GUI для локальных файлов и Steam Cloud; CLI для исследования.
 - Experimental: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
-- Общий UI-free `EditorService` связывает parser, immutable preview, local export и cloud transaction для Tk/CLI и будущего Qt.
+- Общий UI-free `EditorService` связывает parser, immutable preview, local export и cloud transaction для Tk/CLI/Qt.
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 
@@ -46,9 +46,9 @@ python3 -m ui
 ```
 
 На Windows используй `py -3 -m pip install -r requirements-ui.txt` и
-`py -3 -m ui`. В Qt shell можно искать и фильтровать локальный inventory и
-застейджить количество подтверждённого stack; bytes сейва не меняются до
-preview/apply в U04.
+`py -3 -m ui`. В Qt shell можно искать и фильтровать локальный inventory,
+застейджить подтверждённые money/stack изменения, нажать preview и сохранить
+новую копию; исходный сейв остаётся неизменным.
 
 Новые настройки и backups пишутся в platform user-data directory
 (`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на

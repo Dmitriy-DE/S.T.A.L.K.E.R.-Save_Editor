@@ -1,0 +1,207 @@
+"""Preview and local-apply controls for the optional Qt shell."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from pathlib import Path
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from editor.models import PreparedEdit
+from save_format import InventoryItem, SaveInfo
+
+
+class ChangesView(QWidget):
+    """Read-only staged-change list and preview/apply actions."""
+
+    preview_requested = Signal()
+    apply_requested = Signal()
+    choose_output_requested = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        self.staged_label = QLabel("Нет staged changes")
+        self.staged_label.setWordWrap(True)
+        layout.addWidget(self.staged_label)
+
+        self.changes_table = QTableWidget(0, 5)
+        self.changes_table.setHorizontalHeaderLabels(
+            ["Операция", "Handle/поле", "До", "После", "Поддержка"]
+        )
+        self.changes_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.changes_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.changes_table.setAlternatingRowColors(True)
+        self.changes_table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.changes_table, 1)
+
+        destination = QFormLayout()
+        destination_row = QHBoxLayout()
+        self.destination_edit = QLineEdit()
+        self.destination_edit.setPlaceholderText("Путь новой копии .sav")
+        destination_row.addWidget(self.destination_edit, 1)
+        self.choose_output_button = QPushButton("Выбрать…")
+        self.choose_output_button.clicked.connect(self.choose_output_requested.emit)
+        destination_row.addWidget(self.choose_output_button)
+        destination.addRow("Копия", destination_row)
+        layout.addLayout(destination)
+
+        actions = QHBoxLayout()
+        self.preview_button = QPushButton("Проверить preview")
+        self.preview_button.setEnabled(False)
+        self.preview_button.clicked.connect(self.preview_requested.emit)
+        actions.addWidget(self.preview_button)
+        self.apply_button = QPushButton("Сохранить копию")
+        self.apply_button.setEnabled(False)
+        self.apply_button.clicked.connect(self.apply_requested.emit)
+        actions.addWidget(self.apply_button)
+        self.cloud_button = QPushButton("Загрузить в Steam")
+        self.cloud_button.setEnabled(False)
+        self.cloud_button.setToolTip("Cloud UI подключается в U06")
+        actions.addWidget(self.cloud_button)
+        layout.addLayout(actions)
+
+        self.preview_status_label = QLabel("Preview ещё не создан")
+        self.preview_status_label.setWordWrap(True)
+        self.preview_status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.preview_status_label)
+        self.progress_label = QLabel("")
+        self.progress_label.setWordWrap(True)
+        layout.addWidget(self.progress_label)
+        self.error_label = QLabel("")
+        self.error_label.setWordWrap(True)
+        self.error_label.setStyleSheet("color: #a11;")
+        self.error_label.setVisible(False)
+        layout.addWidget(self.error_label)
+
+    def set_staged(
+        self,
+        info: SaveInfo,
+        staged_money: int | None,
+        staged_counts: Mapping[int, int],
+    ) -> None:
+        items = {item.handle: item for item in info.inventory}
+        rows: list[tuple[str, str, str, str, str]] = []
+        if staged_money is not None:
+            before = "unknown" if info.money is None else str(info.money)
+            rows.append(("Баланс", "money", before, str(staged_money), "Подтверждено"))
+        for handle, new_count in sorted(staged_counts.items()):
+            item = items.get(int(handle))
+            if item is None:
+                rows.append(
+                    (
+                        "Стак",
+                        f"0x{int(handle):08X}",
+                        "unknown",
+                        str(new_count),
+                        "Только чтение: handle не найден",
+                    )
+                )
+                continue
+            rows.append(
+                (
+                    "Стак",
+                    item.handle_hex,
+                    str(item.count),
+                    str(new_count),
+                    "Количество можно изменить" if item.editable_count else "Только чтение",
+                )
+            )
+
+        self.changes_table.setRowCount(len(rows))
+        for row, values in enumerate(rows):
+            for column, value in enumerate(values):
+                self.changes_table.setItem(row, column, QTableWidgetItem(value))
+        self.staged_label.setText(
+            f"Staged changes: {len(rows)}; bytes исходного сейва не изменены"
+            if rows
+            else "Нет staged changes"
+        )
+        self.preview_button.setEnabled(bool(rows))
+        self.error_label.clear()
+        self.error_label.setVisible(False)
+
+    def set_preview(self, prepared: PreparedEdit) -> None:
+        self.preview_status_label.setText(
+            f"Preview готов: input SHA {prepared.plan.source.sha256[:12]}… → "
+            f"output {len(prepared.data)} B, SHA {prepared.output_sha256[:12]}…"
+        )
+        self.progress_label.setText("Preview проверен: CRC/round-trip прошли")
+        self.apply_button.setEnabled(True)
+        self.error_label.clear()
+        self.error_label.setVisible(False)
+
+    def invalidate_preview(self, reason: str) -> None:
+        self.preview_status_label.setText(f"Preview недействителен: {reason}")
+        self.apply_button.setEnabled(False)
+
+    def set_busy(self, busy: bool) -> None:
+        if busy:
+            self.preview_button.setEnabled(False)
+            self.apply_button.setEnabled(False)
+        self.choose_output_button.setEnabled(not busy)
+        self.destination_edit.setEnabled(not busy)
+        self.cloud_button.setEnabled(False)
+
+    def set_actions_enabled(self, *, preview: bool, apply: bool, busy: bool) -> None:
+        """Set action state from MainWindow's single operation gate."""
+
+        self.preview_button.setEnabled(bool(preview) and not busy)
+        self.apply_button.setEnabled(bool(apply) and not busy)
+        self.choose_output_button.setEnabled(not busy)
+        self.destination_edit.setEnabled(not busy)
+        self.cloud_button.setEnabled(False)
+
+    def set_progress(self, message: str) -> None:
+        self.progress_label.setText(message)
+
+    def set_error(self, message: str) -> None:
+        self.error_label.setText(message)
+        self.error_label.setVisible(True)
+        self.progress_label.setText("Операция остановлена")
+
+    def clear_error(self) -> None:
+        self.error_label.clear()
+        self.error_label.setVisible(False)
+
+    def mark_applied(self, receipt) -> None:
+        output = Path(receipt.output_path)
+        backup = Path(receipt.backup_path)
+        self.preview_status_label.setText(
+            f"Сохранено: {output} • backup: {backup} • SHA {receipt.output_sha256[:12]}…"
+        )
+        self.progress_label.setText("Local export подтверждён read-back SHA")
+        self.apply_button.setEnabled(False)
+
+    def choose_output(self) -> Path | None:
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить копию STALKER 2 .sav",
+            self.destination_edit.text(),
+            "STALKER 2 save (*.sav);;Все файлы (*)",
+        )
+        return Path(filename) if filename else None
+
+    def set_destination(self, path: Path) -> None:
+        self.destination_edit.setText(str(path))
+
+
+__all__ = ["ChangesView"]
