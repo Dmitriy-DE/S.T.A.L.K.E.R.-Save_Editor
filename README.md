@@ -2,7 +2,7 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter, platform-aware decoder loader. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: standalone Windows build, Qt-интерфейс и реальный Windows smoke ещё впереди.
+**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и первый Qt shell для локального анализа, platform-aware decoder loader. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется установленный `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор: standalone Windows build, Qt editing parity и реальный Windows smoke ещё впереди.
 
 ## Что доступно
 
@@ -37,6 +37,17 @@ sudo apt install python3 python3-tk
 cloud-режима. Helper устанавливается отдельно; старый локальный tar.gz не
 является установленным приложением. Не выполняйте cloud-upload из
 автоматических тестов.
+
+Для нового Qt shell установи дополнительные зависимости и запусти модуль:
+
+```bash
+python3 -m pip install -r requirements-ui.txt
+python3 -m ui
+```
+
+На Windows используй `py -3 -m pip install -r requirements-ui.txt` и
+`py -3 -m ui`. Qt shell пока предназначен для локального открытия и анализа;
+редактирование подключается следующими UI-карточками.
 
 Новые настройки и backups пишутся в platform user-data directory
 (`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на

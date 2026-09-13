@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **U01 / issue #10**. S01–S06, P01 и P02, а также код P03 приняты в `main`; P03 runner gate остаётся открытым после двух `startup_failure` запусков без jobs. U01 — следующий независимый code gate для общего service слоя. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
+Текущий результат — **U02 / issue #11**. S01–S06, P01 и P02, а также код P03 и U01 приняты в `main`; P03 runner gate остаётся открытым после трёх `startup_failure` запусков без jobs. U02 добавляет Qt shell и локальный async inspect; его native Linux/Windows evidence ещё впереди. Все 28 issues созданы. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Одна карточка — один PR.
 
 | ID | Задача | Зависимости | Статус | GitHub |
 |---|---|---|---|---|
@@ -13,8 +13,8 @@
 | [P01](P01.md) | Decoder loader для Linux и Windows | S01 | accepted | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7), [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34) |
 | [P02](P02.md) | Пути данных, launcher и helper на обеих ОС | P01, S05 | accepted | [#8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8), [PR #35](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/35) |
 | [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | in_progress (runner blocked) | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9), [PR #37](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37) |
-| [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | in_progress | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10) |
-| [U02](U02.md) | Qt shell и открытие локального сохранения | U01, P03 | waiting_dependencies | [#11](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11) |
+| [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | accepted | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10), [PR #38](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/38) |
+| [U02](U02.md) | Qt shell и открытие локального сохранения | U01, P03 | in_progress (P03 runner pending) | [#11](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11) |
 | [U03](U03.md) | Инвентарь: поиск, фильтры и редактирование стаков | U02, S04 | waiting_dependencies | [#12](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12) |
 | [U04](U04.md) | Предпросмотр изменений и безопасный apply | U03 | waiting_dependencies | [#13](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/13) |
 | [U05](U05.md) | Журнал backup и восстановление локальной копии | U04, S03 | waiting_dependencies | [#14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14) |

@@ -1,0 +1,4 @@
+# Qt shell and pytest-qt tests for the optional desktop UI.
+-r requirements-dev.txt
+PySide6==6.11.2
+pytest-qt==4.5.0
