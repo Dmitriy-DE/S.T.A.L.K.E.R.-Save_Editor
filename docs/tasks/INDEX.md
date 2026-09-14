@@ -45,7 +45,7 @@
 | [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | in_review (PR #51) | [PR #51](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/51) |
 | [M05](M05.md) | Ручные пути и их запоминание | M04 | in_review (PR #52) | [PR #52](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/52) |
 | [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | blocked (PR #53; X-Ray corpus missing) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
-| [M07](M07.md) | Call of Pripyat: чтение | M06 | blocked (M06/X-Ray corpus missing) | — |
+| [M07](M07.md) | Call of Pripyat: чтение | M06 | blocked (PR #54; M06/X-Ray corpus missing) | [PR #54](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/54) |
 | [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | waiting_dependencies | — |
 | [M09](M09.md) | Редактирование трилогии | M08 | waiting_dependencies | — |
 

@@ -1209,8 +1209,8 @@
     "status": "blocked",
     "path": "docs/tasks/M07.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "blocked (M06/X-Ray corpus missing)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/54",
+    "status_display": "blocked (PR #54; M06/X-Ray corpus missing)"
   },
   {
     "id": "M08",
