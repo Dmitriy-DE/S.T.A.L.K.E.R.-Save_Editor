@@ -520,6 +520,34 @@
     "status_display": "accepted (PR #47)"
   },
   {
+    "id": "U08",
+    "title": "Обзор: метаданные контейнера, читаемая сводка и счётчики разделов",
+    "depends_on": [
+      "U07"
+    ],
+    "files": [
+      "ui/main_window.py",
+      "tests/test_ui_overview.py",
+      "docs/tasks/U08.md"
+    ],
+    "contract": "MainWindow._metadata_rows(snapshot) -> tuple[(параметр, значение, статус)]; только parser-backed поля. _sync_nav_counters() дописывает счётчики к разделам.",
+    "steps": [
+      "Заменить QFormLayout в Обзоре на вертикальные layout'ы: word-wrapped QLabel в форме сообщает высоту одной строки и рисуется обрезанным.",
+      "Добавить таблицу технических метаданных из SaveInfo без полей, которых parser не читает.",
+      "Добавить счётчики инвентаря и staged-изменений к пунктам навигации."
+    ],
+    "checks": [
+      "QT_QPA_PLATFORM=offscreen python -m pytest tests/test_ui_overview.py -q",
+      "Ожидается: 5 сценариев PASS, включая запрет на выдуманные GVAS-поля."
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "in_review",
+    "path": "docs/tasks/U08.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
     "id": "B01",
     "title": "Воспроизводимые standalone сборки",
     "depends_on": [

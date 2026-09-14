@@ -22,6 +22,7 @@
 | [U05](U05.md) | Журнал backup и восстановление локальной копии | U04, S03 | accepted (PR #42) | [#14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/14), [PR #42](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/42) |
 | [U06](U06.md) | Qt Steam Cloud и состояния синхронизации | U04, U05, S06 | accepted (PR #43) | [#15](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/15), [PR #43](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/43) |
 | [U07](U07.md) | Интеграция Zone UI shell и темы из утверждённого макета | U06 | accepted (PR #47) | [#46](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46), [PR #47](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47) |
+| [U08](U08.md) | Обзор: метаданные контейнера, читаемая сводка и счётчики разделов | U07 | in_review | — |
 | [B01](B01.md) | Воспроизводимые standalone сборки | U06, P03 | accepted (PR #44; Windows/runner gate pending) | [#16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16), [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44) |
 | [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | in_progress | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |
 | [R01](R01.md) | Контролируемый corpus и формат evidence | S01 | waiting_dependencies | [#18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/18) |

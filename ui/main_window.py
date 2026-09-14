@@ -16,15 +16,17 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
-    QFormLayout,
     QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMainWindow,
     QPushButton,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -233,9 +235,14 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(self.tabs, 1)
 
         self.nav_buttons: list[QPushButton] = []
-        for index, label in enumerate(
-            ("Обзор", "Инвентарь", "Изменения", "Резервные копии", "Steam Cloud")
-        ):
+        self.nav_labels: tuple[str, ...] = (
+            "Обзор",
+            "Инвентарь",
+            "Изменения",
+            "Резервные копии",
+            "Steam Cloud",
+        )
+        for index, label in enumerate(self.nav_labels):
             button = QPushButton(label)
             button.setObjectName("navButton")
             button.setCheckable(True)
@@ -283,6 +290,25 @@ class MainWindow(QMainWindow):
         for button_index, button in enumerate(getattr(self, "nav_buttons", [])):
             button.setChecked(button_index == index)
 
+    def _sync_nav_counters(self) -> None:
+        """Show inventory and staged-change counts next to the section names.
+
+        The visual reference carries a badge per section.  Only counts the
+        parser or the staging state actually knows are shown; a section with
+        nothing to count keeps its bare name.
+        """
+
+        buttons = getattr(self, "nav_buttons", [])
+        if not buttons:
+            return
+        inventory = len(self.snapshot.info.inventory) if self.snapshot is not None else None
+        staged = len(self.staged_counts) + (1 if self.staged_money is not None else 0)
+        counters: dict[int, int | None] = {1: inventory, 2: staged or None}
+        for index, button in enumerate(buttons):
+            count = counters.get(index)
+            label = self.nav_labels[index]
+            button.setText(label if count is None else f"{label}  ·  {count}")
+
     def _build_overview_tab(self) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -316,28 +342,40 @@ class MainWindow(QMainWindow):
         self.inventory_card_value = add_card(3, "Предметы", "—")
         layout.addWidget(cards)
 
-        details = QWidget()
-        form = QFormLayout(details)
-        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        # A word-wrapped QLabel inside a QFormLayout reports a height hint for a
+        # single line, so the summary used to render clipped and overlapping.
+        # Plain vertical layouts with expanding labels lay wrapped text out
+        # correctly.
+        details = QFrame()
+        details.setObjectName("metricCard")
+        details_layout = QVBoxLayout(details)
+        details_layout.setContentsMargins(12, 10, 12, 10)
+        details_layout.setSpacing(6)
+        summary_caption = QLabel("Сводка")
+        summary_caption.setObjectName("metricCaption")
+        details_layout.addWidget(summary_caption)
         self.summary_label = QLabel("Открой локальный .sav для проверки CRC и структуры.")
         self.summary_label.setWordWrap(True)
         self.summary_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        form.addRow("Сводка", self.summary_label)
+        details_layout.addWidget(self.summary_label)
         self.support_label = QLabel("Редактирование отключено до успешного анализа.")
         self.support_label.setWordWrap(True)
-        form.addRow("Поддержка", self.support_label)
+        details_layout.addWidget(self.support_label)
+        layout.addWidget(details)
 
         money_box = QGroupBox("Баланс (staged до preview)")
-        money_form = QFormLayout(money_box)
+        money_layout = QVBoxLayout(money_box)
+        money_layout.setSpacing(6)
         self.money_status_label = QLabel("Баланс не определён")
         self.money_status_label.setWordWrap(True)
-        money_form.addRow("Текущее → новое", self.money_status_label)
+        money_layout.addWidget(self.money_status_label)
         money_row = QHBoxLayout()
+        money_row.addWidget(QLabel("Новая сумма"))
         self.money_spin = QSpinBox()
         self.money_spin.setRange(0, 2_000_000_000)
         self.money_spin.setEnabled(False)
         self.money_spin.valueChanged.connect(self._on_money_value_changed)
-        money_row.addWidget(self.money_spin)
+        money_row.addWidget(self.money_spin, 1)
         self.money_stage_button = QPushButton("Застейджить баланс")
         self.money_stage_button.setEnabled(False)
         self.money_stage_button.clicked.connect(self._stage_money)
@@ -346,11 +384,91 @@ class MainWindow(QMainWindow):
         self.money_clear_button.setEnabled(False)
         self.money_clear_button.clicked.connect(self._clear_money)
         money_row.addWidget(self.money_clear_button)
-        money_form.addRow("Новая сумма", money_row)
-        form.addRow(money_box)
-        layout.addWidget(details)
-        layout.addStretch(1)
+        money_layout.addLayout(money_row)
+        layout.addWidget(money_box)
+
+        metadata_box = QGroupBox("Технические метаданные контейнера (.sav)")
+        metadata_layout = QVBoxLayout(metadata_box)
+        metadata_layout.setContentsMargins(10, 10, 10, 10)
+        self.metadata_table = QTableWidget(0, 3)
+        self.metadata_table.setObjectName("metadataTable")
+        self.metadata_table.setHorizontalHeaderLabels(
+            ["Параметр", "Значение в сохранении", "Статус"]
+        )
+        self.metadata_table.verticalHeader().setVisible(False)
+        self.metadata_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self.metadata_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.metadata_table.setAlternatingRowColors(False)
+        header = self.metadata_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        metadata_layout.addWidget(self.metadata_table)
+        layout.addWidget(metadata_box, 1)
+        self._render_metadata_rows(None)
         return tab
+
+    # Rows are parser-backed only.  The visual reference shows GVAS fields this
+    # parser cannot prove; inventing them would make an unverified claim look
+    # confirmed, so unknown values stay out of the table entirely.
+    def _metadata_rows(self, snapshot: LocalSnapshot | None) -> tuple[tuple[str, str, str], ...]:
+        if snapshot is None:
+            return (
+                ("Файл", "—", "не открыт"),
+                ("CRC-32", "—", "не проверен"),
+                ("SHA-256", "—", "не вычислен"),
+            )
+        info = snapshot.info
+        money = "неизвестно" if info.money is None else str(info.money)
+        money_status = (
+            "редактируется"
+            if info.money is not None and info.money_anchor_count == 1
+            else f"read-only (anchor × {info.money_anchor_count})"
+        )
+        unresolved = len(info.unresolved_handles)
+        return (
+            ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
+            (
+                "CRC-32",
+                f"{info.stored_crc32:08X}",
+                "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
+            ),
+            ("SHA-256", info.sha256, "исходный снимок"),
+            (
+                "Размер контейнера",
+                f"{_human_size(info.packed_size)} → {_human_size(info.unpacked_size)}",
+                "Kraken распакован",
+            ),
+            ("Баланс купонов", money, money_status),
+            ("Owned handles", str(len(info.owned_handles)), "прочитано"),
+            (
+                "Grid handles",
+                f"{len({item.handle for item in info.inventory})} / {info.grid_handle_count}",
+                "разобрано / объявлено",
+            ),
+            ("Grid cells", str(info.grid_cell_count), "прочитано"),
+            ("Объекты инвентаря", str(len(info.inventory)), "в сетке"),
+            ("Orphan handles", str(len(info.orphans)), "вне сетки"),
+            (
+                "Unresolved handles",
+                str(unresolved),
+                "read-only" if unresolved else "нет",
+            ),
+            (
+                "UE5 GVAS schema",
+                "не разобрана",
+                "контейнер валиден, схема не подтверждена",
+            ),
+        )
+
+    def _render_metadata_rows(self, snapshot: LocalSnapshot | None) -> None:
+        rows = self._metadata_rows(snapshot)
+        self.metadata_table.setRowCount(len(rows))
+        for index, (name, value, status) in enumerate(rows):
+            for column, text in enumerate((name, value, status)):
+                item = QTableWidgetItem(text)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                self.metadata_table.setItem(index, column, item)
 
     def _build_inventory_tab(self) -> QWidget:
         self.inventory_view = InventoryView(self)
@@ -490,6 +608,8 @@ class MainWindow(QMainWindow):
             "Неизвестные handles остаются read-only."
             + (f" Предупреждения: {warnings}" if warnings else "")
         )
+        self._render_metadata_rows(snapshot)
+        self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
         self.changes_view.set_staged(info, self.staged_money, self.staged_counts)
@@ -621,6 +741,7 @@ class MainWindow(QMainWindow):
         self.status_label.setText("Все staged-правки очищены; bytes сейва не изменены")
 
     def _render_changes(self) -> None:
+        self._sync_nav_counters()
         if self.snapshot is None:
             return
         self.changes_view.set_staged(
