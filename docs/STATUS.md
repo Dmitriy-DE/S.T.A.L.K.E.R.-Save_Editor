@@ -129,6 +129,17 @@ commit `851a30c`). JSON хранится в `user_data_dir()/settings.json`, п�
 (`197 passed`). Реальные Windows/GOG/Proton установки и игровой runtime этим
 результатом не подтверждены.
 
+## M06 — контейнер X-Ray — 2026-09-15
+
+Публичное исследование raw LZO1X, внешнего заголовка и chunk-направления
+записано в [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md). В рабочем дереве нет
+ни одного реального X-Ray `.sav`/`.bak`/`.scop`, а synthetic S.T.A.L.K.E.R. 2
+fixture для этой задачи не подходит. Поэтому M06 оставлена `blocked`: не
+добавлялись неподтверждённые parser/compressor, offsets или detector, и не
+объявлялся byte-for-byte round-trip. Требуется внешний контролируемый корпус с
+SHA, распаковкой, пересборкой и позднее игровой загрузкой. До него M07–M09
+не переходят к реализации.
+
 ## Текущий проход B02
 
 U07 оформил внедрение приложенного Stitch visual reference и принят merge
