@@ -24,7 +24,7 @@
 | [U07](U07.md) | Интеграция Zone UI shell и темы из утверждённого макета | U06 | accepted (PR #47) | [#46](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/46), [PR #47](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/47) |
 | [U08](U08.md) | Обзор: метаданные контейнера, читаемая сводка и счётчики разделов | U07 | in_review | — |
 | [B01](B01.md) | Воспроизводимые standalone сборки | U06, P03 | accepted (Windows сборка и smoke пройдены на runner) | [#16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16), [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44) |
-| [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | in_progress | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |
+| [B02](B02.md) | Приёмка beta и GitHub prerelease | B01 | in_review (черновик prerelease v0.4.0 собран) | [#17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17) |
 | [R01](R01.md) | Контролируемый corpus и формат evidence | S01 | waiting_dependencies | [#18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/18) |
 | [R02](R02.md) | Каталог SID отдельно от доказанного save mapping | R01 | waiting_dependencies | [#19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/19) |
 | [R03](R03.md) | Найти и доказать поле прочности | R01 | waiting_dependencies | [#20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/20) |

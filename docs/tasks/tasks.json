@@ -609,9 +609,10 @@
     ],
     "gate": "manual",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "in_review",
     "path": "docs/tasks/B02.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/17",
+    "status_display": "in_review (черновик prerelease v0.4.0 собран)"
   },
   {
     "id": "R01",

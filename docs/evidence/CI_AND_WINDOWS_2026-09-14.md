@@ -42,6 +42,20 @@ Windows zip: 51 MB, 249 файлов, внутри `SaveEditor.exe` и
 `SaveEditor-diagnostic.exe`. Эти хэши относятся к сборке **до** правки манифеста
 ниже, поэтому релизными не являются.
 
+### Релизные артефакты 0.4.0
+
+Source commit `8fc9fbb7b6cbf542839d90403ba9bf46558bc4e1`, в манифестах обеих
+целей `source_dirty: false`, Linux `libc_minimum: 2.39`:
+
+```text
+09a523ea5b7f8b1fc926e49009426cf0a01e61a759faaec394b22ce647ce0da3  SaveEditor-linux-x86_64-v0.4.0.tar.gz
+25563ee183fe12dd3ffb59a60e0e0f20fd597cd120c1b96100e1bb0e0646f440  stalker2-save-editor_0.4.0_amd64.deb
+038d691eff45388a88b34dca882fcfb02fe6b922f9c2a6dfbced21a8d66ba1e6  SaveEditor-windows-x86_64-v0.4.0.zip
+```
+
+Приложены к черновику prerelease `v0.4.0`. Публикация — за владельцем: до
+запуска окна на живом Windows-десктопе это остаётся prerelease.
+
 Ещё одна находка в манифесте: `source_dirty: true` при чистом checkout. Причина
 — каталог вывода `artifacts/` лежит внутри дерева, и собственные продукты сборки
 попадали в отчёт как изменения источника. Проверка теперь исключает каталог
