@@ -354,7 +354,15 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
         shutil.rmtree(stage)
     runtime_destination = stage / "usr" / "lib" / DEBIAN_NAME
     runtime_destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(runtime, runtime_destination)
+    try:
+        shutil.copytree(runtime, runtime_destination)
+    except (OSError, shutil.Error) as exc:
+        free = shutil.disk_usage(stage.parent).free
+        raise BuildError(
+            f"Не удалось скопировать runtime в Debian staging ({exc.__class__.__name__}); "
+            f"свободно {free / 1024**3:.1f} GiB. Чаще всего это нехватка места: "
+            "staging повторяет всё дерево PyInstaller."
+        ) from exc
     wrapper = stage / "usr" / "bin" / "stalker2-save-editor"
     wrapper.parent.mkdir(parents=True, exist_ok=True)
     wrapper.write_text(
@@ -403,6 +411,32 @@ def _write_checksums(paths: Iterable[Path], destination: Path) -> None:
     destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+# Rough working-set requirement for one Linux build: the PyInstaller onedir
+# tree (Python runtime + Qt) plus the Debian staging copy of that same tree plus
+# the compressed archive.  Measured at ~1.7 GB; the margin is deliberate.
+MIN_FREE_BYTES = 3 * 1024**3
+
+
+def _require_free_space(output_dir: Path) -> None:
+    """Fail early and legibly when the output filesystem is too small.
+
+    A build started into a small tmpfs fills it mid-copy, and the failure
+    surfaces as a bare shutil.Error listing half-copied paths - which says
+    nothing about the cause.  Check once, up front, in bytes the user can act on.
+    """
+
+    free = shutil.disk_usage(output_dir).free
+    if free >= MIN_FREE_BYTES:
+        return
+    raise BuildError(
+        f"Недостаточно места в {output_dir}: свободно {free / 1024**3:.1f} GiB, "
+        f"нужно не менее {MIN_FREE_BYTES / 1024**3:.0f} GiB. "
+        "Сборка PyInstaller разворачивает Python и Qt, затем копирует это дерево "
+        "ещё раз для Debian staging. Выберите --output-dir на обычном диске "
+        "(не на tmpfs вроде /tmp) и при необходимости задайте TMPDIR там же."
+    )
+
+
 def build(
     *,
     target: str,
@@ -426,6 +460,7 @@ def build(
         )
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    _require_free_space(output_dir)
     work = output_dir / ".build" / target
     runtime_dist = work / "dist"
     if work.exists():

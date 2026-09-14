@@ -68,3 +68,22 @@ def test_debian_dependency_tracks_the_build_host_libc() -> None:
     manifest = build.build_manifest(root=ROOT, target="linux", version="test")
     assert manifest["libc_minimum"] == build.libc_requirement()
     assert build.build_manifest(root=ROOT, target="windows", version="test")["libc_minimum"] is None
+
+
+def test_build_refuses_to_start_without_working_space(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _Usage:
+        free = 100 * 1024**2
+
+    monkeypatch.setattr(build.shutil, "disk_usage", lambda _path: _Usage())
+    with pytest.raises(build.BuildError, match="Недостаточно места"):
+        build._require_free_space(tmp_path)
+
+
+def test_build_accepts_a_filesystem_with_room(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Usage:
+        free = build.MIN_FREE_BYTES
+
+    monkeypatch.setattr(build.shutil, "disk_usage", lambda _path: _Usage())
+    build._require_free_space(tmp_path)
