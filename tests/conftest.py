@@ -89,3 +89,32 @@ def synthetic_save() -> bytes:
         type_key=b"\x0A\x0B\x0C",
     )
     return sf.rebuild_uncompressed(bytes(raw))
+
+
+@pytest.fixture(autouse=True)
+def _no_qt_thread_outlives_its_test():
+    """Never let a test end with a Qt worker thread still running.
+
+    Qt aborts the process when a QThread is destroyed while running, and pytest
+    tears widgets down whenever it likes.  The Windows job died exactly that way
+    - exit code -1 partway through a module, no traceback and no failed
+    assertion.  Waiting here makes the teardown order stop mattering.
+    """
+
+    yield
+
+    try:
+        from PySide6.QtCore import QThread
+        from PySide6.QtWidgets import QApplication
+    except ImportError:  # the core environment has no Qt
+        return
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    for widget in list(app.topLevelWidgets()):
+        for thread in widget.findChildren(QThread):
+            if thread.isRunning():
+                thread.quit()
+                thread.wait(10_000)
+    app.processEvents()
