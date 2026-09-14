@@ -49,6 +49,6 @@ def test_required_fields_are_present(field: str) -> None:
 
 
 def test_status_values_are_from_the_documented_set() -> None:
-    allowed = {"waiting_dependencies", "in_progress", "in_review", "accepted", "blocked"}
+    allowed = {"ready", "waiting_dependencies", "in_progress", "in_review", "accepted", "blocked"}
     for task in _tasks():
         assert task["status"] in allowed, f"{task['id']} has status {task['status']!r}"

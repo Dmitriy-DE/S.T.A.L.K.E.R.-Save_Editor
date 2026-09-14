@@ -1,6 +1,6 @@
 # Очередь задач
 
-Текущий результат — **U07 принят через PR #47**, параллельно остаётся открытым **B02 / issue #17**. S01–S06, P01 и P02, код P03, U01–U07 приняты в `main`; B01 code принят через PR #44 и дал локальный Linux bundle, но Windows/runner gate ещё открыт. U07 добавляет визуальный Zone shell поверх существующего Qt workflow; B02 по-прежнему ведёт acceptance matrix и release decision. P03 runner gate остаётся открытым после startup failure запусков без jobs. До Windows/DPI/clean-machine evidence cross-platform beta остаётся `in_progress`. `waiting_dependencies` означает, что входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Все 29 проектных issues отражены в карточках. Одна карточка — один PR.
+Текущий результат — **U07 принят через PR #47**, параллельно остаётся открытым **B02 / issue #17**. S01–S06, P01 и P02, код P03, U01–U07 приняты в `main`; B01 code принят через PR #44 и дал локальный Linux bundle, но Windows/runner gate ещё открыт. U07 добавляет визуальный Zone shell поверх существующего Qt workflow; B02 по-прежнему ведёт acceptance matrix и release decision. P03 runner gate остаётся открытым после startup failure запусков без jobs. До Windows/DPI/clean-machine evidence cross-platform beta остаётся `in_progress`. `ready` означает, что блокеров нет и карточку можно брать, `waiting_dependencies` — входной gate ещё не принят, `in_progress` — ветка выполняется, `in_review` — PR открыт, `accepted` — PR слит и проверки записаны. Все 29 проектных issues отражены в карточках. Одна карточка — один PR.
 
 <!-- BEGIN GENERATED TASK TABLE -->
 
@@ -36,6 +36,9 @@
 | [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | waiting_dependencies | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26) |
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
+| [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | ready | — |
+| [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | waiting_dependencies | — |
+| [W03](W03.md) | Публикация веб-версии | W02 | waiting_dependencies | — |
 
 <!-- END GENERATED TASK TABLE -->
 

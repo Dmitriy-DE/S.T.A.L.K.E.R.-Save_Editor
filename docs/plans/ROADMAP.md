@@ -4,7 +4,7 @@
 
 **Goal:** превратить импортированную v0.3 в удобный, проверяемый Linux/Windows редактор и отдельно довести исследовательские операции до подтверждённых возможностей.
 
-**Architecture:** общее Python-ядро, immutable edit requests и единая безопасная запись для CLI/Tk/Qt. Новый UI на PySide6, нативные decoder/helper для каждой ОС. Новые поля save добавляются через evidence gates. Runtime core держится на стандартной библиотеке; внешние decoder/UI зависимости pinned и вкладываются в воспроизводимые сборки.
+**Architecture:** общее Python-ядро, immutable edit requests и единая безопасная запись для CLI и Qt; веб-поставка (этап 7) переиспользует то же ядро в браузере, а не повторяет его. Единственный desktop UI на PySide6, нативные decoder/helper для каждой ОС. Новые поля save добавляются через evidence gates. Runtime core держится на стандартной библиотеке; внешние decoder/UI зависимости pinned и вкладываются в воспроизводимые сборки.
 
 **Tech Stack:** Python 3.11/3.12, pyooz 0.0.8, PySide6, pytest/pytest-qt, PyInstaller, `dpkg-deb`, GitHub Actions.
 
@@ -31,6 +31,7 @@
 | 4 — выпуск | B01→B02 | Windows `.exe`, Debian/Ubuntu `.deb` и portable Linux archive, checksums, local acceptance; cloud claim отдельно по evidence |
 | 5 — исследование | R01→R02→R03→R04→R05→R06→R07→R08→R09→R10 | Evidence-gated names/durability/registry/clone/add/delete/attachments |
 | 6 — размер файлов | R11 | Optional compact mode только при доказанном decoder round-trip и fallback |
+| 7 — веб | W01→W02→W03 | Тот же parser в браузере (Pyodide + WASM-декодер), локальные файлы без сервера, публикация на Pages |
 
 Стрелки в таблице задают удобный последовательный порядок для одного исполнителя. Точные зависимости находятся в карточках и tasks.json. R01 может идти после S01, а R11 после P01; они не являются обязательными для local beta. Если research gate не пройден, независимые готовые карточки остаются доступными. Полный перечень функций не сокращён: непроверенные функции остаются в очереди, не выдаются за готовые.
 

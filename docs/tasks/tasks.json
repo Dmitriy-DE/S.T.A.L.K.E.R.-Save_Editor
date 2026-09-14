@@ -937,5 +937,82 @@
     "status": "waiting_dependencies",
     "path": "docs/tasks/R11.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28"
+  },
+  {
+    "id": "W01",
+    "title": "Спайк: доказать, что ядро работает в браузере",
+    "depends_on": [],
+    "files": [
+      "editor/codec.py",
+      "third_party/pyooz/",
+      "docs/tasks/W01.md"
+    ],
+    "contract": "Pyodide + WASM-декодер Kraken с единственным экспортом decompress(data, unpacked_size); save_format.py не меняется.",
+    "steps": [
+      "Собрать декодер из провенанс-источника через Emscripten с одним экспортом.",
+      "Поднять Pyodide и подложить модуль с интерфейсом editor/codec.py.",
+      "Прогнать synthetic fixture: CRC, деньги, инвентарь, round-trip.",
+      "Замерить загрузку Pyodide, разбор ~7 MB сейва и пиковую память."
+    ],
+    "checks": [
+      "SHA-256 round-trip в браузере совпадает с десктопным на том же входе.",
+      "Если не совпадает — BLOCKED с причиной, W02 не начинается."
+    ],
+    "gate": "research",
+    "priority": "P1",
+    "status": "ready",
+    "path": "docs/tasks/W01.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "W02",
+    "title": "Веб-интерфейс поверх общего ядра",
+    "depends_on": [
+      "W01"
+    ],
+    "files": [
+      "docs/tasks/W02.md"
+    ],
+    "contract": "Статическая страница без сервера: локальный файл, те же parser-backed экраны, сохранение в новую копию. Steam Cloud в вебе отсутствует явно.",
+    "steps": [
+      "Экраны открытия, обзора, инвентаря, изменений, preview и сохранения копии.",
+      "Общие токены Zone-палитры с Qt.",
+      "Обязательное сохранение исходника вместо журнала бэкапов."
+    ],
+    "checks": [
+      "Правка money и stack даёт тот же результат, что десктоп на том же файле."
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/W02.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "W03",
+    "title": "Публикация веб-версии",
+    "depends_on": [
+      "W02"
+    ],
+    "files": [
+      "docs/tasks/W03.md"
+    ],
+    "contract": "GitHub Pages из того же тега, что и десктопные пакеты; версия и commit видны на странице.",
+    "steps": [
+      "Статическая сборка и деплой из тега.",
+      "Проверить COOP/COEP на Pages или выбрать загрузку без SharedArrayBuffer.",
+      "Проверка на живом URL в Chrome и Firefox на реальном сейве."
+    ],
+    "checks": [
+      "Открытая ссылка читает сейв и отдаёт корректную изменённую копию."
+    ],
+    "gate": "release",
+    "priority": "P3",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/W03.md",
+    "github_issue": "",
+    "github_pr": ""
   }
 ]
