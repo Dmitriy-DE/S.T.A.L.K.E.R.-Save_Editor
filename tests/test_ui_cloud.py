@@ -169,9 +169,11 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     qtbot.addWidget(view)
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     view.table.selectRow(0)
     with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.analyze_selected()
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
 
     snapshot = blocker.args[0]
     assert snapshot.name == name
@@ -204,9 +206,11 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     qtbot.addWidget(view)
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     view.table.selectRow(0)
     with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.analyze_selected()
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     view.set_prepared(_prepared(synthetic_save, name))
 
     with qtbot.waitSignal(view.upload_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
@@ -236,6 +240,7 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
 
     with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.start_connect()
+    qtbot.waitUntil(lambda: not window.cloud_view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     window.cloud_view.table.selectRow(0)
     with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.analyze_selected()

@@ -281,6 +281,19 @@ class CloudView(QWidget):
             self.helper_edit.setText(str(self.helper_path))
         return self.helper_path
 
+    def _refuse_while_busy(self) -> bool:
+        """Report a declined action instead of returning silently.
+
+        The buttons are disabled while an operation runs, so this path is
+        reached by keyboard and by automation - where a control that does
+        nothing and says nothing looks exactly like a broken one.
+        """
+
+        if not self.is_busy:
+            return False
+        self.status_label.setText("Steam Cloud: дождись завершения текущей операции")
+        return True
+
     def _start_worker(self, worker: CloudOperationWorker) -> None:
         if self.is_busy:
             return
@@ -294,7 +307,7 @@ class CloudView(QWidget):
         worker.start()
 
     def start_connect(self) -> None:
-        if self.is_busy:
+        if self._refuse_while_busy():
             return
         helper = self._resolve_helper()
         if helper is None:
@@ -321,7 +334,7 @@ class CloudView(QWidget):
         return None
 
     def analyze_selected(self) -> None:
-        if self.is_busy:
+        if self._refuse_while_busy():
             return
         cloud_file = self.selected_file()
         if cloud_file is None:
@@ -360,7 +373,7 @@ class CloudView(QWidget):
         self.upload_button.setEnabled(self.transport is not None and not self.is_busy)
 
     def start_upload(self) -> None:
-        if self.is_busy:
+        if self._refuse_while_busy():
             return
         selected = self.selected_file()
         prepared = self._prepared
