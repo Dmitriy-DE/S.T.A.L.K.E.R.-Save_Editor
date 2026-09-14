@@ -517,6 +517,21 @@ class CloudView(QWidget):
         self.error_label.setVisible(True)
         self.progress_label.setText("Cloud operation остановлена")
 
+    def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        """Never let a running worker outlive the widget.
+
+        Qt aborts the process when a QThread is destroyed while it is still
+        running.  A close during a cloud operation - or a test tearing the view
+        down - used to risk exactly that.
+        """
+
+        thread = self._thread
+        if thread is not None and thread.isRunning():
+            thread.quit()
+            thread.wait(10_000)
+        self._close_transport()
+        super().closeEvent(event)
+
     def _close_transport(self) -> None:
         transport, self.transport = self.transport, None
         if transport is not None:

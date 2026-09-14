@@ -1041,8 +1041,13 @@ class MainWindow(QMainWindow):
             return
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             self._inspect_thread.quit()
-            self._inspect_thread.wait(1_000)
-        self.cloud_view.close_transport()
+            self._inspect_thread.wait(10_000)
+        # A QThread destroyed while running aborts the process, so the window
+        # never closes over one that is still alive.
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            self._operation_thread.quit()
+            self._operation_thread.wait(10_000)
+        self.cloud_view.close()
         event.accept()
 
 

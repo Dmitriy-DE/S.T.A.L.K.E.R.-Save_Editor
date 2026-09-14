@@ -263,3 +263,28 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
 
     assert blocker.args[0].status == "verified"
     assert [filename for filename, _data in transport.write_calls] == [name]
+
+
+def test_closing_the_view_waits_for_its_worker(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
+    """Qt aborts the process if a QThread is destroyed while still running.
+
+    The Windows job died with exit code -1 in the middle of this module, with no
+    traceback - the shape of that abort rather than a failed assertion.
+    """
+
+    transport = FakeCloudTransport(synthetic_save, files=[_cloud_file("Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav")])
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_path=tmp_path / "helper",
+        backup_dir=tmp_path / "backups",
+    )
+    qtbot.addWidget(view)
+
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+
+    view.close()
+
+    assert view._thread is None or not view._thread.isRunning()
+    assert view.transport is None
