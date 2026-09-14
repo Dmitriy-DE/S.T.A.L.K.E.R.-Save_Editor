@@ -15,6 +15,11 @@ from steam_cloud import CloudFile
 from ui.cloud_view import CloudView
 from ui.main_window import MainWindow
 
+# These cases drive real QThreads end to end.  Five seconds was enough on a
+# developer machine and not on a loaded CI runner, where the same test timed out
+# while the work was still progressing - a slow machine is not a defect.
+SIGNAL_TIMEOUT_MS = 30_000
+
 
 class FakeCloudTransport:
     def __init__(self, source: bytes, *, files: list[CloudFile] | None = None, persisted: bool = True) -> None:
@@ -101,7 +106,7 @@ def test_cloud_view_missing_helper_is_explicit_and_has_no_transport_write(
     )
     qtbot.addWidget(view)
 
-    with qtbot.waitSignal(view.operation_failed, timeout=5_000):
+    with qtbot.waitSignal(view.operation_failed, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
     assert created == []
@@ -118,7 +123,7 @@ def test_cloud_view_empty_list_has_explicit_state(qtbot, synthetic_save: bytes, 
     )
     qtbot.addWidget(view)
 
-    with qtbot.waitSignal(view.files_ready, timeout=5_000):
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
     assert view.table.rowCount() == 0
@@ -143,7 +148,7 @@ def test_cloud_view_filters_non_data_files(
         helper_path=tmp_path / "helper",
     )
     qtbot.addWidget(view)
-    with qtbot.waitSignal(view.files_ready, timeout=5_000):
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
@@ -162,10 +167,10 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
-    with qtbot.waitSignal(view.files_ready, timeout=5_000):
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
     view.table.selectRow(0)
-    with qtbot.waitSignal(view.snapshot_ready, timeout=5_000) as blocker:
+    with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.analyze_selected()
 
     snapshot = blocker.args[0]
@@ -175,7 +180,7 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     wrong = _prepared(synthetic_save, "Stalker2/Saved/STEAM/SaveGames/Data/slot-b.sav")
     view.set_prepared(wrong)
     assert not view.upload_button.isEnabled()
-    with qtbot.waitSignal(view.operation_failed, timeout=5_000):
+    with qtbot.waitSignal(view.operation_failed, timeout=SIGNAL_TIMEOUT_MS):
         view.start_upload()
     assert transport.write_calls == []
 
@@ -197,14 +202,14 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
-    with qtbot.waitSignal(view.files_ready, timeout=5_000):
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
     view.table.selectRow(0)
-    with qtbot.waitSignal(view.snapshot_ready, timeout=5_000):
+    with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.analyze_selected()
     view.set_prepared(_prepared(synthetic_save, name))
 
-    with qtbot.waitSignal(view.upload_ready, timeout=5_000) as blocker:
+    with qtbot.waitSignal(view.upload_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.start_upload()
 
     receipt = blocker.args[0]
@@ -229,10 +234,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     window.cloud_view.helper_edit.setText(str(tmp_path / "helper"))
     window.cloud_view.backup_dir = tmp_path / "backups"
 
-    with qtbot.waitSignal(window.cloud_view.files_ready, timeout=5_000):
+    with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.start_connect()
     window.cloud_view.table.selectRow(0)
-    with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=5_000):
+    with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.analyze_selected()
 
     assert window.snapshot is not None
@@ -240,9 +245,9 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     assert window.snapshot.locator == name
     window.money_spin.setValue(900)
     window._stage_money()
-    with qtbot.waitSignal(window.preview_ready, timeout=5_000):
+    with qtbot.waitSignal(window.preview_ready, timeout=SIGNAL_TIMEOUT_MS):
         window._start_preview()
-    with qtbot.waitSignal(window.apply_ready, timeout=5_000) as blocker:
+    with qtbot.waitSignal(window.apply_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         window._start_cloud_upload()
 
     assert blocker.args[0].status == "verified"

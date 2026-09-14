@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+import pytest
 
 from editor.platforms import (
     APP_DIR_NAME,
@@ -64,6 +67,10 @@ def test_legacy_directory_is_reported_without_mutation_or_migration(tmp_path: Pa
     assert dirs[0] == home / ".local" / "share" / APP_DIR_NAME / "backups"
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="the POSIX execute bit this case relies on does not exist on Windows filesystems",
+)
 def test_discover_helper_uses_explicit_unicode_path_first(tmp_path: Path) -> None:
     helper = tmp_path / "папка с пробелами" / "SteamCloudFileManager.AppImage"
     helper.parent.mkdir(parents=True)

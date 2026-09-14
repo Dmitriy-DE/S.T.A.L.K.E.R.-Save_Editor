@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sys
 import time
 from pathlib import Path
 
@@ -11,7 +13,22 @@ FAKE_HELPER = Path(__file__).with_name("fake_worker.py")
 
 
 @pytest.fixture
-def helper_path() -> str:
+def helper_path(tmp_path: Path) -> str:
+    """Return a path the OS will actually execute.
+
+    The real helper is a binary, so SteamWorker launches the path directly.
+    Windows cannot execute a .py that way (WinError 193), so the fake helper is
+    wrapped in a .cmd shim there rather than weakening the product code.
+    """
+
+    if os.name == "nt":
+        shim = tmp_path / "fake_worker.cmd"
+        shim.write_text(
+            f'@echo off\r\n"{sys.executable}" "{FAKE_HELPER}" %*\r\n',
+            encoding="utf-8",
+        )
+        return str(shim)
+
     FAKE_HELPER.chmod(FAKE_HELPER.stat().st_mode | 0o111)
     return str(FAKE_HELPER)
 
