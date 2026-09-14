@@ -9,6 +9,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.worktrees/
 .pytest_cache/
 .coverage
 htmlcov/
