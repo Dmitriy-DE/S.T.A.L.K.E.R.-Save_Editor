@@ -1,7 +1,7 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check lint typecheck docs docs-check web web-serve test selftest run package-plan package
+.PHONY: check lint typecheck docs docs-check web web-serve web-publish test selftest run package-plan package
 check: lint typecheck docs-check
 	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
@@ -26,6 +26,13 @@ web:
 web-serve: web
 	@echo "http://localhost:8765"
 	$(PYTHON) -m http.server 8765 --directory web
+
+# Publish web/ to the gh-pages branch, which GitHub Pages serves at its root.
+# Pages can only deploy a branch's root or /docs, never an arbitrary folder,
+# so the site cannot be served from web/ on main directly.
+web-publish: web
+	@test -z "$$(git status --porcelain)" || (echo "commit changes first" && exit 2)
+	git subtree push --prefix web origin gh-pages
 
 test:
 	$(PYTHON) -m pytest tests

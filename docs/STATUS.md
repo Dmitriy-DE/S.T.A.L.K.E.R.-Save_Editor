@@ -56,8 +56,9 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 `ooz-wasm`. Сверка на реальном сейве: распаковка и обе правки дают те же
 SHA-256, что десктоп ([evidence](evidence/WEB_EDITION_2026-09-14.md)).
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
-[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Осталось включить Pages
-(Deploy from a branch → `main`, папка `/web`) — Actions для этого не нужны.
+[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Содержимое `web/` выложено в ветку `gh-pages` (`make web-publish`).
+Осталось один раз включить Pages: Deploy from a branch → `gh-pages` →
+`/ (root)`. Actions для этого не нужны.
 
 ## Текущий проход B02
 
