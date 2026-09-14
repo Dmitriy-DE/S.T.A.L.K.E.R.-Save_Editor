@@ -18,16 +18,16 @@
 - Не удалять backup/CRC/round-trip/fresh SHA/persisted/read-back. Не угадывать offsets/SID/allocator.
 - CI synthetic-only; реальный Steam upload и игровой опыт требуют отдельного поручения.
 - Одна карточка = одна ветка = один PR; не мержить и не пушить main автоматически.
-- Исторические архивы сохраняются; новые binaries публикуются через Releases после gates.
+- Бинарники не хранятся в дереве: публикуются через GitHub Releases после gates.
 
 ## Этапы
 
 | Этап | Карточки | Результат и gate |
 |---|---|---|
-| 0 — импорт | выполнено | Исходники в корне, локальные originals сохранены, legacy archives+SHA в GitHub |
+| 0 — импорт | выполнено | Исходники в корне, локальные originals сохранены вне Git |
 | 1 — надёжность | S01→S02→S03→S04→S05→S06 | Synthetic regressions, immutable edits, безопасный export, явный coverage, bounded worker, uncertain cloud states |
 | 2 — платформы | P01→P02→P03 | Native decoder/paths/launchers и реальная зелёная Linux/Windows CI matrix |
-| 3 — удобство | U01→U02→U03→U04→U05→U06→U07 | Общий service; Qt local/inventory/preview/backup/cloud и Zone UI shell, Tk fallback до parity |
+| 3 — удобство | U01→U02→U03→U04→U05→U06→U07→U08 | Общий service; Qt local/inventory/preview/backup/cloud, Zone UI shell и обзор с метаданными; Tk удалён по достижении parity |
 | 4 — выпуск | B01→B02 | Windows `.exe`, Debian/Ubuntu `.deb` и portable Linux archive, checksums, local acceptance; cloud claim отдельно по evidence |
 | 5 — исследование | R01→R02→R03→R04→R05→R06→R07→R08→R09→R10 | Evidence-gated names/durability/registry/clone/add/delete/attachments |
 | 6 — размер файлов | R11 | Optional compact mode только при доказанном decoder round-trip и fallback |
