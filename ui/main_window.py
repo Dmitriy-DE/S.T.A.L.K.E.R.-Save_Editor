@@ -805,11 +805,17 @@ class MainWindow(QMainWindow):
             stacks=tuple(sorted(self.staged_counts.items())),
         )
 
+    def _busy_now(self) -> bool:
+        """True while a local operation or a cloud operation is in flight."""
+
+        local = self._operation_thread is not None and self._operation_thread.isRunning()
+        return local or self._cloud_busy
+
     def _start_preview(self) -> None:
-        if (
-            (self._operation_thread is not None and self._operation_thread.isRunning())
-            or self._cloud_busy
-        ):
+        if self._busy_now():
+            # Silence here reads as a dead button; the action buttons are also
+            # disabled while busy, so this is the keyboard/automation path.
+            self.status_label.setText("Дождись завершения текущей операции")
             return
         try:
             plan = self._build_edit_plan()
@@ -893,10 +899,8 @@ class MainWindow(QMainWindow):
         self._start_apply(path)
 
     def _start_apply(self, output_path: Path, backup_dir: Path | None = None) -> None:
-        if (
-            (self._operation_thread is not None and self._operation_thread.isRunning())
-            or self._cloud_busy
-        ):
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
             return
         if self.prepared_edit is None:
             self._show_operation_error("Сначала создай preview; запись без него запрещена")

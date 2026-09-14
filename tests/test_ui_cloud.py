@@ -243,6 +243,12 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     assert window.snapshot is not None
     assert window.snapshot.source_kind == "cloud"
     assert window.snapshot.locator == name
+
+    # snapshot_ready fires from inside the cloud worker; the thread is still
+    # running for a moment afterwards, and preview refuses to start while the
+    # window is busy.  On a fast machine that window is too short to notice.
+    qtbot.waitUntil(lambda: not window._cloud_busy, timeout=SIGNAL_TIMEOUT_MS)
+
     window.money_spin.setValue(900)
     window._stage_money()
     with qtbot.waitSignal(window.preview_ready, timeout=SIGNAL_TIMEOUT_MS):
