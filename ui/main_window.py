@@ -121,7 +121,9 @@ class MainWindow(QMainWindow):
         self._operation_kind: str | None = None
         self._cloud_busy = False
 
-        apply_theme(QApplication.instance())
+        # QApplication.instance() is typed as the base QCoreApplication.
+        application = QApplication.instance()
+        apply_theme(application if isinstance(application, QApplication) else None)
         self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
         self.resize(1280, 820)
         self.setMinimumSize(960, 620)

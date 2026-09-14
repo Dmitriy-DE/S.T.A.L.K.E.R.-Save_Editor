@@ -31,9 +31,21 @@ jobs:
           - os: windows-2025
             python: "3.12"
 
+    env:
+      # Qt is a runtime dependency now, so the UI suite runs here too.  Runners
+      # have no display; offscreen is the platform plugin that needs none.
+      QT_QPA_PLATFORM: offscreen
+
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Install Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0
 
       - name: Set up Python
         uses: actions/setup-python@v5

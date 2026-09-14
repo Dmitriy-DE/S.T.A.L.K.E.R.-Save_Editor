@@ -8,10 +8,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
 from PySide6.QtGui import QBrush, QColor
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
+
+# Qt calls these overrides with either index type; narrowing the signature to
+# QModelIndex alone is a Liskov violation the type checker rejects once the Qt
+# stubs are installed.
+ModelIndex = QModelIndex | QPersistentModelIndex
 
 
 class InventoryTableModel(QAbstractTableModel):
@@ -113,10 +118,10 @@ class InventoryTableModel(QAbstractTableModel):
         self._changed_handles = value
         self._rebuild()
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: N802 - Qt API
+    def rowCount(self, parent: ModelIndex = QModelIndex()) -> int:  # noqa: N802 - Qt API
         return 0 if parent.isValid() else len(self._visible)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: N802 - Qt API
+    def columnCount(self, parent: ModelIndex = QModelIndex()) -> int:  # noqa: N802 - Qt API
         return 0 if parent.isValid() else len(self.HEADERS)
 
     def headerData(self, section: int, orientation, role=Qt.ItemDataRole.DisplayRole):  # noqa: N802
@@ -126,12 +131,12 @@ class InventoryTableModel(QAbstractTableModel):
             return self.HEADERS[section]
         return None
 
-    def flags(self, index: QModelIndex):
+    def flags(self, index: ModelIndex):
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
-    def data(self, index: QModelIndex, role=Qt.ItemDataRole.DisplayRole):
+    def data(self, index: ModelIndex, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         item = self.item_at(index.row())

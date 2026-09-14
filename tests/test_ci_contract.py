@@ -84,3 +84,13 @@ def test_ci_runs_the_static_analysis_gate() -> None:
     assert '"mypy"' in text
     assert (ROOT / "ruff.toml").is_file()
     assert (ROOT / "mypy.ini").is_file()
+
+
+def test_ci_runs_the_qt_suite_headless() -> None:
+    for path in (WORKFLOW, BUILD_WORKFLOW):
+        text = path.read_text(encoding="utf-8")
+        # PySide6 is a runtime dependency, so the UI suite runs on the runners.
+        # Without an offscreen platform plugin and the Qt system libraries the
+        # job fails on a missing display rather than on a real defect.
+        assert "QT_QPA_PLATFORM: offscreen" in text, f"{path.name} runs Qt with no platform plugin"
+        assert "libegl1" in text, f"{path.name} does not install the Qt runtime libraries"

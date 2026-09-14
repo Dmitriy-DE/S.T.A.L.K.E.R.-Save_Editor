@@ -35,7 +35,7 @@
 
 | Область | Сейчас | Задачи |
 |---|---|---|
-| Надёжность | Synthetic suite + self-test на личном файле, lint и typecheck; GitHub Actions владельцу недоступны, поэтому основной гейт — локальный `make check` + `make test` | — |
+| Надёжность | Synthetic suite + self-test на личном файле, lint и typecheck; Actions включены, первый прогон разобран и починен | P03 |
 | Linux + Windows | P01 добавляет decoder, P02 — paths/launcher/helper; P03 workflow добавлен, реальная Windows CI ещё впереди | P03, B01–B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
@@ -74,10 +74,12 @@ Linux x86_64 portable `tar.gz` и Debian/Ubuntu `.deb`, Windows x64 `zip` с
 `SaveEditor.exe`; runtime Python, Qt и native decoder должны лежать внутри
 bundle. Исходный core остаётся stdlib-only, `pytest` не попадает в runtime.
 
-GitHub Actions владельцу недоступны, поэтому CI как гейт снят: проверка —
-локальные `make check` и `make test` плюс записанное evidence. Открытым
-остаётся то, что действительно нельзя проверить здесь: Windows-сборка и
-native DPI/keyboard smoke. До них cross-platform beta не объявляется готовой.
+Actions включены владельцем; прежние `startup_failure` были из-за снятых с
+обслуживания меток runner и больше не воспроизводятся. Первый реальный прогон
+нашёл то, чего локальная проверка увидеть не могла (см. [P03](tasks/P03.md)), и
+это исправлено. Открытым остаётся то, что действительно нельзя проверить
+здесь: Windows-сборка и native DPI/keyboard smoke. До них cross-platform beta
+не объявляется готовой.
 
 Implementation B01 принят через [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44),
 merge `3346167`. Текущий рабочий проход — B02: acceptance matrix находится в
