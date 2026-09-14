@@ -1103,7 +1103,13 @@
       "M02"
     ],
     "files": [
-      "docs/tasks/M04.md"
+      "docs/tasks/M04.md",
+      "editor/platforms.py",
+      "ui/main_window.py",
+      "ui/save_slots_view.py",
+      "tests/test_platform_save_locations.py",
+      "tests/test_save_slots.py",
+      "tests/test_ui_theme.py"
     ],
     "contract": "Список слотов в Qt: имя, размер, время, игра; открытие тем же путём, что ручной выбор файла. В вебе вкладки нет.",
     "steps": [
@@ -1115,10 +1121,11 @@
     ],
     "gate": "code",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/M04.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/51",
+    "status_display": "in_review (PR #51)"
   },
   {
     "id": "M05",
