@@ -1245,7 +1245,8 @@
       "M08"
     ],
     "files": [
-      "docs/tasks/M09.md"
+      "docs/tasks/M09.md",
+      "docs/evidence/M09_TRILOGY_EDIT.md"
     ],
     "contract": "prepare для трилогии: деньги и подтверждённые стаки через существующий EditPlan. Вход только после принятого чтения и round-trip. Обязательна проверка загрузкой в самой игре.",
     "steps": [
@@ -1257,9 +1258,10 @@
     ],
     "gate": "code",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "blocked",
     "path": "docs/tasks/M09.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "blocked (M08/X-Ray corpus and game runtime missing)"
   }
 ]
