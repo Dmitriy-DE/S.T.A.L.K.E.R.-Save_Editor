@@ -79,10 +79,9 @@ make web-serve      # http://localhost:8765
 WebAssembly. Сервера у приложения нет.
 
 Онлайн-версия работает здесь:
-**<https://stalker2-save-editor.save-editor.workers.dev>**
+**<https://stalker2-save-editor.pages.dev>**
 
-Обновляется одной командой `make web-deploy` (Cloudflare, настройки в
-`wrangler.jsonc`). Сервера у приложения нет — отдаётся только статика, а
+Обновляется одной командой `make web-deploy` (Cloudflare Pages). Сервера у приложения нет — отдаётся только статика, а
 редактор целиком исполняется в браузере посетителя.
 
 Что доступно в вебе: открыть локальный `.sav`, увидеть деньги, инвентарь и

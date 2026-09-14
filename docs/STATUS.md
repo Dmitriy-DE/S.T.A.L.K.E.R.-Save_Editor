@@ -56,8 +56,8 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 `ooz-wasm`. Сверка на реальном сейве: распаковка и обе правки дают те же
 SHA-256, что десктоп ([evidence](evidence/WEB_EDITION_2026-09-14.md)).
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
-[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.save-editor.workers.dev>,
-обновление — `make web-deploy` (Cloudflare, `wrangler.jsonc`). Проверено
+[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.pages.dev>,
+обновление — `make web-deploy` (Cloudflare Pages). Проверено
 живьём: страница, стили, ядро и мост отдаются, редактор открывает сейв.
 
 ## Текущий проход B02
