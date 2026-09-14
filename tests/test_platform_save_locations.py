@@ -5,6 +5,7 @@ from pathlib import Path
 from editor.platforms import (
     InstalledGame,
     installed_games,
+    manual_save_search_paths,
     save_directories,
     save_search_paths,
     steam_libraries,
@@ -232,3 +233,54 @@ def test_save_search_paths_explains_missing_candidates_without_creating_them(
     assert home / "AppData" / "Local" / "Stalker2" / "Saved" / "SaveGames" in candidates
     assert candidates
     assert not home.exists()
+
+
+def test_manual_game_root_uses_fsgame_override_without_auto_fallback(tmp_path: Path) -> None:
+    game_root = tmp_path / "STALKER Clear Sky"
+    game_root.mkdir()
+    (game_root / "fsgame.ltx").write_text(
+        "$app_data_root$ = true| false| custom-user-data\\\n"
+        "$game_saves$ = true| false| $app_data_root$| saves\\\n",
+        encoding="utf-8",
+    )
+    expected = game_root / "custom-user-data" / "saves"
+
+    assert manual_save_search_paths(
+        "clear_sky",
+        game_root=game_root,
+        system="Windows",
+        environ={},
+        home=tmp_path / "home",
+    ) == (expected, game_root / "_appdata_" / "savedgames")
+
+
+def test_manual_steam_root_uses_its_installed_game_and_proton_save(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    library = home / ".local" / "share" / "Steam"
+    install_dir = library / "steamapps" / "common" / "STALKER Clear Sky"
+    install_dir.mkdir(parents=True)
+    steamapps = library / "steamapps"
+    (steamapps / "appmanifest_20510.acf").write_text(
+        _manifest(20510, "STALKER Clear Sky"),
+        encoding="utf-8",
+    )
+    expected = (
+        steamapps
+        / "compatdata"
+        / "20510"
+        / "pfx"
+        / "drive_c"
+        / "users"
+        / "steamuser"
+        / "Documents"
+        / "Stalker-STCS"
+        / "savedgames"
+    )
+
+    assert expected in manual_save_search_paths(
+        "clear_sky",
+        steam_root=library,
+        system="Linux",
+        environ={},
+        home=home,
+    )

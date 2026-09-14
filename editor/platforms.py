@@ -1320,3 +1320,129 @@ def save_directories(
             steam_library_roots=steam_library_roots,
         )
     )
+
+
+def manual_save_search_paths(
+    game_id: str,
+    *,
+    steam_root: str | Path | None = None,
+    game_root: str | Path | None = None,
+    save_root: str | Path | None = None,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    filesystem_root: Path | None = None,
+    root: Path | None = None,
+) -> tuple[Path, ...]:
+    """Resolve save candidates from one explicitly selected manual root.
+
+    The three manual scopes are intentionally exclusive: a save directory
+    wins over a game directory, which wins over a Steam root.  This function
+    never falls back to automatic locations; the settings layer decides when
+    a missing manual root should make automatic discovery available again.
+    """
+
+    key = _GAME_ALIASES.get(game_id.strip().casefold())
+    if key is None:
+        raise ValueError(f"Unsupported STALKER game id: {game_id!r}")
+    env = _environment(environ)
+    filesystem_root = _effective_root(filesystem_root, root)
+    home_path = _injected_home(home, filesystem_root)
+    name = _system_name(system)
+
+    def as_path(value: str | Path) -> Path:
+        return _path_value(
+            value,
+            home=home_path,
+            environ=env,
+            filesystem_root=filesystem_root,
+        )
+
+    if save_root is not None:
+        return (as_path(save_root),)
+
+    if game_root is not None:
+        install_dir = as_path(game_root)
+        candidates: list[Path] = []
+        if key == "stalker2":
+            # A manually selected S.T.A.L.K.E.R. 2 game folder only scopes the
+            # search to project-relative candidates.  Its documented local
+            # AppData saves can be selected explicitly as a save root.
+            candidates.extend(
+                (
+                    install_dir / "Saved" / "SaveGames",
+                    install_dir / "Saved" / "STEAM" / "SaveGames",
+                    install_dir / "Saved" / "GOG" / "SaveGames",
+                )
+            )
+        else:
+            override = _fsgame_save_directory(
+                install_dir,
+                game_id=key,
+                home=home_path,
+                environ=env,
+                filesystem_root=filesystem_root,
+            )
+            if override is not None:
+                candidates.append(override)
+            candidates.append(install_dir / "_appdata_" / "savedgames")
+        return _dedupe_paths(candidates)
+
+    if steam_root is None:
+        return ()
+
+    selected_steam_root = as_path(steam_root)
+    games = installed_games(
+        system=name,
+        environ=env,
+        home=home_path,
+        filesystem_root=filesystem_root,
+        steam_library_roots=(selected_steam_root,),
+    )
+    candidates = []
+    for game in games:
+        if game.game_id != key:
+            continue
+        override = _fsgame_save_directory(
+            game.install_dir,
+            game_id=key,
+            home=home_path,
+            environ=env,
+            filesystem_root=filesystem_root,
+        )
+        if override is not None:
+            candidates.append(override)
+        if name == "windows":
+            if game.game_id == "stalker2":
+                local = _env_get(env, "LOCALAPPDATA")
+                local_root = (
+                    _path_value(
+                        local,
+                        home=home_path,
+                        environ=env,
+                        filesystem_root=filesystem_root,
+                    )
+                    if local
+                    else home_path / "AppData" / "Local"
+                )
+                candidates.extend(
+                    (
+                        local_root / "Stalker2" / "Saved" / "SaveGames",
+                        local_root / "Stalker2" / "Saved" / "STEAM" / "SaveGames",
+                    )
+                )
+            elif game.edition == "original":
+                candidates.append(game.install_dir / "_appdata_" / "savedgames")
+            else:
+                _add_ee_candidates(
+                    candidates,
+                    key,
+                    _saved_games_roots(
+                        home=home_path,
+                        environ=env,
+                        filesystem_root=filesystem_root,
+                    ),
+                )
+        else:
+            _add_proton_candidates(candidates, game)
+    return _dedupe_paths(candidates)

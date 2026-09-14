@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypeAlias
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -233,6 +233,7 @@ class SaveSlotsView(QWidget):
         self._slots: tuple[SaveSlot, ...] = ()
         self._searched_paths: tuple[Path, ...] = ()
         self._worker: SlotDiscoveryWorker | None = None
+        self._refresh_pending = False
         self._build_ui()
 
     @property
@@ -297,6 +298,7 @@ class SaveSlotsView(QWidget):
         """Start one read-only discovery run; never open a slot implicitly."""
 
         if self._worker is not None and self._worker.isRunning():
+            self._refresh_pending = True
             return
         self.refresh_button.setEnabled(False)
         self.status_label.setText("Поиск сохранений… файлы не изменяются")
@@ -323,6 +325,9 @@ class SaveSlotsView(QWidget):
     def _on_worker_finished(self) -> None:
         self.refresh_button.setEnabled(True)
         self._worker = None
+        if self._refresh_pending:
+            self._refresh_pending = False
+            QTimer.singleShot(0, self.refresh)
 
     def _set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)

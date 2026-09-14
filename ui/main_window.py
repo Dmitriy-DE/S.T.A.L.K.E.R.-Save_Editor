@@ -36,6 +36,7 @@ from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
 from editor.service import EditorService
+from editor.settings import PathSettings, load_settings, search_paths_for_settings
 from save_format import SaveError, SaveInfo
 
 from .backups_view import BackupView, RestoreWorker
@@ -44,6 +45,7 @@ from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
 from .save_slots_view import SaveSlotsView, SlotDiscoveryFn, discover_save_slots
+from .settings_view import SettingsView
 from .theme import apply_theme
 
 
@@ -129,10 +131,14 @@ class MainWindow(QMainWindow):
         service: EditorService,
         *,
         slot_discovery: SlotDiscoveryFn | None = None,
+        settings_path: Path | None = None,
     ) -> None:
         super().__init__()
         self.service = service
-        self.slot_discovery = slot_discovery or discover_save_slots
+        self.settings_load = load_settings(path=settings_path)
+        self.settings_path = self.settings_load.path
+        self.settings = self.settings_load.settings
+        self.slot_discovery = slot_discovery or self._discover_slots
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
@@ -258,6 +264,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
         self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
         self.tabs.addTab(self._build_slots_tab(), "Найденные сейвы")
+        self.tabs.addTab(self._build_settings_tab(), "Настройки")
         self.tabs.tabBar().setVisible(False)
         content_layout.addWidget(self.tabs, 1)
 
@@ -269,6 +276,7 @@ class MainWindow(QMainWindow):
             "Резервные копии",
             "Steam Cloud",
             "Найденные сейвы",
+            "Настройки",
         )
         for index, label in enumerate(self.nav_labels):
             button = QPushButton(label)
@@ -542,6 +550,28 @@ class MainWindow(QMainWindow):
         # manual file picker above.
         self.save_slots_view.refresh()
         return self.save_slots_view
+
+    def _discover_slots(self):
+        return discover_save_slots(
+            search_paths_fn=lambda game_id: search_paths_for_settings(
+                game_id, self.settings
+            )
+        )
+
+    def _build_settings_tab(self) -> QWidget:
+        self.settings_view = SettingsView(
+            self.settings,
+            settings_path=self.settings_path,
+            load_error=self.settings_load.error,
+            parent=self,
+        )
+        self.settings_view.settings_changed.connect(self._on_settings_changed)
+        return self.settings_view
+
+    def _on_settings_changed(self, settings: PathSettings) -> None:
+        self.settings = settings
+        self.status_label.setText("Настройки обновлены; обновляю список сохранений…")
+        self.save_slots_view.refresh()
 
     def _on_slot_discovery_failed(self, message: str) -> None:
         self.status_label.setText(f"Поиск слотов не выполнен: {message}")
