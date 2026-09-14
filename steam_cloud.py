@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Re-exported for app.py and ui/cloud_view.py, which import the helper lookup
+# Re-exported for ui/cloud_view.py, which imports the helper lookup
 # from this module.  Keep it in __all__: an "unused import" cleanup that drops
-# it breaks both GUIs at import time.
+# it breaks the Cloud tab at import time.
 from editor.platforms import discover_helper
 
 __all__ = [

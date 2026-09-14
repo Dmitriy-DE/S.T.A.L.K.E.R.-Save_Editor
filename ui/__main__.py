@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         from PySide6.QtWidgets import QApplication
     except ImportError as exc:
         print(
-            "Qt UI не установлен. Выполните: python -m pip install -r requirements-ui.txt",
+            "Qt UI не установлен. Выполните: python -m pip install -r requirements.txt",
             file=sys.stderr,
         )
         print(f"Детали: {exc}", file=sys.stderr)

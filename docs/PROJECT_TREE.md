@@ -1,14 +1,15 @@
-# Структура после импорта
+# Структура проекта
 
 ```text
-app.py / cli.py / save_format.py / steam_cloud.py   runtime v0.3
-editor/                                               UI-free service, storage, cloud transaction and platform paths
-ui/                                                   Tk-compatible Qt shell: Zone theme, inventory, changes, backups and Cloud tab
-vendor/ooz.abi3.so                                 original Linux decoder
-tests/selftest_real.py                             existing private-corpus selftest
-releases/legacy/                                   original source bundles + SHA256SUMS
+cli.py / save_format.py / steam_cloud.py           parser, research CLI and Steam helper IPC
+editor/                                            UI-free service, storage, cloud transaction and platform paths
+ui/                                                Qt interface: Zone theme, overview, inventory, changes, backups, Cloud
+packaging/                                         PyInstaller builder for Linux tar.gz/.deb and Windows zip
+tools/                                             repository maintenance scripts (task index generator)
+vendor/ooz.abi3.so                                 Linux decoder binary
+tests/selftest_real.py                             private-corpus selftest, never run in CI
 third_party/pyooz/                                 decoder source and provenance
-README.md / AGENTS.md / CODEX_PROMPT.md             current entry points
+README.md / AGENTS.md / CODEX_PROMPT.md            entry points for contributors
 docs/specs/                                       architecture and product requirements
 docs/plans/                                       order and release gates
 docs/tasks/                                       individual execution cards + issue links

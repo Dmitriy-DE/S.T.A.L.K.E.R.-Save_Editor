@@ -2,20 +2,29 @@
 
 Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
 
-**Сейчас:** импортированная v0.3.0 EXPERIMENTAL, Python + Tkinter и Qt shell в Zone-теме для локального анализа, inventory search/filter, staged money/stack edits, immutable preview/local-copy apply, backup/hash browser с восстановлением в новую копию и Steam Cloud UI с явным connect/list/analyze/upload. U07 добавляет тёмную палитру, metadata/CRC badges, sidebar и snapshot-backed summary cards без новых runtime-зависимостей. B01 добавляет воспроизводимый PyInstaller builder для Linux `tar.gz`/`.deb` и Windows `zip`; локально подтверждён Linux bundle, Windows runner smoke ещё впереди. На Linux x86_64 доступен legacy `vendor/ooz.abi3.so`; на Windows x64 используется `pyooz==0.0.8`. Это исследовательская версия, не готовый универсальный редактор.
+**Сейчас:** один Qt-редактор в Zone-теме поверх общего ядра: локальный анализ,
+поиск и фильтры по инвентарю, staged money/stack edits, immutable preview и
+сохранение в новую копию, browser резервных копий с восстановлением и вкладка
+Steam Cloud с явным connect/list/analyze/upload. Плюс CLI для исследования.
+PyInstaller собирает Linux `tar.gz`/`.deb` и Windows `zip`; Linux bundle
+подтверждён локально, Windows runner smoke ещё впереди. Декодер: `pyooz==0.0.8`
+из wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`. Это
+исследовательская версия, не готовый универсальный редактор.
 
 ## Что доступно
 
 - Чтение и изменение денег; изменение количества распознанных стаков с пересчётом веса.
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
-- GUI для локальных файлов и Steam Cloud; CLI для исследования.
-- Experimental: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
+- Qt-интерфейс для локальных файлов и Steam Cloud; CLI для исследования.
+- Experimental в CLI: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
 - Общий UI-free `EditorService` связывает parser, immutable preview, local export,
-  backup restore и cloud transaction для Tk/CLI/Qt.
-- Qt Cloud tab не вызывает helper при старте: сначала явное подключение и список
+  backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
+  логики правок не имеют.
+- Cloud tab не вызывает helper при старте: сначала явное подключение и список
   `Data/*.sav`, затем анализ выбранного slot и upload только его preview.
-- Qt shell использует визуальный референс Zone из U07: demo-данные макета не
-  копируются, а badges/cards заполняются только после реального snapshot.
+- Интерфейс следует визуальному референсу Zone: demo-данные макета не
+  копируются, badges, cards и таблица метаданных заполняются только из
+  реального snapshot.
 
 **Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
 
@@ -28,39 +37,28 @@ export использует общий backup/atomic path после S03. Ост
 
 ## Запуск из исходников
 
-Требуются Python 3.10+ и Tkinter; проверялся локальный x86_64 Linux, не все дистрибутивы.
+Нужен Python 3.11+. Проверялся x86_64 Linux, не все дистрибутивы.
 
 ```bash
-sudo apt install python3 python3-tk
-./run.sh
-```
-
-На Windows 11 x64 нужен Python 3.11+ с Tkinter; запусти `run.bat` из
-папки проекта (или `py -3 app.py`). Native decoder ставится зависимостью
-`pyooz==0.0.8`; Linux при отсутствии pip wheel использует bundled fallback.
-При отсутствии execute-bit на Linux: `bash run.sh`. Steam нужен только для
-cloud-режима. Helper устанавливается отдельно; старый локальный tar.gz не
-является установленным приложением. Cloud-upload из автоматических
-тестов теперь блокируется в коде: `SteamWorker` отказывает в `Connect`/
-`WriteFile` для app_id игры под pytest, пока не выставлен
-`STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.
-
-Для нового Qt shell установи дополнительные зависимости и запусти модуль:
-
-```bash
-python3 -m pip install -r requirements-ui.txt
+python3 -m pip install -r requirements.txt
 python3 -m ui
 ```
 
-На Windows используй `py -3 -m pip install -r requirements-ui.txt` и
-`py -3 -m ui`. В Qt shell можно искать и фильтровать локальный inventory,
-застейджить подтверждённые money/stack изменения, нажать preview и сохранить
-новую копию. На вкладке резервных копий видны hash/status журнала; проверенный
-backup можно восстановить в новый путь, а исходный сейв и backup остаются
-неизменными. На вкладке Steam Cloud upload показывает `verified` или `uncertain`;
-после `WriteFile` автоматического повтора нет.
+На Windows: `py -3 -m pip install -r requirements.txt` и `py -3 -m ui`.
 
-## Standalone-пакеты (B01)
+В интерфейсе можно искать и фильтровать локальный inventory, застейджить
+подтверждённые money/stack изменения, нажать preview и сохранить новую копию.
+На вкладке резервных копий видны hash/status журнала; проверенный backup можно
+восстановить в новый путь, а исходный сейв и backup остаются неизменными. На
+вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
+`WriteFile` автоматического повтора нет.
+
+Steam нужен только для cloud-режима, helper устанавливается отдельно.
+Cloud-upload из автоматических тестов блокируется в коде: `SteamWorker`
+отказывает в `Connect`/`WriteFile` для app_id игры под pytest, пока не
+выставлен `STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.
+
+## Standalone-пакеты
 
 В исходном режиме Python нужен только для запуска проекта. Для пользователя
 готового bundle Python и `pip` не нужны: PyInstaller вкладывает интерпретатор,
@@ -109,9 +107,10 @@ make selftest SAVE=/path/to/original-save.sav
 6. [Проверка и выпуск](docs/RELEASE.md).
 7. [Навигация по документации](docs/README.md).
 
-## Пакеты и локальные материалы
+## Локальные материалы
 
-[Исторические v0.1/v0.3 архивы](releases/legacy/) сохранены без изменения с [SHA256SUMS](releases/legacy/SHA256SUMS). Это исходники с Linux decoder, не самостоятельные `.exe`/AppImage. Будущие бинарные сборки публикуются в GitHub Releases после проверки на обеих ОС.
+Исторические архивы v0.1/v0.3 удалены из дерева: они остаются в истории Git, а
+бинарные сборки публикуются в GitHub Releases после проверки на обеих ОС.
 
 Исходные материалы владельца сохранены в `.local/original-import-2026-09-13/`, исключены из Git. Там находятся личные `.sav`, скриншоты, полный handoff, исходные архивы и manifest. При клонировании GitHub эти файлы не появятся; приложение и будущие синтетические тесты не должны от них зависеть.
 

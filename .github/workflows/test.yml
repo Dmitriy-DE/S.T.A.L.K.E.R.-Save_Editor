@@ -88,7 +88,7 @@ jobs:
 
       - name: Compile Python sources
         shell: python
-        run: python -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
+        run: python -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
       - name: Run static analysis gate
         shell: python

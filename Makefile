@@ -3,7 +3,7 @@ SAVE ?=
 
 .PHONY: check lint typecheck docs docs-check test selftest run package-plan package
 check: lint typecheck docs-check
-	$(PYTHON) -m py_compile app.py cli.py save_format.py steam_cloud.py tests/selftest_real.py
+	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
 lint:
 	$(PYTHON) -m ruff check .
@@ -25,7 +25,7 @@ selftest: check
 	$(PYTHON) tests/selftest_real.py "$(SAVE)"
 
 run:
-	./run.sh
+	$(PYTHON) -m ui
 
 package-plan:
 	$(PYTHON) packaging/build.py --plan

@@ -1,5 +1,6 @@
 # Test runner used by local checks and every CI matrix job.
 pytest==9.0.2
+pytest-qt==4.5.0
 # Static analysis gate: correctness rules only, see ruff.toml and mypy.ini.
 # Neither tool is a runtime dependency and neither is bundled by PyInstaller.
 ruff==0.16.7

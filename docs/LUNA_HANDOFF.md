@@ -52,6 +52,6 @@ python3 cli.py info /absolute/path/to/save.sav
 make selftest SAVE=/absolute/path/to/original-D639.sav
 ```
 
-После S01: `python -m pytest tests`. После U02 сначала установить pinned requirements-ui и иметь Qt test environment. Windows cmd не расширяет shell wildcard как bash: не использовать `tests/test_*.py` как путь в общей CI-команде.
+После S01: `python -m pytest tests`. Нужны pinned requirements.txt и requirements-dev.txt: Qt входит в runtime. Windows cmd не расширяет shell wildcard как bash: не использовать `tests/test_*.py` как путь в общей CI-команде.
 
 Личные fixtures только в `.local/` или другом пользовательском пути; fresh clone должен проходить synthetic suite без них. Список локальных originals: `.local/original-import-2026-09-13/MANIFEST.json`.

@@ -14,15 +14,17 @@
 
 | Подход | Плюсы | Издержки | Решение |
 |---|---|---|---|
-| Оставить Tkinter/ttk | Минимальные зависимости, уже работает | Много ручной работы с таблицами, DPI, моделями, сигналами | Сохраняется до Qt parity как fallback |
-| Python + PySide6/Qt Widgets | Один язык с ядром; таблицы/model-view, worker signals, native dialogs | Размер дистрибутива, Qt plugins и packaging | Рекомендуемый путь |
-| Tauri/Electron + web UI | Богатая веб-вёрстка | Второй стек, IPC и packaging Python sidecar, сложнее отдельные задачи | Не выбирать для этой версии |
+| Оставить Tkinter/ttk | Минимальные зависимости | Много ручной работы с таблицами, DPI, моделями, сигналами; второй набор UI-кода | **Удалён** после достижения Qt parity: два интерфейса расходились, а fallback никем не использовался |
+| Python + PySide6/Qt Widgets | Один язык с ядром; таблицы/model-view, worker signals, native dialogs | Размер дистрибутива, Qt plugins и packaging | **Выбран**, единственный интерфейс |
+| Tauri/Electron + web UI | Богатая веб-вёрстка | Второй стек, IPC и packaging Python sidecar | Не для десктопа; отдельный веб-вариант рассматривается как самостоятельная поставка того же ядра |
 
-Qt UI переносится постепенно, без переписывания binary parser и без двух разных наборов правил правки. Qt Widgets достаточно; веб-сервер, аккаунты приложения и облачный backend не требуются.
+Один интерфейс и один набор правил правки. Веб-сервер, аккаунты приложения и
+облачный backend для десктопной поставки не требуются.
 
 ## Границы модулей
 
-Сначала сохранить app.py/cli.py/save_format.py/steam_cloud.py как совместимые entry points. Новые модули вводить только в соответствующей карточке:
+`cli.py`, `save_format.py` и `steam_cloud.py` остаются совместимыми entry
+points. Новые модули вводить только в соответствующей карточке:
 
 ```text
 editor/models.py          immutable request/source/result types
@@ -39,7 +41,7 @@ ui/cloud_view.py           source selection / sync states
 packaging/                 reproducible platform builds and diagnostic entrypoint
 ```
 
-Не разносить save_format.py по новым пакетам во время UI migration. CPU/IO работа идёт вне UI thread; UI получает immutable snapshots/events через сигналы. Никаких чтений Tk/Qt variables из фонового потока.
+Не разносить save_format.py по новым пакетам во время UI migration. CPU/IO работа идёт вне UI thread; UI получает immutable snapshots/events через сигналы. Никаких чтений Qt-виджетов из фонового потока.
 
 ## Контракты для первых задач
 
