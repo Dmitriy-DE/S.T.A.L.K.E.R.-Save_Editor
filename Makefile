@@ -1,7 +1,7 @@
 PYTHON ?= python3
 SAVE ?=
 
-.PHONY: check lint typecheck docs docs-check web web-serve web-publish test selftest run package-plan package
+.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package
 check: lint typecheck docs-check
 	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
@@ -26,6 +26,15 @@ web:
 web-serve: web
 	@echo "http://localhost:8765"
 	$(PYTHON) -m http.server 8765 --directory web
+
+# Upload web/ straight to Cloudflare Pages.  Requires `npx wrangler login` once;
+# the guard exists because this directory is also the local test server root and
+# a stray save must never be published.
+web-deploy: web
+	@! find web -name '*.sav' -o -name '*.bak' | grep -q . || \
+		(echo "web/ contains a save file; remove it before deploying" && exit 2)
+	npx --yes wrangler@4 pages deploy web \
+		--project-name=stalker2-save-editor --branch=main --commit-dirty=true
 
 # Publish web/ to the gh-pages branch, which GitHub Pages serves at its root.
 # Pages can only deploy a branch's root or /docs, never an arbitrary folder,

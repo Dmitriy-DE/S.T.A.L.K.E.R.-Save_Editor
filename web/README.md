@@ -22,3 +22,13 @@ make web-serve   # http://localhost:8765
 `/docs`, поэтому папку `web/` из `main` он обслуживать не может.
 Включается один раз: Settings → Pages → Deploy from a branch → `gh-pages`,
 папка `/ (root)`. GitHub Actions не требуются.
+
+## Куда выкладывать
+
+| Вариант | Условие | Команда / действие |
+|---|---|---|
+| GitHub Pages | репозиторий должен быть **публичным** (на бесплатном тарифе Pages приватные репозитории не обслуживает) | `make web-publish`, затем Settings → Pages → `gh-pages` → `/ (root)` |
+| Cloudflare Pages | репозиторий может остаться приватным; нужен один вход | `npx wrangler login`, затем `make web-deploy` |
+
+`make web-deploy` отказывается публиковать, если в `web/` лежит `.sav`: эта же
+папка служит корнем локального тестового сервера.
