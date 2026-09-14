@@ -132,7 +132,8 @@ commit `851a30c`). JSON хранится в `user_data_dir()/settings.json`, п�
 ## M06 — контейнер X-Ray — 2026-09-15
 
 Публичное исследование raw LZO1X, внешнего заголовка и chunk-направления
-записано в [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md). В рабочем дереве нет
+записано в [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md) и вынесено в [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53).
+В рабочем дереве нет
 ни одного реального X-Ray `.sav`/`.bak`/`.scop`, а synthetic S.T.A.L.K.E.R. 2
 fixture для этой задачи не подходит. Поэтому M06 оставлена `blocked`: не
 добавлялись неподтверждённые parser/compressor, offsets или detector, и не
