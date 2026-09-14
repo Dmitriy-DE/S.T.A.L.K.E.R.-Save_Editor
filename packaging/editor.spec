@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
 
@@ -49,8 +49,22 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 runtime_scripts = [entry for entry in a.scripts if entry[0].startswith("pyi_rth_")]
-gui_entry = next(entry for entry in a.scripts if entry[1].endswith("packaging/gui_entry.py"))
-diagnostic_entry = next(entry for entry in a.scripts if entry[1].endswith("packaging/diagnostic.py"))
+def _entry(script_name):
+    """Find one analyzed script by file name.
+
+    Matching on "packaging/gui_entry.py" only works where the separator is a
+    slash; on Windows PyInstaller reports "packaging\\gui_entry.py" and the
+    lookup raised StopIteration in the middle of the build.
+    """
+
+    for entry in a.scripts:
+        if PurePath(entry[1]).name == script_name:
+            return entry
+    raise SystemExit(f"spec: analyzed script not found: {script_name}")
+
+
+gui_entry = _entry("gui_entry.py")
+diagnostic_entry = _entry("diagnostic.py")
 gui = EXE(
     pyz,
     [*runtime_scripts, gui_entry],
