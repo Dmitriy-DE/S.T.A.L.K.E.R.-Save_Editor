@@ -16,6 +16,10 @@ from editor.service import EditorService
 from save_format import SaveError, inspect_save
 from ui.main_window import LocalSnapshot, MainWindow
 
+# Generous on purpose: these cases drive real QThreads, and a loaded CI runner
+# is slow, not broken.
+UI_TIMEOUT_MS = 30_000
+
 
 def _show_snapshot(window: MainWindow, source: Path, data: bytes) -> None:
     window._render_snapshot(
@@ -36,8 +40,10 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     window._stage_stack_change(0x30000001, 3)
     assert window.preview_button.isEnabled()
     window._start_preview()
-    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=5_000)
-    assert window.save_copy_button.isEnabled()
+    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
+    # The action buttons settle when the worker thread exits, one tick after the
+    # result arrives.  Waiting on the button is what a user actually does.
+    qtbot.waitUntil(window.save_copy_button.isEnabled, timeout=UI_TIMEOUT_MS)
     prepared = window.prepared_edit
 
     window._stage_stack_change(0x30000001, 4)
@@ -77,12 +83,12 @@ def test_double_click_apply_starts_one_export(
     _show_snapshot(window, source, synthetic_save)
     window._stage_stack_change(0x30000001, 3)
     window._start_preview()
-    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=5_000)
+    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
 
     window._start_apply(output, backup_dir)
     window._start_apply(output, backup_dir)
-    qtbot.waitSignal(window.apply_ready, timeout=5_000)
-    qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
+    qtbot.waitSignal(window.apply_ready, timeout=UI_TIMEOUT_MS)
+    qtbot.waitUntil(lambda: window._operation_thread is None, timeout=UI_TIMEOUT_MS)
     assert calls == [(output, backup_dir)]
 
 
@@ -98,10 +104,10 @@ def test_stale_preview_is_rejected_before_export(
     _show_snapshot(window, source, synthetic_save)
     window._stage_stack_change(0x30000001, 3)
     window._start_preview()
-    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=5_000)
+    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
 
     source.write_bytes(synthetic_save + b"changed after preview")
-    with qtbot.waitSignal(window.operation_failed, timeout=5_000):
+    with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
         window._start_apply(output, backup_dir)
     assert not output.exists()
     assert "SHA256" in window.error_label.text()
@@ -125,19 +131,19 @@ def test_worker_error_is_reported_and_close_does_not_abort_running_operation(
     _show_snapshot(window, source, synthetic_save)
     window._stage_stack_change(0x30000001, 3)
     window._start_preview()
-    qtbot.waitUntil(started.is_set, timeout=5_000)
+    qtbot.waitUntil(started.is_set, timeout=UI_TIMEOUT_MS)
 
     event = QCloseEvent()
     window.closeEvent(event)
     assert not event.isAccepted()
     release.set()
-    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=5_000)
+    qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
 
     def broken_prepare(data: bytes, plan: EditPlan) -> PreparedEdit:
         raise SaveError("injected preview failure")
 
     window.service = EditorService(prepare_fn=broken_prepare)
     window._stage_stack_change(0x30000001, 4)
-    with qtbot.waitSignal(window.operation_failed, timeout=5_000):
+    with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
         window._start_preview()
     assert "injected preview failure" in window.error_label.text()
