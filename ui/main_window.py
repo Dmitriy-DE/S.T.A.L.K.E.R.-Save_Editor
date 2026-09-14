@@ -43,6 +43,7 @@ from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
+from .save_slots_view import SaveSlotsView, SlotDiscoveryFn, discover_save_slots
 from .theme import apply_theme
 
 
@@ -123,9 +124,15 @@ class MainWindow(QMainWindow):
     restore_ready = Signal(object)
     operation_failed = Signal(str)
 
-    def __init__(self, service: EditorService) -> None:
+    def __init__(
+        self,
+        service: EditorService,
+        *,
+        slot_discovery: SlotDiscoveryFn | None = None,
+    ) -> None:
         super().__init__()
         self.service = service
+        self.slot_discovery = slot_discovery or discover_save_slots
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
@@ -250,6 +257,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
         self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
+        self.tabs.addTab(self._build_slots_tab(), "Найденные сейвы")
         self.tabs.tabBar().setVisible(False)
         content_layout.addWidget(self.tabs, 1)
 
@@ -260,6 +268,7 @@ class MainWindow(QMainWindow):
             "Изменения",
             "Резервные копии",
             "Steam Cloud",
+            "Найденные сейвы",
         )
         for index, label in enumerate(self.nav_labels):
             button = QPushButton(label)
@@ -524,6 +533,19 @@ class MainWindow(QMainWindow):
         self.cloud_view.busy_changed.connect(self._on_cloud_busy)
         return self.cloud_view
 
+    def _build_slots_tab(self) -> QWidget:
+        self.save_slots_view = SaveSlotsView(self.slot_discovery, parent=self)
+        self.save_slots_view.open_requested.connect(self._start_inspect)
+        self.save_slots_view.discovery_failed.connect(self._on_slot_discovery_failed)
+        # Discovery is asynchronous and read-only.  No path is opened as a
+        # side effect; the user still has to double-click a row or use the
+        # manual file picker above.
+        self.save_slots_view.refresh()
+        return self.save_slots_view
+
+    def _on_slot_discovery_failed(self, message: str) -> None:
+        self.status_label.setText(f"Поиск слотов не выполнен: {message}")
+
     @staticmethod
     def _placeholder(text: str) -> QWidget:
         box = QGroupBox()
@@ -537,9 +559,9 @@ class MainWindow(QMainWindow):
     def open_local(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            "Открыть STALKER 2 .sav",
+            "Открыть сохранение S.T.A.L.K.E.R.",
             "",
-            "STALKER 2 save (*.sav);;Все файлы (*)",
+            "S.T.A.L.K.E.R. saves (*.sav);;Все файлы (*)",
         )
         if filename:
             self._start_inspect(Path(filename))

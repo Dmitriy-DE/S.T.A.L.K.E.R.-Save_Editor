@@ -32,6 +32,7 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
         "Изменения",
         "Резервные копии",
         "Steam Cloud",
+        "Найденные сейвы",
     ]
     assert "#111516" in QApplication.instance().styleSheet()
 

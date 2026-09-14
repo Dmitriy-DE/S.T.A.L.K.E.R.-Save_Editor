@@ -6,6 +6,7 @@ from editor.platforms import (
     InstalledGame,
     installed_games,
     save_directories,
+    save_search_paths,
     steam_libraries,
     steam_roots,
 )
@@ -219,3 +220,15 @@ def test_no_installed_store_or_steam_games_is_an_empty_read_only_result(
     after = tuple(home.rglob("*")) if home.exists() else ()
 
     assert before == after
+
+
+def test_save_search_paths_explains_missing_candidates_without_creating_them(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    candidates = save_search_paths("stalker2", system="Linux", environ={}, home=home)
+
+    assert home / ".steam" / "steam" not in candidates
+    assert home / "AppData" / "Local" / "Stalker2" / "Saved" / "SaveGames" in candidates
+    assert candidates
+    assert not home.exists()

@@ -1166,7 +1166,7 @@ def _stalker2_package_save_directories(
     )
 
 
-def save_directories(
+def _save_directory_candidates(
     game_id: str,
     *,
     system: str | None = None,
@@ -1177,7 +1177,7 @@ def save_directories(
     registry_reader: Callable[[], str | Path | None] | None = None,
     steam_library_roots: Sequence[str | Path] | None = None,
 ) -> tuple[Path, ...]:
-    """Return existing local save directories for one supported game family.
+    """Return all configured candidate locations, including missing paths.
 
     This is a read-only search.  It does not create directories, move files,
     invoke a launcher, or read save contents.  X-Ray locations are augmented
@@ -1267,4 +1267,56 @@ def save_directories(
             if game.edition == "original":
                 candidates.append(game.install_dir / "_appdata_" / "savedgames")
 
-    return _existing_directories(candidates)
+    return _dedupe_paths(candidates)
+
+
+def save_search_paths(
+    game_id: str,
+    *,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    filesystem_root: Path | None = None,
+    root: Path | None = None,
+    registry_reader: Callable[[], str | Path | None] | None = None,
+    steam_library_roots: Sequence[str | Path] | None = None,
+) -> tuple[Path, ...]:
+    """Return the candidate paths that a save search inspected."""
+
+    return _save_directory_candidates(
+        game_id,
+        system=system,
+        environ=environ,
+        home=home,
+        filesystem_root=filesystem_root,
+        root=root,
+        registry_reader=registry_reader,
+        steam_library_roots=steam_library_roots,
+    )
+
+
+def save_directories(
+    game_id: str,
+    *,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    filesystem_root: Path | None = None,
+    root: Path | None = None,
+    registry_reader: Callable[[], str | Path | None] | None = None,
+    steam_library_roots: Sequence[str | Path] | None = None,
+) -> tuple[Path, ...]:
+    """Return existing local save directories for one supported game family."""
+
+    return _existing_directories(
+        _save_directory_candidates(
+            game_id,
+            system=system,
+            environ=environ,
+            home=home,
+            filesystem_root=filesystem_root,
+            root=root,
+            registry_reader=registry_reader,
+            steam_library_roots=steam_library_roots,
+        )
+    )
