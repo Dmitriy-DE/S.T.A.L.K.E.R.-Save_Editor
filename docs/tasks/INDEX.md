@@ -39,6 +39,13 @@
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
 | [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
 | [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |
+| [M01](M01.md) | Реестр форматов сохранений | — | ready | — |
+| [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | waiting_dependencies | — |
+| [M03](M03.md) | Поиск Steam и папок сохранений | M01 | waiting_dependencies | — |
+| [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | waiting_dependencies | — |
+| [M05](M05.md) | Ручные пути и их запоминание | M04 | waiting_dependencies | — |
+| [M06](M06.md) | Corpus и формат evidence для чужого формата | M01 | waiting_dependencies | — |
+| [M07](M07.md) | Первый парсер X-Ray: только чтение | M06 | waiting_dependencies | — |
 
 <!-- END GENERATED TASK TABLE -->
 

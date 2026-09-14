@@ -1018,5 +1018,172 @@
     "github_issue": "",
     "github_pr": "",
     "status_display": "accepted (Cloudflare, живой URL)"
+  },
+  {
+    "id": "M01",
+    "title": "Реестр форматов сохранений",
+    "depends_on": [],
+    "files": [
+      "docs/tasks/M01.md"
+    ],
+    "contract": "editor/formats.py: SaveFormat Protocol (id/title/detect/inspect/prepare) + статический реестр; S2 — единственная реализация поверх существующего парсера.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "ready",
+    "path": "docs/tasks/M01.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M02",
+    "title": "Определение игры по файлу и честный отказ",
+    "depends_on": [
+      "M01"
+    ],
+    "files": [
+      "docs/tasks/M02.md"
+    ],
+    "contract": "detect(data) по содержимому, не по имени файла; единый текст ошибки в ядре для Qt/CLI/веба.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M02.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M03",
+    "title": "Поиск Steam и папок сохранений",
+    "depends_on": [
+      "M01"
+    ],
+    "files": [
+      "docs/tasks/M03.md"
+    ],
+    "contract": "editor/platforms: steam_roots/steam_libraries/installed_game/save_directories; разбор libraryfolders.vdf без внешних зависимостей; обязательный учёт Proton-префикса на Linux.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M03.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M04",
+    "title": "Выбор слота из найденной папки",
+    "depends_on": [
+      "M03",
+      "M02"
+    ],
+    "files": [
+      "docs/tasks/M04.md"
+    ],
+    "contract": "Список слотов в Qt: имя, размер, время, игра; открытие тем же путём, что ручной выбор файла. В вебе вкладки нет.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M04.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M05",
+    "title": "Ручные пути и их запоминание",
+    "depends_on": [
+      "M04"
+    ],
+    "files": [
+      "docs/tasks/M05.md"
+    ],
+    "contract": "Ручной корень Steam/игры/сейвов имеет приоритет над автопоиском; хранение в user_data_dir, битые настройки не роняют запуск.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M05.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M06",
+    "title": "Corpus и формат evidence для чужого формата",
+    "depends_on": [
+      "M01"
+    ],
+    "files": [
+      "docs/tasks/M06.md"
+    ],
+    "contract": "Серии сейвов с одним изменением между файлами; отчёт с кандидатами и исключениями; личные файлы в репозиторий не попадают.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M06.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M07",
+    "title": "Первый парсер X-Ray: только чтение",
+    "depends_on": [
+      "M06"
+    ],
+    "files": [
+      "docs/tasks/M07.md"
+    ],
+    "contract": "Контейнер, распаковка, байт-в-байт round-trip до любых правок; правки — отдельной карточкой.",
+    "steps": [
+      "См. карточку: scope, границы и негативные сценарии."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P3",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M07.md",
+    "github_issue": "",
+    "github_pr": ""
   }
 ]
