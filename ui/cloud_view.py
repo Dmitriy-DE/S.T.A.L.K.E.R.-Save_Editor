@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.formats import FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
 from editor.service import EditorService
@@ -119,7 +120,11 @@ class CloudOperationWorker(QThread):
                     raise SaveError("Cloud save не выбран")
                 self.progress.emit(f"Cloud: скачивание {cloud_file.name}…")
                 data = bytes(transport.read_file(cloud_file.name))
-                result = self.service.inspect_result(data, with_inventory=True)
+                result = self.service.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=cloud_file.name,
+                )
                 self.completed.emit(
                     CloudSnapshot(
                         cloud_file.name,
@@ -147,6 +152,8 @@ class CloudOperationWorker(QThread):
                 return
 
             raise SaveError(f"Неизвестный cloud operation: {self.mode}")
+        except FormatDetectionError as exc:
+            self.failed.emit(str(exc))
         except Exception as exc:
             if created_transport and transport is not None:
                 try:

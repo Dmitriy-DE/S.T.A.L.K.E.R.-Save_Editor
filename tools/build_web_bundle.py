@@ -29,6 +29,7 @@ MODULES = (
     "save_format.py",
     "editor/__init__.py",
     "editor/codec.py",
+    "editor/formats.py",
     "editor/models.py",
     "editor/prepare.py",
 )

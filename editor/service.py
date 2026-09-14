@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from save_format import SaveError, SaveInfo
+from save_format import SaveInfo
 
-from .formats import FormatInspection, SaveFormat, detect
+from .formats import FormatInspection, SaveFormat, detect_or_raise
 from .models import CloudReceipt, EditPlan, PreparedEdit
 from .storage import (
     BackupRecord,
@@ -54,18 +54,21 @@ class EditorService:
         self._restore_fn = restore_fn or storage_restore_backup
 
     @staticmethod
-    def _format_for(data: bytes) -> SaveFormat:
-        format_ = detect(data)
-        if format_ is None:
-            raise SaveError("Неизвестный формат сохранения")
-        return format_
+    def _format_for(
+        data: bytes, *, source_name: str | None = None
+    ) -> SaveFormat:
+        return detect_or_raise(data, display_name=source_name)
 
     def inspect_result(
-        self, data: bytes, *, with_inventory: bool = True
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
     ) -> FormatInspection:
         """Return parser data together with the selected format metadata."""
 
-        format_ = self._format_for(data)
+        format_ = self._format_for(data, source_name=source_name)
         inspector = self._inspect_fn or format_.inspect
         info = inspector(data, with_inventory=with_inventory)
         return FormatInspection(
@@ -74,19 +77,35 @@ class EditorService:
             info=info,
         )
 
-    def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
+    def inspect(
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
+    ) -> SaveInfo:
         """Return the read-only save snapshot used by every front end."""
 
         if self._inspect_fn is not None:
             return self._inspect_fn(data, with_inventory=with_inventory)
-        return self.inspect_result(data, with_inventory=with_inventory).info
+        return self.inspect_result(
+            data,
+            with_inventory=with_inventory,
+            source_name=source_name,
+        ).info
 
-    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
+    def prepare(
+        self,
+        data: bytes,
+        plan: EditPlan,
+        *,
+        source_name: str | None = None,
+    ) -> PreparedEdit:
         """Prepare and verify one immutable edit plan."""
 
         if self._prepare_fn is not None:
             return self._prepare_fn(data, plan)
-        format_ = self._format_for(data)
+        format_ = self._format_for(data, source_name=source_name)
         return format_.prepare(data, plan)
 
     def export_local(

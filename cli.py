@@ -6,12 +6,20 @@ import hashlib
 import sys
 from pathlib import Path
 
+from editor.formats import FormatDetectionError
 from editor.models import EditPlan, SourceRef
 from editor.platforms import user_data_dir
 from editor.service import EditorService
 from save_format import RawPatch, SaveError, decompress_save, diff_record, record_hex
 
 EDITOR_SERVICE = EditorService()
+
+
+def _print_error(exc: Exception) -> None:
+    if isinstance(exc, FormatDetectionError):
+        print(str(exc), file=sys.stderr)
+    else:
+        print(f"Error: {exc}", file=sys.stderr)
 
 
 def parse_int(s: str) -> int:
@@ -92,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return _run(argv)
     except (OSError, SaveError, ValueError, IndexError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
+        _print_error(exc)
         return 2
 
 
@@ -112,19 +120,19 @@ def _run(argv: list[str] | None) -> int:
     data = src.read_bytes()
 
     if a.cmd == "info":
-        x = EDITOR_SERVICE.inspect(data)
+        x = EDITOR_SERVICE.inspect(data, source_name=src.name)
         parsed_grid_handles = len({item.handle for item in x.inventory})
         print(f"CRC: OK\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid handles parsed/total: {parsed_grid_handles}/{x.grid_handle_count}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}\nUnresolved handles: {len(x.unresolved_handles)}")
         for warning in x.warnings:
             print(f"Warning: {warning}")
     elif a.cmd == "inventory":
-        x = EDITOR_SERVICE.inspect(data)
+        x = EDITOR_SERVICE.inspect(data, source_name=src.name)
         print("POS   SIZE  TYPE                 KEY     COUNT   WEIGHT    HANDLE       STATUS")
         for it in x.inventory:
             status = "editable" if it.editable_count else ("unresolved" if it.handle in x.unresolved_handles else "read-only")
             print(f"{it.position:<5} {it.size_text:<5} {it.category:<20} {it.type_key:<7} {it.count:>6} {it.total_weight:>9.3f}  {it.handle_hex}  {status}")
     elif a.cmd == "orphans":
-        x = EDITOR_SERVICE.inspect(data)
+        x = EDITOR_SERVICE.inspect(data, source_name=src.name)
         print("TYPE                 KEY     COUNT  RECORDPOS     HANDLE")
         for o in x.orphans:
             print(f"{o.category:<20} {o.type_key:<7} {o.count:>5}  {o.x:>5},{o.y:<5}  {o.handle_hex}")
@@ -172,13 +180,19 @@ def _run(argv: list[str] | None) -> int:
                 attach=tuple((handle, x, y, width, height) for handle, (x, y, width, height) in attach.items()),
                 raw=tuple(raw_patches),
             )
-            prepared = EDITOR_SERVICE.prepare(data, plan)
+            prepared = EDITOR_SERVICE.prepare(data, plan, source_name=src.name)
             destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited.sav")
             backup_dir = Path(a.backup_dir) if a.backup_dir else DEFAULT_BACKUP_DIR
             receipt = EDITOR_SERVICE.export_local(src, destination, prepared, backup_dir)
-            before = EDITOR_SERVICE.inspect(data, with_inventory=True)
+            before = EDITOR_SERVICE.inspect(
+                data, with_inventory=True, source_name=src.name
+            )
             edited_data = receipt.output_path.read_bytes()
-            after = EDITOR_SERVICE.inspect(edited_data, with_inventory=True)
+            after = EDITOR_SERVICE.inspect(
+                edited_data,
+                with_inventory=True,
+                source_name=receipt.output_path.name,
+            )
             print(f"Output: {receipt.output_path}\nSize: {len(edited_data)}\nBackup: {receipt.backup_path}\nSHA256: {receipt.output_sha256}")
             if money is not None: print(f"Money: {before.money} -> {after.money}")
             before_by_handle = {item.handle: item for item in before.inventory}
@@ -200,7 +214,7 @@ def _run(argv: list[str] | None) -> int:
             for handle, (at_x, at_y, at_w, at_h) in attach.items(): print(f"Attach 0x{handle:08X}: {at_x},{at_y} {at_w}x{at_h}")
             for patch in raw_patches: print(f"Raw 0x{patch.offset:X}: {patch.kind}={patch.value}")
         except (OSError, SaveError, ValueError, IndexError) as exc:
-            print(f"Error: {exc}", file=sys.stderr)
+            _print_error(exc)
             return 2
     return 0
 

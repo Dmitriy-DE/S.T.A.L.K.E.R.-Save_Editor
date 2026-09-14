@@ -15,6 +15,7 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
+from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
 
@@ -102,7 +103,8 @@ def analyze(data: bytes, name: str) -> str:
     """Parse one save and return a JSON snapshot for the page."""
 
     payload = bytes(data)
-    info = sf.inspect_save(payload)
+    format_ = detect_or_raise(payload, display_name=name)
+    info = format_.inspect(payload)
     _state["data"] = payload
     _state["sha256"] = hashlib.sha256(payload).hexdigest()
     _state["name"] = name
@@ -112,6 +114,8 @@ def analyze(data: bytes, name: str) -> str:
             "name": name,
             "size": len(payload),
             "size_text": _human_size(len(payload)),
+            "format_id": format_.id,
+            "format_title": format_.title,
             "sha256": info.sha256,
             "crc_ok": info.crc_ok,
             "money": info.money,

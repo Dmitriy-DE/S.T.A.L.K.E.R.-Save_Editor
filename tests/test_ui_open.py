@@ -51,3 +51,24 @@ def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tm
     assert window.summary_label.text() == previous_summary
     assert "broken.sav" in window.error_label.text()
     assert window.edit_actions_enabled
+
+
+def test_unknown_format_uses_the_core_error_message(
+    qtbot, tmp_path: Path
+) -> None:
+    from editor.formats import FormatDetectionError
+
+    data = b"plain text that is not a save"
+    path = tmp_path / "wrong-name.sav"
+    path.write_bytes(data)
+    with pytest.raises(FormatDetectionError) as caught:
+        EditorService().inspect(data, source_name=path.name)
+    expected = str(caught.value)
+
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    with qtbot.waitSignal(window.analysis_failed, timeout=5_000):
+        window._start_inspect(path)
+
+    assert window.error_label.text() == expected
+    assert path.read_bytes() == data

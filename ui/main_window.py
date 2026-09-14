@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
 from editor.service import EditorService
@@ -92,7 +93,11 @@ class InspectWorker(QThread):
     def run(self) -> None:
         try:
             data = self.path.read_bytes()
-            result = self.service.inspect_result(data, with_inventory=True)
+            result = self.service.inspect_result(
+                data,
+                with_inventory=True,
+                source_name=self.path.name,
+            )
             self.completed.emit(
                 LocalSnapshot(
                     path=self.path,
@@ -102,6 +107,8 @@ class InspectWorker(QThread):
                     format_title=result.format_title,
                 )
             )
+        except FormatDetectionError as exc:
+            self.failed.emit(str(exc))
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -571,7 +578,12 @@ class MainWindow(QMainWindow):
     def _on_analysis_failed(self, message: str) -> None:
         filename = self._pending_path.name if self._pending_path else "Сейв"
         self.status_label.setText("Анализ не выполнен; предыдущий корректный snapshot сохранён")
-        self.error_label.setText(f"{filename}: {message}")
+        display_message = (
+            message
+            if message.startswith("Error: Формат файла ")
+            else f"{filename}: {message}"
+        )
+        self.error_label.setText(display_message)
         self.error_label.setVisible(True)
         self.analysis_failed.emit(message)
 
