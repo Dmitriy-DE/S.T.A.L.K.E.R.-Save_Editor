@@ -60,6 +60,17 @@ Steam Cloud в вебе невозможен по устройству Steam, а
 обновление — `make web-deploy` (Cloudflare Pages). Проверено
 живьём: страница, стили, ядро и мост отдаются, редактор открывает сейв.
 
+## M01 — реестр форматов — 2026-09-15
+
+На ветке `codex/m01-format-registry` реализован статический реестр форматов
+([PR #48](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/48),
+commit `559bb1a`). В нём зарегистрирован только `stalker2`; адаптер делегирует
+существующим `save_format.inspect_save` и `editor.prepare.prepare_edit`.
+`EditorService` выбирает формат по содержимому, а local/Cloud snapshots
+передают ID и title формата. `make check` и `make test` прошли локально на
+Linux (`165 passed`). M02 и X-Ray форматы ещё не реализованы; Windows,
+игровая загрузка и shared/production deployment этим результатом не доказаны.
+
 ## Текущий проход B02
 
 U07 оформил внедрение приложенного Stitch visual reference и принят merge
