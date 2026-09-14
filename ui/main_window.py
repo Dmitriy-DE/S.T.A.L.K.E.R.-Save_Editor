@@ -74,6 +74,8 @@ class LocalSnapshot:
     info: SaveInfo
     source_kind: str = "local"
     locator: str | None = None
+    format_id: str = "stalker2"
+    format_title: str = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
 
 
 class InspectWorker(QThread):
@@ -90,8 +92,16 @@ class InspectWorker(QThread):
     def run(self) -> None:
         try:
             data = self.path.read_bytes()
-            info = self.service.inspect(data, with_inventory=True)
-            self.completed.emit(LocalSnapshot(path=self.path, data=data, info=info))
+            result = self.service.inspect_result(data, with_inventory=True)
+            self.completed.emit(
+                LocalSnapshot(
+                    path=self.path,
+                    data=data,
+                    info=result.info,
+                    format_id=result.format_id,
+                    format_title=result.format_title,
+                )
+            )
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -430,6 +440,7 @@ class MainWindow(QMainWindow):
         unresolved = len(info.unresolved_handles)
         return (
             ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
+            ("Формат", snapshot.format_id, snapshot.format_title),
             (
                 "CRC-32",
                 f"{info.stored_crc32:08X}",
@@ -582,7 +593,8 @@ class MainWindow(QMainWindow):
         money = "unknown" if info.money is None else str(info.money)
         source_label = "Steam Cloud" if snapshot.source_kind == "cloud" else "локальный"
         self.source_label.setText(
-            f"Сейв: {snapshot.path.name} • {source_label} • {_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+            f"Сейв: {snapshot.path.name} • {source_label} • Формат {snapshot.format_id} • "
+            f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
         self.file_source_badge.setText(
             "STEAM CLOUD" if snapshot.source_kind == "cloud" else "ЛОКАЛЬНЫЙ ФАЙЛ"
@@ -986,6 +998,8 @@ class MainWindow(QMainWindow):
             info=snapshot.info,
             source_kind="cloud",
             locator=snapshot.name,
+            format_id=snapshot.format_id,
+            format_title=snapshot.format_title,
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)

@@ -56,6 +56,8 @@ class CloudSnapshot:
     data: bytes
     info: SaveInfo
     file: CloudFile
+    format_id: str = "stalker2"
+    format_title: str = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
 
 
 class CloudOperationWorker(QThread):
@@ -117,8 +119,17 @@ class CloudOperationWorker(QThread):
                     raise SaveError("Cloud save не выбран")
                 self.progress.emit(f"Cloud: скачивание {cloud_file.name}…")
                 data = bytes(transport.read_file(cloud_file.name))
-                info = self.service.inspect(data, with_inventory=True)
-                self.completed.emit(CloudSnapshot(cloud_file.name, data, info, cloud_file))
+                result = self.service.inspect_result(data, with_inventory=True)
+                self.completed.emit(
+                    CloudSnapshot(
+                        cloud_file.name,
+                        data,
+                        result.info,
+                        cloud_file,
+                        result.format_id,
+                        result.format_title,
+                    )
+                )
                 return
 
             if self.mode == "upload":

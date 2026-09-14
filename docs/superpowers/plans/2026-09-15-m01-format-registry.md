@@ -75,7 +75,7 @@ assert window.snapshot.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
 
 - [ ] **Step 3: Run the focused tests and verify they fail for the intended reason**
 
-Run: `PYTHON=.venv/bin/python .venv/bin/pytest tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py -q`
+Run: `.venv/bin/python -m pytest tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py -q`
 
 Expected: FAIL because `editor.formats` and `EditorService.inspect_result` do
 not exist and snapshots do not yet expose format metadata. Existing tests may
@@ -131,9 +131,9 @@ snapshot-backed source/metadata presentation without introducing demo values.
 
 - [ ] **Step 4: Run focused tests and type/lint checks**
 
-Run: `PYTHON=.venv/bin/python .venv/bin/pytest tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py tests/test_ui_cloud.py -q`
+Run: `.venv/bin/python -m pytest tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py tests/test_ui_cloud.py -q`
 
-Run: `PYTHON=.venv/bin/python -m ruff check editor/formats.py editor/service.py ui/main_window.py ui/cloud_view.py tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py`
+Run: `.venv/bin/python -m ruff check editor/formats.py editor/service.py ui/main_window.py ui/cloud_view.py tests/test_formats.py tests/test_service_parity.py tests/test_ui_open.py`
 
 Expected: all focused tests pass and Ruff exits 0.
 
@@ -179,4 +179,3 @@ git add editor/formats.py editor/service.py ui/main_window.py ui/cloud_view.py \
   docs/tasks/M01.md docs/STATUS.md
 git commit -m "feat: add save format registry"
 ```
-

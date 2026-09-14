@@ -26,6 +26,8 @@ def test_local_open_is_async_and_populates_summary(qtbot, synthetic_save: bytes,
     assert source.name in window.source_label.text()
     assert "CRC: OK" in window.summary_label.text()
     assert "Money: 100" in window.summary_label.text()
+    assert window.snapshot.format_id == "stalker2"
+    assert window.snapshot.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
 
 
 def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:

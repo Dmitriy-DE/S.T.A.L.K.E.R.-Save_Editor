@@ -46,6 +46,8 @@ def test_service_inspect_and_dependencies_are_injectable(
     assert service.inspect(synthetic_save, with_inventory=False) is expected
     assert calls == ["inspect:False"]
 
+    assert EditorService().inspect(synthetic_save) == expected
+
     plan = _plan(synthetic_save)
     prepared = service.prepare(synthetic_save, plan)
     export_calls: list[tuple[Path, Path, Path]] = []
@@ -68,6 +70,28 @@ def test_service_inspect_and_dependencies_are_injectable(
     assert export_calls == [(Path("source.sav"), tmp_path / "out.sav", tmp_path / "backup")]
     assert service.upload_cloud("worker", prepared, tmp_path / "backup", persisted_timeout=9) == "cloud-receipt"
     assert cloud_calls == [(tmp_path / "backup", 9)]
+
+
+def test_injected_inspect_and_prepare_do_not_require_registry_detection(
+    synthetic_save: bytes,
+) -> None:
+    expected = sf.inspect_save(synthetic_save)
+    calls: list[str] = []
+
+    def inspect(_data: bytes, *, with_inventory: bool = True) -> sf.SaveInfo:
+        calls.append(f"inspect:{with_inventory}")
+        return expected
+
+    def prepare(_data: bytes, _plan: EditPlan):
+        calls.append("prepare")
+        return "prepared"
+
+    service = EditorService(inspect_fn=inspect, prepare_fn=prepare)
+    fake_data = b"test-only injected bytes"
+
+    assert service.inspect(fake_data) is expected
+    assert service.prepare(fake_data, _plan(synthetic_save)) == "prepared"
+    assert calls == ["inspect:True", "prepare"]
 
 
 def test_service_restore_dependency_is_injectable(tmp_path: Path) -> None:
