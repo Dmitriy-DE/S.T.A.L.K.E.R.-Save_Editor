@@ -1261,7 +1261,7 @@
     "status": "blocked",
     "path": "docs/tasks/M09.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "blocked (M08/X-Ray corpus and game runtime missing)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/56",
+    "status_display": "blocked (PR #56; M08/X-Ray corpus and game runtime missing)"
   }
 ]

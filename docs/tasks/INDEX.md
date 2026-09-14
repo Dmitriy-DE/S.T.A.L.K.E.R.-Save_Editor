@@ -47,7 +47,7 @@
 | [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | blocked (PR #53; X-Ray corpus missing) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
 | [M07](M07.md) | Call of Pripyat: чтение | M06 | blocked (PR #54; M06/X-Ray corpus missing) | [PR #54](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/54) |
 | [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | blocked (PR #55; M07/X-Ray corpus missing) | [PR #55](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/55) |
-| [M09](M09.md) | Редактирование трилогии | M08 | blocked (M08/X-Ray corpus and game runtime missing) | — |
+| [M09](M09.md) | Редактирование трилогии | M08 | blocked (PR #56; M08/X-Ray corpus and game runtime missing) | [PR #56](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/56) |
 
 <!-- END GENERATED TASK TABLE -->
 

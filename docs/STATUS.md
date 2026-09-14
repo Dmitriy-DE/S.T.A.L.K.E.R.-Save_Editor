@@ -159,7 +159,7 @@ SHA, отказ чужой игры и сверка с соответствую�
 
 ## M09 — редактирование трилогии — 2026-09-15
 
-M09 оставлена `blocked`: M08 не принята, X-Ray corpus и проверка загрузкой/
+M09 оставлена `blocked` в [PR #56](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/56): M08 не принята, X-Ray corpus и проверка загрузкой/
 повторным сохранением в самой игре отсутствуют. В [M09 evidence](evidence/M09_TRILOGY_EDIT.md)
 зафиксировано, что `prepare`, money/stack edits и новые пути записи не
 добавлялись. Локальные Linux `make check`/`make test` не заменяют обязательный
