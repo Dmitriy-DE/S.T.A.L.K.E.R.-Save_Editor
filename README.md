@@ -17,5 +17,8 @@
 make web-serve   # http://localhost:8765
 ```
 
-Публикация: Settings → Pages → Deploy from a branch → `main`, папка `/web`.
-GitHub Actions не требуются.
+Публикация: содержимое этой папки выложено в ветку `gh-pages` командой
+`make web-publish`. GitHub Pages умеет отдавать только корень ветки или
+`/docs`, поэтому папку `web/` из `main` он обслуживать не может.
+Включается один раз: Settings → Pages → Deploy from a branch → `gh-pages`,
+папка `/ (root)`. GitHub Actions не требуются.
