@@ -280,11 +280,11 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/P03.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37",
-    "status_display": "in_progress (Actions включены; первый прогон разобран)"
+    "status_display": "accepted (4/4 зелёных, Linux и Windows)"
   },
   {
     "id": "U01",
@@ -582,7 +582,7 @@
     "path": "docs/tasks/B01.md",
     "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/16",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44",
-    "status_display": "accepted (PR #44; Windows/runner gate pending)"
+    "status_display": "accepted (Windows сборка и smoke пройдены на runner)"
   },
   {
     "id": "B02",

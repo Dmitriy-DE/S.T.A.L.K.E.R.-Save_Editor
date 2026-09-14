@@ -142,3 +142,22 @@ GiB), для локальной сборки — да.
 
 Release decision без изменений: **blocked** до Windows build/smoke, evidence
 целевого runner и native DPI/keyboard.
+
+## Обновление 2026-09-14 (вечер): CI зелёный, Windows собрана
+
+Подробности и разбор находок: [CI_AND_WINDOWS_2026-09-14](CI_AND_WINDOWS_2026-09-14.md).
+
+| Gate | Linux x86_64 | Windows x64 | Evidence |
+|---|---|---|---|
+| Source suite | **PASS** | **PASS** | `tests` 4/4 на runner, Python 3.11 и 3.12 |
+| Qt suite | **PASS** | **PASS** | идёт в той же матрице, `QT_QPA_PLATFORM=offscreen` |
+| Lint / typecheck | **PASS** | **PASS** | ruff и mypy в каждой job |
+| Standalone build | **PASS** | **PASS** | `standalone-build` обе цели |
+| Packaged diagnostic | **PASS** | **PASS** | `SaveEditor-diagnostic(.exe) --diagnostic` на runner |
+| Packaged GUI startup | **PASS** (offscreen) | **NOT_RUN** | окно на живом Windows-сеансе не открывали |
+| DPI 100/150/200 %, клавиатура | **NOT_RUN** | **NOT_RUN** | нужен живой десктоп |
+| Steam helper, cloud upload, игра/GFN | **NOT_RUN** | **NOT_RUN** | требуется аккаунт и игра |
+
+Решение по выпуску: блокирующим остаётся только ручной прогон на живом
+десктопе — запустить `SaveEditor.exe`, открыть копию сейва, проверить масштаб и
+клавиатуру. Всё, что можно проверить машинно, проверено машинно.

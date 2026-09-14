@@ -87,3 +87,15 @@ def test_build_accepts_a_filesystem_with_room(tmp_path: Path, monkeypatch: pytes
 
     monkeypatch.setattr(build.shutil, "disk_usage", lambda _path: _Usage())
     build._require_free_space(tmp_path)
+
+
+def test_manifest_does_not_call_its_own_output_a_dirty_source(tmp_path: Path) -> None:
+    # The CI build writes into artifacts/ inside the checkout, which made every
+    # manifest report source_dirty=true for the build's own products.
+    output_dir = ROOT / "artifacts"
+    commit, dirty = build._git_state(ROOT, ignore=output_dir)
+    assert commit
+    assert not any(entry == "artifacts" or entry.startswith("artifacts/") for entry in dirty)
+
+    outside = build._git_state(ROOT, ignore=tmp_path)
+    assert isinstance(outside[1], tuple)

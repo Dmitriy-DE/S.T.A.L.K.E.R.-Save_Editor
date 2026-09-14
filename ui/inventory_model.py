@@ -7,6 +7,7 @@ values and a separate staged-count map; it never mutates a save payload.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from typing import TypeAlias
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
 from PySide6.QtGui import QBrush, QColor
@@ -16,7 +17,7 @@ from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 # Qt calls these overrides with either index type; narrowing the signature to
 # QModelIndex alone is a Liskov violation the type checker rejects once the Qt
 # stubs are installed.
-ModelIndex = QModelIndex | QPersistentModelIndex
+ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
 
 
 class InventoryTableModel(QAbstractTableModel):

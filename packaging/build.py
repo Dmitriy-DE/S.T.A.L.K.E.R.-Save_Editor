@@ -121,8 +121,13 @@ def _git_commit(root: Path) -> str:
     return result.stdout.strip() or "unknown"
 
 
-def _git_state(root: Path) -> tuple[str, tuple[str, ...]]:
-    """Return commit and working-tree paths so artifacts cannot hide edits."""
+def _git_state(root: Path, *, ignore: Path | None = None) -> tuple[str, tuple[str, ...]]:
+    """Return commit and working-tree paths so artifacts cannot hide edits.
+
+    ``ignore`` drops one directory from the report: when the output directory
+    sits inside the checkout, the build's own products would otherwise make
+    every manifest claim the source was dirty.
+    """
 
     commit = _git_commit(root)
     try:
@@ -135,10 +140,20 @@ def _git_state(root: Path) -> tuple[str, tuple[str, ...]]:
         )
     except (OSError, subprocess.CalledProcessError):
         return commit, ()
+    prefix: str | None = None
+    if ignore is not None:
+        try:
+            prefix = ignore.resolve().relative_to(root.resolve()).as_posix()
+        except ValueError:
+            prefix = None
     paths = tuple(
-        line[3:].strip()
-        for line in result.stdout.splitlines()
-        if len(line) >= 4 and line[3:].strip()
+        entry
+        for entry in (
+            line[3:].strip()
+            for line in result.stdout.splitlines()
+            if len(line) >= 4 and line[3:].strip()
+        )
+        if prefix is None or not (entry == prefix or entry.startswith(f"{prefix}/"))
     )
     return commit, paths
 
@@ -180,8 +195,10 @@ def libc_requirement(host_version: str | None = None) -> str:
     return FALLBACK_LIBC_VERSION
 
 
-def build_manifest(*, root: Path, target: str, version: str) -> dict[str, object]:
-    commit, dirty_paths = _git_state(root)
+def build_manifest(
+    *, root: Path, target: str, version: str, output_dir: Path | None = None
+) -> dict[str, object]:
+    commit, dirty_paths = _git_state(root, ignore=output_dir)
     return {
         "application": APP_NAME,
         "version": version,
@@ -472,7 +489,7 @@ def build(
     executable = runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
     if not executable.is_file():
         raise BuildError(f"PyInstaller output missing: {executable}")
-    manifest = build_manifest(root=root, target=target, version=version)
+    manifest = build_manifest(root=root, target=target, version=version, output_dir=output_dir)
     _copy_metadata(runtime, manifest)
     scan_package_tree(runtime)
 
