@@ -151,7 +151,7 @@ M07 проверена как зависимая карточка и остав�
 
 ## M08 — чтение Clear Sky и Shadow of Chernobyl — 2026-09-15
 
-M08 оставлена `blocked`: M07 не принята, реального CS/SoC corpus нет, а
+M08 оставлена `blocked` в [PR #55](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/55): M07 не принята, реального CS/SoC corpus нет, а
 совместимость оригинальных и Enhanced Editions не доказана. В [M08 evidence](evidence/M08_CS_SOC_READ.md)
 записано, что `stalker-cs`, `stalker-soc`, version table и cross-game negative
 tests не добавлялись и не объявлялись пройденными. Нужны отдельные пары сейвов,
