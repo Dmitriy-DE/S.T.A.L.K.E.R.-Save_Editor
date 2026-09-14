@@ -61,8 +61,8 @@ def _version_text() -> str:
     try:
         value = version_path.read_text(encoding="utf-8").strip()
     except OSError:
-        value = "0.3.0-experimental"
-    return value or "0.3.0-experimental"
+        value = "0.4.0"
+    return value or "0.4.0"
 
 
 @dataclass(frozen=True)

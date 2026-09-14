@@ -21,12 +21,12 @@ def test_resolve_target_rejects_cross_os_build() -> None:
 
 
 def test_artifact_names_include_architecture_and_version() -> None:
-    assert build.artifact_names("0.3.0-experimental", "linux") == (
-        "SaveEditor-linux-x86_64-v0.3.0-experimental.tar.gz",
-        "stalker2-save-editor_0.3.0-experimental_amd64.deb",
+    assert build.artifact_names("9.9.9-test", "linux") == (
+        "SaveEditor-linux-x86_64-v9.9.9-test.tar.gz",
+        "stalker2-save-editor_9.9.9-test_amd64.deb",
     )
-    assert build.artifact_names("0.3.0-experimental", "windows") == (
-        "SaveEditor-windows-x86_64-v0.3.0-experimental.zip",
+    assert build.artifact_names("9.9.9-test", "windows") == (
+        "SaveEditor-windows-x86_64-v9.9.9-test.zip",
     )
 
 
@@ -55,7 +55,7 @@ def test_manifest_is_machine_readable_and_declares_runtime_policy(tmp_path: Path
 
 def test_plan_is_explicitly_non_cross_compiling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(build, "host_target", lambda system=None: "linux")
-    result = build.plan(target="linux", output_dir=tmp_path, version="0.3.0-experimental")
+    result = build.plan(target="linux", output_dir=tmp_path, version="9.9.9-test")
     assert result["cross_compile"] is False
     assert result["artifacts"][0].endswith(".tar.gz")
 
