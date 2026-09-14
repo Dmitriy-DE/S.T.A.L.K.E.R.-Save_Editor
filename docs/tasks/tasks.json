@@ -1074,7 +1074,10 @@
       "M01"
     ],
     "files": [
-      "docs/tasks/M03.md"
+      "docs/tasks/M03.md",
+      "docs/evidence/SAVE_LOCATIONS.md",
+      "editor/platforms.py",
+      "tests/test_platform_save_locations.py"
     ],
     "contract": "docs/evidence/SAVE_LOCATIONS.md: пути сейвов для 4 игр × издания (Steam/GOG/Game Pass/Legends of the Zone/Enhanced), каждая строка со ссылкой на источник. Код: steam/gog/xbox roots, libraryfolders.vdf своим парсером, Proton-префикс, fsgame.ltx.",
     "steps": [
@@ -1086,10 +1089,11 @@
     ],
     "gate": "research",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/M03.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50",
+    "status_display": "in_review (PR #50)"
   },
   {
     "id": "M04",

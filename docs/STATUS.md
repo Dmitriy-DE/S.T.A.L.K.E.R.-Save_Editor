@@ -82,6 +82,26 @@ commit `2e12375`). Core-сообщение включает имя файла, �
 `make check` exit 0, `make test` exit 0 (`173 passed`). Реальные X-Ray сейвы,
 Windows и игровая загрузка этим результатом не подтверждены.
 
+## M03 — исследование и discovery путей — 2026-09-15
+
+На ветке `codex/m03-save-locations` реализованы read-only поисковые функции в
+`editor/platforms.py` ([PR #50](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50),
+commit `23a02a3`). `steam_roots` учитывает Windows registry/fallback и обычный,
+legacy и Flatpak Linux; `steam_libraries` сам разбирает KeyValues
+`libraryfolders.vdf`, пропуская битый root с warning; `installed_games`
+проверяет appmanifest и каталог. `save_directories` включает четыре семейства,
+S2 Steam/GOG/Microsoft Store, original `_appdata_`, Enhanced/Legends,
+локализованные Documents, Proton prefix и `fsgame*.ltx` override.
+
+Источниковые пути и пробелы evidence записаны в
+[`SAVE_LOCATIONS.md`](evidence/SAVE_LOCATIONS.md). Synthetic tree покрывает
+alternate library, malformed VDF, localized Documents, Proton, Microsoft Store
+profile и отсутствие записи. `PYTHON=.venv/bin/python make check` — exit 0;
+`PYTHON=.venv/bin/python make test` — exit 0 (`183 passed`). Реальные установки,
+Windows/GOG/Proton runtime и игровая загрузка не проверялись; отдельная GOG
+path row для Clear Sky/Call of Prypiat Enhanced upstream-источниками не дана и
+не объявлена подтверждённой.
+
 ## Текущий проход B02
 
 U07 оформил внедрение приложенного Stitch visual reference и принят merge

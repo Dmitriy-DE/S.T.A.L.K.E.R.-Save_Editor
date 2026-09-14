@@ -41,7 +41,7 @@
 | [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |
 | [M01](M01.md) | Реестр форматов сохранений | — | in_review (PR #48) | [PR #48](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/48) |
 | [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | in_review (PR #49) | [PR #49](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49) |
-| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | waiting_dependencies | — |
+| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | in_review (PR #50) | [PR #50](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50) |
 | [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | waiting_dependencies | — |
 | [M05](M05.md) | Ручные пути и их запоминание | M04 | waiting_dependencies | — |
 | [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | waiting_dependencies | — |
