@@ -149,6 +149,14 @@ M07 проверена как зависимая карточка и остав�
 зафиксировано, что `stalker-cop`, `detect`, `inspect` и чтение денег/инвентаря
 не добавлялись. Следующие M08–M09 сохраняют тот же dependency boundary.
 
+## M08 — чтение Clear Sky и Shadow of Chernobyl — 2026-09-15
+
+M08 оставлена `blocked`: M07 не принята, реального CS/SoC corpus нет, а
+совместимость оригинальных и Enhanced Editions не доказана. В [M08 evidence](evidence/M08_CS_SOC_READ.md)
+записано, что `stalker-cs`, `stalker-soc`, version table и cross-game negative
+tests не добавлялись и не объявлялись пройденными. Нужны отдельные пары сейвов,
+SHA, отказ чужой игры и сверка с соответствующей игрой.
+
 ## Текущий проход B02
 
 U07 оформил внедрение приложенного Stitch visual reference и принят merge

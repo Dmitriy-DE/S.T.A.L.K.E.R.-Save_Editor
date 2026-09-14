@@ -1219,7 +1219,8 @@
       "M07"
     ],
     "files": [
-      "docs/tasks/M08.md"
+      "docs/tasks/M08.md",
+      "docs/evidence/M08_CS_SOC_READ.md"
     ],
     "contract": "Форматы stalker-cs и stalker-soc; различия версий движка в таблице данных, а не в ветвлении кода. Enhanced Editions — отдельная запись, если формат отличается.",
     "steps": [
@@ -1231,10 +1232,11 @@
     ],
     "gate": "research",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "blocked",
     "path": "docs/tasks/M08.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "blocked (M07/X-Ray corpus missing)"
   },
   {
     "id": "M09",
