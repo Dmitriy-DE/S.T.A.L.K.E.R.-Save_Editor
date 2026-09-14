@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S.T.A.L.K.E.R. 2 Save Editor — веб</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-name">S.T.A.L.K.E.R. 2 Save Editor</span>
+    <span class="badge badge-version" id="version">web</span>
+  </div>
+  <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+</header>
+
+<section class="filebar">
+  <span class="badge badge-source" id="source-badge">ФАЙЛ НЕ ВЫБРАН</span>
+  <div class="file-meta">
+    <div class="file-name" id="file-name">Сейв не выбран</div>
+    <div class="file-details" id="file-details">Файл не покидает браузер</div>
+  </div>
+  <div class="filebar-right">
+    <span class="badge" id="crc-badge">CRC-32: —</span>
+    <span class="badge" id="format-badge">UE5 GVAS: —</span>
+    <label class="button" for="file-input">Открыть .sav…</label>
+    <input id="file-input" type="file" accept=".sav" hidden>
+  </div>
+</section>
+
+<div class="status" id="status">Загрузка ядра…</div>
+
+<main class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-heading">РАЗДЕЛЫ</div>
+    <button class="nav" data-panel="overview" aria-current="true">Обзор</button>
+    <button class="nav" data-panel="inventory">Инвентарь</button>
+    <button class="nav" data-panel="changes">Изменения</button>
+    <div class="sidebar-foot">
+      <div>CORE: <span id="core-state">загружается</span></div>
+      <div class="muted">Steam Cloud только в десктоп-версии</div>
+    </div>
+  </nav>
+
+  <section class="content">
+    <div class="panel" id="panel-overview">
+      <div class="cards">
+        <div class="card"><div class="card-caption">ЛОКАЦИЯ</div><div class="card-value" id="card-location">—</div></div>
+        <div class="card"><div class="card-caption">ВРЕМЯ</div><div class="card-value" id="card-time">—</div></div>
+        <div class="card"><div class="card-caption">ДЕНЬГИ</div><div class="card-value" id="card-money">—</div></div>
+        <div class="card"><div class="card-caption">ПРЕДМЕТЫ</div><div class="card-value" id="card-items">—</div></div>
+      </div>
+
+      <div class="card block">
+        <div class="card-caption">СВОДКА</div>
+        <p id="summary">Открой локальный .sav для проверки CRC и структуры.</p>
+        <p class="muted" id="support">Редактирование отключено до успешного анализа.</p>
+      </div>
+
+      <fieldset class="group" id="money-group" disabled>
+        <legend>Баланс (staged до сохранения)</legend>
+        <p id="money-status">Баланс не определён</p>
+        <div class="row">
+          <label for="money-input">Новая сумма</label>
+          <input id="money-input" type="number" min="0" max="2000000000" step="1" value="0">
+          <button class="button" id="money-stage">Застейджить баланс</button>
+          <button class="button" id="money-clear" disabled>Очистить</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>Технические метаданные контейнера (.sav)</legend>
+        <table class="grid" id="metadata">
+          <thead><tr><th>Параметр</th><th>Значение в сохранении</th><th>Статус</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </fieldset>
+    </div>
+
+    <div class="panel" id="panel-inventory" hidden>
+      <div class="row">
+        <input id="inventory-search" type="search" placeholder="Поиск по type-key, handle, категории…">
+        <select id="inventory-filter">
+          <option value="all">Все</option>
+          <option value="editable">Редактируемые</option>
+          <option value="readonly">Только чтение</option>
+          <option value="staged">Изменённые</option>
+        </select>
+      </div>
+      <table class="grid" id="inventory">
+        <thead><tr>
+          <th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
+          <th>Количество</th><th>Вес</th><th>Handle</th><th>Новое количество</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted">Количество можно менять только у подтверждённых стаков. Остальное — только чтение.</p>
+    </div>
+
+    <div class="panel" id="panel-changes" hidden>
+      <fieldset class="group">
+        <legend>Staged изменения</legend>
+        <ul id="changes-list"><li class="muted">Изменений ещё нет</li></ul>
+      </fieldset>
+      <fieldset class="group">
+        <legend>Результат</legend>
+        <p id="preview-status" class="muted">Предпросмотр не выполнялся</p>
+        <div class="row">
+          <button class="button" id="preview" disabled>Предпросмотр</button>
+          <button class="button primary" id="download" disabled>Скачать копию</button>
+        </div>
+        <p class="muted">
+          Исходный файл не изменяется — правки уходят в новую копию. Сохрани
+          оригинал сам: в браузере нет папки резервных копий.
+        </p>
+      </fieldset>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span id="footer-build">Сборка: —</span>
+  <span>Файл обрабатывается локально: ни один байт не уходит на сервер.</span>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
