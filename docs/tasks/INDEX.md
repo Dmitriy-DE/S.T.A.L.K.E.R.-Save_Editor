@@ -43,7 +43,7 @@
 | [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | in_review (PR #49) | [PR #49](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49) |
 | [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | in_review (PR #50) | [PR #50](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50) |
 | [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | in_review (PR #51) | [PR #51](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/51) |
-| [M05](M05.md) | Ручные пути и их запоминание | M04 | waiting_dependencies | — |
+| [M05](M05.md) | Ручные пути и их запоминание | M04 | in_review (PR #52) | [PR #52](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/52) |
 | [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | waiting_dependencies | — |
 | [M07](M07.md) | Call of Pripyat: чтение | M06 | waiting_dependencies | — |
 | [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | waiting_dependencies | — |

@@ -1134,7 +1134,15 @@
       "M04"
     ],
     "files": [
-      "docs/tasks/M05.md"
+      "docs/tasks/M05.md",
+      "editor/platforms.py",
+      "editor/settings.py",
+      "ui/main_window.py",
+      "ui/save_slots_view.py",
+      "ui/settings_view.py",
+      "tests/test_platform_save_locations.py",
+      "tests/test_settings.py",
+      "tests/test_ui_theme.py"
     ],
     "contract": "Ручной корень Steam/игры/сейвов имеет приоритет над автопоиском; хранение в user_data_dir, битые настройки не роняют запуск.",
     "steps": [
@@ -1146,10 +1154,11 @@
     ],
     "gate": "code",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/M05.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/52",
+    "status_display": "in_review (PR #52)"
   },
   {
     "id": "M06",
