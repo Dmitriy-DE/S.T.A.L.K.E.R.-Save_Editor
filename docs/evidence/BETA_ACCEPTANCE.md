@@ -93,3 +93,52 @@ game/GFN reload/re-save. B02 не создаёт GitHub prerelease на этом
 в 10 последующих прогонах подряд, включая 6 прогонов на неизменённом `main`.
 Это не регрессия текущего прохода, но перед release gate стоит завести карточку:
 тест зависит от реальных QThread и 5-секундных таймаутов.
+
+## Локальный Linux build 2026-09-14 (после гейтов качества)
+
+Source commit `e1a1729ec16a1fbcb75a6b05de08328fa6e32f6f`, `source_dirty=false`,
+сборка Python 3.14.4 / glibc 2.43.
+
+```text
+# NOT RELEASE ASSETS: build lane проекта — Python 3.11 на целевом runner-образе.
+670abe74a91369bb139d025cb94be86b2f29ef9d4abdca6c38589913d8e4afcf  SaveEditor-linux-x86_64-v0.3.0-experimental.tar.gz
+069c3d33278732b1d3ee119c3dc67838033fed916c72259e9243304c993a5b0d  stalker2-save-editor_0.3.0-experimental_amd64.deb
+```
+
+`.deb` теперь объявляет `Depends: libc6 (>= 2.43)` — фактический glibc сборочной
+машины вместо прежней жёсткой 2.35; то же значение лежит в
+`BUILD_MANIFEST.json` как `libc_minimum`. Размеры: 71 MiB tar.gz, 81 MiB deb.
+
+| Проверка | Результат | Детали |
+|---|---|---|
+| Packaged diagnostic | **PASS** | exit 0, `decoder=loaded` из bundle, Qt 6.11.2 |
+| Packaged `--help` | **PASS** | exit 0 |
+| Packaged Qt startup | **PASS** | offscreen процесс жив 6 s, затем корректно снят |
+| Local analyze/edit/export/restore **из исходников** | **PASS** | см. ниже |
+| Local analyze/edit/export/restore **из bundle** | **NOT_RUN** | GUI не управляется headless; нужен ручной прогон |
+| DPI 100/150/200 %, keyboard | **NOT_RUN** | offscreen не заменяет native desktop |
+| Windows build / runner / Steam / game | **NOT_RUN** | без изменений |
+
+Полный локальный цикл на synthetic save (не на личном сейве):
+
+```text
+before: money=100, inventory=2
+edit:   money -> 900000, export в отдельный файл
+source: SHA256 не изменился
+backup: slot_<ts>_<uuid>_ORIGINAL.sav + journal
+restore journal -> новый файл: байт-в-байт равен оригиналу
+edited.sav сохраняет money=900000
+```
+
+### Найдено при сборке: требование к месту
+
+Первая попытка сборки в `/tmp` (tmpfs 3.4 GiB) заполнила файловую систему на
+стадии Debian staging и уронила окружение. Пик рабочего набора ≈1.7 GiB:
+PyInstaller разворачивает Python и Qt, а `.deb` копирует это дерево ещё раз.
+Прежняя диагностика — голый `shutil.Error` со списком путей. Теперь
+`packaging/build.py` проверяет свободное место до старта и перехватывает сбой
+staging с явным сообщением. Для CI это не блокер (hosted runner имеет десятки
+GiB), для локальной сборки — да.
+
+Release decision без изменений: **blocked** до Windows build/smoke, evidence
+целевого runner и native DPI/keyboard.
