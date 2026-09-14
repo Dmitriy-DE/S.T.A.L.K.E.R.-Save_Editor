@@ -35,7 +35,7 @@
 
 | Область | Сейчас | Задачи |
 |---|---|---|
-| Надёжность | Ограниченный self-test на личном файле; P03 workflow запускает synthetic suite на четырёх runner комбинациях, пять запусков завершились startup_failure до jobs (метки runner исправлены, зелёного прогона ещё нет) | P03 |
+| Надёжность | Synthetic suite + self-test на личном файле, lint и typecheck; GitHub Actions владельцу недоступны, поэтому основной гейт — локальный `make check` + `make test` | — |
 | Linux + Windows | P01 добавляет decoder, P02 — paths/launcher/helper; P03 workflow добавлен, реальная Windows CI ещё впереди | P03, B01–B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
@@ -49,6 +49,15 @@
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
 
 Ранний файл 5967 читает 22645, скриншот показывает 30145. Причина не установлена; эти данные не составляют достоверную пару. Synthetic fixtures проверяют код, а не универсальность формата.
+
+## Веб-версия
+
+`web/` запускает то же ядро в браузере через Pyodide, нативная распаковка —
+`ooz-wasm`. Сверка на реальном сейве: распаковка и обе правки дают те же
+SHA-256, что десктоп ([evidence](evidence/WEB_EDITION_2026-09-14.md)).
+Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
+[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Осталось включить Pages
+(Deploy from a branch → `main`, папка `/web`) — Actions для этого не нужны.
 
 ## Текущий проход B02
 
@@ -64,10 +73,10 @@ Linux x86_64 portable `tar.gz` и Debian/Ubuntu `.deb`, Windows x64 `zip` с
 `SaveEditor.exe`; runtime Python, Qt и native decoder должны лежать внутри
 bundle. Исходный core остаётся stdlib-only, `pytest` не попадает в runtime.
 
-Внешняя проверка runner всё ещё отсутствует: P03 пять раз завершился
-`startup_failure` до создания jobs. Поэтому до реального Ubuntu/Windows build
-и clean-machine smoke release gate B02 остаётся открытым, а cross-platform beta
-не объявляется готовой.
+GitHub Actions владельцу недоступны, поэтому CI как гейт снят: проверка —
+локальные `make check` и `make test` плюс записанное evidence. Открытым
+остаётся то, что действительно нельзя проверить здесь: Windows-сборка и
+native DPI/keyboard smoke. До них cross-platform beta не объявляется готовой.
 
 Implementation B01 принят через [PR #44](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/44),
 merge `3346167`. Текущий рабочий проход — B02: acceptance matrix находится в

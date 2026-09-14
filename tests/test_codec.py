@@ -137,3 +137,44 @@ def test_pyooz_provenance_records_linux_and_windows_wheels() -> None:
     assert "pyooz-0.0.8-cp38-abi3-win_amd64.whl" in names
     assert any("manylinux_2_17_x86_64" in name for name in names)
     assert all(re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]) for entry in payload["files"])
+
+
+def test_registered_decoder_is_used_before_any_platform_check() -> None:
+    class FakeWasmDecoder:
+        def __init__(self) -> None:
+            self.calls: list[tuple[bytes, int]] = []
+
+        def decompress(self, stream: bytes, size: int) -> bytes:
+            self.calls.append((bytes(stream), size))
+            return b"x" * size
+
+    decoder = FakeWasmDecoder()
+    codec.register_decoder(decoder)
+    try:
+        assert codec.registered_decoder() is decoder
+        assert codec.load_decoder() is decoder
+        assert codec.decompress(b"packed", 4) == b"xxxx"
+        assert decoder.calls == [(b"packed", 4)]
+    finally:
+        codec.clear_registered_decoder()
+    assert codec.registered_decoder() is None
+
+
+def test_registration_rejects_an_object_without_decompress() -> None:
+    with pytest.raises(codec.CodecError, match="decompress"):
+        codec.register_decoder(object())
+
+
+def test_explicit_platform_probes_ignore_the_registered_decoder() -> None:
+    class FakeWasmDecoder:
+        def decompress(self, stream: bytes, size: int) -> bytes:  # pragma: no cover
+            raise AssertionError("must not be reached")
+
+    codec.register_decoder(FakeWasmDecoder())
+    try:
+        # A test asking about a specific target is asking about the wheel
+        # lookup, not about whatever the embedder installed.
+        with pytest.raises(codec.CodecError, match="не поддерживается"):
+            codec.load_decoder(system="Darwin", machine="arm64")
+    finally:
+        codec.clear_registered_decoder()

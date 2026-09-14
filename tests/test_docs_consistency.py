@@ -52,3 +52,15 @@ def test_status_values_are_from_the_documented_set() -> None:
     allowed = {"ready", "waiting_dependencies", "in_progress", "in_review", "accepted", "blocked"}
     for task in _tasks():
         assert task["status"] in allowed, f"{task['id']} has status {task['status']!r}"
+
+
+def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
+    import tools.build_web_bundle as bundle
+    import tools.export_theme as theme
+
+    assert bundle.main(["--check"]) == 0, (
+        "web/pysrc.json is stale; run python3 tools/build_web_bundle.py"
+    )
+    assert theme.main(["--check"]) == 0, (
+        "web/theme.css is stale; run python3 tools/export_theme.py"
+    )

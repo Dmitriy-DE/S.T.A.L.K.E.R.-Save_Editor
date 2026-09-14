@@ -14,7 +14,7 @@
 | [S06](S06.md) | Cloud transaction и честное uncertain-состояние | S02, S03, S05 | accepted | [#6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/6), [PR #36](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/36) |
 | [P01](P01.md) | Decoder loader для Linux и Windows | S01 | accepted | [#7](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/7), [PR #34](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/34) |
 | [P02](P02.md) | Пути данных, launcher и helper на обеих ОС | P01, S05 | accepted | [#8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/8), [PR #35](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/35) |
-| [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | in_progress (runner blocked) | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9), [PR #37](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37) |
+| [P03](P03.md) | CI для Linux и Windows без личных сейвов | S01, S02, S03, S04, S05, S06, P01, P02 | blocked (GitHub Actions недоступны владельцу) | [#9](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/9), [PR #37](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/37) |
 | [U01](U01.md) | Общий service слой для GUI и CLI | S02, S03, S04, S06, P02 | accepted | [#10](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/10), [PR #38](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/38) |
 | [U02](U02.md) | Qt shell и открытие локального сохранения | U01, P03 | accepted (local; P03/native gates pending) | [#11](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/11), [PR #39](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/39) |
 | [U03](U03.md) | Инвентарь: поиск, фильтры и редактирование стаков | U02, S04 | accepted | [#12](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/12), [PR #40](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/40) |
@@ -36,9 +36,9 @@
 | [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | waiting_dependencies | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26) |
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
-| [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | ready | — |
-| [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | waiting_dependencies | — |
-| [W03](W03.md) | Публикация веб-версии | W02 | waiting_dependencies | — |
+| [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
+| [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
+| [W03](W03.md) | Публикация веб-версии | W02 | ready (Pages из /web, Actions не требуются) | — |
 
 <!-- END GENERATED TASK TABLE -->
 

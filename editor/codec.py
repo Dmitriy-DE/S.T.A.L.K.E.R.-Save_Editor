@@ -26,6 +26,37 @@ class CodecError(RuntimeError):
     """Raised when the native Kraken/Oodle decoder cannot be used safely."""
 
 
+# A decoder installed by an embedder instead of being imported from a wheel.
+# The browser build uses this: it runs CPython under WebAssembly, where there is
+# no `ooz` wheel to import, and supplies a WASM decompressor from the host page.
+# Keeping it an explicit registration - rather than letting the loader guess -
+# means an unregistered embedder fails with a clear message instead of falling
+# through to a platform check that was written for desktop wheels.
+_registered_decoder: Any | None = None
+
+
+def register_decoder(decoder: Any) -> None:
+    """Install a decoder object exposing ``decompress(stream, size) -> bytes``."""
+
+    if not callable(getattr(decoder, "decompress", None)):
+        raise CodecError("Decoder должен предоставлять decompress(stream, size)")
+    global _registered_decoder
+    _registered_decoder = decoder
+
+
+def clear_registered_decoder() -> None:
+    """Forget an embedder-supplied decoder (used by tests)."""
+
+    global _registered_decoder
+    _registered_decoder = None
+
+
+def registered_decoder() -> Any | None:
+    """Return the embedder-supplied decoder, if one was registered."""
+
+    return _registered_decoder
+
+
 Importer = Callable[[str], Any]
 
 
@@ -74,6 +105,9 @@ def load_decoder(
     missing wheels, wrong architectures and the Linux compatibility fallback
     without pretending that a Linux process is a Windows runner.
     """
+
+    if _registered_decoder is not None and system is None and machine is None:
+        return _registered_decoder
 
     raw_system = platform.system() if system is None else system
     raw_machine = platform.machine() if machine is None else machine

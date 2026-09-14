@@ -5,7 +5,8 @@ cli.py / save_format.py / steam_cloud.py           parser, research CLI and Stea
 editor/                                            UI-free service, storage, cloud transaction and platform paths
 ui/                                                Qt interface: Zone theme, overview, inventory, changes, backups, Cloud
 packaging/                                         PyInstaller builder for Linux tar.gz/.deb and Windows zip
-tools/                                             repository maintenance scripts (task index generator)
+web/                                               browser build: same core via Pyodide + ooz-wasm, generated bundle
+tools/                                             maintenance scripts: task index, web bundle, theme export
 vendor/ooz.abi3.so                                 Linux decoder binary
 tests/selftest_real.py                             private-corpus selftest, never run in CI
 third_party/pyooz/                                 decoder source and provenance

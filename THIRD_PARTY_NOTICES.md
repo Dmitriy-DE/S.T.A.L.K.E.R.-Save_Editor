@@ -40,3 +40,15 @@ The pinned build input is recorded in `requirements-build.txt` and
 ## Decoder source provenance
 
 The upstream pyooz 0.0.8 source distribution and file hashes are retained in [third_party/pyooz](third_party/pyooz/README.md). The bundled Linux decoder matches the supplied wheel; a byte-identical source rebuild has not been performed. The Windows wheel is provenance-checked but is not bundled in this source checkout; packaged builds must include its actual dependency and notices.
+
+## ooz-wasm (веб-версия)
+
+Веб-сборка загружает `ooz-wasm` 2.0.0 с CDN — WebAssembly-биндинг к
+[powzix/ooz](https://github.com/powzix/ooz), лицензия GPL-3.0-or-later,
+совместимая с лицензией проекта. Он выполняет ровно одну функцию: распаковку
+Kraken-потока. В десктопные пакеты не вкладывается.
+
+## Pyodide (веб-версия)
+
+Веб-сборка загружает Pyodide 0.28.3 с CDN (Mozilla Public License 2.0) — это
+CPython, собранный в WebAssembly. В десктопные пакеты не вкладывается.
