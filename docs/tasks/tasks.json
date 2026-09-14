@@ -1193,7 +1193,8 @@
       "M06"
     ],
     "files": [
-      "docs/tasks/M07.md"
+      "docs/tasks/M07.md",
+      "docs/evidence/M07_COP_READ.md"
     ],
     "contract": "Формат stalker-cop в реестре: detect и inspect (деньги, инвентарь, метаданные). prepare отказывает явно. Поле принимается по трём независимым парам сейвов и сверке с игрой.",
     "steps": [
@@ -1205,10 +1206,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "blocked",
     "path": "docs/tasks/M07.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "blocked (M06/X-Ray corpus missing)"
   },
   {
     "id": "M08",
