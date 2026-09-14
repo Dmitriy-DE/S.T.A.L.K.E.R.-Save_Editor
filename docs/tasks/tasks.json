@@ -1061,10 +1061,11 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/M02.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49",
+    "status_display": "in_review (PR #49)"
   },
   {
     "id": "M03",

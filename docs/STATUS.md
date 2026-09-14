@@ -71,6 +71,17 @@ commit `559bb1a`). В нём зарегистрирован только `stalke
 Linux (`165 passed`). M02 и X-Ray форматы ещё не реализованы; Windows,
 игровая загрузка и shared/production deployment этим результатом не доказаны.
 
+## M02 — content-only detection — 2026-09-15
+
+На ветке `codex/m02-format-detection` реализован общий отказ для неизвестного
+формата ([PR #49](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49),
+commit `2e12375`). Core-сообщение включает имя файла, размер, причины отказа и
+список поддержанных форматов и передаётся без повторной диагностики в CLI, Qt
+и web bridge. Покрыты empty, truncated, мусорный бинарник, ELF-like чужой
+бинарник и текстовый `.sav`; исходные байты не меняются. Полный Linux gate:
+`make check` exit 0, `make test` exit 0 (`173 passed`). Реальные X-Ray сейвы,
+Windows и игровая загрузка этим результатом не подтверждены.
+
 ## Текущий проход B02
 
 U07 оформил внедрение приложенного Stitch visual reference и принят merge
