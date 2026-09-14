@@ -1067,14 +1067,14 @@
   },
   {
     "id": "M03",
-    "title": "Поиск Steam и папок сохранений",
+    "title": "Где лежат сохранения: исследование и поиск",
     "depends_on": [
       "M01"
     ],
     "files": [
       "docs/tasks/M03.md"
     ],
-    "contract": "editor/platforms: steam_roots/steam_libraries/installed_game/save_directories; разбор libraryfolders.vdf без внешних зависимостей; обязательный учёт Proton-префикса на Linux.",
+    "contract": "docs/evidence/SAVE_LOCATIONS.md: пути сейвов для 4 игр × издания (Steam/GOG/Game Pass/Legends of the Zone/Enhanced), каждая строка со ссылкой на источник. Код: steam/gog/xbox roots, libraryfolders.vdf своим парсером, Proton-префикс, fsgame.ltx.",
     "steps": [
       "См. карточку: scope, границы и негативные сценарии."
     ],
@@ -1082,7 +1082,7 @@
       "make check",
       "make test"
     ],
-    "gate": "code",
+    "gate": "research",
     "priority": "P1",
     "status": "waiting_dependencies",
     "path": "docs/tasks/M03.md",
@@ -1140,16 +1140,16 @@
   },
   {
     "id": "M06",
-    "title": "Corpus и формат evidence для чужого формата",
+    "title": "Контейнер X-Ray: распаковка и байт-в-байт сборка",
     "depends_on": [
       "M01"
     ],
     "files": [
       "docs/tasks/M06.md"
     ],
-    "contract": "Серии сейвов с одним изменением между файлами; отчёт с кандидатами и исключениями; личные файлы в репозиторий не попадают.",
+    "contract": "Заголовок, версия, сжатие и round-trip с совпадением SHA-256 для SoC/CS/CoP. Формат публично изучен: сначала документация и открытые реализации, потом собственное исследование.",
     "steps": [
-      "См. карточку: scope, границы и негативные сценарии."
+      "См. карточку: scope, границы и критерий приёмки."
     ],
     "checks": [
       "make check",
@@ -1164,16 +1164,40 @@
   },
   {
     "id": "M07",
-    "title": "Первый парсер X-Ray: только чтение",
+    "title": "Call of Pripyat: чтение",
     "depends_on": [
       "M06"
     ],
     "files": [
       "docs/tasks/M07.md"
     ],
-    "contract": "Контейнер, распаковка, байт-в-байт round-trip до любых правок; правки — отдельной карточкой.",
+    "contract": "Формат stalker-cop в реестре: detect и inspect (деньги, инвентарь, метаданные). prepare отказывает явно. Поле принимается по трём независимым парам сейвов и сверке с игрой.",
     "steps": [
-      "См. карточку: scope, границы и негативные сценарии."
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M07.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M08",
+    "title": "Clear Sky и Shadow of Chernobyl: чтение",
+    "depends_on": [
+      "M07"
+    ],
+    "files": [
+      "docs/tasks/M08.md"
+    ],
+    "contract": "Форматы stalker-cs и stalker-soc; различия версий движка в таблице данных, а не в ветвлении кода. Enhanced Editions — отдельная запись, если формат отличается.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
     ],
     "checks": [
       "make check",
@@ -1182,7 +1206,31 @@
     "gate": "research",
     "priority": "P3",
     "status": "waiting_dependencies",
-    "path": "docs/tasks/M07.md",
+    "path": "docs/tasks/M08.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M09",
+    "title": "Редактирование трилогии",
+    "depends_on": [
+      "M08"
+    ],
+    "files": [
+      "docs/tasks/M09.md"
+    ],
+    "contract": "prepare для трилогии: деньги и подтверждённые стаки через существующий EditPlan. Вход только после принятого чтения и round-trip. Обязательна проверка загрузкой в самой игре.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P3",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M09.md",
     "github_issue": "",
     "github_pr": ""
   }
