@@ -100,7 +100,11 @@ jobs:
 
       - name: Compile Python sources
         shell: python
-        run: python -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
+        run: |
+          import py_compile
+
+          for name in ("cli.py", "save_format.py", "steam_cloud.py", "tests/selftest_real.py"):
+              py_compile.compile(name, doraise=True)
 
       - name: Run static analysis gate
         shell: python

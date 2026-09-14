@@ -38,7 +38,7 @@
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
 | [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
-| [W03](W03.md) | Публикация веб-версии | W02 | ready (Pages из /web, Actions не требуются) | — |
+| [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |
 
 <!-- END GENERATED TASK TABLE -->
 

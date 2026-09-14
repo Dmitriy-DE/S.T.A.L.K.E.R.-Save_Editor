@@ -28,7 +28,11 @@ make web-serve   # http://localhost:8765
 | Вариант | Условие | Команда / действие |
 |---|---|---|
 | GitHub Pages | репозиторий должен быть **публичным** (на бесплатном тарифе Pages приватные репозитории не обслуживает) | `make web-publish`, затем Settings → Pages → `gh-pages` → `/ (root)` |
-| Cloudflare Pages | репозиторий может остаться приватным; нужен один вход | `npx wrangler login`, затем `make web-deploy` |
+| Cloudflare | репозиторий может остаться приватным; нужен один вход | `npx wrangler login`, затем `make web-deploy` |
+
+Сейчас сайт живёт на Cloudflare: <https://stalker2-save-editor.save-editor.workers.dev>.
+Настройки — в `wrangler.jsonc` в корне репозитория. Кода на сервере нет: отдаётся
+только эта папка, весь редактор работает в браузере посетителя.
 
 `make web-deploy` отказывается публиковать, если в `web/` лежит `.sav`: эта же
 папка служит корнем локального тестового сервера.

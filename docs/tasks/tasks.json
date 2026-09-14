@@ -1004,18 +1004,18 @@
     ],
     "contract": "GitHub Pages из того же тега, что и десктопные пакеты; версия и commit видны на странице.",
     "steps": [
-      "Включить GitHub Pages в режиме Deploy from a branch: main, папка /web.",
-      "Проверить живой URL в Chrome и Firefox на реальном сейве."
+      "Развернуть web/ на Cloudflare (wrangler.jsonc, make web-deploy).",
+      "Проверить живой URL: страница и все ресурсы отдаются."
     ],
     "checks": [
-      "Открытая ссылка читает сейв и отдаёт корректную изменённую копию."
+      "https://stalker2-save-editor.save-editor.workers.dev отдаёт 200 для index, стилей, pysrc.json, app.js и моста."
     ],
     "gate": "release",
     "priority": "P3",
-    "status": "ready",
+    "status": "accepted",
     "path": "docs/tasks/W03.md",
     "github_issue": "",
     "github_pr": "",
-    "status_display": "ready (Pages из /web, Actions не требуются)"
+    "status_display": "accepted (Cloudflare, живой URL)"
   }
 ]

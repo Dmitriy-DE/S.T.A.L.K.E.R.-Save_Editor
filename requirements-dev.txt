@@ -1,6 +1,8 @@
 # Test runner used by local checks and every CI matrix job.
 pytest==9.0.2
 pytest-qt==4.5.0
+# Used by the CI contract tests to parse the workflow files.
+PyYAML==6.0.3
 # Static analysis gate: correctness rules only, see ruff.toml and mypy.ini.
 # Neither tool is a runtime dependency and neither is bundled by PyInstaller.
 ruff==0.16.7

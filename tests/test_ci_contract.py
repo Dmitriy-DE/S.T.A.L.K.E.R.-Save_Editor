@@ -74,7 +74,7 @@ def test_ci_runs_pinned_dependencies_and_full_suite() -> None:
     assert "requirements-dev.txt" in text
     assert '"pytest"' in text
     assert '"tests"' in text
-    assert "python -m py_compile" in text
+    assert "py_compile" in text
 
 
 def test_ci_runs_the_static_analysis_gate() -> None:
@@ -94,3 +94,31 @@ def test_ci_runs_the_qt_suite_headless() -> None:
         # job fails on a missing display rather than on a real defect.
         assert "QT_QPA_PLATFORM: offscreen" in text, f"{path.name} runs Qt with no platform plugin"
         assert "libegl1" in text, f"{path.name} does not install the Qt runtime libraries"
+
+
+def test_python_shell_steps_actually_contain_python() -> None:
+    """A `shell: python` step whose body is a shell command dies at runtime.
+
+    The compile step shipped as `shell: python` with `run: python -m py_compile …`,
+    which the runner fed to the interpreter as source and rejected as a
+    SyntaxError.  Nothing caught it for months because no run ever got that far.
+    """
+
+    import ast
+
+    import yaml
+
+    for path in (WORKFLOW, BUILD_WORKFLOW):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job_name, job in workflow["jobs"].items():
+            for step in job.get("steps", []):
+                if step.get("shell") != "python":
+                    continue
+                body = step.get("run", "")
+                try:
+                    ast.parse(body)
+                except SyntaxError as exc:  # pragma: no cover - failure path
+                    raise AssertionError(
+                        f"{path.name}:{job_name}: step {step.get('name')!r} declares "
+                        f"shell: python but its body is not Python ({exc.msg})"
+                    ) from exc
