@@ -308,7 +308,8 @@ another boundary is required:
   parser. Regenerate `web/pysrc.json` from sources.
 - [x] **Step 6: Run offscreen Qt tests, web bridge tests, `node --check web/app.js`,
   and generated-artifact checks.**
-- [ ] **Step 7: Commit the common UX slice.** Use:
+- [x] **Step 7: Commit the common UX slice.** Commit `1c9cd80` gates the
+  shared Qt/web capability controls and bridge.
   `git add ui/main_window.py ui/save_slots_view.py ui/settings_view.py ui/inventory_view.py ui/inventory_model.py ui/changes_view.py ui/backups_view.py web/index.html web/app.js web/web_bridge.py tests/test_ui_inventory.py tests/test_ui_theme.py tests/test_save_slots.py tests/test_settings.py tests/test_web_bridge.py web/pysrc.json && git commit -m "feat: expose shared release capabilities in Qt and web"`.
 
 ## Task 8: Evidence, packaging, deployment, and final acceptance
@@ -339,7 +340,7 @@ another boundary is required:
   web deployment command if credentials and the configured project are
   available; record the deployment URL, revision, and read-back status. Never
   put saves or private catalogs in `web/`.
-- [ ] **Step 7: Update docs and task statuses with exact evidence, commit/PR,
+- [x] **Step 7: Update docs and task statuses with exact evidence, commit/PR,
   deployment, and open gates.** A local green suite cannot close missing EE or
   in-game acceptance rows.
 - [ ] **Step 8: Review the final diff, current branch, remote state, generated

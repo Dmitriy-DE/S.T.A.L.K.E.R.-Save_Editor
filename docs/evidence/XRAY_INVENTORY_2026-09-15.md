@@ -14,8 +14,8 @@
    релиза;
 4. проверен in-memory ammo count round-trip одновременно в STATE и UPDATE на
    одном representative save каждого релиза;
-5. проверен in-memory catalog-backed add/remove path без записи результата в
-   игровой каталог.
+5. проверен in-memory catalog-backed add path и synthetic deep-remove
+   regression без записи результата в игровой каталог.
 
 | Release | Files | Unique bytes | Strict parse | No-op | Actor version | Object count | Inventory count | Money | Ammo |
 | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- |

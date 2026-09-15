@@ -21,11 +21,11 @@ local-file-only и content-detects файл тем же ядром. Capability f
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
-Локальный Linux gate текущего прохода: `make check` exit 0, `265 passed`; ruff,
+Локальный Linux gate текущего прохода: `make check` exit 0, `267 passed`; ruff,
 mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
-`tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; предыдущий
-Cloudflare Pages deployment прочитан обратно с HTTP 200, после текущего
-обновления каталога требуется новый deploy read-back. Точные хэши и URL записаны в
+`tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
+Pages revision `f46c1cf8` прочитан обратно с HTTP 200 после обновления каталога.
+Точные хэши и URL записаны в
 [release evidence](evidence/RELEASE_2026-09-15.md). Это не заменяет Windows
 runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 
@@ -92,7 +92,7 @@ metadata-каталога и deep remove. Сверка S2
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
 [разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.pages.dev>,
 обновление — `make web-deploy` (Cloudflare Pages). Проверено
-живьём: страница, стили, ядро и мост отдаются, редактор открывает сейв.
+живьём: страница, стили, ядро, мост и metadata catalog отдаются с HTTP 200.
 
 ## M01 — реестр форматов — 2026-09-15
 
