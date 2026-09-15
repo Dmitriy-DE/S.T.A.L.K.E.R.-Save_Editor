@@ -40,6 +40,11 @@ non-editable and all EE candidates remain unsupported until a parser exists.
 - The [Clear Sky EE Steam discussion](https://steamcommunity.com/app/2427420/discussions/0/603030907426702266/?l=ukrainian)
   contains a report involving `.scs`, which is a useful extension lead but not
   a serialization specification or a verified sample.
+- SteamDB's official Steam Cloud manifests independently document the Windows
+  `Saved Games` roots for [SoC EE](https://steamdb.info/app/2427410/ufs/),
+  [CS EE](https://steamdb.info/app/2427420/ufs/) and
+  [CoP EE](https://steamdb.info/app/2427430/ufs/); those entries use wildcard
+  save patterns but provide no binary serialization details.
 - Public original-X-Ray readers and OpenXRay sources were used for the
   original profiles only; they do not prove EE compatibility.
 
