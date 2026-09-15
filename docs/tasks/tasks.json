@@ -1237,11 +1237,11 @@
     ],
     "gate": "code",
     "priority": "P3",
-    "status": "in_progress",
+    "status": "accepted",
     "path": "docs/tasks/M09.md",
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
-    "status_display": "in_progress (writer есть; M10 игровая проверка открыта)"
+    "status_display": "accepted (writer есть; M10 игровая проверка открыта)"
   },
   {
     "id": "M10",
@@ -1262,10 +1262,11 @@
     ],
     "gate": "research",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/M10.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/57",
+    "status_display": "in_progress (процедура и безопасная подготовка готовы; ждёт ручной game load/re-save)"
   },
   {
     "id": "M11",

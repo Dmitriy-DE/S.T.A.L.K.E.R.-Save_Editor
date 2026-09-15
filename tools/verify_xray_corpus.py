@@ -100,7 +100,11 @@ def _run_edit_roundtrip(
 
     successes = 0
     source = _plan(data, locator="corpus")
-    if format_.capabilities.edit_money and info.money is not None:
+    # This verifier measures local writer/round-trip behavior separately from
+    # the user-facing capability gate.  M10 intentionally keeps capabilities
+    # read-only until a game load/re-save result exists, but the local corpus
+    # still needs to report whether the writer can round-trip its bytes.
+    if info.money is not None:
         target = 0 if info.money > 0 else 1
         plan = EditPlan(source=source.source, money=target)
         prepared = format_.prepare(
@@ -114,7 +118,7 @@ def _run_edit_roundtrip(
             raise RuntimeError("money round-trip value mismatch")
         successes += 1
 
-    if format_.capabilities.edit_stacks:
+    if format_.id in {"stalker2", "stalker-soc", "stalker-cs", "stalker-cop"}:
         item = next(
             (
                 value

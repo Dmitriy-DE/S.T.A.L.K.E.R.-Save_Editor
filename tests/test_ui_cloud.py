@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
 
+from editor.capabilities import FormatCapabilities
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
 from steam_cloud import CloudFile
@@ -253,6 +255,21 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # running for a moment afterwards, and preview refuses to start while the
     # window is busy.  On a fast machine that window is too short to notice.
     qtbot.waitUntil(lambda: not window._cloud_busy, timeout=SIGNAL_TIMEOUT_MS)
+
+    # This test exercises the cloud transaction routing itself.  The real
+    # registry capability is intentionally read-only until M10 game evidence;
+    # inject an explicitly approved synthetic capability for this unit test.
+    assert window.snapshot is not None
+    window._render_snapshot(
+        replace(
+            window.snapshot,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_money=True,
+                edit_stacks=True,
+            ),
+        )
+    )
 
     window.money_spin.setValue(900)
     window._stage_money()

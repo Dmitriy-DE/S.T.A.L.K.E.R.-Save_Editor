@@ -2,26 +2,31 @@
 
 ## Актуальный official-release pass
 
-Текущая рабочая ветка `codex/m06-xray-container` расширяет старый S2-only
-редактор одним shared registry для официальных PC-профилей:
+После merge PR #53 текущая база `main` расширяет старый S2-only редактор одним
+shared registry для официальных PC-профилей. Ветка M10 добавляет протокол
+игровой проверки и до ручного load/re-save держит все mutation capabilities
+read-only:
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
-| S.T.A.L.K.E.R. 2 | зарегистрирован | существующие S2 money/stack/CRC/Kraken safeguards; structural GVAS add не включён |
-| Original Shadow of Chornobyl | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
-| Original Clear Sky | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
-| Original Call of Pripyat | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| S.T.A.L.K.E.R. 2 | зарегистрирован | read и локальный writer; mutation capability ждёт M10 game load/re-save |
+| Original Shadow of Chornobyl | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
+| Original Clear Sky | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
+| Original Call of Pripyat | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
 | Shadow of Chornobyl EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Clear Sky EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Call of Pripyat EE | descriptor/path discovery only | unavailable; no accepted format sample |
 
 Desktop использует release-specific auto/manual save discovery; browser остаётся
 local-file-only и content-detects файл тем же ядром. Capability flags теперь
-управляют Qt/web controls. Community mods намеренно вне scope. X-Ray evidence:
+управляют Qt/web controls, а M10 gate не позволяет синтетическому round-trip
+выглядеть как доказательство загрузки в игре. Community mods намеренно вне
+scope. X-Ray evidence:
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
-Локальный Linux gate текущего прохода: `make check` exit 0, `278 passed`; ruff,
+Локальный Linux gate текущего прохода: `PYTHON=.venv/bin/python make check` exit 0,
+`PYTHON=.venv/bin/python make test` exit 0 (`283 passed`); ruff,
 mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
 `tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
 Pages revision `4d833b6f` прочитан обратно с HTTP 200 после обновления каталога и
@@ -85,9 +90,9 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 `web/` запускает то же multi-format ядро в браузере через Pyodide: `ooz-wasm`
 для S.T.A.L.K.E.R. 2 и portable Python LZO для оригинальной трилогии. Веб
 принимает файл локально, распознаёт только зарегистрированный формат и
-отказывает на неизвестном; для оригинальной трилогии доступны чтение денег,
-serialized inventory, правка денег/ammo stacks, add из компактного официального
-metadata-каталога и deep remove. Сверка S2
+отказывает на неизвестном; до M10 game load/re-save mutation controls остаются
+read-only, хотя локальный writer и catalog round-trip продолжают проверяться
+отдельно. Сверка S2
 остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
 покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
@@ -179,16 +184,17 @@ Qt, CLI и web используют один detector/reader. Автопоиск
 неизвестный формат получает явный отказ. На desktop поиск кеширует неизменившийся
 size/mtime результат, а полный inspect всегда перечитывает bytes и SHA.
 
-Подтверждённая локальная правка — actor money и ammo stack count (STATE +
-UPDATE), с immutable `EditPlan`, source SHA, backup/atomic export и повторным
+Локально реализованы и проверяются actor money и ammo stack count (STATE +
+UPDATE), immutable `EditPlan`, source SHA, backup/atomic export и повторный
 parse. Object windows и length-changing registry framing индексируются строго.
 Для оригинальной трилогии catalog-backed writer добавляет предметы из
 официального metadata-каталога через same-family registry template и удаляет
 actor-owned record как deep operation; SoC/CS/CoP representative in-memory
-прогон покрыл десять serializer families в каждом релизе. Move, equipment,
-прочность, durability/upgrades, attachments и reference-safe deletion остаются
-read-only. Enhanced Editions также не объявлены поддержанными: evidence записан
-отдельно в `EE_FORMATS_2026-09-15.md`.
+прогон покрыл десять serializer families в каждом релизе. Эти локальные
+результаты не открывают UI/web mutation до M10. Move, equipment, прочность,
+durability/upgrades, attachments и reference-safe deletion остаются read-only.
+Enhanced Editions также не объявлены поддержанными: evidence записан отдельно
+в `EE_FORMATS_2026-09-15.md`.
 
 Локальный корпус подтверждает чтение и no-op SHA-preserving round-trip; game
 load/re-save, Windows runtime и Enhanced остаются внешними gates. Реализация и
