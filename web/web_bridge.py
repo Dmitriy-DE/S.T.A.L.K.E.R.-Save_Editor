@@ -303,13 +303,14 @@ def prepare(
         )
         for entry in json.loads(detach_json)
     )
+    normalized_money = _optional_int(money)
     plan = EditPlan(
         source=SourceRef(
             kind="local",
             locator=str(_state.get("name") or "save.sav"),
             sha256=str(_state["sha256"]),
         ),
-        money=_optional_int(money),
+        money=normalized_money,
         stacks=stacks,
         adds=adds,
         detach=detach,
@@ -317,6 +318,23 @@ def prepare(
     format_ = _state.get("format")
     if format_ is None:
         format_ = detect_or_raise(data, display_name=str(_state.get("name") or "save"))
+    if normalized_money is not None and not format_.capabilities.edit_money:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} остаётся read-only до подтверждения загрузкой и "
+            "повторным сохранением в игре"
+        )
+    if stacks and not format_.capabilities.edit_stacks:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку стаков до игрового evidence"
+        )
+    if adds and not format_.capabilities.add_items:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает добавление предметов до игрового evidence"
+        )
+    if detach and not format_.capabilities.remove_items:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает удаление предметов до игрового evidence"
+        )
     prepared = format_.prepare(
         data,
         plan,

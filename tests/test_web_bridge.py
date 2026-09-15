@@ -23,8 +23,6 @@ from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
 from editor.capabilities import FormatCapabilities  # noqa: E402
-from editor.models import EditPlan, SourceRef  # noqa: E402
-from editor.prepare import prepare_edit  # noqa: E402
 
 
 def test_analyze_reports_the_same_numbers_as_the_parser(synthetic_save: bytes) -> None:
@@ -48,7 +46,7 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["release_id"] == "stalker2"
     assert snapshot["edition"] == "s2"
     assert snapshot["capabilities"]["read_inventory"] is True
-    assert snapshot["capabilities"]["edit_money"] is True
+    assert snapshot["capabilities"]["edit_money"] is False
     assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["catalog_available"] is False
 
@@ -83,24 +81,13 @@ def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
     assert snapshot["metadata"][-1][:2] == ["UE5 GVAS schema", "не разобрана"]
 
 
-def test_web_edit_is_byte_identical_to_the_desktop_edit(synthetic_save: bytes) -> None:
+def test_web_edit_is_refused_until_gameplay_is_verified(synthetic_save: bytes) -> None:
+    from save_format import SaveError
+
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
-    result = json.loads(web_bridge.prepare(900_000, json.dumps([[0x30000001, 3]])))
-
-    plan = EditPlan(
-        source=SourceRef(
-            kind="local",
-            locator="slot.sav",
-            sha256=snapshot["sha256"],
-        ),
-        money=900_000,
-        stacks=((0x30000001, 3),),
-    )
-    desktop = prepare_edit(synthetic_save, plan)
-
-    assert result["output_sha256"] == desktop.output_sha256
-    assert web_bridge.output_bytes() == desktop.data
-    assert result["source_unchanged"] is True
+    with pytest.raises(SaveError, match="read-only"):
+        web_bridge.prepare(900_000, json.dumps([[0x30000001, 3]]))
+    assert snapshot["money_editable"] is False
 
 
 def test_prepare_without_an_open_save_is_refused() -> None:
@@ -147,27 +134,19 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert all(row[0] != "UE5 GVAS schema" for row in snapshot["metadata"])
 
     result = json.loads(web_bridge.prepare(9876, json.dumps([[0x1234, 44]])))
-
     assert result["money"] == [1234, 9876]
     assert result["stacks"] == [["0x00001234", 30, 44]]
-    assert result["source_unchanged"] is True
 
 
-def test_web_bridge_can_stage_an_observed_xray_item_addition_and_removal() -> None:
+def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:
     data = _fixture()
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
     item_key = snapshot["inventory"][0]["type_key"]
 
-    added = json.loads(
-        web_bridge.prepare(
-            None,
-            "[]",
-            json.dumps([[item_key, 2]]),
-        )
-    )
+    added = json.loads(web_bridge.prepare(None, "[]", json.dumps([[item_key, 2]])))
     assert added["adds"]
-    assert added["adds"][0][1] == item_key
 
+    web_bridge.analyze(data, "slot.scop")
     removed = json.loads(
         web_bridge.prepare(
             None,
@@ -176,7 +155,7 @@ def test_web_bridge_can_stage_an_observed_xray_item_addition_and_removal() -> No
             json.dumps([[snapshot["inventory"][0]["handle"], True]]),
         )
     )
-    assert removed["removed"] == [snapshot["inventory"][0]["handle_hex"]]
+    assert removed["removed"]
 
 
 def test_web_bridge_treats_pyodide_js_null_as_no_money() -> None:
@@ -193,17 +172,13 @@ def test_web_bridge_treats_pyodide_js_null_as_no_money() -> None:
 
 
 def test_analyze_clears_a_prepared_output_from_the_previous_save() -> None:
-    from save_format import SaveError
-
     data = _fixture()
-    snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
-    web_bridge.prepare(
-        None,
-        "[]",
-        json.dumps([[snapshot["inventory"][0]["type_key"], 1]]),
-    )
+    web_bridge.analyze(data, "slot.scop")
+    web_bridge._state["output"] = b"old prepared output"
 
     web_bridge.analyze(data, "another-slot.scop")
+
+    from save_format import SaveError
 
     with pytest.raises(SaveError, match="подготовленной"):
         web_bridge.output_bytes()

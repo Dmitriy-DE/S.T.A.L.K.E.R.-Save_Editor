@@ -9,7 +9,7 @@ from typing import Protocol
 
 from save_format import SaveError, SaveInfo, inspect_save
 
-from .capabilities import FormatCapabilities
+from .capabilities import FormatCapabilities, gate_mutations_for_release
 from .catalog import ItemCatalog
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
@@ -108,10 +108,13 @@ class _Stalker2Format:
     title = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
     release_id = "stalker2"
     edition = "s2"
-    capabilities = FormatCapabilities(
-        read_inventory=True,
-        edit_money=True,
-        edit_stacks=True,
+    capabilities = gate_mutations_for_release(
+        release_id,
+        FormatCapabilities(
+            read_inventory=True,
+            edit_money=True,
+            edit_stacks=True,
+        ),
     )
 
     def detect(self, data: bytes) -> bool:
@@ -162,13 +165,16 @@ class _XRayFormat:
         self.title = spec.title
         self.release_id = spec.id
         self.edition = "original"
-        self.capabilities = FormatCapabilities(
-            read_inventory=True,
-            edit_money=True,
-            edit_stacks=True,
-            add_items=True,
-            remove_items=True,
-            catalog=True,
+        self.capabilities = gate_mutations_for_release(
+            self.release_id,
+            FormatCapabilities(
+                read_inventory=True,
+                edit_money=True,
+                edit_stacks=True,
+                add_items=True,
+                remove_items=True,
+                catalog=True,
+            ),
         )
 
     def detect(self, data: bytes) -> bool:

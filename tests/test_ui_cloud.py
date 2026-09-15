@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,8 @@ pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
 
+from editor.capabilities import FormatCapabilities
+from editor.formats import FormatInspection
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
 from steam_cloud import CloudFile
@@ -19,6 +22,42 @@ from ui.main_window import MainWindow
 # developer machine and not on a loaded CI runner, where the same test timed out
 # while the work was still progressing - a slow machine is not a defect.
 SIGNAL_TIMEOUT_MS = 30_000
+
+
+class _ApprovedCloudService(EditorService):
+    """Keep this routing test independent from the M10 release gate."""
+
+    def inspect_result(
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
+        catalog_source: str | Path | None = None,
+    ) -> FormatInspection:
+        result = super().inspect_result(
+            data,
+            with_inventory=with_inventory,
+            source_name=source_name,
+            catalog_source=catalog_source,
+        )
+        return replace(
+            result,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_money=True,
+                edit_stacks=True,
+            ),
+        )
+
+
+def _wait_cloud_idle(qtbot, view: CloudView) -> None:
+    """Wait for both the worker thread and its owner reference to settle."""
+
+    qtbot.waitUntil(
+        lambda: not view.is_busy and view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
 
 
 class FakeCloudTransport:
@@ -126,6 +165,7 @@ def test_cloud_view_empty_list_has_explicit_state(qtbot, synthetic_save: bytes, 
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
+    _wait_cloud_idle(qtbot, view)
     assert view.table.rowCount() == 0
     assert "0" in view.status_label.text()
     assert not view.analyze_button.isEnabled()
@@ -151,6 +191,7 @@ def test_cloud_view_filters_non_data_files(
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
+    _wait_cloud_idle(qtbot, view)
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
     assert view.table.rowCount() == 1
 
@@ -169,11 +210,11 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     qtbot.addWidget(view)
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
-    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
+    _wait_cloud_idle(qtbot, view)
     view.table.selectRow(0)
     with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.analyze_selected()
-    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
+    _wait_cloud_idle(qtbot, view)
 
     snapshot = blocker.args[0]
     assert snapshot.name == name
@@ -206,16 +247,22 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     qtbot.addWidget(view)
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
-    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
+    _wait_cloud_idle(qtbot, view)
     view.table.selectRow(0)
     with qtbot.waitSignal(view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.analyze_selected()
-    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
+    _wait_cloud_idle(qtbot, view)
     view.set_prepared(_prepared(synthetic_save, name))
 
     with qtbot.waitSignal(view.upload_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.start_upload()
 
+    # ``upload_ready`` is emitted by the worker's ``completed`` signal; the
+    # QThread still needs one event-loop turn to emit ``finished`` and clear
+    # the widget-owned worker reference.  Wait for that lifecycle boundary
+    # before pytest-qt tears the widget down (Windows is particularly strict
+    # about destroying a running QThread).
+    _wait_cloud_idle(qtbot, view)
     receipt = blocker.args[0]
     assert receipt.status == ("verified" if persisted else "uncertain")
     assert len(transport.write_calls) == 1
@@ -233,6 +280,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
+    # The production registry stays read-only until M10 game evidence.  Use a
+    # scoped approved cloud service so this test can still cover the cloud
+    # preview/upload transaction without re-rendering the live window.
+    window.cloud_view.service = _ApprovedCloudService()
     window.cloud_view.worker_factory = lambda _path: transport
     window.cloud_view.helper_path = tmp_path / "helper"
     window.cloud_view.helper_edit.setText(str(tmp_path / "helper"))
@@ -240,7 +291,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
 
     with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.start_connect()
-    qtbot.waitUntil(lambda: not window.cloud_view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
+    qtbot.waitUntil(
+        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
     window.cloud_view.table.selectRow(0)
     with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_view.analyze_selected()
@@ -252,7 +306,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # snapshot_ready fires from inside the cloud worker; the thread is still
     # running for a moment afterwards, and preview refuses to start while the
     # window is busy.  On a fast machine that window is too short to notice.
-    qtbot.waitUntil(lambda: not window._cloud_busy, timeout=SIGNAL_TIMEOUT_MS)
+    qtbot.waitUntil(
+        lambda: not window._cloud_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
 
     window.money_spin.setValue(900)
     window._stage_money()
@@ -261,6 +318,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     with qtbot.waitSignal(window.apply_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         window._start_cloud_upload()
 
+    qtbot.waitUntil(
+        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
     assert blocker.args[0].status == "verified"
     assert [filename for filename, _data in transport.write_calls] == [name]
 
