@@ -85,3 +85,17 @@ def test_service_inspection_preserves_parser_result_and_format_metadata(
     assert result.format_id == "stalker2"
     assert result.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
     assert result.info == sf.inspect_save(synthetic_save)
+
+
+def test_service_inspection_projects_common_release_capabilities(
+    synthetic_save: bytes,
+) -> None:
+    from editor.service import EditorService
+
+    result = EditorService().inspect_result(synthetic_save)
+
+    assert result.release_id == "stalker2"
+    assert result.edition == "s2"
+    assert result.capabilities.edit_money is True
+    assert result.capabilities.edit_stacks is True
+    assert result.capabilities.add_items is False

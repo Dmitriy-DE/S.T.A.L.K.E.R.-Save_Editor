@@ -38,6 +38,18 @@ def test_analyze_reports_the_same_numbers_as_the_parser(synthetic_save: bytes) -
     assert len(snapshot["inventory"]) == len(info.inventory)
 
 
+def test_analyze_exposes_release_edition_and_capabilities_from_registry(
+    synthetic_save: bytes,
+) -> None:
+    snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
+
+    assert snapshot["release_id"] == "stalker2"
+    assert snapshot["edition"] == "s2"
+    assert snapshot["capabilities"]["read_inventory"] is True
+    assert snapshot["capabilities"]["edit_money"] is True
+    assert snapshot["capabilities"]["add_items"] is False
+
+
 def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
     names = [row[0] for row in snapshot["metadata"]]
@@ -97,6 +109,10 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
 
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
     assert snapshot["format_id"] == "stalker-cop"
+    assert snapshot["release_id"] == "stalker-cop"
+    assert snapshot["edition"] == "original"
+    assert snapshot["capabilities"]["edit_stacks"] is True
+    assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["crc_present"] is False
     assert snapshot["money"] == 1234
     assert snapshot["inventory"][0]["name"] == "ammo_9x39_pab9"

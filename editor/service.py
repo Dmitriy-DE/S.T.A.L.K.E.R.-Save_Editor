@@ -75,6 +75,9 @@ class EditorService:
             format_id=format_.id,
             format_title=format_.title,
             info=info,
+            release_id=format_.release_id,
+            edition=format_.edition,
+            capabilities=format_.capabilities,
         )
 
     def inspect(

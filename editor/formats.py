@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 from save_format import SaveError, SaveInfo, inspect_save
@@ -57,6 +57,9 @@ class FormatInspection:
     format_id: str
     format_title: str
     info: SaveInfo
+    release_id: str = ""
+    edition: str = ""
+    capabilities: FormatCapabilities = field(default_factory=FormatCapabilities)
 
 
 class FormatDetectionError(SaveError):
