@@ -357,10 +357,9 @@ class XRayContainer:
         if raw is None or bytes(raw) == self.raw:
             return self.original
         payload = bytes(raw)
-        if len(payload) != self.unpacked_size:
+        if not payload or len(payload) > XRAY_MAX_UNPACKED_SIZE:
             raise _fail(
-                f"изменённый payload имеет размер {len(payload)}, "
-                f"ожидалось {self.unpacked_size}"
+                f"изменённый payload имеет недопустимый размер {len(payload)}"
             )
         parse_chunks(payload)
         return struct.pack("<III", self.magic, self.version, len(payload)) + lzo1x_compress(payload)

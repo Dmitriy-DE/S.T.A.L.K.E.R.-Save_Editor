@@ -5,12 +5,14 @@ import struct
 
 import pytest
 
+from editor.catalog import ItemCatalog, ItemDefinition
 from editor.models import EditPlan, SourceRef
 from editor.xray_container import XRayContainer, lzo1x_compress
 from editor.xray_save import (
     COP_FORMAT,
     CS_FORMAT,
     SOC_FORMAT,
+    XRayItemAdd,
     XRaySaveError,
     inspect_xray,
     parse_xray,
@@ -198,6 +200,81 @@ def test_xray_prepare_edits_money_and_ammo_in_both_serialized_states() -> None:
     assert after.object_by_id(0x1234).count == 44
     assert after.object_by_id(0x1234).update_count == 44
     assert parse_xray(data, COP_FORMAT).money == 1234
+
+
+def test_xray_objects_expose_exact_spawn_state_update_windows() -> None:
+    data = _fixture()
+    parsed = parse_xray(data, COP_FORMAT)
+    ammo = parsed.object_by_id(0x1234)
+
+    assert ammo.spawn_end - ammo.spawn_offset == struct.unpack_from(
+        "<H", parsed.container.raw, ammo.record_offset
+    )[0]
+    assert parsed.spawn_bytes(ammo) == parsed.container.raw[ammo.spawn_offset : ammo.spawn_end]
+    assert parsed.state_bytes(ammo) == parsed.container.raw[ammo.state_offset : ammo.state_end]
+    assert parsed.update_bytes(ammo) == parsed.container.raw[ammo.update_offset : ammo.update_end]
+    assert ammo.record_end > ammo.record_offset
+    assert "prototype" in ammo.unknown_fields
+
+
+def _ammo_catalog() -> ItemCatalog:
+    return ItemCatalog(
+        "stalker-cop",
+        None,
+        (
+            ItemDefinition(
+                key="ammo_new",
+                display_name="New ammo",
+                category="ammo",
+                unit_weight=0.1,
+                width=1,
+                height=1,
+                max_stack=30,
+                slots=("8",),
+                prototype=b"fixture-prototype",
+                source="fixture",
+            ),
+        ),
+    )
+
+
+def test_xray_ammo_add_allocates_registry_record_and_round_trips() -> None:
+    data = _fixture()
+    plan = _plan(data)
+    plan = EditPlan(
+        source=plan.source,
+        adds=(("ammo_new", 12, "inventory"),),
+    )
+
+    prepared = prepare_xray(data, plan, COP_FORMAT, catalog=_ammo_catalog())
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    added = tuple(item for item in after.inventory if item.type_key == "ammo_new")
+    assert len(added) == 1
+    assert added[0].count == 12
+    assert added[0].editable_count is True
+    assert len(after.objects) == 3
+    assert prepared.data != data
+
+
+def test_xray_ammo_remove_deletes_only_the_owned_record() -> None:
+    data = _fixture()
+    plan = EditPlan(
+        source=_plan(data).source,
+        detach=((0x1234, True),),
+    )
+
+    prepared = prepare_xray(data, plan, COP_FORMAT, catalog=_ammo_catalog())
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    assert after.inventory == ()
+    assert len(after.objects) == 1
+    assert prepared.data != data
+
+
+def test_xray_item_add_validates_request_shape() -> None:
+    with pytest.raises(ValueError):
+        XRayItemAdd(None, "", 1, "inventory")
 
 
 def test_xray_noop_prepare_keeps_original_bytes() -> None:

@@ -58,6 +58,21 @@ def test_edit_plan_defaults_are_empty_immutable_tuples(synthetic_save: bytes) ->
     assert plan.detach == ()
     assert plan.attach == ()
     assert plan.raw == ()
+    assert plan.adds == ()
+
+
+def test_edit_plan_normalizes_and_validates_add_requests(synthetic_save: bytes) -> None:
+    plan = EditPlan(
+        source=_source(synthetic_save),
+        adds=(("ammo_new", 12, "inventory"),),
+    )
+
+    assert plan.adds == (("ammo_new", 12, "inventory"),)
+
+    with pytest.raises(ValueError, match="quantity"):
+        EditPlan(source=_source(synthetic_save), adds=(("ammo_new", 0, "inventory"),))
+    with pytest.raises(ValueError, match="destination"):
+        EditPlan(source=_source(synthetic_save), adds=(("ammo_new", 1, "stash"),))
 
 
 def test_prepare_edit_rejects_stale_source_sha(synthetic_save: bytes) -> None:
@@ -130,3 +145,10 @@ def test_prepare_edit_accepts_detach_without_raw(synthetic_save: bytes) -> None:
 
     info = sf.inspect_save(prepared.data)
     assert STACK_HANDLE not in {item.handle for item in info.inventory}
+
+
+def test_prepare_edit_rejects_unproven_add_for_stalker2(synthetic_save: bytes) -> None:
+    plan = EditPlan(source=_source(synthetic_save), adds=(("ammo_new", 1, "inventory"),))
+
+    with pytest.raises(sf.SaveError, match="Добавление предметов"):
+        prepare_edit(synthetic_save, plan)

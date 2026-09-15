@@ -170,6 +170,7 @@ def _operation_summary(plan: EditPlan) -> dict[str, object]:
         "detach_count": len(plan.detach),
         "attach_count": len(plan.attach),
         "raw_count": len(plan.raw),
+        "add_count": len(plan.adds),
     }
 
 

@@ -20,6 +20,7 @@ from dataclasses import dataclass, replace
 
 from save_format import InventoryItem, SaveInfo
 
+from .catalog import ItemCatalog
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
 
@@ -73,6 +74,28 @@ class XRaySaveError(XRayError):
 
 def _fail(message: str) -> XRaySaveError:
     return XRaySaveError(f"X-Ray save: {message}")
+
+
+@dataclass(frozen=True)
+class XRayItemAdd:
+    """Validated request shape for a registry-backed item addition."""
+
+    handle: int | None
+    item_key: str
+    quantity: int
+    destination: str
+
+    def __post_init__(self) -> None:
+        if self.handle is not None and not 1 <= self.handle <= 0xFFFE:
+            raise ValueError("X-Ray item handle must be in the range 1…65534")
+        if not self.item_key.strip():
+            raise ValueError("X-Ray item key must be non-empty")
+        if self.quantity < 1 or self.quantity > _MAX_AMMO_COUNT:
+            raise ValueError(
+                f"X-Ray item quantity must be in the range 1…{_MAX_AMMO_COUNT}"
+            )
+        if self.destination != "inventory":
+            raise ValueError("X-Ray item destination must be 'inventory'")
 
 
 class _Reader:
@@ -148,6 +171,9 @@ class _SpawnRecord:
     parent_id: int
     version: int
     position: tuple[float, float, float]
+    spawn_offset: int
+    spawn_end: int
+    state_size: int
     state_start: int
     state_end: int
 
@@ -164,14 +190,24 @@ class XRayObject:
     position: tuple[float, float, float]
     record_offset: int
     record_end: int
+    spawn_offset: int
+    spawn_end: int
+    state_size: int
     state_offset: int
     state_end: int
     update_offset: int
     update_end: int
+    update_size: int
     count: int | None = None
     update_count: int | None = None
     ammo_state_offset: int | None = None
     ammo_update_offset: int | None = None
+    unknown_fields: tuple[str, ...] = (
+        "prototype",
+        "durability",
+        "upgrades",
+        "inventory position",
+    )
 
 
 @dataclass(frozen=True)
@@ -200,6 +236,15 @@ class XRaySave:
             if obj.object_id == object_id:
                 return obj
         raise XRaySaveError(f"X-Ray save: object 0x{object_id:04X} не найден")
+
+    def spawn_bytes(self, obj: XRayObject) -> bytes:
+        return self.container.raw[obj.spawn_offset : obj.spawn_end]
+
+    def state_bytes(self, obj: XRayObject) -> bytes:
+        return self.container.raw[obj.state_offset : obj.state_end]
+
+    def update_bytes(self, obj: XRayObject) -> bytes:
+        return self.container.raw[obj.update_offset : obj.update_end]
 
 
 def _chunk_once(chunks: tuple[XRayChunk, ...], kind: int, *, required: bool = True) -> XRayChunk | None:
@@ -285,20 +330,37 @@ def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
     return money_offset, money
 
 
-def _parse_ammo_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
-    reader = _Reader(raw[obj.state_offset : obj.state_end], label=f"{obj.name} STATE")
-    _read_dynamic_visual_state(reader, obj.version)
-    if obj.version > 52:
+def _parse_ammo_state_window(
+    raw: bytes,
+    *,
+    state_offset: int,
+    state_end: int,
+    version: int,
+    label: str,
+) -> tuple[int, int]:
+    reader = _Reader(raw[state_offset:state_end], label=label)
+    _read_dynamic_visual_state(reader, version)
+    if version > 52:
         reader.f32()  # condition
-    if obj.version > 123:
+    if version > 123:
         count = reader.u32()
         if count > _MAX_VECTOR:
-            raise _fail(f"{obj.name}: upgrades count={count} слишком велик")
+            raise _fail(f"{label}: upgrades count={count} слишком велик")
         for _ in range(count):
             reader.zstring()
-    offset = obj.state_offset + reader.pos
+    offset = state_offset + reader.pos
     count = reader.u16()
     return offset, count
+
+
+def _parse_ammo_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
+    return _parse_ammo_state_window(
+        raw,
+        state_offset=obj.state_offset,
+        state_end=obj.state_end,
+        version=obj.version,
+        label=f"{obj.name} STATE",
+    )
 
 
 def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
@@ -353,6 +415,9 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         parent_id=parent_id,
         version=version,
         position=position,
+        spawn_offset=packet_offset,
+        spawn_end=packet_offset + len(packet),
+        state_size=state_size,
         state_start=packet_offset + state_start_rel,
         state_end=packet_offset + state_end_rel,
     )
@@ -390,10 +455,14 @@ def _parse_objects(raw: bytes, chunk: XRayChunk) -> tuple[XRayObject, ...]:
             position=spawn.position,
             record_offset=record_offset,
             record_end=data_offset + reader.pos,
+            spawn_offset=spawn.spawn_offset,
+            spawn_end=spawn.spawn_end,
+            state_size=spawn.state_size,
             state_offset=spawn.state_start,
             state_end=spawn.state_end,
             update_offset=update_offset,
             update_end=update_offset + update_size,
+            update_size=update_size,
         )
         objects.append(obj)
     if reader.pos != len(chunk.data):
@@ -460,10 +529,14 @@ def _parse_actor_probe(
                 position=spawn.position,
                 record_offset=record_offset,
                 record_end=data_offset + reader.pos,
+                spawn_offset=spawn.spawn_offset,
+                spawn_end=spawn.spawn_end,
+                state_size=spawn.state_size,
                 state_offset=spawn.state_start,
                 state_end=spawn.state_end,
                 update_offset=data_offset + update_offset_rel,
                 update_end=data_offset + update_offset_rel + update_size,
+                update_size=update_size,
             )
             if not strict:
                 return actor
@@ -759,15 +832,236 @@ def _validate_source(data: bytes, plan: EditPlan) -> None:
         )
 
 
-def prepare_xray(data: bytes, plan: EditPlan, spec: XRayFormatSpec) -> PreparedEdit:
-    """Prepare a fixed-size money/ammo edit and verify its round-trip."""
+def _object_chunk_data(parsed: XRaySave) -> XRayChunk:
+    chunk = _chunk_once(parsed.container.chunks, 2)
+    assert chunk is not None
+    return chunk
+
+
+def _rebuild_with_object_chunk(parsed: XRaySave, object_data: bytes) -> bytes:
+    """Replace only the registry chunk while preserving every other chunk."""
+
+    object_chunk = _object_chunk_data(parsed)
+    chunks: list[bytes] = []
+    for chunk in parsed.container.chunks:
+        payload = object_data if chunk.offset == object_chunk.offset else chunk.data
+        chunks.append(struct.pack("<II", chunk.type, len(payload)) + payload)
+    raw = b"".join(chunks)
+    return parsed.container.build(raw)
+
+
+def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
+    object_chunk = _object_chunk_data(parsed)
+    data_start = object_chunk.offset + 8
+    start = obj.record_offset - data_start
+    end = obj.record_end - data_start
+    if start < 4 or end > len(object_chunk.data) or start >= end:
+        raise _fail(f"object 0x{obj.object_id:04X}: record boundary недействителен")
+    count = struct.unpack_from("<I", object_chunk.data, 0)[0]
+    if count <= 1:
+        raise _fail("OBJECT registry нельзя оставить без actor")
+    object_data = struct.pack("<I", count - 1) + object_chunk.data[4:start] + object_chunk.data[end:]
+    return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _append_object_record(parsed: XRaySave, record: bytes) -> bytes:
+    object_chunk = _object_chunk_data(parsed)
+    count = struct.unpack_from("<I", object_chunk.data, 0)[0]
+    if count >= _MAX_OBJECTS:
+        raise _fail("OBJECT registry достиг максимального размера")
+    object_data = struct.pack("<I", count + 1) + object_chunk.data[4:] + record
+    return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _patch_spawn_identity(
+    packet: bytes,
+    *,
+    name: str,
+    object_id: int,
+    parent_id: int,
+) -> bytes:
+    """Patch identity fields after parsing their serialized field sequence."""
+
+    if "\x00" in name:
+        raise _fail("serialized item key содержит NUL")
+    if not 0 <= object_id <= 0xFFFF or not 0 <= parent_id <= 0xFFFF:
+        raise _fail("object identity выходит за u16")
+    original = bytes(packet)
+    reader = _Reader(original, label="SPAWN identity")
+    if reader.u16() != _M_SPAWN:
+        raise _fail("SPAWN identity не начинается с M_SPAWN")
+    name_start = reader.pos
+    reader.zstring()
+    name_end = reader.pos
+    reader.zstring()
+    reader.u8()
+    reader.u8()
+    for _ in range(6):
+        reader.f32()
+    reader.u16()  # respawn time
+    object_id_offset = reader.pos
+    reader.u16()
+    parent_id_offset = reader.pos
+    reader.u16()
+
+    replacement = name.encode("utf-8") + b"\x00"
+    rewritten = bytearray(original[:name_start] + replacement + original[name_end:])
+    delta = len(replacement) - (name_end - name_start)
+    struct.pack_into("<H", rewritten, object_id_offset + delta, object_id)
+    struct.pack_into("<H", rewritten, parent_id_offset + delta, parent_id)
+    _parse_spawn(bytes(rewritten), 0)
+    return bytes(rewritten)
+
+
+def _allocate_object_id(objects: tuple[XRayObject, ...]) -> int:
+    used = {obj.object_id for obj in objects}
+    highest = max(used, default=0)
+    for candidate in range(highest + 1, 0xFFFF):
+        if candidate not in used:
+            return candidate
+    for candidate in range(1, highest + 1):
+        if candidate not in used:
+            return candidate
+    raise _fail("не осталось свободных object id")
+
+
+def _clone_ammo_record(
+    parsed: XRaySave,
+    prototype: XRayObject,
+    *,
+    item_key: str,
+    object_id: int,
+    actor_id: int,
+    quantity: int,
+) -> bytes:
+    if prototype.count is None or prototype.ammo_state_offset is None:
+        raise _fail(f"prototype {prototype.name!r} не имеет подтверждённого ammo STATE")
+    if prototype.update_count is None or prototype.ammo_update_offset is None:
+        raise _fail(f"prototype {prototype.name!r} не имеет подтверждённого ammo UPDATE")
+
+    spawn = _patch_spawn_identity(
+        parsed.spawn_bytes(prototype),
+        name=item_key,
+        object_id=object_id,
+        parent_id=actor_id,
+    )
+    spawned = _parse_spawn(spawn, 0)
+    state_offset, _ = _parse_ammo_state_window(
+        spawn,
+        state_offset=spawned.state_start,
+        state_end=spawned.state_end,
+        version=spawned.version,
+        label=f"{item_key} STATE",
+    )
+    spawn_mut = bytearray(spawn)
+    struct.pack_into("<H", spawn_mut, state_offset, quantity)
+
+    update = bytearray(parsed.update_bytes(prototype))
+    if len(update) < 4 or struct.unpack_from("<H", update, 0)[0] != _M_UPDATE:
+        raise _fail(f"prototype {prototype.name!r}: UPDATE boundary недействителен")
+    struct.pack_into("<H", update, len(update) - 2, quantity)
+    if len(spawn_mut) > 0xFFFF or len(update) > 0xFFFF:
+        raise _fail("новая object record packet превышает u16 размер")
+    return (
+        struct.pack("<H", len(spawn_mut))
+        + bytes(spawn_mut)
+        + struct.pack("<H", len(update))
+        + bytes(update)
+    )
+
+
+def _apply_xray_structural_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    catalog: ItemCatalog | None,
+) -> bytes:
+    working = bytes(data)
+
+    for handle, deep in plan.detach:
+        current = parse_xray(working, spec, with_inventory=True)
+        if not deep:
+            raise XRaySaveError(
+                "X-Ray save: только deep detach подтверждён для registry object"
+            )
+        obj = current.object_by_id(handle)
+        if obj.parent_id != current.actor_id:
+            raise XRaySaveError(
+                f"X-Ray save: object 0x{handle:04X} не принадлежит actor inventory"
+            )
+        if not obj.name.lower().startswith("ammo_"):
+            raise XRaySaveError(
+                f"X-Ray save: удаление {obj.name!r} пока подтверждено только для ammo"
+            )
+        working = _remove_object_record(current, obj)
+
+    for item_key, quantity, destination in plan.adds:
+        request = XRayItemAdd(None, item_key, quantity, destination)
+        if catalog is None:
+            raise XRaySaveError(
+                f"X-Ray save: для добавления {request.item_key!r} нужен официальный catalog"
+            )
+        if catalog.release_id != spec.id:
+            raise XRaySaveError(
+                f"X-Ray save: catalog {catalog.release_id!r} не относится к {spec.id!r}"
+            )
+        definition = catalog.resolve(request.item_key)
+        if definition is None:
+            raise XRaySaveError(
+                f"X-Ray save: item key {request.item_key!r} отсутствует в catalog"
+            )
+        if definition.category != "ammo" or definition.prototype is None:
+            raise XRaySaveError(
+                f"X-Ray save: item {request.item_key!r} не имеет подтверждённого ammo prototype"
+            )
+        if definition.max_stack is not None and request.quantity > definition.max_stack:
+            raise XRaySaveError(
+                f"X-Ray save: quantity {request.quantity} превышает max_stack {definition.max_stack}"
+            )
+
+        current = parse_xray(working, spec, with_inventory=True)
+        prototype = next(
+            (
+                obj
+                for obj in current.objects
+                if obj.parent_id == current.actor_id
+                and obj.name.lower().startswith("ammo_")
+                and obj.count is not None
+                and obj.update_count is not None
+            ),
+            None,
+        )
+        if prototype is None:
+            raise XRaySaveError(
+                "X-Ray save: не найден существующий подтверждённый ammo object для clone"
+            )
+        new_id = _allocate_object_id(current.objects)
+        record = _clone_ammo_record(
+            current,
+            prototype,
+            item_key=request.item_key,
+            object_id=new_id,
+            actor_id=current.actor_id,
+            quantity=request.quantity,
+        )
+        working = _append_object_record(current, record)
+
+    return working
+
+
+def prepare_xray(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    *,
+    catalog: ItemCatalog | None = None,
+) -> PreparedEdit:
+    """Prepare proven X-Ray edits and verify their structural round-trip."""
 
     payload = bytes(data)
     _validate_source(payload, plan)
     if plan.moves:
         raise XRaySaveError("X-Ray save: move для оригинальной трилогии пока read-only")
-    if plan.detach:
-        raise XRaySaveError("X-Ray save: detach требует структурного writer и запрещён")
     if plan.attach:
         raise XRaySaveError("X-Ray save: attach требует prototype/registry writer и запрещён")
     if plan.raw:
@@ -776,8 +1070,32 @@ def prepare_xray(data: bytes, plan: EditPlan, spec: XRayFormatSpec) -> PreparedE
         raise XRaySaveError("X-Ray save: деньги должны быть в диапазоне 0…2 000 000 000")
 
     parsed = parse_xray(payload, spec, with_inventory=True)
+    working_data = payload
+    if plan.detach or plan.adds:
+        working_data = _apply_xray_structural_edits(
+            payload,
+            plan,
+            spec,
+            catalog,
+        )
+        parsed = parse_xray(working_data, spec, with_inventory=True)
+
     if plan.money is None and not plan.stacks:
-        return PreparedEdit(plan=plan, data=payload, output_sha256=hashlib.sha256(payload).hexdigest())
+        for handle, _ in plan.detach:
+            if any(item.handle == handle for item in parsed.inventory):
+                raise XRaySaveError(
+                    f"X-Ray save: detach round-trip оставил object 0x{handle:04X}"
+                )
+        for item_key, quantity, _ in plan.adds:
+            if not any(
+                item.type_key == item_key and item.count == quantity
+                for item in parsed.inventory
+            ):
+                raise XRaySaveError(
+                    f"X-Ray save: add round-trip не создал {item_key!r} x{quantity}"
+                )
+        output = bytes(working_data)
+        return PreparedEdit(plan=plan, data=output, output_sha256=hashlib.sha256(output).hexdigest())
 
     raw = bytearray(parsed.container.raw)
     if plan.money is not None:
@@ -809,6 +1127,19 @@ def prepare_xray(data: bytes, plan: EditPlan, spec: XRayFormatSpec) -> PreparedE
             raise XRaySaveError(
                 f"X-Ray save: round-trip ammo 0x{handle:04X} не совпал с {count}"
             )
+    for handle, _ in plan.detach:
+        if any(item.handle == handle for item in after.inventory):
+            raise XRaySaveError(
+                f"X-Ray save: detach round-trip оставил object 0x{handle:04X}"
+            )
+    for item_key, quantity, _ in plan.adds:
+        if not any(
+            item.type_key == item_key and item.count == quantity
+            for item in after.inventory
+        ):
+            raise XRaySaveError(
+                f"X-Ray save: add round-trip не создал {item_key!r} x{quantity}"
+            )
     output = bytes(rebuilt)
     return PreparedEdit(
         plan=plan,
@@ -823,6 +1154,7 @@ __all__ = [
     "SOC_FORMAT",
     "XRAY_FORMATS",
     "XRayFormatSpec",
+    "XRayItemAdd",
     "XRayObject",
     "XRaySave",
     "XRaySaveError",

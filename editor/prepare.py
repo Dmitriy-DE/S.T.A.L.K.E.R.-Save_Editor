@@ -30,6 +30,10 @@ def prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit:
         raise SaveError(
             "Нельзя совмещать raw patch с detach/attach в одном edit plan"
         )
+    if plan.adds:
+        raise SaveError(
+            "Добавление предметов не подтверждено для S.T.A.L.K.E.R. 2"
+        )
 
     result = patch_save(
         data,
