@@ -4,8 +4,9 @@
 
 После merge PR #53 текущая база `main` расширяет старый S2-only редактор одним
 shared registry для официальных PC-профилей. Ветка M10 добавляет протокол
-игровой проверки и до ручного load/re-save держит все mutation capabilities
-read-only:
+игровой проверки. Для локальных оригинальных SoC/CS/CoP уже подтверждена
+загрузка подготовленных сейвов в самих играх; до ручного in-game save и
+последующего parser read-back все mutation capabilities остаются read-only:
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
