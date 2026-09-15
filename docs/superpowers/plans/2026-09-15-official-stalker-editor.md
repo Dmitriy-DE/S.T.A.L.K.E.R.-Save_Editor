@@ -80,21 +80,21 @@ another boundary is required:
 - `FormatCapabilities(read_inventory: bool, edit_money: bool, edit_stacks: bool, move_items: bool, add_items: bool, remove_items: bool, edit_durability: bool, edit_upgrades: bool, catalog: bool)`
 - Every registered `SaveFormat` exposes `release_id`, `edition`, `capabilities`, `detect`, `inspect`, and `prepare`.
 
-- [ ] **Step 1: Write failing registry tests.** Assert that the registry
+- [x] **Step 1: Write failing registry tests.** Assert that the registry
   returns exactly the S.T.A.L.K.E.R. 2, original SoC/CS/CoP, and reserved
   Enhanced release descriptors; duplicate IDs and unknown aliases fail with a
   stable exception. Assert that existing S2 and X-Ray adapters expose explicit
   capability flags instead of UI guessing from format IDs.
-- [ ] **Step 2: Run the targeted tests and verify the expected missing-symbol
+- [x] **Step 2: Run the targeted tests and verify the expected missing-symbol
   failures.** Run:
   `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest tests/test_releases.py tests/test_capabilities.py tests/test_formats.py -q`.
-- [ ] **Step 3: Implement the descriptor and capability dataclasses.** Keep
+- [x] **Step 3: Implement the descriptor and capability dataclasses.** Keep
   the existing format IDs stable for CLI/web compatibility, add release/edition
   metadata to adapters, and mark current X-Ray money/ammo support accurately.
-- [ ] **Step 4: Run the targeted tests and the service tests.** Confirm unknown
+- [x] **Step 4: Run the targeted tests and the service tests.** Confirm unknown
   bytes still produce structured detection failures and existing S2 behavior
   is unchanged.
-- [ ] **Step 5: Commit the contract independently.** Use:
+- [x] **Step 5: Commit the contract independently.** Use:
   `git add editor/releases.py editor/capabilities.py editor/formats.py editor/models.py editor/service.py tests/test_releases.py tests/test_capabilities.py tests/test_formats.py tests/test_service.py && git commit -m "feat: add official release capability contract"`.
 
 ## Task 2: Release-aware desktop discovery and manual selection
@@ -116,24 +116,24 @@ another boundary is required:
 - `SaveSlot` carries `candidate_release_id`, `detected_release_id`, and a
   structured unsupported reason.
 
-- [ ] **Step 1: Write failing tests for release-specific search.** Cover two
+- [x] **Step 1: Write failing tests for release-specific search.** Cover two
   installed originals with the same family name, Enhanced candidate roots,
   duplicate Steam libraries, `.sav/.scop/.scs` candidates, manual-root
   priority, and no directory creation.
-- [ ] **Step 2: Run only those tests and verify the baseline fails on the new
+- [x] **Step 2: Run only those tests and verify the baseline fails on the new
   release-specific fields or `.scs` behavior.**
-- [ ] **Step 3: Implement descriptor-driven path resolution.** Preserve the
+- [x] **Step 3: Implement descriptor-driven path resolution.** Preserve the
   existing Windows registry, Steam VDF, Proton, Documents, `_appdata_`,
   `fsgame.ltx`, and S.T.A.L.K.E.R. 2 package providers; deduplicate by resolved
   release/path and never attribute a file from a path name alone.
-- [ ] **Step 4: Add a desktop release selector and filter.** The selector must
+- [x] **Step 4: Add a desktop release selector and filter.** The selector must
   support “all official releases”, a specific game/edition, and manual folder
   selection. Discovery runs in the existing worker and uses `detect_fast`; an
   explicit open performs strict detection and full inspection.
-- [ ] **Step 5: Run Qt and platform tests.** Verify the search button remains
+- [x] **Step 5: Run Qt and platform tests.** Verify the search button remains
   responsive, paths remain visible, unsupported candidates remain visible, and
   a manual root does not silently merge with auto roots.
-- [ ] **Step 6: Commit the release-aware discovery slice.** Use:
+- [x] **Step 6: Commit the release-aware discovery slice.** Use:
   `git add editor/platforms.py editor/settings.py ui/save_slots_view.py ui/settings_view.py ui/main_window.py tests/test_platform_save_locations.py tests/test_settings.py tests/test_save_slots.py tests/test_ui_theme.py && git commit -m "feat: make desktop discovery release-aware"`.
 
 ## Task 3: Catalog interface and official X-Ray resource reader
@@ -152,25 +152,25 @@ another boundary is required:
 - `CatalogProvider.load(release: ReleaseDescriptor, game_root: Path | None = None) -> ItemCatalog | None`
 - `CatalogProvider.resolve(key: str) -> ItemDefinition | None`
 
-- [ ] **Step 1: Write failing catalog tests using tiny official-style text and
+- [x] **Step 1: Write failing catalog tests using tiny official-style text and
   packed fixtures.** Assert that keys, localization names, category, weight,
   stack rules, and prototype/source provenance are preserved; missing fields
   remain `None`; a missing or foreign root returns no catalog rather than
   inventing definitions.
-- [ ] **Step 2: Run the catalog tests and confirm the provider does not exist.**
-- [ ] **Step 3: Implement the source-independent catalog model and a strict
+- [x] **Step 2: Run the catalog tests and confirm the provider does not exist.**
+- [x] **Step 3: Implement the source-independent catalog model and a strict
   X-Ray provider.** The provider reads only an explicit installed-game root,
   supports unpacked `gamedata` first, and uses a small provenance-reviewed
   reader for official packed archives where needed. It must not copy game
   archives or private files into the repository.
-- [ ] **Step 4: Implement localization and section resolution.** Resolve
+- [x] **Step 4: Implement localization and section resolution.** Resolve
   serialized keys from the save to official display names only when the selected
   release catalog proves the mapping; keep the original key visible beside the
   localized name.
-- [ ] **Step 5: Run fixture tests plus a read-only catalog inventory on the
+- [x] **Step 5: Run fixture tests plus a read-only catalog inventory on the
   installed SoC/CS/CoP trees.** Record counts, missing metadata, and source
   roots without printing private paths or storing game data.
-- [ ] **Step 6: Commit the catalog boundary.** Use:
+- [x] **Step 6: Commit the catalog boundary.** Use:
   `git add editor/catalog.py editor/xray_catalog.py editor/platforms.py editor/formats.py editor/service.py tests/test_catalog.py tests/test_xray_catalog.py tests/test_platform_save_locations.py && git commit -m "feat: add official X-Ray item catalogs"`.
 
 ## Task 4: Complete original X-Ray inventory model and writer
@@ -198,10 +198,10 @@ another boundary is required:
   consumables, grenades, ammo, and unknown/extension objects. Assert full
   actor ownership, duplicate handles, record boundaries, and unknown fields are
   reported explicitly.
-- [ ] **Step 2: Run the tests and confirm the current parser only exposes
+- [x] **Step 2: Run the tests and confirm the current parser only exposes
   partial names/categories and ammo counts.** Keep the red result as evidence
   that the new tests cover missing behavior.
-- [ ] **Step 3: Implement strict object-record indexing.** Parse the complete
+- [x] **Step 3: Implement strict object-record indexing.** Parse the complete
   OBJECT chunk, retain raw spawn/state/update bytes for unchanged objects, and
   expose known offsets only after class/version checks. Never use a guessed end
   boundary for mutation.
@@ -218,11 +218,11 @@ another boundary is required:
   pair exists.** Use the same red-green cycle for weapons, armor, artifacts,
   consumables, grenades, and devices; leave a class disabled if its prototype
   or game semantics are not proven.
-- [ ] **Step 7: Run the real read-only corpus gate.** For every unique local
+- [x] **Step 7: Run the real read-only corpus gate.** For every unique local
   original save, assert strict parse, no-op SHA, inventory coverage, and
   unchanged-source behavior. Run in-memory edits for every enabled class; do
   not write a game file.
-- [ ] **Step 8: Commit the original X-Ray writer slice with evidence.** Use:
+- [x] **Step 8: Commit the original X-Ray writer slice with evidence.** Use:
   `git add editor/xray_container.py editor/xray_save.py editor/models.py editor/prepare.py save_format.py tests/test_xray_container.py tests/test_xray_save.py tests/test_web_bridge.py tests/test_cli.py docs/evidence/XRAY_INVENTORY_2026-09-15.md && git commit -m "feat: add catalog-backed X-Ray inventory edits"`.
 
 ## Task 5: Preserve and normalize S.T.A.L.K.E.R. 2 under the same model
@@ -234,16 +234,16 @@ another boundary is required:
 - Test: `tests/test_formats.py`, `tests/test_save_format.py`,
   `tests/test_web_bridge.py`, `tests/test_ui_inventory.py`
 
-- [ ] **Step 1: Write failing compatibility tests** requiring the S2 adapter to
+- [x] **Step 1: Write failing compatibility tests** requiring the S2 adapter to
   expose the same release metadata/capability JSON as X-Ray profiles while
   preserving existing money, stack, CRC, Kraken, backup, and raw-round-trip
   behavior.
-- [ ] **Step 2: Run the compatibility tests and confirm the missing common
+- [x] **Step 2: Run the compatibility tests and confirm the missing common
   metadata/capability output.**
-- [ ] **Step 3: Implement the adapter metadata and capability projection.** Do
+- [x] **Step 3: Implement the adapter metadata and capability projection.** Do
   not rewrite the established S2 parser or loosen its wallet-anchor guards.
-- [ ] **Step 4: Run the complete existing S2 regression and web bridge tests.**
-- [ ] **Step 5: Commit the normalization separately from X-Ray changes.** Use:
+- [x] **Step 4: Run the complete existing S2 regression and web bridge tests.**
+- [x] **Step 5: Commit the normalization separately from X-Ray changes.** Use:
   `git add editor/formats.py save_format.py editor/service.py ui/inventory_model.py web/web_bridge.py tests/test_formats.py tests/test_save_format.py tests/test_web_bridge.py tests/test_ui_inventory.py && git commit -m "refactor: expose shared S.T.A.L.K.E.R. 2 capabilities"`.
 
 ## Task 6: Obtain and characterize official Enhanced Edition saves
@@ -257,9 +257,9 @@ another boundary is required:
   `docs/evidence/EE_FORMATS_2026-09-15.md`
 - Test: `tests/test_ee_profiles.py`, `tests/test_formats.py`
 
-- [ ] **Step 1: Inventory local official EE manifests, save directories, and
+- [x] **Step 1: Inventory local official EE manifests, save directories, and
   candidate extensions again without printing private filenames.**
-- [ ] **Step 2: Search public sources for legally usable official EE sample
+- [x] **Step 2: Search public sources for legally usable official EE sample
   saves or reproducible format descriptions.** Keep URLs, hashes, sizes, and
   licenses in the evidence document; do not place downloaded personal saves in
   Git.
@@ -270,7 +270,7 @@ another boundary is required:
   code only when the bytes and versioned serialization prove compatibility;
   otherwise create a separate parser. Add `.scs`/sidecar handling only where
   the actual save format requires it.
-- [ ] **Step 5: Keep an unavailable profile visible but disabled when no sample
+- [x] **Step 5: Keep an unavailable profile visible but disabled when no sample
   exists.** The UI must say which official release lacks evidence instead of
   claiming support from the original parser.
 - [ ] **Step 6: Commit each accepted EE profile with its evidence row.** Use a
@@ -290,22 +290,22 @@ another boundary is required:
   `tests/test_save_slots.py`, `tests/test_settings.py`,
   `tests/test_web_bridge.py`
 
-- [ ] **Step 1: Write failing UI/bridge tests** for release selection,
+- [x] **Step 1: Write failing UI/bridge tests** for release selection,
   capability flags, unsupported candidate display, catalog-resolved names,
   explicit unknown values, disabled unsupported actions, and extension-preserving
   download names.
-- [ ] **Step 2: Run the tests and verify the UI currently has format-specific
+- [x] **Step 2: Run the tests and verify the UI currently has format-specific
   controls/labels rather than capability-driven controls.**
-- [ ] **Step 3: Implement the shared snapshot JSON.** Include release/edition,
+- [x] **Step 3: Implement the shared snapshot JSON.** Include release/edition,
   capabilities, catalog status, warnings, and per-row editability; keep money,
   inventory, and metadata values sourced from the parser only.
-- [ ] **Step 4: Implement the Qt selector and staged forms.** Use the existing
+- [x] **Step 4: Implement the Qt selector and staged forms.** Use the existing
   worker for discovery and prepare/export paths. Disable unsupported controls
   before any worker starts and show the exact parser reason.
-- [ ] **Step 5: Implement the web selector, local file input, drag/drop, and
+- [x] **Step 5: Implement the web selector, local file input, drag/drop, and
   download.** Do not add a server endpoint, browser folder scan, or a second
   parser. Regenerate `web/pysrc.json` from sources.
-- [ ] **Step 6: Run offscreen Qt tests, web bridge tests, `node --check web/app.js`,
+- [x] **Step 6: Run offscreen Qt tests, web bridge tests, `node --check web/app.js`,
   and generated-artifact checks.**
 - [ ] **Step 7: Commit the common UX slice.** Use:
   `git add ui/main_window.py ui/save_slots_view.py ui/settings_view.py ui/inventory_view.py ui/inventory_model.py ui/changes_view.py ui/backups_view.py web/index.html web/app.js web/web_bridge.py tests/test_ui_inventory.py tests/test_ui_theme.py tests/test_save_slots.py tests/test_settings.py tests/test_web_bridge.py web/pysrc.json && git commit -m "feat: expose shared release capabilities in Qt and web"`.

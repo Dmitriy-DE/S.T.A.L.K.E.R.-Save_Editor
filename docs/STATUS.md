@@ -1,4 +1,29 @@
-# Состояние и пробелы — 2026-09-13
+# Состояние и пробелы — 2026-09-15
+
+## Актуальный official-release pass
+
+Текущая рабочая ветка `codex/m06-xray-container` расширяет старый S2-only
+редактор одним shared registry для официальных PC-профилей:
+
+| Profile | Registry status | Proven capability |
+|---|---|---|
+| S.T.A.L.K.E.R. 2 | зарегистрирован | существующие S2 money/stack/CRC/Kraken safeguards |
+| Original Shadow of Chornobyl | зарегистрирован | X-Ray read, money, confirmed ammo stack |
+| Original Clear Sky | зарегистрирован | X-Ray read, money, confirmed ammo stack |
+| Original Call of Pripyat | зарегистрирован | X-Ray read, money, confirmed ammo stack |
+| Shadow of Chornobyl EE | descriptor/path discovery only | unavailable; no accepted format sample |
+| Clear Sky EE | descriptor/path discovery only | unavailable; no accepted format sample |
+| Call of Pripyat EE | descriptor/path discovery only | unavailable; no accepted format sample |
+
+Desktop использует release-specific auto/manual save discovery; browser остаётся
+local-file-only и content-detects файл тем же ядром. Capability flags теперь
+управляют Qt/web controls. Community mods намеренно вне scope. X-Ray evidence:
+[container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
+[catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
+
+Локальный Linux gate на текущем HEAD: `257 passed`; ruff, mypy, generated web
+bundle/theme и `node --check web/app.js` проходят. Это не заменяет Windows
+runtime, живой game load/re-save, Steam/GFN и Cloudflare/GitHub deployment.
 
 ## Подтверждённая база
 
@@ -148,13 +173,15 @@ Qt, CLI и web используют один detector/reader. Автопоиск
 неизвестный формат получает явный отказ. На desktop поиск кеширует неизменившийся
 size/mtime результат, а полный inspect всегда перечитывает bytes и SHA.
 
-Подтверждённая правка — actor money и ammo stack count (STATE + UPDATE), с
-immutable `EditPlan`, source SHA, backup/atomic export и повторным parse. Move,
-attach/detach, creation/clone/delete, durability/upgrades и произвольные
-предметы остаются read-only: для них нет доказанного allocator/prototype
-writer. Enhanced Editions также не объявлены поддержанными: на этой машине
-нет их установок/сейвов, а публичные сообщения указывают на отдельные
-варианты файлов.
+Подтверждённая production-правка — actor money и ammo stack count (STATE +
+UPDATE), с immutable `EditPlan`, source SHA, backup/atomic export и повторным
+parse. Object windows и length-changing registry framing теперь индексируются
+строго; synthetic/catalog-backed proof покрывает clone/remove одного ammo
+record, но реальный catalog на текущем хосте не даёт доказанного prototype,
+поэтому add/remove controls не включены для production saves. Move, equipment,
+прочность, durability/upgrades, attachments и остальные item classes остаются
+read-only. Enhanced Editions также не объявлены поддержанными: evidence записан
+отдельно в `EE_FORMATS_2026-09-15.md`.
 
 Локальный корпус подтверждает чтение и no-op SHA-preserving round-trip; game
 load/re-save, Windows runtime и Enhanced остаются внешними gates. Реализация и
