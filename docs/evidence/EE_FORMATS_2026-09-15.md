@@ -28,6 +28,10 @@ silently ignored.
 
 ## Public leads checked
 
+- The [official GSC FAQ](https://www.stalker-game.com/es/faq) says the Enhanced
+  games are separate PC releases and that saves from the original PC versions
+  cannot be transferred to Enhanced. This confirms that an original-save
+  parser cannot be silently reused as an EE adapter.
 - The [Shadow of Chornobyl EE Steam discussion](https://steamcommunity.com/app/2427410/discussions/0/528723757459612258/)
   describes EE save-side `.sav`, `.dds`, and `.info` files under a separate
   Saved Games location.
