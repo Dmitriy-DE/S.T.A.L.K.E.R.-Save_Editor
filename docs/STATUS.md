@@ -21,7 +21,7 @@ local-file-only и content-detects файл тем же ядром. Capability f
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
-Локальный Linux gate текущего прохода: `make check` exit 0, `276 passed`; ruff,
+Локальный Linux gate текущего прохода: `make check` exit 0, `277 passed`; ruff,
 mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
 `tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
 Pages revision `4d833b6f` прочитан обратно с HTTP 200 после обновления каталога и
