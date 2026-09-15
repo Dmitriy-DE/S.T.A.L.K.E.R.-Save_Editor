@@ -69,10 +69,11 @@ def test_verify_protocol_reports_a_parser_failure_without_claiming_success(
     assert result.error
 
 
-def test_unverified_releases_are_not_marked_as_gameplay_verified() -> None:
-    assert gameplay_verified_release_ids() == frozenset()
+def test_owner_accepted_original_releases_are_gameplay_verified() -> None:
+    assert gameplay_verified_release_ids() == frozenset(
+        {"stalker-soc", "stalker-cs", "stalker-cop"}
+    )
     assert by_id("stalker2").capabilities.edit_money is False
-    assert by_id("stalker-soc").capabilities.edit_money is False
-    assert by_id("stalker-cs").capabilities.edit_money is False
-    assert by_id("stalker-cop").capabilities.edit_money is False
-
+    assert by_id("stalker-soc").capabilities.edit_money is True
+    assert by_id("stalker-cs").capabilities.edit_money is True
+    assert by_id("stalker-cop").capabilities.edit_money is True

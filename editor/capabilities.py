@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-# This set is intentionally empty until M10 has a documented, per-release
-# game load + in-game re-save result.  Synthetic parser round-trips and a
-# different game's result must never open a mutation capability here.
-_GAMEPLAY_VERIFIED_RELEASES: frozenset[str] = frozenset()
+# The owner accepted the three installed original X-Ray releases after loading
+# the edited copies in each official game and confirming the visible result.
+# S.T.A.L.K.E.R. 2 and Enhanced Editions remain gated until their own local
+# samples exist.  The evidence document records that the owner did not retain
+# a parser read-back hash from a second in-game save; this set is therefore an
+# explicit product acceptance for the installed originals, not a claim that
+# every unobserved release or serializer family is interchangeable.
+_GAMEPLAY_VERIFIED_RELEASES: frozenset[str] = frozenset(
+    {"stalker-soc", "stalker-cs", "stalker-cop"}
+)
 
 
 @dataclass(frozen=True)

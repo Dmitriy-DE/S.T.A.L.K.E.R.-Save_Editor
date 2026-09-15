@@ -122,9 +122,9 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert snapshot["format_id"] == "stalker-cop"
     assert snapshot["release_id"] == "stalker-cop"
     assert snapshot["edition"] == "original"
-    assert snapshot["capabilities"]["edit_stacks"] is False
-    assert snapshot["capabilities"]["add_items"] is False
-    assert snapshot["capabilities"]["remove_items"] is False
+    assert snapshot["capabilities"]["edit_stacks"] is True
+    assert snapshot["capabilities"]["add_items"] is True
+    assert snapshot["capabilities"]["remove_items"] is True
     assert snapshot["catalog_available"] is True
     assert snapshot["catalog_source"] == "save-observed"
     assert snapshot["crc_present"] is False
@@ -133,29 +133,29 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert snapshot["inventory"][0]["total_weight"] is None
     assert all(row[0] != "UE5 GVAS schema" for row in snapshot["metadata"])
 
-    from save_format import SaveError
+    result = json.loads(web_bridge.prepare(9876, json.dumps([[0x1234, 44]])))
+    assert result["money"] == [1234, 9876]
+    assert result["stacks"] == [["0x00001234", 30, 44]]
 
-    with pytest.raises(SaveError, match="read-only"):
-        web_bridge.prepare(9876, json.dumps([[0x1234, 44]]))
 
-
-def test_web_bridge_keeps_xray_structural_edits_read_only_until_gameplay_evidence() -> None:
-    from save_format import SaveError
-
+def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:
     data = _fixture()
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
     item_key = snapshot["inventory"][0]["type_key"]
 
-    with pytest.raises(SaveError, match="добавление предметов"):
-        web_bridge.prepare(None, "[]", json.dumps([[item_key, 2]]))
+    added = json.loads(web_bridge.prepare(None, "[]", json.dumps([[item_key, 2]])))
+    assert added["adds"]
 
-    with pytest.raises(SaveError, match="удаление предметов"):
+    web_bridge.analyze(data, "slot.scop")
+    removed = json.loads(
         web_bridge.prepare(
             None,
             "[]",
             "[]",
             json.dumps([[snapshot["inventory"][0]["handle"], True]]),
         )
+    )
+    assert removed["removed"]
 
 
 def test_web_bridge_treats_pyodide_js_null_as_no_money() -> None:
