@@ -28,6 +28,7 @@ BUNDLE = ROOT / "web" / "pysrc.json"
 MODULES = (
     "save_format.py",
     "editor/__init__.py",
+    "editor/capabilities.py",
     "editor/catalog.py",
     "editor/codec.py",
     "editor/formats.py",

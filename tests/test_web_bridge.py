@@ -84,14 +84,14 @@ def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
 
 
 def test_web_edit_is_byte_identical_to_the_desktop_edit(synthetic_save: bytes) -> None:
-    web_bridge.analyze(synthetic_save, "slot.sav")
+    snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
     result = json.loads(web_bridge.prepare(900_000, json.dumps([[0x30000001, 3]])))
 
     plan = EditPlan(
         source=SourceRef(
             kind="local",
             locator="slot.sav",
-            sha256=json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))["sha256"],
+            sha256=snapshot["sha256"],
         ),
         money=900_000,
         stacks=((0x30000001, 3),),
@@ -177,6 +177,36 @@ def test_web_bridge_can_stage_an_observed_xray_item_addition_and_removal() -> No
         )
     )
     assert removed["removed"] == [snapshot["inventory"][0]["handle_hex"]]
+
+
+def test_web_bridge_treats_pyodide_js_null_as_no_money() -> None:
+    data = _fixture()
+    web_bridge.analyze(data, "slot.scop")
+
+    class JsNull:
+        def __int__(self) -> int:
+            raise AssertionError("JS null must not be coerced to int")
+
+    result = json.loads(web_bridge.prepare(JsNull(), "[]"))
+
+    assert result["money"] == [1234, 1234]
+
+
+def test_analyze_clears_a_prepared_output_from_the_previous_save() -> None:
+    from save_format import SaveError
+
+    data = _fixture()
+    snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
+    web_bridge.prepare(
+        None,
+        "[]",
+        json.dumps([[snapshot["inventory"][0]["type_key"], 1]]),
+    )
+
+    web_bridge.analyze(data, "another-slot.scop")
+
+    with pytest.raises(SaveError, match="подготовленной"):
+        web_bridge.output_bytes()
 
 
 def test_web_bridge_accepts_generated_official_catalog_metadata() -> None:

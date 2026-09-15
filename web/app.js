@@ -104,6 +104,8 @@ function renderSnapshot(s) {
   }
   el("format-badge").textContent =
     `ФОРМАТ: ${s.format_title} · ${s.release_id} (${s.edition})`;
+  el("preview-status").textContent = "Предпросмотр ещё не выполнен";
+  el("preview-status").className = "muted";
 
   el("card-location").textContent = s.level_name ?? "неизвестно";
   el("card-time").textContent = s.game_time === null ? "—" : String(s.game_time);

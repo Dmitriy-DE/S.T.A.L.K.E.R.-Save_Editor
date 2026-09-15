@@ -37,6 +37,14 @@ def _to_js_bytes(payload: bytes) -> Any:
     return to_js(payload)
 
 
+def _optional_int(value: Any) -> int | None:
+    """Normalize Python ``None`` and Pyodide's JavaScript ``null`` proxy."""
+
+    if value is None or type(value).__name__ in {"JsNull", "JsUndefined"}:
+        return None
+    return int(value)
+
+
 class _WasmDecoder:
     """Adapter over the page's ooz-wasm binding."""
 
@@ -181,6 +189,7 @@ def analyze(data: bytes, name: str) -> str:
     _state["sha256"] = hashlib.sha256(payload).hexdigest()
     _state["name"] = name
     _state["format"] = format_
+    _state.pop("output", None)
     catalog = _catalogs.get(format_.id)
     catalog_source: str | None = None
     spec = getattr(format_, "spec", None)
@@ -300,7 +309,7 @@ def prepare(
             locator=str(_state.get("name") or "save.sav"),
             sha256=str(_state["sha256"]),
         ),
-        money=None if money is None else int(money),
+        money=_optional_int(money),
         stacks=stacks,
         adds=adds,
         detach=detach,
