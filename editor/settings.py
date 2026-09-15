@@ -282,7 +282,9 @@ def save_settings(
     temporary_path = Path(temporary_name)
     try:
         try:
-            os.fchmod(descriptor, 0o600)
+            fchmod = getattr(os, "fchmod", None)
+            if fchmod is not None:
+                fchmod(descriptor, 0o600)
         except (AttributeError, OSError):
             pass
         with os.fdopen(descriptor, "wb") as handle:

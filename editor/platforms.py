@@ -481,9 +481,15 @@ def _registry_steam_path() -> str | None:
         return None
 
     try:
-        open_key = winreg.OpenKey  # type: ignore[attr-defined]
-        current_user = winreg.HKEY_CURRENT_USER  # type: ignore[attr-defined]
-        query_value = winreg.QueryValueEx  # type: ignore[attr-defined]
+        # ``winreg`` is intentionally imported lazily so non-Windows builds do
+        # not need a platform stub.  ``getattr`` keeps that boundary type-safe
+        # on both the Windows and non-Windows typeshed variants.
+        open_key_name = "OpenKey"
+        current_user_name = "HKEY_CURRENT_USER"
+        query_value_name = "QueryValueEx"
+        open_key = getattr(winreg, open_key_name)
+        current_user = getattr(winreg, current_user_name)
+        query_value = getattr(winreg, query_value_name)
         with open_key(current_user, r"Software\Valve\Steam") as key:
             value, _ = query_value(key, "SteamPath")
     except OSError:
