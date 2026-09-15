@@ -324,17 +324,17 @@ another boundary is required:
   and failure summaries; it must never print or persist private save bytes.
 - [ ] **Step 2: Run the verifier for every available original and EE profile.**
   Record separate local-parser, browser-bridge, and game-load/re-save statuses.
-- [ ] **Step 3: Run the full local gates:**
+- [x] **Step 3: Run the full local gates:**
   `PYTHON=.venv/bin/python make check`,
   `QT_QPA_PLATFORM=offscreen PYTHONPATH=. .venv/bin/python -m pytest tests -q`,
   `node --check web/app.js`, `git diff --check`, and generated artifact checks.
 - [ ] **Step 4: Build the web artifact with `make web` and serve it locally with
   `make web-serve`; exercise file open, inspect, preview, and download for each
   browser-accepted profile without uploading a save.
-- [ ] **Step 5: Run the packaging plan/build on the available host.** Record
+- [x] **Step 5: Run the packaging plan/build on the available host.** Record
   Linux package status separately from Windows package/GUI status; do not call
   a Windows runtime gate green from Linux output.
-- [ ] **Step 6: Deploy only after the artifact guards pass.** Run the existing
+- [x] **Step 6: Deploy only after the artifact guards pass.** Run the existing
   web deployment command if credentials and the configured project are
   available; record the deployment URL, revision, and read-back status. Never
   put saves or private catalogs in `web/`.

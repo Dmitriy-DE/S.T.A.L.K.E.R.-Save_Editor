@@ -22,8 +22,11 @@ local-file-only и content-detects файл тем же ядром. Capability f
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
 Локальный Linux gate на текущем HEAD: `257 passed`; ruff, mypy, generated web
-bundle/theme и `node --check web/app.js` проходят. Это не заменяет Windows
-runtime, живой game load/re-save, Steam/GFN и Cloudflare/GitHub deployment.
+bundle/theme и `node --check web/app.js` проходят. Linux `tar.gz`/`.deb` и
+packaged diagnostic также собраны и проверены; Cloudflare Pages deployment
+прочитан обратно с HTTP 200. Точные хэши и URL записаны в
+[release evidence](evidence/RELEASE_2026-09-15.md). Это не заменяет Windows
+runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 
 ## Подтверждённая база
 
