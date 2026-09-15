@@ -7,7 +7,7 @@ snapshot visible when a later file is malformed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.capabilities import FormatCapabilities
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
@@ -52,6 +53,14 @@ from .save_slots_view import (
 )
 from .settings_view import SettingsView
 from .theme import apply_theme
+
+
+def _default_s2_capabilities() -> FormatCapabilities:
+    return FormatCapabilities(
+        read_inventory=True,
+        edit_money=True,
+        edit_stacks=True,
+    )
 
 
 def _human_size(size: int) -> str:
@@ -85,6 +94,9 @@ class LocalSnapshot:
     locator: str | None = None
     format_id: str = "stalker2"
     format_title: str = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
+    release_id: str = ""
+    edition: str = ""
+    capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
 
 
 class InspectWorker(QThread):
@@ -113,6 +125,9 @@ class InspectWorker(QThread):
                     info=result.info,
                     format_id=result.format_id,
                     format_title=result.format_title,
+                    release_id=result.release_id,
+                    edition=result.edition,
+                    capabilities=result.capabilities,
                 )
             )
         except FormatDetectionError as exc:
@@ -463,13 +478,22 @@ class MainWindow(QMainWindow):
         money = "неизвестно" if info.money is None else str(info.money)
         money_status = (
             "редактируется"
-            if info.money is not None and info.money_anchor_count == 1
+            if (
+                snapshot.capabilities.edit_money
+                and info.money is not None
+                and info.money_anchor_count == 1
+            )
             else f"read-only (anchor × {info.money_anchor_count})"
         )
         unresolved = len(info.unresolved_handles)
         common_rows = (
             ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
             ("Формат", snapshot.format_id, snapshot.format_title),
+            (
+                "Релиз",
+                snapshot.release_id or snapshot.format_id,
+                f"edition={snapshot.edition or 'unknown'}",
+            ),
             ("SHA-256", info.sha256, "исходный снимок"),
             (
                 "Размер контейнера",
@@ -736,19 +760,38 @@ class MainWindow(QMainWindow):
 
     def _render_inventory(self, info: SaveInfo) -> None:
         self.inventory_view.set_items(info.inventory)
+        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        self.inventory_view.set_editing_enabled(
+            capabilities is None or capabilities.edit_stacks,
+            reason=(
+                "Только чтение: формат не разрешает редактирование количества"
+                if capabilities is not None and not capabilities.edit_stacks
+                else None
+            ),
+        )
         self.inventory_view.set_staged_counts(self.staged_counts)
         self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_money(self, info: SaveInfo) -> None:
-        if info.money is None or info.money_anchor_count != 1:
+        can_edit_money = (
+            self.snapshot is not None
+            and self.snapshot.capabilities.edit_money
+            and info.money is not None
+            and info.money_anchor_count == 1
+        )
+        if not can_edit_money:
             self.money_card_value.setText("—")
-            self.money_status_label.setText(
-                f"Только чтение: wallet anchor найден {info.money_anchor_count} раз(а)"
+            reason = (
+                "формат не разрешает редактирование денег"
+                if self.snapshot is not None and not self.snapshot.capabilities.edit_money
+                else f"wallet anchor найден {info.money_anchor_count} раз(а)"
             )
+            self.money_status_label.setText(f"Только чтение: {reason}")
             self.money_spin.setEnabled(False)
             self.money_stage_button.setEnabled(False)
             self.money_clear_button.setEnabled(False)
             return
+        assert info.money is not None
         effective = self.staged_money if self.staged_money is not None else info.money
         self.money_card_value.setText(str(effective))
         self.money_status_label.setText(f"{info.money} → {effective}")
@@ -771,6 +814,9 @@ class MainWindow(QMainWindow):
             return
         info = self.snapshot.info
         value = self.money_spin.value()
+        if not self.snapshot.capabilities.edit_money:
+            self.money_status_label.setText("Только чтение: формат не разрешает редактирование денег")
+            return
         if info.money is None or info.money_anchor_count != 1:
             self.money_status_label.setText("Только чтение: wallet anchor не подтверждён")
             return
@@ -803,6 +849,11 @@ class MainWindow(QMainWindow):
         )
 
     def _stage_stack_change(self, handle: int, new_count: int) -> None:
+        if self.snapshot is not None and not self.snapshot.capabilities.edit_stacks:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает редактирование stack count"
+            )
+            return
         item = self._find_inventory_item(handle)
         if item is None:
             self.inventory_view.show_editability_message(
@@ -1105,6 +1156,9 @@ class MainWindow(QMainWindow):
             locator=snapshot.name,
             format_id=snapshot.format_id,
             format_title=snapshot.format_title,
+            release_id=snapshot.release_id,
+            edition=snapshot.edition,
+            capabilities=snapshot.capabilities,
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)

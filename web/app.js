@@ -96,7 +96,8 @@ function renderSnapshot(s) {
     crc.textContent = `${s.integrity_name}: OK`;
     crc.className = "badge pass";
   }
-  el("format-badge").textContent = `ФОРМАТ: ${s.format_title}`;
+  el("format-badge").textContent =
+    `ФОРМАТ: ${s.format_title} · ${s.release_id} (${s.edition})`;
 
   el("card-location").textContent = s.level_name ?? "неизвестно";
   el("card-time").textContent = s.game_time === null ? "—" : String(s.game_time);
@@ -106,9 +107,14 @@ function renderSnapshot(s) {
     `${s.crc_present ? `CRC: ${s.crc_ok ? "OK" : "FAIL"}` : `${s.integrity_name}: OK`} · ` +
     `Деньги: ${s.money ?? "неизвестно"} · ` +
     `Предметов: ${s.inventory_count}`;
+  const caps = s.capabilities ?? {};
+  const supportedEdits = [
+    caps.edit_money ? "деньги" : "деньги read-only",
+    caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
+  ];
   el("support").textContent =
-    `Формат: ${s.format_title}. Поддержанные данные: деньги и снимок инвентаря; ` +
-    "неизвестные поля остаются read-only." +
+    `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
+    `Доступно: ${supportedEdits.join(", ")}; неизвестные поля остаются read-only.` +
     (s.warnings.length ? ` Предупреждения: ${s.warnings.join(" ")}` : "");
 
   const body = el("metadata").tBodies[0];

@@ -59,11 +59,17 @@ def _human_size(size: int) -> str:
     return f"{size / (1024 * 1024):.2f} MB"
 
 
-def _metadata_rows(info: sf.SaveInfo, name: str, size: int) -> list[list[str]]:
+def _metadata_rows(
+    info: sf.SaveInfo,
+    name: str,
+    size: int,
+    *,
+    money_editable: bool,
+) -> list[list[str]]:
     money = "неизвестно" if info.money is None else str(info.money)
     money_status = (
         "редактируется"
-        if info.money is not None and info.money_anchor_count == 1
+        if money_editable
         else f"read-only (anchor × {info.money_anchor_count})"
     )
     parsed = len({item.handle for item in info.inventory})
@@ -151,11 +157,24 @@ def analyze(data: bytes, name: str) -> str:
             "game_time": info.game_time,
             "level_name": info.level_name,
             "money": info.money,
-            "money_editable": info.money is not None and info.money_anchor_count == 1,
+            "money_editable": (
+                format_.capabilities.edit_money
+                and info.money is not None
+                and info.money_anchor_count == 1
+            ),
             "inventory_count": len(info.inventory),
             "stack_max": 65535 if format_.id in {"stalker-soc", "stalker-cs", "stalker-cop"} else 1_000_000,
             "warnings": list(info.warnings),
-            "metadata": _metadata_rows(info, name, len(payload)),
+            "metadata": _metadata_rows(
+                info,
+                name,
+                len(payload),
+                money_editable=(
+                    format_.capabilities.edit_money
+                    and info.money is not None
+                    and info.money_anchor_count == 1
+                ),
+            ),
             "inventory": [
                 {
                     "handle": item.handle,
@@ -168,7 +187,9 @@ def analyze(data: bytes, name: str) -> str:
                     "total_weight": None if item.total_weight is None else round(item.total_weight, 3),
                     "weight_known": item.total_weight is not None,
                     "name": item.display_name or "Неизвестный объект",
-                    "editable": bool(item.editable_count),
+                    "editable": bool(
+                        format_.capabilities.edit_stacks and item.editable_count
+                    ),
                 }
                 for item in info.inventory
             ],

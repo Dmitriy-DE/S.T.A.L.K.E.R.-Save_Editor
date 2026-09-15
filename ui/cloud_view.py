@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.capabilities import FormatCapabilities
 from editor.formats import FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
@@ -59,6 +60,15 @@ class CloudSnapshot:
     file: CloudFile
     format_id: str = "stalker2"
     format_title: str = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
+    release_id: str = "stalker2"
+    edition: str = "s2"
+    capabilities: FormatCapabilities = field(
+        default_factory=lambda: FormatCapabilities(
+            read_inventory=True,
+            edit_money=True,
+            edit_stacks=True,
+        )
+    )
 
 
 class CloudOperationWorker(QThread):
@@ -133,6 +143,9 @@ class CloudOperationWorker(QThread):
                         cloud_file,
                         result.format_id,
                         result.format_title,
+                        result.release_id,
+                        result.edition,
+                        result.capabilities,
                     )
                 )
                 return

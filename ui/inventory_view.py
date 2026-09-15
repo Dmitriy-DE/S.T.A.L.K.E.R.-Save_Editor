@@ -38,6 +38,7 @@ class InventoryView(QWidget):
         super().__init__(parent)
         self.model = InventoryTableModel(self)
         self.selected_handle: int | None = None
+        self._editing_enabled = True
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -134,6 +135,12 @@ class InventoryView(QWidget):
         self.table.clearSelection()
         self._update_editor(None)
 
+    def set_editing_enabled(self, enabled: bool, *, reason: str | None = None) -> None:
+        self._editing_enabled = bool(enabled)
+        if reason is not None and not self._editing_enabled:
+            self.editability_label.setText(reason)
+        self._update_editor(self._selected_item())
+
     def set_staged_counts(self, counts: Mapping[int, int]) -> None:
         selected = self.selected_handle
         self.model.set_staged_counts(counts)
@@ -180,11 +187,25 @@ class InventoryView(QWidget):
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.editability_label.setText(
-                "Выбери строку; неподтверждённые записи остаются read-only."
+                "Только чтение: формат не разрешает редактирование количества"
+                if not self._editing_enabled
+                else "Выбери строку; неподтверждённые записи остаются read-only."
             )
             self.count_spin.blockSignals(True)
             self.count_spin.setEnabled(False)
             self.count_spin.setValue(1)
+            self.count_spin.blockSignals(False)
+            self.stage_button.setEnabled(False)
+            self.clear_selected_button.setEnabled(False)
+            return
+
+        if not self._editing_enabled:
+            self.editability_label.setText(
+                "Только чтение: формат не разрешает редактирование количества"
+            )
+            self.count_spin.blockSignals(True)
+            self.count_spin.setEnabled(False)
+            self.count_spin.setValue(item.count if item.count is not None else 1)
             self.count_spin.blockSignals(False)
             self.stage_button.setEnabled(False)
             self.clear_selected_button.setEnabled(False)

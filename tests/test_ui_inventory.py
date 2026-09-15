@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 from test_xray_save import _fixture
 
+from editor.capabilities import FormatCapabilities
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from save_format import inspect_save
@@ -137,6 +138,28 @@ def test_money_form_stages_without_mutating_snapshot(
 
     qtbot.mouseClick(window.money_clear_button, Qt.MouseButton.LeftButton)
     assert window.staged_money is None
+
+
+def test_read_only_capabilities_disable_money_and_stack_staging(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    source = tmp_path / "readonly.sav"
+    info = inspect_save(synthetic_save, with_inventory=True)
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=synthetic_save,
+            info=info,
+            capabilities=FormatCapabilities(read_inventory=True),
+        )
+    )
+
+    assert not window.money_spin.isEnabled()
+    assert not window.money_stage_button.isEnabled()
+    window._stage_stack_change(0x30000001, 3)
+    assert window.staged_counts == {}
 
 
 def test_unknown_display_name_is_honest_and_handle_is_visible(

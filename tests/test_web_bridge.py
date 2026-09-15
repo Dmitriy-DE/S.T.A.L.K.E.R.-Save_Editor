@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -21,6 +22,7 @@ import web_bridge  # noqa: E402 - web/ must be on sys.path first
 from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
+from editor.capabilities import FormatCapabilities  # noqa: E402
 from editor.models import EditPlan, SourceRef  # noqa: E402
 from editor.prepare import prepare_edit  # noqa: E402
 
@@ -48,6 +50,27 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["capabilities"]["read_inventory"] is True
     assert snapshot["capabilities"]["edit_money"] is True
     assert snapshot["capabilities"]["add_items"] is False
+
+
+def test_web_snapshot_gates_editable_rows_with_format_capabilities(
+    monkeypatch: pytest.MonkeyPatch, synthetic_save: bytes
+) -> None:
+    import save_format as sf
+
+    readonly = SimpleNamespace(
+        id="readonly-fixture",
+        title="Read-only fixture",
+        release_id="readonly-fixture",
+        edition="test",
+        capabilities=FormatCapabilities(read_inventory=True),
+        inspect=lambda payload: sf.inspect_save(payload),
+    )
+    monkeypatch.setattr(web_bridge, "detect_or_raise", lambda *args, **kwargs: readonly)
+
+    snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
+
+    assert snapshot["money_editable"] is False
+    assert all(item["editable"] is False for item in snapshot["inventory"])
 
 
 def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
