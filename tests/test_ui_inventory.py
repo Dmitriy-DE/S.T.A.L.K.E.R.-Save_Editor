@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 from test_xray_save import _fixture
 
 from editor.capabilities import FormatCapabilities
+from editor.catalog import ItemDefinition, catalog_from_items
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from save_format import inspect_save
@@ -201,3 +202,63 @@ def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(
     assert window.format_badge.text() == f"ФОРМАТ: {COP_FORMAT.title}"
     assert window.location_card_value.text() == "неизвестно"
     assert window.inventory_view.count_spin.maximum() == 65535
+
+
+def test_original_xray_inventory_stages_catalog_add_and_registry_remove(
+    qtbot, tmp_path: Path
+) -> None:
+    data = _fixture()
+    info = inspect_xray(data, COP_FORMAT)
+    catalog = catalog_from_items(
+        COP_FORMAT.id,
+        (
+            ItemDefinition(
+                key="ammo_9x39_pab9",
+                display_name="9x39",
+                category="ammo",
+                unit_weight=0.5,
+                width=1,
+                height=1,
+                max_stack=30,
+                slots=(),
+                prototype=None,
+                source="test-catalog",
+                class_name="AMMO",
+                serialization_family="ammo",
+            ),
+        ),
+    )
+    source = tmp_path / "slot.scop"
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=data,
+            info=info,
+            format_id=COP_FORMAT.id,
+            format_title=COP_FORMAT.title,
+            release_id=COP_FORMAT.id,
+            edition="original",
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_money=True,
+                edit_stacks=True,
+                add_items=True,
+                remove_items=True,
+                catalog=True,
+            ),
+            catalog=catalog,
+        )
+    )
+
+    assert window.inventory_view.add_button.isEnabled()
+    window._stage_item_add("ammo_9x39_pab9", 12)
+    handle = info.inventory[0].handle
+    window._stage_item_remove(handle)
+
+    assert window.staged_adds == {"ammo_9x39_pab9": 12}
+    assert window.staged_detach == {handle: True}
+    plan = window._build_edit_plan()
+    assert plan.adds == (("ammo_9x39_pab9", 12, "inventory"),)
+    assert plan.detach == ((handle, True),)

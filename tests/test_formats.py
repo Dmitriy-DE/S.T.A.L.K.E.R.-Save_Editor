@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 
 import pytest
+from test_xray_catalog import _write_unpacked_fixture
 from test_xray_save import _fixture
 
 import save_format as sf
@@ -99,3 +100,18 @@ def test_service_inspection_projects_common_release_capabilities(
     assert result.capabilities.edit_money is True
     assert result.capabilities.edit_stacks is True
     assert result.capabilities.add_items is False
+
+
+def test_original_xray_format_finds_catalog_from_a_save_path(tmp_path) -> None:
+    game_root = tmp_path / "cop"
+    _write_unpacked_fixture(game_root)
+    save_dir = game_root / "_appdata_" / "savedgames"
+    save_dir.mkdir(parents=True)
+    save_path = save_dir / "slot.scop"
+    save_path.write_bytes(_fixture(128, 6))
+
+    format_ = by_id("stalker-cop")
+    catalog = format_.catalog_for_source(str(save_path))
+
+    assert catalog is not None
+    assert catalog.resolve("ammo_test") is not None

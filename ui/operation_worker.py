@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
+from editor.catalog import ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
@@ -29,6 +30,7 @@ class OperationWorker(QThread):
         source_path: Path | None = None,
         output_path: Path | None = None,
         backup_dir: Path | None = None,
+        catalog: ItemCatalog | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -39,6 +41,7 @@ class OperationWorker(QThread):
         self.source_path = source_path
         self.output_path = output_path
         self.backup_dir = backup_dir
+        self.catalog = catalog
 
     def run(self) -> None:
         try:
@@ -47,7 +50,8 @@ class OperationWorker(QThread):
                 prepared = self.service.prepare(
                     self.data,
                     self.plan,
-                    source_name=Path(self.plan.source.locator).name,
+                    source_name=self.plan.source.locator,
+                    catalog=self.catalog,
                 )
                 if not isinstance(prepared, PreparedEdit):
                     raise TypeError("EditorService.prepare вернул не PreparedEdit")

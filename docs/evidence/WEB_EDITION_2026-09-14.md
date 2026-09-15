@@ -52,10 +52,13 @@ fixture и требует совпадения `output_sha256` с десктоп
 Для оригинального X-Ray добавлен тот же bridge без отдельной web-логики:
 `web_bridge.analyze()` выбирает `stalker-soc`, `stalker-cs` или `stalker-cop`,
 возвращает serialized item names/unknown weights и передаёт `EditPlan` в общий
-`prepare_xray`. Regression fixture подтверждает CoP money + ammo edit и
-неизменность исходного SHA. Полный browser/Chromium прогон на личном X-Ray
-файле не выполнялся; portable Python LZO оставлен для Pyodide, а native
-`liblzo2` используется только как необязательное desktop acceleration.
+`prepare_xray`. Статический `web/catalogs.json` содержит только ключи,
+категории, stack limits и serializer families официальных SoC/CS/CoP ресурсов;
+игровые архивы, локальные пути и save bytes туда не попадают. Regression bridge
+подтверждает CoP money + ammo edit, catalog-backed add, deep remove и
+неизменность исходного SHA. Полный интерактивный browser/Chromium прогон на
+личном X-Ray файле не выполнялся; portable Python LZO оставлен для Pyodide, а
+native `liblzo2` используется только как необязательное desktop acceleration.
 
 ## Границы
 

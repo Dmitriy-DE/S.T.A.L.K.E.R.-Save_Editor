@@ -7,6 +7,7 @@ from pathlib import Path
 
 from save_format import SaveInfo
 
+from .catalog import ItemCatalog
 from .formats import FormatInspection, SaveFormat, detect_or_raise
 from .models import CloudReceipt, EditPlan, PreparedEdit
 from .storage import (
@@ -65,12 +66,18 @@ class EditorService:
         *,
         with_inventory: bool = True,
         source_name: str | None = None,
+        catalog_source: str | Path | None = None,
     ) -> FormatInspection:
         """Return parser data together with the selected format metadata."""
 
         format_ = self._format_for(data, source_name=source_name)
         inspector = self._inspect_fn or format_.inspect
         info = inspector(data, with_inventory=with_inventory)
+        catalog: ItemCatalog | None = None
+        catalog_loader = getattr(format_, "catalog_for_source", None)
+        if callable(catalog_loader):
+            selected_source = catalog_source if catalog_source is not None else source_name
+            catalog = catalog_loader(str(selected_source) if selected_source is not None else None)
         return FormatInspection(
             format_id=format_.id,
             format_title=format_.title,
@@ -78,6 +85,7 @@ class EditorService:
             release_id=format_.release_id,
             edition=format_.edition,
             capabilities=format_.capabilities,
+            catalog=catalog,
         )
 
     def inspect(
@@ -86,6 +94,7 @@ class EditorService:
         *,
         with_inventory: bool = True,
         source_name: str | None = None,
+        catalog_source: str | Path | None = None,
     ) -> SaveInfo:
         """Return the read-only save snapshot used by every front end."""
 
@@ -95,6 +104,7 @@ class EditorService:
             data,
             with_inventory=with_inventory,
             source_name=source_name,
+            catalog_source=catalog_source,
         ).info
 
     def prepare(
@@ -103,13 +113,19 @@ class EditorService:
         plan: EditPlan,
         *,
         source_name: str | None = None,
+        catalog: ItemCatalog | None = None,
     ) -> PreparedEdit:
         """Prepare and verify one immutable edit plan."""
 
         if self._prepare_fn is not None:
             return self._prepare_fn(data, plan)
         format_ = self._format_for(data, source_name=source_name)
-        return format_.prepare(data, plan)
+        return format_.prepare(
+            data,
+            plan,
+            source_name=source_name,
+            catalog=catalog,
+        )
 
     def export_local(
         self,

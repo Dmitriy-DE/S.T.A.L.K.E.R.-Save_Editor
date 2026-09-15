@@ -30,12 +30,19 @@ class ItemDefinition:
     slots: tuple[str, ...]
     prototype: bytes | None
     source: str
+    class_name: str | None = None
+    serialization_family: str | None = None
 
     def __post_init__(self) -> None:
         if not self.key.strip():
             raise ValueError("item key must not be empty")
         if not self.source.strip():
             raise ValueError("item source must not be empty")
+        if self.class_name is not None:
+            object.__setattr__(self, "class_name", self.class_name.strip() or None)
+        if self.serialization_family is not None:
+            family = self.serialization_family.strip().casefold()
+            object.__setattr__(self, "serialization_family", family or None)
         object.__setattr__(self, "slots", tuple(str(slot) for slot in self.slots))
         if self.unit_weight is not None and self.unit_weight < 0:
             raise ValueError("item weight must not be negative")

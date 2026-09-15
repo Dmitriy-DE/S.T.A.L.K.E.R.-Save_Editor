@@ -414,6 +414,53 @@ def _category(name: str, values: Mapping[str, str]) -> str | None:
     return None
 
 
+def _serialization_family(
+    name: str,
+    values: Mapping[str, str],
+    category: str | None,
+) -> str:
+    """Map an official config definition to its STATE/UPDATE serializer.
+
+    X-Ray's ``class`` values are object-factory identifiers, not save bytes.
+    This deliberately maps only the class families whose serializer inheritance
+    is visible in the public server sources.  Several gameplay categories
+    (medkits, artifacts, food, grenades and generic devices) share the base
+    inventory serializer and therefore use ``base``.
+    """
+
+    lowered = name.casefold()
+    class_name = values.get("class", "").strip().upper()
+    if category == "ammo" or class_name == "AMMO":
+        return "ammo"
+    if lowered == "device_torch":
+        return "torch"
+    if lowered == "device_pda":
+        return "pda"
+    if lowered.startswith(("detector_", "device_detector")):
+        return "detector"
+    if category == "weapon" or lowered.startswith(("wpn_", "weapon_")):
+        if class_name in {"WP_KNIFE"} or lowered.endswith("_knife"):
+            return "weapon"
+        if class_name in {"WP_BM16", "WP_RG6", "WP_SHOTG", "WP_SPAS12", "WP_TOZ34"}:
+            return "weapon_shotgun"
+        if class_name in {"WP_AK74", "WP_FN2000", "WP_GROZA"}:
+            return "weapon_wgl"
+        if class_name.startswith("WP_"):
+            return "weapon_magazined"
+    if category == "outfit" or class_name in {
+        "E_STLK",
+        "E_SCI",
+        "E_MILIT",
+        "E_EXO",
+    }:
+        return "outfit"
+    if class_name in {"II_PDA", "IITEM_PDA"}:
+        return "pda"
+    if class_name in {"II_DOCUMENT", "IITEM_DOCUMENT"}:
+        return "document"
+    return "base"
+
+
 def _resolve_sections(sections: Mapping[str, _Section]) -> Iterable[tuple[str, _Section, dict[str, str]]]:
     cache: dict[str, dict[str, str]] = {}
 
@@ -464,6 +511,8 @@ def _items_from_sections(
                 slots=_parse_slots(values.get("inv_grid_slot")),
                 prototype=None,
                 source=source,
+                class_name=values.get("class"),
+                serialization_family=_serialization_family(name, values, category),
             )
         )
     return tuple(items)
@@ -554,6 +603,12 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
                 handle.seek(body_offset)
                 header_data = handle.read(chunk_size)
                 header_compressed = bool(chunk_type & 0x80000000)
+            elif base_type == 666:
+                # Official ``resources/*.db`` archives begin with an INI-like
+                # archive descriptor.  It is metadata, not the file data or
+                # the file-index header.  OpenXRay names this chunk
+                # ``CFS_HeaderChunkID``.
+                pass
             position = body_end
     if header_data is None or data_start is None or data_end == 0:
         raise _ArchiveUnavailableError("X-Ray archive has no data/header chunks")
@@ -562,15 +617,22 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
     if not header_compressed:
         decoded_headers.append(header_data)
     else:
-        for world_wide in (True, False):
-            try:
-                decoded_headers.append(
-                    _lzhuf_decode(
-                        _xray_scramble_decrypt(header_data, world_wide=world_wide)
+        # Some official archives (including the local CoP resources DB) use
+        # the LZ-Huffman header directly.  Other generations apply the public
+        # regional scrambler before LZ-Huffman.  Try the unencrypted form
+        # first, then the verified scrambler variants.
+        try:
+            decoded_headers.append(_lzhuf_decode(header_data))
+        except _ArchiveUnavailableError:
+            for world_wide in (True, False):
+                try:
+                    decoded_headers.append(
+                        _lzhuf_decode(
+                            _xray_scramble_decrypt(header_data, world_wide=world_wide)
+                        )
                     )
-                )
-            except _ArchiveUnavailableError:
-                continue
+                except _ArchiveUnavailableError:
+                    continue
     for header in decoded_headers:
         entries: list[tuple[str, int, int, int, int]] = []
         position = 0
@@ -611,7 +673,10 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
                     lowered.endswith(".ltx") or lowered.endswith(".xml")
                 ):
                     continue
-                if "config/" not in lowered and "localization/" not in lowered:
+                if not any(
+                    marker in lowered
+                    for marker in ("config/", "configs/", "localization/")
+                ):
                     continue
                 if offset + compressed_size > file_size:
                     valid = False
@@ -640,20 +705,28 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
 
 
 def _candidate_archives(root: Path) -> tuple[Path, ...]:
-    return tuple(
-        sorted(
-            (
-                path
-                for path in root.iterdir()
-                if path.is_file()
-                and (
-                    path.name.startswith("gamedata.db")
-                    or path.name.startswith("gamedata.xdb")
-                )
-            ),
-            key=lambda path: path.name.casefold(),
-        )
-    )
+    roots = (root, root / "resources", root / "localization")
+    candidates: set[Path] = set()
+    for candidate_root in roots:
+        try:
+            entries = tuple(candidate_root.iterdir())
+        except OSError:
+            continue
+        for path in entries:
+            if not path.is_file():
+                continue
+            name = path.name.casefold()
+            # ``resources.db0`` ... ``resources.dbN`` are the large binary
+            # asset volumes.  The official config/localization catalogs live
+            # in the named index archives below; scanning every asset volume
+            # would make a catalog lookup needlessly expensive and can expose
+            # no additional LTX/XML entries.
+            if (
+                name.startswith(("gamedata.db", "gamedata.xdb"))
+                or name in {"resources.db", "configs.db", "xenglish.db"}
+            ):
+                candidates.add(path)
+    return tuple(sorted(candidates, key=lambda path: path.as_posix().casefold()))
 
 
 def _has_obvious_mod_overlay(data_root: Path) -> bool:
@@ -691,10 +764,8 @@ class XRayCatalogProvider:
         data_root = root / "gamedata"
         section_sources: dict[str, _Section] = {}
         localization: dict[str, str] = {}
-        if data_root.is_dir():
-            if _has_obvious_mod_overlay(data_root):
-                LOGGER.info("Ignoring an obvious community mod overlay in %s", data_root)
-                return None
+        use_unpacked = data_root.is_dir() and not _has_obvious_mod_overlay(data_root)
+        if use_unpacked:
             for path in sorted(data_root.rglob("*.ltx"), key=lambda value: value.as_posix().casefold()):
                 try:
                     parsed = _parse_ltx(_decode(path.read_bytes()), path.relative_to(data_root).as_posix())
@@ -704,6 +775,12 @@ class XRayCatalogProvider:
             localization = _localization(data_root)
             source_root = data_root
         else:
+            if data_root.is_dir():
+                LOGGER.info(
+                    "Ignoring an obvious community mod overlay in %s; "
+                    "trying packed official resources",
+                    data_root,
+                )
             files: dict[str, bytes] = {}
             for archive in _candidate_archives(root):
                 try:

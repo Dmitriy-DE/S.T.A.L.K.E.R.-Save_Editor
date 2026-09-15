@@ -5,15 +5,17 @@ S.T.A.L.K.E.R. с подключением Steam Cloud для S.T.A.L.K.E.R. 2.
 
 **Сейчас:** один Qt-редактор и одна статическая web-версия поверх общего
 форматного ядра. Зарегистрированы S.T.A.L.K.E.R. 2 и оригинальные Shadow of
-Chornobyl, Clear Sky и Call of Pripyat; для трилогии принимаются `.sav` и
-`.scop` по подтверждённому содержимому, а неизвестные `.scs`/EE-кандидаты
-остаются read-only с причиной отказа. Desktop умеет auto-discovery стандартных
-каталогов, выбор release-specific профиля и ручную папку/файл.
+Chornobyl, Clear Sky и Call of Pripyat; для оригинальной трилогии принимаются
+`.sav` и `.scop` по содержимому контейнера. Desktop умеет auto-discovery
+стандартных каталогов, выбор release-specific профиля и ручную папку/файл.
 
-Для зарегистрированных форматов доступны локальный анализ, inventory snapshot,
-staged money/ammo-stack edits, immutable preview и сохранение новой копии.
-Оригинальная трилогия использует общий strict X-Ray reader/writer; web работает
-с тем же ядром и принимает локальный файл без загрузки на сервер.
+Для всех зарегистрированных форматов доступны локальный анализ, inventory
+snapshot, immutable preview и сохранение новой копии. В оригинальной трилогии
+доступны деньги, подтверждённые ammo stacks, добавление предметов из
+официального каталога и глубокое удаление actor-owned registry records.
+Каталог и serializer family берутся из установленной официальной игры на
+desktop; в web поставляется компактный metadata-only каталог. Web принимает
+локальный файл и ничего не загружает на сервер.
 
 Enhanced Editions уже есть в release selector и path discovery как отдельные
 официальные профили, но пока **не зарегистрированы как поддержанные форматы**:
@@ -33,15 +35,18 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
 
 ## Что доступно
 
-- S.T.A.L.K.E.R. 2: существующее чтение и изменение денег/подтверждённых
-  стаков с сохранением CRC/Kraken safeguards.
+- S.T.A.L.K.E.R. 2: чтение и изменение денег/подтверждённых стаков с
+  сохранением CRC/Kraken safeguards. Структура GVAS-инвентаря и добавление
+  предметов пока не включены без доказанной схемы.
 - Original Shadow of Chornobyl, Clear Sky и Call of Pripyat: strict X-Ray
-  container, actor money, actor-owned inventory keys и подтверждённые ammo
-  stacks; изменение ammo count пишется одновременно в STATE и UPDATE.
-- Структурный X-Ray writer имеет synthetic/catalog-backed proof для clone/remove
-  ammo registry records, но реальный catalog на текущем хосте не содержит
-  доказанных prototype bytes, поэтому добавление предметов в production UI не
-  включено.
+  container, actor money, полный actor-owned inventory snapshot, официальные
+  catalog keys и serializer families. Ammo count пишется одновременно в
+  STATE и UPDATE.
+- Для оригинальной трилогии writer умеет добавить предмет из каталога,
+  клонировав существующий registry template той же подтверждённой
+  serializer family, и удалить actor-owned record с новым registry framing.
+  Если в конкретном сейве нет подходящего template или нет каталога, операция
+  отказывается; game load/re-save этого результата ещё не подтверждён.
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - Qt-интерфейс для локальных файлов и Steam Cloud; веб-версия для локальных
   файлов; CLI для исследования. Все три используют одно ядро.
@@ -55,12 +60,12 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   копируются, badges, cards и таблица метаданных заполняются только из
   реального snapshot.
 
-**Не реализовано как подтверждённые production-функции:** добавление любого
-предмета по SID, clone/remove для оружия, брони, артефактов, расходников,
-гранат и устройств, inventory grid/move/equipment, прочность,
-attachments/upgrades и полные локализованные названия предметов. Unknown fields
-остаются read-only; structural proof не переносится на класс без controlled
-evidence.
+**Не реализовано как подтверждённые production-функции:** полноценная
+inventory grid/move/equipment-семантика, изменение прочности,
+attachments/upgrades, reference-safe удаление квестовых/equipped объектов,
+локализованные названия для всех ключей и структурное добавление в S.T.A.L.K.E.R.
+2. Unknown fields остаются read-only; X-Ray structural proof не означает, что
+игра уже проверила результат загрузкой.
 
 Cloud-процесс использует fresh SHA, exclusive backup/recovery, persisted и
 read-back; после WriteFile state machine различает `verified` и `uncertain` и
@@ -81,7 +86,8 @@ python3 -m ui
 На Windows: `py -3 -m pip install -r requirements.txt` и `py -3 -m ui`.
 
 В интерфейсе можно искать и фильтровать локальный inventory, застейджить
-подтверждённые money/stack изменения, нажать preview и сохранить новую копию.
+подтверждённые money/stack изменения, добавить предмет из каталога или удалить
+actor-owned record, нажать preview и сохранить новую копию.
 На вкладке резервных копий видны hash/status журнала; проверенный backup можно
 восстановить в новый путь, а исходный сейв и backup остаются неизменными. На
 вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
@@ -115,10 +121,12 @@ WebAssembly. Сервера у приложения нет.
 
 Что доступно в вебе: открыть локальный `.sav`, `.scop` или другой файл для
 content-only detection, увидеть определённый release/edition, деньги,
-инвентарь и технические метаданные, поменять подтверждённые money/ammo stacks
-и скачать изменённую копию. Capability flags и read-only причины приходят из
-того же registry, что и в desktop. Проверка S2 и оригинального X-Ray bridge
-зафиксирована в [evidence](docs/evidence/WEB_EDITION_2026-09-14.md) и
+инвентарь и технические метаданные, поменять подтверждённые money/ammo stacks,
+добавить предмет из встроенного официального metadata-каталога, удалить
+actor-owned record и скачать изменённую копию. Capability flags и read-only
+причины приходят из того же registry, что и в desktop. Проверка S2 и
+оригинального X-Ray bridge зафиксирована в
+[evidence](docs/evidence/WEB_EDITION_2026-09-14.md) и
 `docs/evidence/XRAY_INVENTORY_2026-09-15.md`.
 
 Чего в вебе нет: **Steam Cloud** (helper — локальный процесс рядом со Steam,

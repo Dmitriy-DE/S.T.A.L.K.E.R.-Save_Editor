@@ -64,3 +64,36 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
     assert theme.main(["--check"]) == 0, (
         "web/theme.css is stale; run python3 tools/export_theme.py"
     )
+
+
+def test_browser_catalog_is_compact_official_metadata_only() -> None:
+    catalog_path = render.ROOT / "web" / "catalogs.json"
+    document = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+    assert document["schema_version"] == 1
+    releases = document["releases"]
+    assert set(releases) == {"stalker-soc", "stalker-cs", "stalker-cop"}
+    allowed_families = {
+        "ammo",
+        "base",
+        "detector",
+        "document",
+        "outfit",
+        "pda",
+        "torch",
+        "weapon",
+        "weapon_magazined",
+        "weapon_shotgun",
+        "weapon_wgl",
+    }
+    for release in releases.values():
+        assert release["source"] == "official-resource-metadata"
+        assert release["items"]
+        for item in release["items"]:
+            assert set(item) == {"category", "key", "max_stack", "serialization_family"}
+            assert item["key"]
+            assert item["serialization_family"] in allowed_families
+            assert all(
+                suffix not in item["key"].casefold()
+                for suffix in (".sav", ".scop", ".scs", ".bak", ".db")
+            )

@@ -46,7 +46,7 @@ inv_weight = 1.5
     )
 
 
-def _packed_fixture(path: Path) -> None:
+def _packed_fixture(path: Path, *, with_metadata: bool = False) -> None:
     item_path = b"gamedata/config/items.ltx"
     item_data = b"[ammo_packed]\nclass=AMMO\ninv_name=st_packed\n"
     name_size = 16 + len(item_path)
@@ -60,7 +60,13 @@ def _packed_fixture(path: Path) -> None:
     # The archive stores data chunks after the header.  Offsets are absolute
     # file offsets, matching the public X-Ray archive reader contract.
     header_chunk = struct.pack("<II", 1, len(header_record)) + header_record
-    data_offset = len(header_chunk) + 8
+    metadata = (
+        struct.pack("<II", 666, len(b"[header]\nentry_point = $fs_root$\\gamedata\\\n"))
+        + b"[header]\nentry_point = $fs_root$\\gamedata\\\n"
+        if with_metadata
+        else b""
+    )
+    data_offset = len(metadata) + len(header_chunk) + 8
     header_record = struct.pack(
         "<HIII",
         name_size,
@@ -70,7 +76,7 @@ def _packed_fixture(path: Path) -> None:
     ) + item_path + struct.pack("<I", data_offset)
     header_chunk = struct.pack("<II", 1, len(header_record)) + header_record
     data_chunk = struct.pack("<II", 0, len(item_data)) + item_data
-    path.write_bytes(header_chunk + data_chunk)
+    path.write_bytes(metadata + header_chunk + data_chunk)
 
 
 def test_xray_catalog_reads_ltx_and_localization_without_inventing_fields(
@@ -91,12 +97,16 @@ def test_xray_catalog_reads_ltx_and_localization_without_inventing_fields(
     assert ammo.height == 2
     assert ammo.max_stack == 30
     assert ammo.slots == ("8", "9")
+    assert ammo.class_name == "AMMO"
+    assert ammo.serialization_family == "ammo"
     assert ammo.prototype is None
     assert ammo.source.endswith("items.ltx#ammo_test")
 
     device = catalog.resolve("device_test")
     assert device is not None
     assert device.display_name == "Test device"
+    assert device.class_name == "II_ATTCH"
+    assert device.serialization_family == "base"
     assert device.max_stack is None
 
 
@@ -110,6 +120,17 @@ def test_xray_catalog_reads_a_small_uncompressed_xdb_fixture(tmp_path: Path) -> 
     assert catalog is not None
     assert catalog.resolve("ammo_packed") is not None
     assert catalog.resolve("ammo_packed").display_name is None  # type: ignore[union-attr]
+
+
+def test_xray_catalog_reads_official_style_resources_archive(tmp_path: Path) -> None:
+    resources = tmp_path / "resources"
+    resources.mkdir()
+    _packed_fixture(resources / "configs.db", with_metadata=True)
+
+    catalog = XRayCatalogProvider().load(release_by_id("stalker-cop"), tmp_path)
+
+    assert catalog is not None
+    assert catalog.resolve("ammo_packed") is not None
 
 
 def test_xray_catalog_missing_or_unsupported_root_is_none(tmp_path: Path) -> None:
@@ -128,3 +149,23 @@ def test_xray_catalog_rejects_an_obvious_mod_overlay(tmp_path: Path) -> None:
     )
 
     assert XRayCatalogProvider().load(release_by_id("stalker-cs"), tmp_path) is None
+
+
+def test_xray_catalog_ignores_mod_overlay_and_uses_packed_official_resources(
+    tmp_path: Path,
+) -> None:
+    _write_unpacked_fixture(tmp_path)
+    (tmp_path / "gamedata" / "OGSM_CS_info.rtf").write_text(
+        "community mod marker",
+        encoding="utf-8",
+    )
+    resources = tmp_path / "resources"
+    resources.mkdir()
+    _packed_fixture(resources / "configs.db", with_metadata=True)
+
+    catalog = XRayCatalogProvider().load(release_by_id("stalker-cs"), tmp_path)
+
+    assert catalog is not None
+    assert catalog.source_root == tmp_path
+    assert catalog.resolve("ammo_packed") is not None
+    assert catalog.resolve("ammo_test") is None

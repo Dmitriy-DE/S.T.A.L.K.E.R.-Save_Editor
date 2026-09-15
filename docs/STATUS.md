@@ -7,10 +7,10 @@
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
-| S.T.A.L.K.E.R. 2 | зарегистрирован | существующие S2 money/stack/CRC/Kraken safeguards |
-| Original Shadow of Chornobyl | зарегистрирован | X-Ray read, money, confirmed ammo stack |
-| Original Clear Sky | зарегистрирован | X-Ray read, money, confirmed ammo stack |
-| Original Call of Pripyat | зарегистрирован | X-Ray read, money, confirmed ammo stack |
+| S.T.A.L.K.E.R. 2 | зарегистрирован | существующие S2 money/stack/CRC/Kraken safeguards; structural GVAS add не включён |
+| Original Shadow of Chornobyl | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| Original Clear Sky | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| Original Call of Pripyat | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
 | Shadow of Chornobyl EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Clear Sky EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Call of Pripyat EE | descriptor/path discovery only | unavailable; no accepted format sample |
@@ -21,10 +21,11 @@ local-file-only и content-detects файл тем же ядром. Capability f
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
-Локальный Linux gate на текущем HEAD: `257 passed`; ruff, mypy, generated web
-bundle/theme и `node --check web/app.js` проходят. Linux `tar.gz`/`.deb` и
-packaged diagnostic также собраны и проверены; Cloudflare Pages deployment
-прочитан обратно с HTTP 200. Точные хэши и URL записаны в
+Локальный Linux gate текущего прохода: `make check` exit 0, `265 passed`; ruff,
+mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
+`tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; предыдущий
+Cloudflare Pages deployment прочитан обратно с HTTP 200, после текущего
+обновления каталога требуется новый deploy read-back. Точные хэши и URL записаны в
 [release evidence](evidence/RELEASE_2026-09-15.md). Это не заменяет Windows
 runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 
@@ -67,10 +68,10 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | X-Ray показывает serialized section key; перевод/SID/catalog не доказаны | R01–R02 |
+| Названия и каталог | Официальные metadata-каталоги загружаются desktop/web; часть локализации и SID semantics не доказана | R01–R02 |
 | Прочность | Поле не доказано | R03–R04 |
-| Новые предметы/clone | Нет allocator/registry/prototype evidence; добавление произвольных предметов запрещено | R05–R07 |
-| Настоящее удаление | Только detach | R08 |
+| Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
+| Настоящее удаление | X-Ray deep removal actor-owned registry record; reference-safe/equipped deletion не доказано | R08 |
 | Attachments/upgrades | Нет подтверждённой схемы | R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
@@ -84,7 +85,8 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 для S.T.A.L.K.E.R. 2 и portable Python LZO для оригинальной трилогии. Веб
 принимает файл локально, распознаёт только зарегистрированный формат и
 отказывает на неизвестном; для оригинальной трилогии доступны чтение денег,
-serialized inventory и ограниченная правка денег/ammo stacks. Сверка S2
+serialized inventory, правка денег/ammo stacks, add из компактного официального
+metadata-каталога и deep remove. Сверка S2
 остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
 покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
@@ -176,13 +178,14 @@ Qt, CLI и web используют один detector/reader. Автопоиск
 неизвестный формат получает явный отказ. На desktop поиск кеширует неизменившийся
 size/mtime результат, а полный inspect всегда перечитывает bytes и SHA.
 
-Подтверждённая production-правка — actor money и ammo stack count (STATE +
+Подтверждённая локальная правка — actor money и ammo stack count (STATE +
 UPDATE), с immutable `EditPlan`, source SHA, backup/atomic export и повторным
-parse. Object windows и length-changing registry framing теперь индексируются
-строго; synthetic/catalog-backed proof покрывает clone/remove одного ammo
-record, но реальный catalog на текущем хосте не даёт доказанного prototype,
-поэтому add/remove controls не включены для production saves. Move, equipment,
-прочность, durability/upgrades, attachments и остальные item classes остаются
+parse. Object windows и length-changing registry framing индексируются строго.
+Для оригинальной трилогии catalog-backed writer добавляет предметы из
+официального metadata-каталога через same-family registry template и удаляет
+actor-owned record как deep operation; SoC/CS/CoP representative in-memory
+прогон покрыл десять serializer families в каждом релизе. Move, equipment,
+прочность, durability/upgrades, attachments и reference-safe deletion остаются
 read-only. Enhanced Editions также не объявлены поддержанными: evidence записан
 отдельно в `EE_FORMATS_2026-09-15.md`.
 

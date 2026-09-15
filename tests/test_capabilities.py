@@ -32,4 +32,6 @@ def test_registered_formats_expose_release_and_capability_metadata() -> None:
     assert cop.edition == "original"
     assert cop.capabilities.read_inventory is True
     assert cop.capabilities.edit_stacks is True
-    assert cop.capabilities.add_items is False
+    assert cop.capabilities.add_items is True
+    assert cop.capabilities.remove_items is True
+    assert cop.capabilities.catalog is True

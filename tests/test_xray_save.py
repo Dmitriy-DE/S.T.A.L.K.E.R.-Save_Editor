@@ -71,6 +71,12 @@ def _item_state(version: int, count: int) -> bytes:
     return bytes(state)
 
 
+def _base_item_state(version: int) -> bytes:
+    state = bytearray(_item_state(version, 1))
+    del state[-2:]
+    return bytes(state)
+
+
 def _spawn(
     name: str,
     object_id: int,
@@ -118,6 +124,32 @@ def _fixture(version: int = 128, outer: int = 6) -> bytes:
         ammo_update,
     )
     objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(ammo, ammo_update)
+    raw = b"".join(
+        (
+            _chunk(0, struct.pack("<I", outer)),
+            _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
+            _chunk(1, b"\x00" * 8),
+            _chunk(2, objects),
+            _chunk(9, b"registry"),
+        )
+    )
+    return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
+
+
+def _fixture_with_base_item(version: int = 128, outer: int = 6) -> bytes:
+    actor = _spawn(
+        "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
+    )
+    base_update = struct.pack("<H", 0) + b"\x00"
+    base = _spawn(
+        "bandage_existing",
+        0x2345,
+        0,
+        version,
+        _base_item_state(version),
+        base_update,
+    )
+    objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(base, base_update)
     raw = b"".join(
         (
             _chunk(0, struct.pack("<I", outer)),
@@ -233,6 +265,8 @@ def _ammo_catalog() -> ItemCatalog:
                 slots=("8",),
                 prototype=b"fixture-prototype",
                 source="fixture",
+                class_name="AMMO",
+                serialization_family="ammo",
             ),
         ),
     )
@@ -255,6 +289,57 @@ def test_xray_ammo_add_allocates_registry_record_and_round_trips() -> None:
     assert added[0].editable_count is True
     assert len(after.objects) == 3
     assert prepared.data != data
+
+
+def test_xray_add_clones_a_catalog_family_without_game_asset_bytes() -> None:
+    data = _fixture_with_base_item()
+    catalog = ItemCatalog(
+        "stalker-cop",
+        None,
+        (
+            ItemDefinition(
+                key="bandage_new",
+                display_name="New bandage",
+                category="consumable",
+                unit_weight=0.1,
+                width=1,
+                height=1,
+                max_stack=None,
+                slots=(),
+                prototype=None,
+                source="fixture",
+                class_name="II_BANDG",
+                serialization_family="base",
+            ),
+        ),
+    )
+    plan = EditPlan(
+        source=_plan(data).source,
+        adds=(("bandage_new", 2, "inventory"),),
+    )
+
+    prepared = prepare_xray(data, plan, COP_FORMAT, catalog=catalog)
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    added = tuple(item for item in after.inventory if item.type_key == "bandage_new")
+    assert len(added) == 2
+    assert all(item.count is None for item in added)
+    assert len(after.objects) == 4
+    assert prepared.data != data
+
+
+def test_xray_remove_accepts_any_actor_owned_item_record() -> None:
+    data = _fixture_with_base_item()
+    plan = EditPlan(
+        source=_plan(data).source,
+        detach=((0x2345, True),),
+    )
+
+    prepared = prepare_xray(data, plan, COP_FORMAT)
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    assert after.inventory == ()
+    assert len(after.objects) == 1
 
 
 def test_xray_ammo_remove_deletes_only_the_owned_record() -> None:

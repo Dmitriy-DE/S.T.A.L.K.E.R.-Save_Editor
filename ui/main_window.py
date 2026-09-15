@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
+from editor.catalog import ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
@@ -97,6 +98,7 @@ class LocalSnapshot:
     release_id: str = ""
     edition: str = ""
     capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
+    catalog: ItemCatalog | None = None
 
 
 class InspectWorker(QThread):
@@ -117,6 +119,7 @@ class InspectWorker(QThread):
                 data,
                 with_inventory=True,
                 source_name=self.path.name,
+                catalog_source=self.path,
             )
             self.completed.emit(
                 LocalSnapshot(
@@ -128,6 +131,7 @@ class InspectWorker(QThread):
                     release_id=result.release_id,
                     edition=result.edition,
                     capabilities=result.capabilities,
+                    catalog=result.catalog,
                 )
             )
         except FormatDetectionError as exc:
@@ -162,6 +166,8 @@ class MainWindow(QMainWindow):
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
+        self.staged_adds: dict[str, int] = {}
+        self.staged_detach: dict[int, bool] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -358,7 +364,12 @@ class MainWindow(QMainWindow):
         if not buttons:
             return
         inventory = len(self.snapshot.info.inventory) if self.snapshot is not None else None
-        staged = len(self.staged_counts) + (1 if self.staged_money is not None else 0)
+        staged = (
+            len(self.staged_counts)
+            + len(self.staged_adds)
+            + len(self.staged_detach)
+            + (1 if self.staged_money is not None else 0)
+        )
         counters: dict[int, int | None] = {1: inventory, 2: staged or None}
         for index, button in enumerate(buttons):
             count = counters.get(index)
@@ -561,6 +572,8 @@ class MainWindow(QMainWindow):
         self.inventory_view.stage_requested.connect(self._stage_stack_change)
         self.inventory_view.clear_selected_requested.connect(self._clear_selected_stack)
         self.inventory_view.clear_all_requested.connect(self._clear_all_stacks)
+        self.inventory_view.add_requested.connect(self._stage_item_add)
+        self.inventory_view.remove_selected_requested.connect(self._stage_item_remove)
         # Keep the old attribute available to small integrations while the
         # actual view now uses a stable-handle QAbstractTableModel.
         self.inventory_table = self.inventory_view.table
@@ -701,6 +714,8 @@ class MainWindow(QMainWindow):
         info = snapshot.info
         self.staged_counts.clear()
         self.staged_money = None
+        self.staged_adds.clear()
+        self.staged_detach.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -750,7 +765,13 @@ class MainWindow(QMainWindow):
         self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
-        self.changes_view.set_staged(info, self.staged_money, self.staged_counts)
+        self.changes_view.set_staged(
+            info,
+            self.staged_money,
+            self.staged_counts,
+            self.staged_adds,
+            self.staged_detach,
+        )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
         self.error_label.clear()
@@ -770,6 +791,32 @@ class MainWindow(QMainWindow):
             ),
         )
         self.inventory_view.set_staged_counts(self.staged_counts)
+        catalog = self.snapshot.catalog if self.snapshot is not None else None
+        can_add = bool(
+            capabilities is not None
+            and capabilities.add_items
+            and catalog is not None
+        )
+        self.inventory_view.set_catalog(
+            catalog,
+            enabled=can_add,
+            reason=(
+                "Добавление доступно только для официального каталога выбранной игры"
+                if capabilities is not None and capabilities.add_items and catalog is None
+                else "Формат не разрешает добавление предметов"
+                if capabilities is not None and not capabilities.add_items
+                else None
+            ),
+        )
+        self.inventory_view.set_remove_enabled(
+            bool(capabilities is not None and capabilities.remove_items),
+            reason=(
+                "Формат не разрешает удаление предметов"
+                if capabilities is not None and not capabilities.remove_items
+                else None
+            ),
+        )
+        self.inventory_view.set_removed_handles(self.staged_detach)
         self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_money(self, info: SaveInfo) -> None:
@@ -891,6 +938,71 @@ class MainWindow(QMainWindow):
             f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
         )
 
+    def _stage_item_add(self, item_key: str, quantity: int) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.add_items:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает добавление предметов"
+            )
+            return
+        catalog = self.snapshot.catalog
+        definition = catalog.resolve(item_key) if catalog is not None else None
+        if definition is None:
+            self.inventory_view.show_editability_message(
+                f"Предмет {item_key!r} отсутствует в официальном каталоге"
+            )
+            return
+        value = int(quantity)
+        if value < 1 or value > 65535:
+            self.inventory_view.show_editability_message(
+                "Количество нового предмета должно быть в диапазоне 1..65535"
+            )
+            return
+        if (
+            definition.serialization_family == "ammo"
+            and definition.max_stack is not None
+            and value > definition.max_stack
+        ):
+            self.inventory_view.show_editability_message(
+                f"Для {item_key} допустимо не больше {definition.max_stack} за стак"
+            )
+            return
+        self.staged_adds[item_key] = value
+        self._render_changes()
+        self._invalidate_preview("изменилось staged добавление предмета")
+        self.status_label.setText(
+            f"Добавление staged: {item_key} × {value}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _stage_item_remove(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.remove_items:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает удаление предметов"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):04X} не найден"
+            )
+            return
+        handle = int(handle)
+        if handle in self.staged_detach:
+            self.staged_detach.pop(handle, None)
+            message = f"Удаление отменено для {item.type_key}"
+        else:
+            self.staged_detach[handle] = True
+            self.staged_counts.pop(handle, None)
+            message = f"Удаление staged для {item.type_key}"
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_removed_handles(self.staged_detach)
+        self._render_changes()
+        self._invalidate_preview("изменился staged список удалений")
+        self.status_label.setText(f"{message}; bytes сейва не изменены — нужен preview")
+
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self.inventory_view.set_staged_counts(self.staged_counts)
@@ -903,25 +1015,36 @@ class MainWindow(QMainWindow):
     def _clear_all_stacks(self) -> None:
         self.staged_counts.clear()
         self.staged_money = None
+        self.staged_adds.clear()
+        self.staged_detach.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_removed_handles(self.staged_detach)
         self._render_changes()
         self._invalidate_preview("все staged-правки очищены")
         self.status_label.setText("Все staged-правки очищены; bytes сейва не изменены")
 
     def _render_changes(self) -> None:
         self._sync_nav_counters()
+        self.inventory_view.set_clear_all_enabled(self._has_staged_changes())
         if self.snapshot is None:
             return
         self.changes_view.set_staged(
             self.snapshot.info,
             self.staged_money,
             self.staged_counts,
+            self.staged_adds,
+            self.staged_detach,
         )
 
     def _has_staged_changes(self) -> bool:
-        return self.staged_money is not None or bool(self.staged_counts)
+        return bool(
+            self.staged_money is not None
+            or self.staged_counts
+            or self.staged_adds
+            or self.staged_detach
+        )
 
     def _update_action_buttons(self) -> None:
         local_busy = self._operation_thread is not None and self._operation_thread.isRunning()
@@ -971,6 +1094,11 @@ class MainWindow(QMainWindow):
             ),
             money=self.staged_money,
             stacks=tuple(sorted(self.staged_counts.items())),
+            detach=tuple(sorted(self.staged_detach.items())),
+            adds=tuple(
+                (item_key, quantity, "inventory")
+                for item_key, quantity in sorted(self.staged_adds.items())
+            ),
         )
 
     def _busy_now(self) -> bool:
@@ -1001,6 +1129,7 @@ class MainWindow(QMainWindow):
             mode="preview",
             data=self.snapshot.data if self.snapshot is not None else b"",
             plan=plan,
+            catalog=self.snapshot.catalog if self.snapshot is not None else None,
             parent=self,
         )
         worker.preview_ready.connect(self._on_preview_ready)
@@ -1100,6 +1229,7 @@ class MainWindow(QMainWindow):
             source_path=source_path,
             output_path=output_path,
             backup_dir=backup_path,
+            catalog=self.snapshot.catalog,
             parent=self,
         )
         worker.set_prepared(self.prepared_edit)

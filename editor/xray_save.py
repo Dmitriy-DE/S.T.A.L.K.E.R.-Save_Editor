@@ -6,9 +6,9 @@ format-specific part small and explicit: it parses the common object envelope,
 the actor money field, and the ``CSE_ALifeItemAmmo`` count fields documented in
 the public X-Ray source.  Unknown object state remains untouched.
 
-There is intentionally no item allocator, prototype catalogue, or structural
-object writer here.  Adding a new item safely requires game configuration and
-registry semantics that are not present in a save file alone.
+Structural item edits use an official item catalog plus an existing registry
+record from the same serializer family.  The save still remains the source of
+the serialized state template; no game archive bytes are copied into output.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from dataclasses import dataclass, replace
 
 from save_format import InventoryItem, SaveInfo
 
-from .catalog import ItemCatalog
+from .catalog import ItemCatalog, ItemDefinition, catalog_from_items
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
 
@@ -571,6 +571,88 @@ def _category_for_name(name: str) -> tuple[int, str]:
     return 8, "Разное"
 
 
+def _inferred_serialization_family(name: str) -> str:
+    """Infer only the stable serializer families from a serialized key.
+
+    Catalog entries take precedence.  These fallbacks keep saves usable when a
+    catalog is unavailable for an already-present object; they are not used to
+    claim that an arbitrary key is an official item.
+    """
+
+    lowered = name.casefold()
+    if lowered.startswith("ammo_"):
+        return "ammo"
+    if lowered == "device_torch":
+        return "torch"
+    if lowered == "device_pda":
+        return "pda"
+    if lowered.startswith(("detector_", "device_detector")):
+        return "detector"
+    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
+        return "outfit"
+    if lowered.startswith(("wpn_", "weapon_")):
+        if lowered.endswith("_knife"):
+            return "weapon"
+        if lowered in {"wpn_bm16", "wpn_rg6", "wpn_shotgun", "wpn_spas12", "wpn_toz34"}:
+            return "weapon_shotgun"
+        if lowered in {"wpn_ak74", "wpn_fn2000", "wpn_groza"}:
+            return "weapon_wgl"
+        return "weapon_magazined"
+    return "base"
+
+
+def _definition_serialization_family(definition: object) -> str:
+    family = getattr(definition, "serialization_family", None)
+    return str(family).casefold() if family else _inferred_serialization_family(
+        str(getattr(definition, "key", ""))
+    )
+
+
+def _object_serialization_family(obj: XRayObject, catalog: ItemCatalog) -> str:
+    definition = catalog.resolve(obj.name)
+    if definition is not None:
+        return _definition_serialization_family(definition)
+    return _inferred_serialization_family(obj.name)
+
+
+def catalog_from_save_inventory(
+    spec: XRayFormatSpec,
+    inventory: tuple[InventoryItem, ...],
+) -> ItemCatalog:
+    """Build a deliberately limited browser catalog from observed save keys.
+
+    A browser cannot inspect a local Steam installation.  The resulting
+    catalog therefore exposes only exact serialized keys already present in
+    the selected save; it never pretends those entries came from an official
+    resource archive.  Desktop catalog loading remains the path for adding a
+    key that is not already observed in the save.
+    """
+
+    definitions: dict[str, ItemDefinition] = {}
+    for item in inventory:
+        key = item.type_key
+        if key in definitions:
+            continue
+        family = _inferred_serialization_family(key)
+        definitions[key] = ItemDefinition(
+            key=key,
+            display_name=item.display_name,
+            category=item.category,
+            unit_weight=item.unit_weight,
+            width=item.width,
+            height=item.height,
+            max_stack=item.count_max if family == "ammo" else None,
+            slots=(),
+            prototype=None,
+            source="save-observed",
+            serialization_family=family,
+        )
+    return catalog_from_items(
+        spec.id,
+        tuple(definitions.values()),
+    )
+
+
 def _inventory_items(
     raw: bytes,
     objects: tuple[XRayObject, ...],
@@ -970,6 +1052,104 @@ def _clone_ammo_record(
     )
 
 
+def _clone_registry_record(
+    parsed: XRaySave,
+    prototype: XRayObject,
+    *,
+    item_key: str,
+    object_id: int,
+    actor_id: int,
+    family: str,
+    quantity: int,
+) -> bytes:
+    """Clone one exact STATE/UPDATE serializer family from the registry."""
+
+    if family == "ammo":
+        return _clone_ammo_record(
+            parsed,
+            prototype,
+            item_key=item_key,
+            object_id=object_id,
+            actor_id=actor_id,
+            quantity=quantity,
+        )
+    if family not in {
+        "base",
+        "detector",
+        "outfit",
+        "pda",
+        "document",
+        "torch",
+        "weapon",
+        "weapon_magazined",
+        "weapon_shotgun",
+        "weapon_wgl",
+    }:
+        raise _fail(f"serializer family {family!r} не подтверждён")
+
+    spawn = _patch_spawn_identity(
+        parsed.spawn_bytes(prototype),
+        name=item_key,
+        object_id=object_id,
+        parent_id=actor_id,
+    )
+    update = parsed.update_bytes(prototype)
+    if len(spawn) > 0xFFFF or len(update) > 0xFFFF:
+        raise _fail("новая object record packet превышает u16 размер")
+    return (
+        struct.pack("<H", len(spawn))
+        + spawn
+        + struct.pack("<H", len(update))
+        + update
+    )
+
+
+def _find_registry_template(
+    parsed: XRaySave,
+    catalog: ItemCatalog,
+    *,
+    actor_id: int,
+    family: str,
+) -> XRayObject | None:
+    """Prefer an actor-owned object, then a known registry object."""
+
+    candidates = tuple(
+        obj for obj in parsed.objects if obj.object_id != parsed.actor_id
+    )
+    ordered = tuple(
+        obj for obj in candidates if obj.parent_id == actor_id
+    ) + tuple(obj for obj in candidates if obj.parent_id != actor_id)
+    for obj in ordered:
+        if _object_serialization_family(obj, catalog) == family:
+            return obj
+    return None
+
+
+def _added_items_match(
+    before: XRaySave,
+    after: XRaySave,
+    plan: EditPlan,
+    catalog: ItemCatalog,
+) -> bool:
+    before_handles = {item.handle for item in before.inventory}
+    for item_key, quantity, _destination in plan.adds:
+        definition = catalog.resolve(item_key)
+        if definition is None:
+            return False
+        family = _definition_serialization_family(definition)
+        added = tuple(
+            item
+            for item in after.inventory
+            if item.handle not in before_handles and item.type_key == item_key
+        )
+        if family == "ammo":
+            if not any(item.count == quantity for item in added):
+                return False
+        elif len(added) != quantity:
+            return False
+    return True
+
+
 def _apply_xray_structural_edits(
     data: bytes,
     plan: EditPlan,
@@ -989,10 +1169,6 @@ def _apply_xray_structural_edits(
             raise XRaySaveError(
                 f"X-Ray save: object 0x{handle:04X} не принадлежит actor inventory"
             )
-        if not obj.name.lower().startswith("ammo_"):
-            raise XRaySaveError(
-                f"X-Ray save: удаление {obj.name!r} пока подтверждено только для ammo"
-            )
         working = _remove_object_record(current, obj)
 
     for item_key, quantity, destination in plan.adds:
@@ -1010,41 +1186,55 @@ def _apply_xray_structural_edits(
             raise XRaySaveError(
                 f"X-Ray save: item key {request.item_key!r} отсутствует в catalog"
             )
-        if definition.category != "ammo" or definition.prototype is None:
+        family = _definition_serialization_family(definition)
+        if family not in {
+            "ammo",
+            "base",
+            "detector",
+            "outfit",
+            "pda",
+            "document",
+            "torch",
+            "weapon",
+            "weapon_magazined",
+            "weapon_shotgun",
+            "weapon_wgl",
+        }:
             raise XRaySaveError(
-                f"X-Ray save: item {request.item_key!r} не имеет подтверждённого ammo prototype"
+                f"X-Ray save: item {request.item_key!r} имеет неподтверждённое serializer family"
             )
-        if definition.max_stack is not None and request.quantity > definition.max_stack:
+        if family == "ammo" and definition.max_stack is not None and request.quantity > definition.max_stack:
             raise XRaySaveError(
                 f"X-Ray save: quantity {request.quantity} превышает max_stack {definition.max_stack}"
             )
 
         current = parse_xray(working, spec, with_inventory=True)
-        prototype = next(
-            (
-                obj
-                for obj in current.objects
-                if obj.parent_id == current.actor_id
-                and obj.name.lower().startswith("ammo_")
-                and obj.count is not None
-                and obj.update_count is not None
-            ),
-            None,
+        prototype = _find_registry_template(
+            current,
+            catalog,
+            actor_id=current.actor_id,
+            family=family,
         )
         if prototype is None:
             raise XRaySaveError(
-                "X-Ray save: не найден существующий подтверждённый ammo object для clone"
+                f"X-Ray save: не найден существующий registry template для family {family!r}"
             )
-        new_id = _allocate_object_id(current.objects)
-        record = _clone_ammo_record(
-            current,
-            prototype,
-            item_key=request.item_key,
-            object_id=new_id,
-            actor_id=current.actor_id,
-            quantity=request.quantity,
-        )
-        working = _append_object_record(current, record)
+        copies = 1 if family == "ammo" else request.quantity
+        for _copy_index in range(copies):
+            current = parse_xray(working, spec, with_inventory=True)
+            # A new record receives one fresh u16 handle; reparse after every
+            # append keeps offsets exact when the registry grows.
+            new_id = _allocate_object_id(current.objects)
+            record = _clone_registry_record(
+                current,
+                prototype,
+                item_key=request.item_key,
+                object_id=new_id,
+                actor_id=current.actor_id,
+                family=family,
+                quantity=request.quantity,
+            )
+            working = _append_object_record(current, record)
 
     return working
 
@@ -1070,6 +1260,7 @@ def prepare_xray(
         raise XRaySaveError("X-Ray save: деньги должны быть в диапазоне 0…2 000 000 000")
 
     parsed = parse_xray(payload, spec, with_inventory=True)
+    before_structural = parsed
     working_data = payload
     if plan.detach or plan.adds:
         working_data = _apply_xray_structural_edits(
@@ -1086,14 +1277,10 @@ def prepare_xray(
                 raise XRaySaveError(
                     f"X-Ray save: detach round-trip оставил object 0x{handle:04X}"
                 )
-        for item_key, quantity, _ in plan.adds:
-            if not any(
-                item.type_key == item_key and item.count == quantity
-                for item in parsed.inventory
-            ):
-                raise XRaySaveError(
-                    f"X-Ray save: add round-trip не создал {item_key!r} x{quantity}"
-                )
+        if plan.adds and catalog is not None and not _added_items_match(
+            before_structural, parsed, plan, catalog
+        ):
+            raise XRaySaveError("X-Ray save: add round-trip не создал ожидаемые registry items")
         output = bytes(working_data)
         return PreparedEdit(plan=plan, data=output, output_sha256=hashlib.sha256(output).hexdigest())
 
@@ -1132,14 +1319,10 @@ def prepare_xray(
             raise XRaySaveError(
                 f"X-Ray save: detach round-trip оставил object 0x{handle:04X}"
             )
-    for item_key, quantity, _ in plan.adds:
-        if not any(
-            item.type_key == item_key and item.count == quantity
-            for item in after.inventory
-        ):
-            raise XRaySaveError(
-                f"X-Ray save: add round-trip не создал {item_key!r} x{quantity}"
-            )
+    if plan.adds and catalog is not None and not _added_items_match(
+        before_structural, after, plan, catalog
+    ):
+        raise XRaySaveError("X-Ray save: add round-trip не создал ожидаемые registry items")
     output = bytes(rebuilt)
     return PreparedEdit(
         plan=plan,
@@ -1158,6 +1341,7 @@ __all__ = [
     "XRayObject",
     "XRaySave",
     "XRaySaveError",
+    "catalog_from_save_inventory",
     "inspect_xray",
     "parse_subchunks",
     "parse_xray",

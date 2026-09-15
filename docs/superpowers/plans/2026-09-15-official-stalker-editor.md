@@ -208,16 +208,17 @@ another boundary is required:
 - [ ] **Step 4: Add money, stack, move, and equipment operations only for fields
   with controlled evidence.** Each operation must validate parent/handle,
   ranges, duplicate requests, and source SHA before rebuilding.
-- [ ] **Step 5: Implement catalog-backed add/remove for the first proven class
-  (ammo).** Allocate a fresh handle not present in the registry, serialize the
-  catalog prototype with the correct game version, attach it to the actor,
-  update registry count/framing, rebuild LZO, and strictly reparse. The test
-  must prove original bytes are unchanged and output contains both state and
-  update counts.
-- [ ] **Step 6: Extend add/remove class-by-class only after a real controlled
-  pair exists.** Use the same red-green cycle for weapons, armor, artifacts,
-  consumables, grenades, and devices; leave a class disabled if its prototype
-  or game semantics are not proven.
+- [x] **Step 5: Implement catalog-backed add/remove for the first proven class
+  (ammo).** Allocate a fresh handle not present in the registry, validate the
+  official catalog key/family, clone the matching same-save template, attach it
+  to the actor, update registry count/framing, rebuild LZO, and strictly
+  reparse. The test proves original bytes are unchanged and output contains
+  both state and update counts.
+- [x] **Step 6: Extend add/remove class-by-class only after a real controlled
+  pair exists.** The local original corpus now exercises base, detector, outfit,
+  PDA, torch, weapon, magazine, shotgun, WGL and ammo families. The writer
+  remains closed for unknown families, missing templates and unproven game
+  semantics; it does not copy prototype bytes from archives.
 - [x] **Step 7: Run the real read-only corpus gate.** For every unique local
   original save, assert strict parse, no-op SHA, inventory coverage, and
   unchanged-source behavior. Run in-memory edits for every enabled class; do
@@ -319,10 +320,10 @@ another boundary is required:
 - Generate: `web/pysrc.json`, `web/theme.css`
 - Test: all existing tests plus release-specific corpus scripts
 
-- [ ] **Step 1: Add a deterministic corpus verifier** that reports only
+- [x] **Step 1: Add a deterministic corpus verifier** that reports only
   release IDs, counts, versions, SHA-match counts, edit round-trip counts,
   and failure summaries; it must never print or persist private save bytes.
-- [ ] **Step 2: Run the verifier for every available original and EE profile.**
+- [x] **Step 2: Run the verifier for every available original and EE profile.**
   Record separate local-parser, browser-bridge, and game-load/re-save statuses.
 - [x] **Step 3: Run the full local gates:**
   `PYTHON=.venv/bin/python make check`,

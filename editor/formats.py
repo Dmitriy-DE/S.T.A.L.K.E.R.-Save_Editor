@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import struct
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Protocol
 
 from save_format import SaveError, SaveInfo, inspect_save
 
 from .capabilities import FormatCapabilities
+from .catalog import ItemCatalog
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
+from .releases import release_by_id
+from .xray_catalog import XRayCatalogProvider
 from .xray_save import (
     COP_FORMAT,
     CS_FORMAT,
@@ -37,7 +41,14 @@ class SaveFormat(Protocol):
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         """Inspect bytes without modifying them."""
 
-    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
+    def prepare(
+        self,
+        data: bytes,
+        plan: EditPlan,
+        *,
+        source_name: str | None = None,
+        catalog: ItemCatalog | None = None,
+    ) -> PreparedEdit:
         """Prepare an immutable edit for bytes in this format."""
 
 
@@ -60,6 +71,7 @@ class FormatInspection:
     release_id: str = ""
     edition: str = ""
     capabilities: FormatCapabilities = field(default_factory=FormatCapabilities)
+    catalog: ItemCatalog | None = None
 
 
 class FormatDetectionError(SaveError):
@@ -130,7 +142,14 @@ class _Stalker2Format:
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_save(data, with_inventory=with_inventory)
 
-    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
+    def prepare(
+        self,
+        data: bytes,
+        plan: EditPlan,
+        *,
+        source_name: str | None = None,
+        catalog: ItemCatalog | None = None,
+    ) -> PreparedEdit:
         return prepare_edit(data, plan)
 
 
@@ -147,6 +166,9 @@ class _XRayFormat:
             read_inventory=True,
             edit_money=True,
             edit_stacks=True,
+            add_items=True,
+            remove_items=True,
+            catalog=True,
         )
 
     def detect(self, data: bytes) -> bool:
@@ -203,8 +225,37 @@ class _XRayFormat:
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_xray(data, self.spec, with_inventory=with_inventory)
 
-    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
-        return prepare_xray(data, plan, self.spec)
+    def catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
+        """Find an official catalog by walking up from a local save path."""
+
+        if not source_name:
+            return None
+        source = Path(source_name).expanduser()
+        if not source.is_absolute() and not source.exists():
+            return None
+        try:
+            source = source.resolve()
+        except OSError:
+            return None
+        start = source.parent if source.is_file() else source
+        provider = XRayCatalogProvider()
+        release = release_by_id(self.release_id)
+        for root in (start, *start.parents):
+            catalog = provider.load(release, root)
+            if catalog is not None:
+                return catalog
+        return None
+
+    def prepare(
+        self,
+        data: bytes,
+        plan: EditPlan,
+        *,
+        source_name: str | None = None,
+        catalog: ItemCatalog | None = None,
+    ) -> PreparedEdit:
+        selected_catalog = catalog or self.catalog_for_source(source_name)
+        return prepare_xray(data, plan, self.spec, catalog=selected_catalog)
 
 
 STALKER2_FORMAT: SaveFormat = _Stalker2Format()
