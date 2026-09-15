@@ -3,11 +3,13 @@ from __future__ import annotations
 import hashlib
 
 import pytest
+from test_xray_save import _fixture
 
 import save_format as sf
-from editor.formats import by_id, detect, formats
+from editor.formats import by_id, detect, detect_fast, formats
 from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
+from editor.xray_save import COP_FORMAT, CS_FORMAT, SOC_FORMAT
 
 
 def _plan(data: bytes) -> EditPlan:
@@ -21,12 +23,32 @@ def _plan(data: bytes) -> EditPlan:
     )
 
 
-def test_registry_starts_with_only_stalker2(synthetic_save: bytes) -> None:
+def test_registry_contains_stalker2_and_original_xray_families(synthetic_save: bytes) -> None:
     registered = formats()
 
-    assert [item.id for item in registered] == ["stalker2"]
+    assert [item.id for item in registered] == [
+        "stalker2",
+        "stalker-soc",
+        "stalker-cs",
+        "stalker-cop",
+    ]
     assert by_id("stalker2") is registered[0]
     assert detect(synthetic_save) is registered[0]
+
+
+@pytest.mark.parametrize(
+    ("spec", "fixture_version", "outer_version"),
+    (
+        (SOC_FORMAT, 118, 3),
+        (CS_FORMAT, 124, 5),
+        (COP_FORMAT, 128, 6),
+    ),
+)
+def test_registry_detects_each_original_xray_family(spec, fixture_version: int, outer_version: int) -> None:
+    data = _fixture(fixture_version, outer_version)
+
+    assert detect(data) is by_id(spec.id)
+    assert detect_fast(data) is by_id(spec.id)
 
 
 def test_registry_returns_none_for_unknown_bytes() -> None:

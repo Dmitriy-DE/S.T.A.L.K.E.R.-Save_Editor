@@ -1180,11 +1180,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "blocked",
+    "status": "in_review",
     "path": "docs/tasks/M06.md",
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
-    "status_display": "blocked (PR #53; X-Ray corpus missing)"
+    "status_display": "in_review (local corpus; game/Enhanced gates open)"
   },
   {
     "id": "M07",
@@ -1195,7 +1195,7 @@
     "files": [
       "docs/tasks/M07.md"
     ],
-    "contract": "Формат stalker-cop в реестре: detect и inspect (деньги, инвентарь, метаданные). prepare отказывает явно. Поле принимается по трём независимым парам сейвов и сверке с игрой.",
+    "contract": "Формат stalker-cop в реестре: detect и inspect (деньги, инвентарь, метаданные), плюс ограниченный M09 writer для денег/ammo. Поле принимается по трём независимым парам сейвов и сверке с игрой.",
     "steps": [
       "См. карточку: scope, границы и критерий приёмки."
     ],
@@ -1205,10 +1205,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/M07.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "in_progress (local reader; game-pair gate open)"
   },
   {
     "id": "M08",
@@ -1229,10 +1230,11 @@
     ],
     "gate": "research",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/M08.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "in_progress (local reader; Enhanced/game gates open)"
   },
   {
     "id": "M09",
@@ -1253,9 +1255,10 @@
     ],
     "gate": "code",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/M09.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "",
+    "status_display": "in_progress (safe writer; game load gate open)"
   }
 ]

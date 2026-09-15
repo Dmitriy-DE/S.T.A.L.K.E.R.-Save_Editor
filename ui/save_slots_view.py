@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.formats import SaveFormat, detect
+from editor.formats import SaveFormat, detect, detect_fast
 from editor.platforms import save_search_paths
 
 GAME_TITLES: dict[str, str] = {
@@ -31,6 +31,7 @@ GAME_TITLES: dict[str, str] = {
     "soc": "S.T.A.L.K.E.R.: Shadow of Chernobyl",
 }
 GAME_IDS: tuple[str, ...] = ("stalker2", "cop", "clear_sky", "soc")
+SAVE_SUFFIXES = frozenset({".sav", ".scop", ".scs"})
 
 
 def _human_size(size: int) -> str:
@@ -53,7 +54,7 @@ def _modified_text(modified_ns: int) -> str:
 
 @dataclass(frozen=True)
 class SaveSlot:
-    """One regular ``.sav`` file found in a read-only candidate directory.
+    """One candidate save file found in a read-only directory.
 
     ``candidate_game_*`` describes why a directory was searched.  The actual
     ``game_id`` and ``game_title`` properties are populated only when a
@@ -105,6 +106,13 @@ class SaveDiscovery:
 SearchPathsFn: TypeAlias = Callable[[str], Sequence[Path]]
 DetectFn: TypeAlias = Callable[[bytes], SaveFormat | None]
 SlotDiscoveryFn: TypeAlias = Callable[[], SaveDiscovery]
+_DetectionCacheValue: TypeAlias = tuple[int, int, str | None, str | None, str | None]
+
+# Discovery is repeated when the user changes tabs/settings and when several
+# windows are created by the UI test harness.  Cache only the content-detection
+# result, never file bytes, and invalidate it on the ordinary size/mtime pair.
+# Opening a row still performs a fresh full inspection and SHA check.
+_DETECTION_CACHE: dict[tuple[Path, int], _DetectionCacheValue] = {}
 
 
 def discover_save_slots(
@@ -113,7 +121,7 @@ def discover_save_slots(
     search_paths_fn: SearchPathsFn = save_search_paths,
     detect_fn: DetectFn = detect,
 ) -> SaveDiscovery:
-    """Enumerate candidate ``.sav`` files without opening or writing them.
+    """Enumerate candidate save files without writing them.
 
     The file bytes are read only to run the shared content detector.  A
     directory that does not exist is still included in ``searched_paths`` so
@@ -124,6 +132,8 @@ def discover_save_slots(
     searched_seen: set[Path] = set()
     slots: list[SaveSlot] = []
     slot_seen: set[Path] = set()
+    detector: DetectFn = detect_fast if detect_fn is detect else detect_fn
+    detector_key = 0 if detector is detect_fast else id(detector)
 
     for game_id in game_ids:
         candidate_title = GAME_TITLES.get(game_id, game_id)
@@ -140,7 +150,7 @@ def discover_save_slots(
                 continue
 
             for path in entries:
-                if path in slot_seen or path.suffix.casefold() != ".sav":
+                if path in slot_seen or path.suffix.casefold() not in SAVE_SUFFIXES:
                     continue
                 try:
                     if not path.is_file():
@@ -149,9 +159,32 @@ def discover_save_slots(
                 except OSError:
                     continue
                 slot_seen.add(path)
+                cache_key = (path, detector_key)
+                cached = _DETECTION_CACHE.get(cache_key)
+                if cached is not None and cached[:2] == (stat.st_size, stat.st_mtime_ns):
+                    slots.append(
+                        SaveSlot(
+                            path=path,
+                            candidate_game_id=game_id,
+                            candidate_game_title=candidate_title,
+                            size=stat.st_size,
+                            modified_ns=stat.st_mtime_ns,
+                            format_id=cached[2],
+                            format_title=cached[3],
+                            detection_error=cached[4],
+                        )
+                    )
+                    continue
                 try:
                     data = path.read_bytes()
                 except OSError as exc:
+                    _DETECTION_CACHE[cache_key] = (
+                        stat.st_size,
+                        stat.st_mtime_ns,
+                        None,
+                        None,
+                        f"{type(exc).__name__}: {exc}",
+                    )
                     slots.append(
                         SaveSlot(
                             path=path,
@@ -165,8 +198,15 @@ def discover_save_slots(
                     continue
 
                 try:
-                    format_ = detect_fn(data)
+                    format_ = detector(data)
                 except Exception as exc:
+                    _DETECTION_CACHE[cache_key] = (
+                        stat.st_size,
+                        stat.st_mtime_ns,
+                        None,
+                        None,
+                        f"{type(exc).__name__}: {exc}",
+                    )
                     slots.append(
                         SaveSlot(
                             path=path,
@@ -179,6 +219,13 @@ def discover_save_slots(
                     )
                     continue
 
+                _DETECTION_CACHE[cache_key] = (
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    format_.id if format_ is not None else None,
+                    format_.title if format_ is not None else None,
+                    None,
+                )
                 slots.append(
                     SaveSlot(
                         path=path,
@@ -360,7 +407,7 @@ class SaveSlotsView(QWidget):
         else:
             self.empty_label.setText(
                 "Сохранения не найдены — это не ошибка. Проверь пути выше или "
-                "выбери файл вручную кнопкой «Открыть .sav…»."
+                "выбери файл вручную кнопкой «Открыть сохранение…»."
             )
             self.status_label.setText("Сохранения не найдены; ручной выбор доступен")
         self.error_label.clear()
@@ -374,6 +421,7 @@ class SaveSlotsView(QWidget):
 __all__ = [
     "GAME_IDS",
     "GAME_TITLES",
+    "SAVE_SUFFIXES",
     "SaveDiscovery",
     "SaveSlot",
     "SaveSlotsView",

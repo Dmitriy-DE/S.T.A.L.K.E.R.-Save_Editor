@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -9,6 +10,15 @@ from save_format import SaveError, SaveInfo, inspect_save
 
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
+from .xray_save import (
+    COP_FORMAT,
+    CS_FORMAT,
+    SOC_FORMAT,
+    XRayFormatSpec,
+    inspect_xray,
+    parse_xray,
+    prepare_xray,
+)
 
 
 class SaveFormat(Protocol):
@@ -110,7 +120,76 @@ class _Stalker2Format:
         return prepare_edit(data, plan)
 
 
+class _XRayFormat:
+    """Adapter exposing one original-game X-Ray family to the shared registry."""
+
+    def __init__(self, spec: XRayFormatSpec) -> None:
+        self.spec = spec
+        self.id = spec.id
+        self.title = spec.title
+
+    def detect(self, data: bytes) -> bool:
+        # Avoid decompressing the same bytes for all three X-Ray adapters when
+        # the outer version already selects a single family.
+        if len(data) < 8:
+            return False
+        outer = struct.unpack_from("<I", data, 4)[0]
+        if outer not in self.spec.outer_versions:
+            return False
+        try:
+            parse_xray(data, self.spec, with_inventory=False)
+        except Exception:
+            return False
+        return True
+
+    def detect_fast(self, data: bytes) -> bool:
+        """Recognize a candidate without scanning the registry tail.
+
+        Slot discovery uses this inexpensive probe outside the UI thread.  A
+        selected row still goes through ``detect``/full inspection before any
+        edit is prepared.
+        """
+
+        if len(data) < 8:
+            return False
+        outer = struct.unpack_from("<I", data, 4)[0]
+        if outer not in self.spec.outer_versions:
+            return False
+        try:
+            parse_xray(
+                data,
+                self.spec,
+                with_inventory=False,
+                strict_registry=False,
+            )
+        except Exception:
+            return False
+        return True
+
+    def detection_reason(self, data: bytes) -> str:
+        if len(data) < 8:
+            return "заголовок короче 8 байт"
+        outer = struct.unpack_from("<I", data, 4)[0]
+        if outer not in self.spec.outer_versions:
+            expected = ", ".join(str(value) for value in sorted(self.spec.outer_versions))
+            return f"outer version={outer}, для {self.id} ожидалось {expected}"
+        try:
+            parsed = parse_xray(data, self.spec, with_inventory=False)
+        except Exception as exc:
+            return f"{type(exc).__name__}: {exc}"
+        return f"X-Ray actor spawn version {parsed.actor_version} подтверждён"
+
+    def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
+        return inspect_xray(data, self.spec, with_inventory=with_inventory)
+
+    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
+        return prepare_xray(data, plan, self.spec)
+
+
 STALKER2_FORMAT: SaveFormat = _Stalker2Format()
+STALKER_SOC_FORMAT: SaveFormat = _XRayFormat(SOC_FORMAT)
+STALKER_CS_FORMAT: SaveFormat = _XRayFormat(CS_FORMAT)
+STALKER_COP_FORMAT: SaveFormat = _XRayFormat(COP_FORMAT)
 _REGISTERED_FORMATS: list[SaveFormat] = []
 
 
@@ -148,6 +227,28 @@ def detect(data: bytes) -> SaveFormat | None:
             # A foreign or malformed file must not prevent other registered
             # formats from getting a chance to inspect its bytes.
             continue
+    return None
+
+
+def detect_fast(data: bytes) -> SaveFormat | None:
+    """Return a format using its optional cheap candidate detector.
+
+    This is for local slot discovery only.  Callers that need an inspection
+    result or an edit must use :func:`detect` and the normal strict parser.
+    """
+
+    for fmt in _REGISTERED_FORMATS:
+        fast_detector = getattr(fmt, "detect_fast", None)
+        try:
+            accepted = (
+                fast_detector(data)
+                if callable(fast_detector)
+                else fmt.detect(data)
+            )
+        except Exception:
+            continue
+        if accepted:
+            return fmt
     return None
 
 
@@ -198,16 +299,23 @@ def detect_or_raise(data: bytes, *, display_name: str | None = None) -> SaveForm
 
 
 register(STALKER2_FORMAT)
+register(STALKER_SOC_FORMAT)
+register(STALKER_CS_FORMAT)
+register(STALKER_COP_FORMAT)
 
 
 __all__ = [
     "STALKER2_FORMAT",
+    "STALKER_COP_FORMAT",
+    "STALKER_CS_FORMAT",
+    "STALKER_SOC_FORMAT",
     "DetectionFailure",
     "FormatDetectionError",
     "FormatInspection",
     "SaveFormat",
     "by_id",
     "detect",
+    "detect_fast",
     "detect_or_raise",
     "detection_failures",
     "format_detection_error",

@@ -12,9 +12,11 @@ import hashlib
 from pathlib import Path
 
 import pytest
+from test_xray_save import _fixture
 
 import cli
 import save_format as sf
+from editor.xray_save import COP_FORMAT, inspect_xray
 
 
 def _write_save(tmp_path: Path, data: bytes, name: str = "slot.sav") -> Path:
@@ -121,3 +123,33 @@ def test_missing_file_reports_an_error_instead_of_a_traceback(
     captured = capsys.readouterr()
     assert "Error:" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_xray_info_and_stack_edit_use_the_shared_cli_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    data = _fixture()
+    path = _write_save(tmp_path, data, "slot.scop")
+    output = tmp_path / "edited.scop"
+
+    assert cli.main(["info", str(path)]) == 0
+    info_output = capsys.readouterr().out
+    assert "Format: stalker-cop" in info_output
+    assert "Integrity: X-Ray LZO/container OK" in info_output
+
+    item = inspect_xray(data, COP_FORMAT).inventory[0]
+    assert cli.main(
+        [
+            "set-stack",
+            str(path),
+            hex(item.handle),
+            "44",
+            "-o",
+            str(output),
+            "--backup-dir",
+            str(tmp_path / "backups"),
+        ]
+    ) == 0
+    capsys.readouterr()
+    assert path.read_bytes() == data
+    assert inspect_xray(output.read_bytes(), COP_FORMAT).inventory[0].count == 44

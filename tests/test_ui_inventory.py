@@ -8,8 +8,10 @@ pytest.importorskip("PySide6")
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+from test_xray_save import _fixture
 
 from editor.service import EditorService
+from editor.xray_save import COP_FORMAT, inspect_xray
 from save_format import inspect_save
 from ui.inventory_model import InventoryTableModel
 from ui.main_window import LocalSnapshot, MainWindow
@@ -148,3 +150,31 @@ def test_unknown_display_name_is_honest_and_handle_is_visible(
     handle = model.data(model.index(0, model.HANDLE_COLUMN), Qt.ItemDataRole.DisplayRole)
     assert name == "Неизвестный объект"
     assert handle.startswith("0x300000")
+
+
+def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(
+    qtbot, tmp_path: Path
+) -> None:
+    data = _fixture()
+    source = tmp_path / "slot.scop"
+    info = inspect_xray(data, COP_FORMAT)
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=data,
+            info=info,
+            format_id=COP_FORMAT.id,
+            format_title=COP_FORMAT.title,
+        )
+    )
+
+    item = info.inventory[0]
+    model = window.inventory_view.model
+    assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == item.display_name
+    assert model.data(model.index(0, model.WEIGHT_COLUMN), Qt.ItemDataRole.DisplayRole) == "неизвестно"
+    assert window.format_badge.text() == f"ФОРМАТ: {COP_FORMAT.title}"
+    assert window.location_card_value.text() == "неизвестно"
+    assert window.inventory_view.count_spin.maximum() == 65535

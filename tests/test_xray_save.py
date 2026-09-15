@@ -1,0 +1,242 @@
+from __future__ import annotations
+
+import hashlib
+import struct
+
+import pytest
+
+from editor.models import EditPlan, SourceRef
+from editor.xray_container import XRayContainer, lzo1x_compress
+from editor.xray_save import (
+    COP_FORMAT,
+    CS_FORMAT,
+    SOC_FORMAT,
+    XRaySaveError,
+    inspect_xray,
+    parse_xray,
+    prepare_xray,
+)
+
+
+def _z(value: str) -> bytes:
+    return value.encode("utf-8") + b"\x00"
+
+
+def _state_base(version: int, *, money: int | None = None) -> bytes:
+    # CSE_ALifeObject + CSE_ALifeDynamicObjectVisual + creature/trader actor
+    # inheritance as serialized by the public X-Ray source.  The fixture only
+    # needs the prefix through the money field; the remaining actor fields are
+    # included so the parser can validate the actor state boundary.
+    state = bytearray()
+    state += struct.pack("<HfIII", 12, 1.5, 0, 34, 0)
+    state += _z("[actor]")
+    state += struct.pack("<II", 0, 0)
+    state += _z("actor.ogf")
+    state += b"\x00"  # CSE_Visual flags, version > 103
+    state += b"\x01\x02\x03"  # team, squad, group
+    state += struct.pack("<f", 1.0)
+    state += struct.pack("<I", 0)  # dynamic out restrictions
+    state += struct.pack("<I", 0)  # dynamic in restrictions
+    state += struct.pack("<H", 0xFFFF)
+    state += struct.pack("<Q", 0)
+    if money is not None:
+        state += struct.pack("<I", money)
+        state += _z("")  # specific character
+        state += struct.pack("<I", 0)  # trader flags
+        state += _z("default")
+        state += struct.pack("<iii", -1, -1, -1)
+        state += _z("")  # raw character name
+        if version > 124:
+            state += b"\x01\x00"  # deadbody flags
+        state += _z("$editor")  # PH skeleton startup animation
+        state += b"\x00"  # skeleton flags
+        state += struct.pack("<H", 0xFFFF)
+        state += struct.pack("<H", 0xFFFF)  # actor holder id
+    return bytes(state)
+
+
+def _item_state(version: int, count: int) -> bytes:
+    state = bytearray()
+    state += struct.pack("<HfIII", 15, 2.0, 0, 56, 0)
+    state += _z("[ammo]")
+    state += struct.pack("<II", 0, 0)
+    state += _z("ammo.ogf")
+    state += b"\x00"  # visual flags
+    state += struct.pack("<f", 1.0)  # condition
+    if version > 123:
+        state += struct.pack("<I", 0)  # empty upgrades
+    state += struct.pack("<H", count)
+    return bytes(state)
+
+
+def _spawn(
+    name: str,
+    object_id: int,
+    parent_id: int,
+    version: int,
+    state: bytes,
+    update: bytes,
+) -> bytes:
+    packet = bytearray(struct.pack("<H", 1))
+    packet += _z(name) + _z("")
+    packet += struct.pack("<BB", 0, 0xFE)
+    packet += struct.pack("<6f", 0, 0, 0, 0, 0, 0)
+    packet += struct.pack("<4H", 0, object_id, parent_id, 0xFFFF)
+    packet += struct.pack("<H", 1 << 5)  # M_SPAWN_VERSION
+    packet += struct.pack("<H", version)
+    if version > 120:
+        packet += struct.pack("<H", 1)  # single-player game type
+    packet += struct.pack("<H", 0)  # script version
+    packet += struct.pack("<H", 0)  # client data size
+    packet += struct.pack("<H", 0)  # spawn id
+    packet += struct.pack("<H", len(state) + 2) + state
+    assert len(packet) <= 0xFFFF
+    return bytes(packet)
+
+
+def _object_record(spawn: bytes, update: bytes) -> bytes:
+    return struct.pack("<H", len(spawn)) + spawn + struct.pack("<H", len(update)) + update
+
+
+def _chunk(kind: int, payload: bytes) -> bytes:
+    return struct.pack("<II", kind, len(payload)) + payload
+
+
+def _fixture(version: int = 128, outer: int = 6) -> bytes:
+    actor = _spawn(
+        "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
+    )
+    ammo_update = struct.pack("<H", 0) + b"\x00" + struct.pack("<H", 30)
+    ammo = _spawn(
+        "ammo_9x39_pab9",
+        0x1234,
+        0,
+        version,
+        _item_state(version, 30),
+        ammo_update,
+    )
+    objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(ammo, ammo_update)
+    raw = b"".join(
+        (
+            _chunk(0, struct.pack("<I", outer)),
+            _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
+            _chunk(1, b"\x00" * 8),
+            _chunk(2, objects),
+            _chunk(9, b"registry"),
+        )
+    )
+    return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
+
+
+def _plan(data: bytes, *, money: int | None = None, stacks=()) -> EditPlan:
+    return EditPlan(
+        source=SourceRef(
+            kind="local",
+            locator="fixture.sav",
+            sha256=hashlib.sha256(data).hexdigest(),
+        ),
+        money=money,
+        stacks=tuple(stacks),
+    )
+
+
+def test_xray_parser_reads_actor_money_and_confirmed_ammo_stack() -> None:
+    data = _fixture()
+
+    parsed = parse_xray(data, COP_FORMAT)
+    info = inspect_xray(data, COP_FORMAT)
+
+    assert parsed.actor_version == 128
+    assert parsed.money == 1234
+    assert [(item.type_key, item.count, item.editable_count) for item in info.inventory] == [
+        ("ammo_9x39_pab9", 30, True)
+    ]
+    assert info.money == 1234
+    assert info.crc_present is False
+    assert info.integrity_name == "X-Ray LZO/container"
+
+
+def test_xray_metadata_probe_does_not_materialize_the_full_registry() -> None:
+    data = _fixture()
+
+    parsed = parse_xray(data, COP_FORMAT, with_inventory=False)
+
+    assert [obj.name for obj in parsed.objects] == ["actor"]
+    assert parsed.inventory == ()
+    assert parsed.owned_handles == ()
+
+
+def test_xray_metadata_probe_rejects_truncated_object_registry() -> None:
+    data = _fixture()
+    container = XRayContainer.from_bytes(data)
+    object_chunk = next(chunk for chunk in container.chunks if chunk.type == 2)
+    spawn_size = struct.unpack_from("<H", object_chunk.data, 4)[0]
+    actor_record_end = 4 + 2 + spawn_size
+    update_size = struct.unpack_from("<H", object_chunk.data, actor_record_end)[0]
+    actor_record_end += 2 + update_size
+    truncated_objects = struct.pack("<I", 2) + object_chunk.data[4:actor_record_end]
+    raw = b"".join(
+        _chunk(chunk.type, truncated_objects if chunk.type == 2 else chunk.data)
+        for chunk in container.chunks
+    )
+    broken = struct.pack("<III", 0xFFFFFFFF, container.version, len(raw)) + lzo1x_compress(raw)
+
+    with pytest.raises(XRaySaveError, match="OBJECT|объект"):
+        parse_xray(broken, COP_FORMAT, with_inventory=False)
+
+
+def test_xray_prepare_edits_money_and_ammo_in_both_serialized_states() -> None:
+    data = _fixture()
+    plan = _plan(data, money=9876, stacks=((0x1234, 44),))
+
+    prepared = prepare_xray(data, plan, COP_FORMAT)
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    assert prepared.data != data
+    assert prepared.output_sha256 == hashlib.sha256(prepared.data).hexdigest()
+    assert after.money == 9876
+    assert after.object_by_id(0x1234).count == 44
+    assert after.object_by_id(0x1234).update_count == 44
+    assert parse_xray(data, COP_FORMAT).money == 1234
+
+
+def test_xray_noop_prepare_keeps_original_bytes() -> None:
+    data = _fixture()
+
+    prepared = prepare_xray(data, _plan(data), COP_FORMAT)
+
+    assert prepared.data == data
+
+
+@pytest.mark.parametrize("format_", (SOC_FORMAT, CS_FORMAT, COP_FORMAT))
+def test_xray_specs_are_separate_and_outer_versions_do_not_cross_detect(format_) -> None:
+    data = _fixture(format_.actor_versions and next(iter(format_.actor_versions)), next(iter(format_.outer_versions)))
+
+    assert parse_xray(data, format_).spec is format_
+
+    for other in (SOC_FORMAT, CS_FORMAT, COP_FORMAT):
+        if other is format_:
+            continue
+        with pytest.raises(XRaySaveError):
+            parse_xray(data, other)
+
+
+def test_xray_edits_reject_structural_operations_and_oversized_ammo() -> None:
+    data = _fixture()
+
+    with pytest.raises(XRaySaveError, match="move|перемещ"):
+        prepare_xray(
+            data,
+            EditPlan(
+                source=SourceRef(
+                    kind="local",
+                    locator="fixture.sav",
+                    sha256=hashlib.sha256(data).hexdigest(),
+                ),
+                moves=((0x1234, 1, 1),),
+            ),
+            COP_FORMAT,
+        )
+
+    with pytest.raises(XRaySaveError, match="65535|диапазон"):
+        prepare_xray(data, _plan(data, stacks=((0x1234, 65536),)), COP_FORMAT)

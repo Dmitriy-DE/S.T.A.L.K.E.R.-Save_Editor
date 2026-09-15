@@ -112,6 +112,7 @@ class InventoryView(QWidget):
 
     def set_items(self, items: Iterable[InventoryItem]) -> None:
         values = tuple(items)
+        self.count_spin.setMaximum(max((item.count_max for item in values), default=1_000_000))
         self.model.set_items(values)
         current_category = self.category_combo.currentText()
         categories = sorted({item.category for item in values}, key=str.casefold)
@@ -190,13 +191,15 @@ class InventoryView(QWidget):
             return
 
         staged = self.model.staged_count(item.handle)
-        effective_count = staged if staged is not None else item.count
+        effective_count = staged if staged is not None else (item.count if item.count is not None else 1)
         self.selected_label.setText(
             f"{item.handle_hex} • type-key 0x{item.type_key} • "
             f"позиция {item.position} • {item.category}"
         )
         if not item.editable_count:
-            if item.count <= 1:
+            if item.count is None:
+                reason = "Только чтение: count не извлечён"
+            elif item.count <= 1:
                 reason = "Только чтение: count=1"
             elif item.kind_code not in EDITABLE_STACK_KIND_CODES:
                 reason = f"Только чтение: неизвестный kind={item.kind_code}"
@@ -205,7 +208,7 @@ class InventoryView(QWidget):
             self.editability_label.setText(reason)
             self.count_spin.blockSignals(True)
             self.count_spin.setEnabled(False)
-            self.count_spin.setValue(item.count)
+            self.count_spin.setValue(item.count if item.count is not None else 1)
             self.count_spin.blockSignals(False)
             self.stage_button.setEnabled(False)
             self.clear_selected_button.setEnabled(staged is not None)
@@ -213,7 +216,7 @@ class InventoryView(QWidget):
 
         self.editability_label.setText(
             f"Можно изменить количество: {item.count} → {effective_count} "
-            "(допустимо 1..1000000; bytes пока не изменены)"
+            f"(допустимо 1..{item.count_max}; bytes пока не изменены)"
         )
         self.count_spin.blockSignals(True)
         self.count_spin.setEnabled(True)

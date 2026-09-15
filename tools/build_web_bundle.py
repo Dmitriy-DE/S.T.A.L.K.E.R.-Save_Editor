@@ -32,6 +32,8 @@ MODULES = (
     "editor/formats.py",
     "editor/models.py",
     "editor/prepare.py",
+    "editor/xray_container.py",
+    "editor/xray_save.py",
 )
 
 

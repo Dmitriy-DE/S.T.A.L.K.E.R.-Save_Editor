@@ -53,6 +53,58 @@ def test_discover_save_slots_sorts_newest_first_and_marks_unknown(
     assert result.searched_paths == tuple(path for values in folders.values() for path in values)
 
 
+def test_discover_save_slots_includes_call_of_pripyat_scop_files(tmp_path: Path) -> None:
+    folder = tmp_path / "cop"
+    folder.mkdir()
+    path = folder / "quicksave.scop"
+    path.write_bytes(b"foreign x-ray bytes")
+
+    result = discover_save_slots(
+        game_ids=("cop",),
+        search_paths_fn=lambda _game_id: (folder,),
+    )
+
+    assert [slot.path for slot in result.slots] == [path]
+
+
+def test_discover_save_slots_surfaces_enhanced_scs_candidates(tmp_path: Path) -> None:
+    folder = tmp_path / "enhanced"
+    folder.mkdir()
+    path = folder / "quicksave.scs"
+    path.write_bytes(b"unknown enhanced save")
+
+    result = discover_save_slots(
+        game_ids=("clear_sky",),
+        search_paths_fn=lambda _game_id: (folder,),
+    )
+
+    assert [slot.path for slot in result.slots] == [path]
+    assert result.slots[0].format_id is None
+
+
+def test_discover_save_slots_reuses_detection_for_unchanged_file(tmp_path: Path) -> None:
+    folder = tmp_path / "saves"
+    folder.mkdir()
+    path = folder / "slot.sav"
+    path.write_bytes(b"synthetic")
+    calls = 0
+
+    def detector(_data: bytes):
+        nonlocal calls
+        calls += 1
+        return None
+
+    kwargs = {
+        "game_ids": ("stalker2",),
+        "search_paths_fn": lambda _game_id: (folder,),
+        "detect_fn": detector,
+    }
+    discover_save_slots(**kwargs)
+    discover_save_slots(**kwargs)
+
+    assert calls == 1
+
+
 def test_save_slots_view_renders_rows_and_emits_explicit_open(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:

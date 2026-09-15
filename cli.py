@@ -6,10 +6,11 @@ import hashlib
 import sys
 from pathlib import Path
 
-from editor.formats import FormatDetectionError
+from editor.formats import FormatDetectionError, detect_or_raise
 from editor.models import EditPlan, SourceRef
 from editor.platforms import user_data_dir
 from editor.service import EditorService
+from editor.xray_save import parse_xray
 from save_format import RawPatch, SaveError, decompress_save, diff_record, record_hex
 
 EDITOR_SERVICE = EditorService()
@@ -42,7 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     the process.
     """
 
-    p = argparse.ArgumentParser(description="STALKER 2 offline save editor / research CLI")
+    p = argparse.ArgumentParser(description="S.T.A.L.K.E.R. offline save editor / research CLI")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     q = sub.add_parser("info", help="validate/inspect save")
@@ -108,8 +109,31 @@ def _run(argv: list[str] | None) -> int:
     a = build_parser().parse_args(argv)
 
     if a.cmd == "diff-record":
-        ra = decompress_save(Path(a.save_a).read_bytes()); rb = decompress_save(Path(a.save_b).read_bytes())
-        diffs = diff_record(ra, rb, a.handle, a.limit)
+        data_a = Path(a.save_a).read_bytes()
+        data_b = Path(a.save_b).read_bytes()
+        fmt_a = detect_or_raise(data_a, display_name=Path(a.save_a).name)
+        fmt_b = detect_or_raise(data_b, display_name=Path(a.save_b).name)
+        if fmt_a.id.startswith("stalker-") or fmt_b.id.startswith("stalker-"):
+            if fmt_a.id != fmt_b.id or not hasattr(fmt_a, "spec"):
+                raise SaveError(
+                    "diff-record: оба файла должны быть одной оригинальной X-Ray игрой"
+                )
+            parsed_a = parse_xray(data_a, fmt_a.spec)
+            parsed_b = parse_xray(data_b, fmt_a.spec)
+            object_a = parsed_a.object_by_id(a.handle)
+            object_b = parsed_b.object_by_id(a.handle)
+            ra = parsed_a.container.raw[object_a.record_offset : object_a.record_end]
+            rb = parsed_b.container.raw[object_b.record_offset : object_b.record_end]
+            diffs = []
+            for rel in range(min(len(ra), len(rb))):
+                if ra[rel] != rb[rel]:
+                    diffs.append((rel, ra[rel : rel + 1], rb[rel : rel + 1]))
+            for rel in range(min(len(ra), len(rb)), max(len(ra), len(rb))):
+                diffs.append((rel, ra[rel : rel + 1], rb[rel : rel + 1]))
+        else:
+            ra = decompress_save(data_a)
+            rb = decompress_save(data_b)
+            diffs = diff_record(ra, rb, a.handle, a.limit)
         if not diffs:
             print("No differences in compared record window")
         for rel, ba, bb in diffs:
@@ -121,23 +145,39 @@ def _run(argv: list[str] | None) -> int:
 
     if a.cmd == "info":
         x = EDITOR_SERVICE.inspect(data, source_name=src.name)
+        result = EDITOR_SERVICE.inspect_result(data, source_name=src.name)
+        integrity = "CRC: OK" if x.crc_present else f"Integrity: {x.integrity_name} OK"
         parsed_grid_handles = len({item.handle for item in x.inventory})
-        print(f"CRC: OK\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid handles parsed/total: {parsed_grid_handles}/{x.grid_handle_count}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}\nUnresolved handles: {len(x.unresolved_handles)}")
+        print(f"{integrity}\nFormat: {result.format_id}\nPacked: {x.packed_size}\nRaw: {x.unpacked_size}\nSHA256: {x.sha256}\nMoney: {x.money}\nOwned handles: {len(x.owned_handles)}\nGrid handles parsed/total: {parsed_grid_handles}/{x.grid_handle_count}\nGrid cells: {x.grid_cell_count}\nInventory objects: {len(x.inventory)}\nOrphans: {len(x.orphans)}\nUnresolved handles: {len(x.unresolved_handles)}")
+        if x.format_version is not None:
+            print(f"Container version: {x.container_version}\nActor spawn version: {x.format_version}")
+        if x.level_name is not None:
+            print(f"Level: {x.level_name}")
         for warning in x.warnings:
             print(f"Warning: {warning}")
     elif a.cmd == "inventory":
         x = EDITOR_SERVICE.inspect(data, source_name=src.name)
-        print("POS   SIZE  TYPE                 KEY     COUNT   WEIGHT    HANDLE       STATUS")
+        print("POS        SIZE       TYPE                 KEY                       COUNT   WEIGHT      HANDLE       STATUS")
         for it in x.inventory:
             status = "editable" if it.editable_count else ("unresolved" if it.handle in x.unresolved_handles else "read-only")
-            print(f"{it.position:<5} {it.size_text:<5} {it.category:<20} {it.type_key:<7} {it.count:>6} {it.total_weight:>9.3f}  {it.handle_hex}  {status}")
+            count_text = "unknown" if it.count is None else str(it.count)
+            weight = "unknown" if it.total_weight is None else f"{it.total_weight:.3f}"
+            print(f"{it.position:<10} {it.size_text:<10} {it.category:<20} {it.type_key:<25} {count_text:>7} {weight:>10}  {it.handle_hex}  {status}")
     elif a.cmd == "orphans":
         x = EDITOR_SERVICE.inspect(data, source_name=src.name)
         print("TYPE                 KEY     COUNT  RECORDPOS     HANDLE")
         for o in x.orphans:
             print(f"{o.category:<20} {o.type_key:<7} {o.count:>5}  {o.x:>5},{o.y:<5}  {o.handle_hex}")
     elif a.cmd == "dump-record":
-        raw = decompress_save(data); base, blob = record_hex(raw, a.handle, a.limit)
+        format_ = detect_or_raise(data, display_name=src.name)
+        if format_.id.startswith("stalker-") and hasattr(format_, "spec"):
+            parsed = parse_xray(data, format_.spec)
+            obj = parsed.object_by_id(a.handle)
+            base = obj.record_offset
+            blob = parsed.container.raw[obj.record_offset : min(obj.record_end, obj.record_offset + a.limit)]
+        else:
+            raw = decompress_save(data)
+            base, blob = record_hex(raw, a.handle, a.limit)
         print(f"base=0x{base:X}, bytes={len(blob)}")
         for i in range(0, len(blob), 16):
             print(f"+0x{i:04X}  {blob[i:i+16].hex(' ')}")
@@ -181,7 +221,8 @@ def _run(argv: list[str] | None) -> int:
                 raw=tuple(raw_patches),
             )
             prepared = EDITOR_SERVICE.prepare(data, plan, source_name=src.name)
-            destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited.sav")
+            suffix = ".scop" if src.suffix.lower() == ".scop" else ".sav"
+            destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited" + suffix)
             backup_dir = Path(a.backup_dir) if a.backup_dir else DEFAULT_BACKUP_DIR
             receipt = EDITOR_SERVICE.export_local(src, destination, prepared, backup_dir)
             before = EDITOR_SERVICE.inspect(
@@ -197,12 +238,12 @@ def _run(argv: list[str] | None) -> int:
             if money is not None: print(f"Money: {before.money} -> {after.money}")
             before_by_handle = {item.handle: item for item in before.inventory}
             after_by_handle = {item.handle: item for item in after.inventory}
-            for handle, count in stacks.items():
+            for handle, new_count in stacks.items():
                 previous = before_by_handle.get(handle)
                 current = after_by_handle.get(handle)
                 print(
                     f"Stack 0x{handle:08X}: {previous.count if previous else '?'} -> "
-                    f"{current.count if current else count}"
+                    f"{current.count if current else new_count}"
                 )
             for handle, (cell_x, cell_y) in moves.items():
                 previous = before_by_handle.get(handle)

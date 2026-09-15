@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
         apply_theme(application if isinstance(application, QApplication) else None)
-        self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
+        self.setWindowTitle("S.T.A.L.K.E.R. — Save Editor")
         self.resize(1280, 820)
         self.setMinimumSize(960, 620)
         self._build_ui()
@@ -172,7 +172,7 @@ class MainWindow(QMainWindow):
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(18, 12, 18, 12)
         title_layout.setSpacing(10)
-        self.app_title = QLabel("S.T.A.L.K.E.R. 2 Save Editor")
+        self.app_title = QLabel("S.T.A.L.K.E.R. Save Editor")
         self.app_title.setObjectName("appTitle")
         title_layout.addWidget(self.app_title)
         self.version_badge = QLabel(f"v{_version_text()}")
@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.meta_filename = QLabel("Сейв не выбран")
         self.meta_filename.setObjectName("metaFilename")
         meta_text.addWidget(self.meta_filename)
-        self.meta_details = QLabel("Открой локальный .sav для проверки CRC и структуры")
+        self.meta_details = QLabel("Открой локальный сейв для проверки формата и структуры")
         self.meta_details.setObjectName("metaDetails")
         self.meta_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         meta_text.addWidget(self.meta_details)
@@ -205,10 +205,10 @@ class MainWindow(QMainWindow):
         self.integrity_badge = QLabel("CRC-32: —")
         self.integrity_badge.setObjectName("integrityBadge")
         meta_layout.addWidget(self.integrity_badge)
-        self.format_badge = QLabel("UE5 GVAS: —")
+        self.format_badge = QLabel("ФОРМАТ: —")
         self.format_badge.setObjectName("formatBadge")
         meta_layout.addWidget(self.format_badge)
-        self.open_button = QPushButton("Открыть .sav…")
+        self.open_button = QPushButton("Открыть сейв…")
         self.open_button.setObjectName("openButton")
         self.open_button.clicked.connect(self.open_local)
         meta_layout.addWidget(self.open_button)
@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
         summary_caption = QLabel("Сводка")
         summary_caption.setObjectName("metricCaption")
         details_layout.addWidget(summary_caption)
-        self.summary_label = QLabel("Открой локальный .sav для проверки CRC и структуры.")
+        self.summary_label = QLabel("Открой локальный сейв для проверки формата и структуры.")
         self.summary_label.setWordWrap(True)
         self.summary_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         details_layout.addWidget(self.summary_label)
@@ -423,7 +423,7 @@ class MainWindow(QMainWindow):
         money_layout.addLayout(money_row)
         layout.addWidget(money_box)
 
-        metadata_box = QGroupBox("Технические метаданные контейнера (.sav)")
+        metadata_box = QGroupBox("Технические метаданные контейнера")
         metadata_layout = QVBoxLayout(metadata_box)
         metadata_layout.setContentsMargins(10, 10, 10, 10)
         self.metadata_table = QTableWidget(0, 3)
@@ -462,40 +462,60 @@ class MainWindow(QMainWindow):
             else f"read-only (anchor × {info.money_anchor_count})"
         )
         unresolved = len(info.unresolved_handles)
-        return (
+        common_rows = (
             ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
             ("Формат", snapshot.format_id, snapshot.format_title),
-            (
-                "CRC-32",
-                f"{info.stored_crc32:08X}",
-                "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
-            ),
             ("SHA-256", info.sha256, "исходный снимок"),
             (
                 "Размер контейнера",
                 f"{_human_size(info.packed_size)} → {_human_size(info.unpacked_size)}",
-                "Kraken распакован",
+                "Kraken распакован" if info.crc_present else "LZO1X распакован",
             ),
             ("Баланс купонов", money, money_status),
-            ("Owned handles", str(len(info.owned_handles)), "прочитано"),
-            (
-                "Grid handles",
-                f"{len({item.handle for item in info.inventory})} / {info.grid_handle_count}",
-                "разобрано / объявлено",
-            ),
-            ("Grid cells", str(info.grid_cell_count), "прочитано"),
-            ("Объекты инвентаря", str(len(info.inventory)), "в сетке"),
-            ("Orphan handles", str(len(info.orphans)), "вне сетки"),
-            (
-                "Unresolved handles",
-                str(unresolved),
-                "read-only" if unresolved else "нет",
-            ),
-            (
-                "UE5 GVAS schema",
-                "не разобрана",
-                "контейнер валиден, схема не подтверждена",
-            ),
+        )
+        if info.crc_present:
+            rows = list(common_rows[:2])
+            rows.append(
+                (
+                    "CRC-32",
+                    f"{info.stored_crc32:08X}",
+                    "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
+                )
+            )
+            rows.extend(common_rows[2:])
+            rows.extend(
+                (
+                    ("Owned handles", str(len(info.owned_handles)), "прочитано"),
+                    (
+                        "Grid handles",
+                        f"{len({item.handle for item in info.inventory})} / {info.grid_handle_count}",
+                        "разобрано / объявлено",
+                    ),
+                    ("Grid cells", str(info.grid_cell_count), "прочитано"),
+                    ("Объекты инвентаря", str(len(info.inventory)), "в сетке"),
+                    ("Orphan handles", str(len(info.orphans)), "вне сетки"),
+                    (
+                        "Unresolved handles",
+                        str(unresolved),
+                        "read-only" if unresolved else "нет",
+                    ),
+                    (
+                        "UE5 GVAS schema",
+                        "не разобрана",
+                        "контейнер валиден, схема не подтверждена",
+                    ),
+                )
+            )
+            return tuple(rows)
+        return (*common_rows,
+            ("Actor objects", f"{len(info.inventory)} / {len(info.owned_handles)}", "прочитано по parent actor"),
+            ("Grid cells", "0", "в X-Ray не используется"),
+            ("Целостность", info.integrity_name, "проверен контейнер и LZO payload"),
+            ("X-Ray outer version", str(info.container_version), "подтверждён"),
+            ("Actor spawn version", str(info.format_version), "подтверждён"),
+            ("Время игры", "неизвестно" if info.game_time is None else str(info.game_time), "прочитано"),
+            ("Уровень", info.level_name or "неизвестно", "прочитано из SPAWN" if info.level_name else "не найден"),
+            ("Unresolved handles", str(len(info.unresolved_handles)), "read-only" if info.unresolved_handles else "нет"),
         )
 
     def _render_metadata_rows(self, snapshot: LocalSnapshot | None) -> None:
@@ -591,7 +611,7 @@ class MainWindow(QMainWindow):
             self,
             "Открыть сохранение S.T.A.L.K.E.R.",
             "",
-            "S.T.A.L.K.E.R. saves (*.sav);;Все файлы (*)",
+            "S.T.A.L.K.E.R. saves (*.sav *.scop *.scs);;Все файлы (*)",
         )
         if filename:
             self._start_inspect(Path(filename))
@@ -606,9 +626,9 @@ class MainWindow(QMainWindow):
         if self.snapshot is None:
             self.file_source_badge.setText("ЧТЕНИЕ ФАЙЛА")
             self.meta_filename.setText(path.name)
-            self.meta_details.setText("Проверка CRC, SHA и структуры…")
+            self.meta_details.setText("Проверка формата, SHA и структуры…")
             self.integrity_badge.setText("CRC-32: …")
-            self.format_badge.setText("UE5 GVAS: анализ…")
+            self.format_badge.setText("ФОРМАТ: анализ…")
         self.status_label.setText(f"Анализ: {path.name}…")
         self.error_label.clear()
         self.error_label.setVisible(False)
@@ -667,23 +687,33 @@ class MainWindow(QMainWindow):
         self.meta_details.setText(
             f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
-        self.integrity_badge.setText(f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}")
-        # The current parser validates the Kraken container and known fields;
-        # it does not prove a complete UE5 GVAS schema. Keep that distinction
-        # visible instead of copying the reference's demo success badge.
-        self.format_badge.setText("UE5 GVAS: НЕ ПОДТВЕРЖДЁН")
-        self.location_card_value.setText("—")
-        self.time_card_value.setText("—")
+        self.integrity_badge.setText(
+            f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}"
+            if info.crc_present
+            else f"{info.integrity_name}: OK"
+        )
+        self.format_badge.setText(
+            "UE5 GVAS: НЕ ПОДТВЕРЖДЁН"
+            if info.crc_present
+            else f"ФОРМАТ: {snapshot.format_title}"
+        )
+        self.location_card_value.setText(info.level_name or "неизвестно")
+        self.time_card_value.setText("—" if info.game_time is None else str(info.game_time))
         self.money_card_value.setText(money)
         self.inventory_card_value.setText(str(len(info.inventory)))
+        integrity = f"CRC: {crc}" if info.crc_present else f"{info.integrity_name}: OK"
         self.summary_label.setText(
-            f"CRC: {crc}    Money: {money}    Inventory: {len(info.inventory)}    "
+            f"{integrity}    Money: {money}    Inventory: {len(info.inventory)}    "
             f"Grid cells: {info.grid_cell_count}    Orphans: {len(info.orphans)}"
         )
         warnings = " ".join(info.warnings)
         self.support_label.setText(
-            "Поддержанные данные: CRC, money, inventory snapshot. "
-            "Неизвестные handles остаются read-only."
+            (
+                "Поддержанные данные: CRC, money, inventory snapshot. "
+                if info.crc_present
+                else "Поддержанные данные: X-Ray container, money, actor inventory snapshot. "
+            )
+            + "Неизвестные handles остаются read-only."
             + (f" Предупреждения: {warnings}" if warnings else "")
         )
         self._render_metadata_rows(snapshot)
@@ -773,16 +803,21 @@ class MainWindow(QMainWindow):
                 f"Только чтение: handle 0x{int(handle):08X} не найден в текущем snapshot"
             )
             return
-        if not (1 <= int(new_count) <= 1_000_000):
+        max_count = item.count_max
+        if not (1 <= int(new_count) <= max_count):
             self.inventory_view.show_editability_message(
-                "Новое количество отклонено: допустим диапазон 1..1000000"
+                f"Новое количество отклонено: допустимый диапазон 1..{max_count}"
             )
             return
         if not item.editable_count:
             reason = (
+                "count не извлечён"
+                if item.count is None
+                else (
                 "count=1"
                 if item.count <= 1
                 else f"неподтверждённый kind={item.kind_code}"
+                )
             )
             self.inventory_view.show_editability_message(f"Только чтение: {reason}")
             return

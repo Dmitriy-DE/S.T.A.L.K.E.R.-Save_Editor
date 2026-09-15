@@ -35,16 +35,16 @@
 
 | Область | Сейчас | Задачи |
 |---|---|---|
-| Надёжность | Матрица `tests` зелёная 4/4 (Linux и Windows × Python 3.11/3.12), lint и typecheck в каждой job, self-test на личном файле | — |
+| Надёжность | Общий parser gate покрывает S.T.A.L.K.E.R. 2 и подтверждённые оригинальные X-Ray containers; полный release gate всё ещё требует Windows/runtime evidence | B02 |
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | Маленький seed SID, связи с save не доказаны | R01–R02 |
+| Названия и каталог | X-Ray показывает serialized section key; перевод/SID/catalog не доказаны | R01–R02 |
 | Прочность | Поле не доказано | R03–R04 |
-| Новые предметы/clone | Нет allocator/registry/prototype evidence | R05–R07 |
+| Новые предметы/clone | Нет allocator/registry/prototype evidence; добавление произвольных предметов запрещено | R05–R07 |
 | Настоящее удаление | Только detach | R08 |
 | Attachments/upgrades | Нет подтверждённой схемы | R09–R10 |
-| Размер output | Полностью несжатые restart blocks, примерно 27 MB | R11 |
+| Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
 
@@ -52,9 +52,13 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 
 ## Веб-версия
 
-`web/` запускает то же ядро в браузере через Pyodide, нативная распаковка —
-`ooz-wasm`. Сверка на реальном сейве: распаковка и обе правки дают те же
-SHA-256, что десктоп ([evidence](evidence/WEB_EDITION_2026-09-14.md)).
+`web/` запускает то же multi-format ядро в браузере через Pyodide: `ooz-wasm`
+для S.T.A.L.K.E.R. 2 и portable Python LZO для оригинальной трилогии. Веб
+принимает файл локально, распознаёт только зарегистрированный формат и
+отказывает на неизвестном; для оригинальной трилогии доступны чтение денег,
+serialized inventory и ограниченная правка денег/ammo stacks. Сверка S2
+остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
+покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
 [разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.pages.dev>,
 обновление — `make web-deploy` (Cloudflare Pages). Проверено
@@ -129,17 +133,34 @@ commit `851a30c`). JSON хранится в `user_data_dir()/settings.json`, п�
 (`197 passed`). Реальные Windows/GOG/Proton установки и игровой runtime этим
 результатом не подтверждены.
 
-## M06 — контейнер X-Ray — 2026-09-15
+## M06–M09 — оригинальная X-Ray трилогия — 2026-09-15
 
-Публичное исследование raw LZO1X, внешнего заголовка и chunk-направления
-записано в [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md) и вынесено в [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53).
-В рабочем дереве нет
-ни одного реального X-Ray `.sav`/`.bak`/`.scop`, а synthetic S.T.A.L.K.E.R. 2
-fixture для этой задачи не подходит. Поэтому M06 оставлена `blocked`: не
-добавлялись неподтверждённые parser/compressor, offsets или detector, и не
-объявлялся byte-for-byte round-trip. Требуется внешний контролируемый корпус с
-SHA, распаковкой, пересборкой и позднее игровой загрузкой. До него M07–M09
-не переходят к реализации.
+В [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md) зафиксированы raw LZO1X,
+внешний `magic/version/unpacked_len`, chunks и границы принятого корпуса.
+Общий `editor/xray_save.py` добавляет SoC/CS/CoP через таблицу specs:
+
+- SoC: outer 3, actor spawn 118, 4/4 локальных файлов;
+- CS: outer 5, actor spawn 124 на локальном корпусе, 56/56 файлов;
+- CoP: outer 6, actor spawn 128, 168/168 `.scop` файлов.
+
+Qt, CLI и web используют один detector/reader. Автопоиск принимает `.sav`,
+`.scop` и `.scs`-кандидаты, ручной picker и browser не ограничены расширением;
+неизвестный формат получает явный отказ. На desktop поиск кеширует неизменившийся
+size/mtime результат, а полный inspect всегда перечитывает bytes и SHA.
+
+Подтверждённая правка — actor money и ammo stack count (STATE + UPDATE), с
+immutable `EditPlan`, source SHA, backup/atomic export и повторным parse. Move,
+attach/detach, creation/clone/delete, durability/upgrades и произвольные
+предметы остаются read-only: для них нет доказанного allocator/prototype
+writer. Enhanced Editions также не объявлены поддержанными: на этой машине
+нет их установок/сейвов, а публичные сообщения указывают на отдельные
+варианты файлов.
+
+Локальный корпус подтверждает чтение и no-op SHA-preserving round-trip; game
+load/re-save, Windows runtime и Enhanced остаются внешними gates. Реализация и
+регрессии находятся в текущем проходе ветки `codex/m06-xray-container`, а
+исторические PR #53–#56 остаются открытыми документными карточками до
+переноса соответствующих коммитов.
 
 ## Текущий проход B02
 

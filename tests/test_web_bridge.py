@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "web"))
 
 import web_bridge  # noqa: E402 - web/ must be on sys.path first
+from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
 from editor.models import EditPlan, SourceRef  # noqa: E402
@@ -89,3 +90,21 @@ def test_install_decoder_routes_through_the_registered_decoder() -> None:
         assert calls == [(b"packed", 3)]
     finally:
         codec.clear_registered_decoder()
+
+
+def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
+    data = _fixture()
+
+    snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
+    assert snapshot["format_id"] == "stalker-cop"
+    assert snapshot["crc_present"] is False
+    assert snapshot["money"] == 1234
+    assert snapshot["inventory"][0]["name"] == "ammo_9x39_pab9"
+    assert snapshot["inventory"][0]["total_weight"] is None
+    assert all(row[0] != "UE5 GVAS schema" for row in snapshot["metadata"])
+
+    result = json.loads(web_bridge.prepare(9876, json.dumps([[0x1234, 44]])))
+
+    assert result["money"] == [1234, 9876]
+    assert result["stacks"] == [["0x00001234", 30, 44]]
+    assert result["source_unchanged"] is True
