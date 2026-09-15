@@ -17,9 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
-
-from .save_slots_view import GAME_IDS, GAME_TITLES
 
 
 class SettingsView(QWidget):
@@ -63,8 +62,8 @@ class SettingsView(QWidget):
         form.addRow("Корень Steam", self._path_row(self.steam_root_edit))
 
         self.game_combo = QComboBox()
-        for game_id in GAME_IDS:
-            self.game_combo.addItem(GAME_TITLES[game_id], game_id)
+        for release in official_releases():
+            self.game_combo.addItem(release.title, release.id)
         self.game_combo.currentIndexChanged.connect(self._load_game_fields)
         form.addRow("Игра", self.game_combo)
 

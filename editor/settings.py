@@ -15,10 +15,13 @@ from .platforms import (
     save_search_paths,
     user_data_dir,
 )
+from .releases import official_releases, release_by_id
 
 SETTINGS_SCHEMA_VERSION = 1
 SETTINGS_FILE_NAME = "settings.json"
 SUPPORTED_GAME_IDS = ("stalker2", "cop", "clear_sky", "soc")
+SUPPORTED_RELEASE_IDS = tuple(release.id for release in official_releases())
+_SUPPORTED_PATH_KEYS = frozenset((*SUPPORTED_GAME_IDS, *SUPPORTED_RELEASE_IDS))
 
 PathValue: TypeAlias = str | Path
 PathEntries: TypeAlias = Mapping[str, PathValue] | Sequence[tuple[str, PathValue]]
@@ -39,7 +42,7 @@ def _normalise_entries(value: PathEntries) -> tuple[tuple[str, Path], ...]:
     raw_entries = value.items() if isinstance(value, Mapping) else value
     result: dict[str, Path] = {}
     for game_id, raw_path in raw_entries:
-        if game_id not in SUPPORTED_GAME_IDS:
+        if game_id not in _SUPPORTED_PATH_KEYS:
             raise ValueError(f"unsupported game id: {game_id!r}")
         path = _normalise_path(raw_path)
         if path is None:
@@ -61,11 +64,25 @@ class PathSettings:
         object.__setattr__(self, "game_roots", _normalise_entries(self.game_roots))
         object.__setattr__(self, "save_roots", _normalise_entries(self.save_roots))
 
+    @staticmethod
+    def _lookup(
+        entries: tuple[tuple[str, Path], ...], selector: str
+    ) -> Path | None:
+        values = dict(entries)
+        exact = values.get(selector)
+        if exact is not None:
+            return exact
+        try:
+            family = release_by_id(selector).family
+        except KeyError:
+            family = None
+        return values.get(family) if family is not None else None
+
     def game_root(self, game_id: str) -> Path | None:
-        return dict(self.game_roots).get(game_id)
+        return self._lookup(self.game_roots, game_id)
 
     def save_root(self, game_id: str) -> Path | None:
-        return dict(self.save_roots).get(game_id)
+        return self._lookup(self.save_roots, game_id)
 
     def with_steam_root(self, value: PathValue | None) -> PathSettings:
         return PathSettings(_normalise_path(value), self.game_roots, self.save_roots)
@@ -324,6 +341,7 @@ __all__ = [
     "SETTINGS_FILE_NAME",
     "SETTINGS_SCHEMA_VERSION",
     "SUPPORTED_GAME_IDS",
+    "SUPPORTED_RELEASE_IDS",
     "PathSettings",
     "SettingsLoad",
     "load_settings",

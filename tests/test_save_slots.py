@@ -10,7 +10,13 @@ from editor.service import EditorService
 pytest.importorskip("PySide6")
 
 from ui.main_window import MainWindow
-from ui.save_slots_view import SaveDiscovery, SaveSlot, SaveSlotsView, discover_save_slots
+from ui.save_slots_view import (
+    SaveDiscovery,
+    SaveSlot,
+    SaveSlotsView,
+    UnsupportedSaveReason,
+    discover_save_slots,
+)
 
 
 def test_discover_save_slots_sorts_newest_first_and_marks_unknown(
@@ -80,6 +86,30 @@ def test_discover_save_slots_surfaces_enhanced_scs_candidates(tmp_path: Path) ->
 
     assert [slot.path for slot in result.slots] == [path]
     assert result.slots[0].format_id is None
+    assert result.slots[0].candidate_release_id == "clear_sky"
+    assert result.slots[0].unsupported_reason == UnsupportedSaveReason(
+        code="unknown_format",
+        message="Не распознано зарегистрированным форматом",
+    )
+
+
+def test_discover_save_slots_records_release_metadata_for_detected_content(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    folder = tmp_path / "saves"
+    folder.mkdir()
+    path = folder / "slot.sav"
+    path.write_bytes(synthetic_save)
+
+    result = discover_save_slots(
+        release_ids=("stalker2",),
+        search_paths_fn=lambda _release_id: (folder,),
+    )
+
+    slot = result.slots[0]
+    assert slot.candidate_release_id == "stalker2"
+    assert slot.detected_release_id == "stalker2"
+    assert slot.unsupported_reason is None
 
 
 def test_discover_save_slots_reuses_detection_for_unchanged_file(tmp_path: Path) -> None:

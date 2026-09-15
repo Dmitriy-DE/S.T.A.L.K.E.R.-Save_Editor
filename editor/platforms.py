@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeAlias
 
+from .releases import ReleaseDescriptor, official_releases
+
 LOGGER = logging.getLogger(__name__)
 
 APP_DIR_NAME = "Stalker2SaveEditor"
@@ -43,6 +45,12 @@ class InstalledGame:
         """Compatibility spelling for callers that use ``game.id``."""
 
         return self.game_id
+
+    @property
+    def release_id(self) -> str:
+        """Return the canonical official release represented by ``app_id``."""
+
+        return _RELEASE_ID_BY_APP_ID.get(self.app_id, self.game_id)
 
 
 @dataclass(frozen=True)
@@ -115,6 +123,37 @@ _GAME_ALIASES = {
     "call_of_prypiat": "cop",
     "call-of-prypiat": "cop",
 }
+
+_RELEASES_BY_ID: dict[str, ReleaseDescriptor] = {
+    release.id: release for release in official_releases()
+}
+_RELEASE_ID_BY_APP_ID: dict[int, str] = {
+    app_id: release.id
+    for release in official_releases()
+    for app_id in release.app_ids
+}
+
+
+def _release_selector(value: str) -> tuple[str, str | None, str | None]:
+    """Return ``(family, edition, release_id)`` for a family or release key."""
+
+    selector = value.strip().casefold()
+    for release_id, descriptor in _RELEASES_BY_ID.items():
+        if selector == release_id.casefold():
+            return descriptor.family, descriptor.edition, descriptor.id
+    family = _GAME_ALIASES.get(selector)
+    if family is None:
+        raise ValueError(f"Unsupported STALKER game id: {value!r}")
+    return family, None, None
+
+
+def _selected_release_ids(selector: str) -> tuple[str, ...]:
+    family, _edition, release_id = _release_selector(selector)
+    if release_id is not None:
+        return (release_id,)
+    return tuple(
+        descriptor.id for descriptor in official_releases() if descriptor.family == family
+    )
 
 _EE_SAVE_NAMES = {
     "soc": "STALKER Shadow of Chornobyl - EE",
@@ -893,6 +932,48 @@ def installed_games(
     return tuple(games)
 
 
+def installed_releases(
+    *,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    filesystem_root: Path | None = None,
+    root: Path | None = None,
+    registry_reader: Callable[[], str | Path | None] | None = None,
+    steam_library_roots: Sequence[str | Path] | None = None,
+) -> tuple[InstalledGame, ...]:
+    """Return installed official releases once per release and install tree.
+
+    Steam can expose the same library through more than one configured root.
+    The legacy :func:`installed_games` result remains unchanged for callers
+    that need every manifest observation; this public release-aware view is
+    the deduplicated selector used by path discovery.
+    """
+
+    games = installed_games(
+        system=system,
+        environ=environ,
+        home=home,
+        filesystem_root=filesystem_root,
+        root=root,
+        registry_reader=registry_reader,
+        steam_library_roots=steam_library_roots,
+    )
+    result: list[InstalledGame] = []
+    seen: set[tuple[str, Path]] = set()
+    for game in games:
+        try:
+            install_tree = game.install_dir.resolve()
+        except OSError:
+            install_tree = game.install_dir
+        key = (game.release_id, install_tree)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(game)
+    return tuple(result)
+
+
 def _document_roots(
     *,
     home: Path,
@@ -1184,9 +1265,7 @@ def _save_directory_candidates(
     with an installed release's own ``fsgame*.ltx`` result when present.
     """
 
-    key = _GAME_ALIASES.get(game_id.strip().casefold())
-    if key is None:
-        raise ValueError(f"Unsupported STALKER game id: {game_id!r}")
+    key, edition, selected_release_id = _release_selector(game_id)
     env = _environment(environ)
     filesystem_root = _effective_root(filesystem_root, root)
     home_path = _injected_home(home, filesystem_root)
@@ -1229,17 +1308,29 @@ def _save_directory_candidates(
                 filesystem_root=filesystem_root,
             ),
         )
-        _add_ee_candidates(
-            candidates,
-            key,
-            _saved_games_roots(
-                home=home_path,
-                environ=env,
-                filesystem_root=filesystem_root,
-            ),
-        )
+        if edition == "enhanced":
+            candidates = []
+            _add_ee_candidates(
+                candidates,
+                key,
+                _saved_games_roots(
+                    home=home_path,
+                    environ=env,
+                    filesystem_root=filesystem_root,
+                ),
+            )
+        elif edition != "original":
+            _add_ee_candidates(
+                candidates,
+                key,
+                _saved_games_roots(
+                    home=home_path,
+                    environ=env,
+                    filesystem_root=filesystem_root,
+                ),
+            )
 
-    games = installed_games(
+    games = installed_releases(
         system=name,
         environ=env,
         home=home_path,
@@ -1248,7 +1339,9 @@ def _save_directory_candidates(
         steam_library_roots=steam_library_roots,
     )
     for game in games:
-        if game.game_id != key:
+        if game.game_id != key or (
+            selected_release_id is not None and game.release_id != selected_release_id
+        ):
             continue
         override = _fsgame_save_directory(
             game.install_dir,
@@ -1342,9 +1435,7 @@ def manual_save_search_paths(
     a missing manual root should make automatic discovery available again.
     """
 
-    key = _GAME_ALIASES.get(game_id.strip().casefold())
-    if key is None:
-        raise ValueError(f"Unsupported STALKER game id: {game_id!r}")
+    key, edition, selected_release_id = _release_selector(game_id)
     env = _environment(environ)
     filesystem_root = _effective_root(filesystem_root, root)
     home_path = _injected_home(home, filesystem_root)
@@ -1375,7 +1466,7 @@ def manual_save_search_paths(
                     install_dir / "Saved" / "GOG" / "SaveGames",
                 )
             )
-        else:
+        elif edition != "enhanced":
             override = _fsgame_save_directory(
                 install_dir,
                 game_id=key,
@@ -1392,7 +1483,7 @@ def manual_save_search_paths(
         return ()
 
     selected_steam_root = as_path(steam_root)
-    games = installed_games(
+    games = installed_releases(
         system=name,
         environ=env,
         home=home_path,
@@ -1401,7 +1492,9 @@ def manual_save_search_paths(
     )
     candidates = []
     for game in games:
-        if game.game_id != key:
+        if game.game_id != key or (
+            selected_release_id is not None and game.release_id != selected_release_id
+        ):
             continue
         override = _fsgame_save_directory(
             game.install_dir,

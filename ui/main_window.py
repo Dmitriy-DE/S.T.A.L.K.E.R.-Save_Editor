@@ -44,7 +44,12 @@ from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
-from .save_slots_view import SaveSlotsView, SlotDiscoveryFn, discover_save_slots
+from .save_slots_view import (
+    RELEASE_IDS,
+    SaveSlotsView,
+    SlotDiscoveryFn,
+    discover_save_slots,
+)
 from .settings_view import SettingsView
 from .theme import apply_theme
 
@@ -573,8 +578,9 @@ class MainWindow(QMainWindow):
 
     def _discover_slots(self):
         return discover_save_slots(
-            search_paths_fn=lambda game_id: search_paths_for_settings(
-                game_id, self.settings
+            release_ids=RELEASE_IDS,
+            search_paths_fn=lambda release_id: search_paths_for_settings(
+                release_id, self.settings
             )
         )
 

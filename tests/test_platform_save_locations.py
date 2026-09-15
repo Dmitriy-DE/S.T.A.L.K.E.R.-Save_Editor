@@ -5,6 +5,7 @@ from pathlib import Path
 from editor.platforms import (
     InstalledGame,
     installed_games,
+    installed_releases,
     manual_save_search_paths,
     save_directories,
     save_search_paths,
@@ -115,6 +116,73 @@ def test_installed_games_require_manifest_and_install_directory(tmp_path: Path) 
             install_dir=install_dir,
         ),
     )
+
+
+def test_installed_releases_exposes_canonical_release_id_and_deduplicates_roots(
+    tmp_path: Path,
+) -> None:
+    library = tmp_path / "library"
+    install_dir = library / "steamapps" / "common" / "STALKER Clear Sky"
+    install_dir.mkdir(parents=True)
+    manifest_dir = library / "steamapps"
+    (manifest_dir / "appmanifest_20510.acf").write_text(
+        _manifest(20510, "STALKER Clear Sky"),
+        encoding="utf-8",
+    )
+
+    releases = installed_releases(
+        system="Linux",
+        environ={},
+        home=tmp_path / "home",
+        steam_library_roots=(library, library),
+    )
+
+    assert len(releases) == 1
+    assert releases[0].release_id == "stalker-cs"
+    assert releases[0].game_id == "clear_sky"
+
+
+def test_release_specific_search_does_not_mix_original_and_enhanced_roots(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    documents = home / "Documents"
+    original = documents / "stalker-shoc" / "savedgames"
+    enhanced = (
+        home
+        / "Saved Games"
+        / "STALKER Shadow of Chornobyl - EE"
+        / "STEAM"
+        / "savedgames"
+    )
+    original.mkdir(parents=True)
+    enhanced.mkdir(parents=True)
+
+    original_paths = save_search_paths(
+        "stalker-soc",
+        system="Windows",
+        environ={},
+        home=home,
+    )
+    enhanced_paths = save_search_paths(
+        "stalker-soc-ee",
+        system="Windows",
+        environ={},
+        home=home,
+    )
+
+    assert original in original_paths
+    assert enhanced not in original_paths
+    assert enhanced in enhanced_paths
+    assert original not in enhanced_paths
+
+
+def test_manual_release_save_root_stays_exclusive(tmp_path: Path) -> None:
+    selected = tmp_path / "selected"
+    selected.mkdir()
+
+    assert manual_save_search_paths("stalker-cs-ee", save_root=selected) == (selected,)
+
 
 
 def test_save_directories_find_localized_documents_directory(tmp_path: Path) -> None:

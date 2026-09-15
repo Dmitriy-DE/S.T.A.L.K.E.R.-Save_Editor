@@ -74,6 +74,24 @@ def test_settings_round_trip_uses_versioned_json(tmp_path: Path) -> None:
     assert loaded.error is None
 
 
+def test_settings_accept_release_specific_manual_roots_and_legacy_family_lookup(
+    tmp_path: Path,
+) -> None:
+    settings_path = tmp_path / "settings.json"
+    enhanced = tmp_path / "enhanced saves"
+    enhanced.mkdir()
+    settings = PathSettings(save_roots=(("stalker-soc-ee", enhanced),))
+
+    save_settings(settings, path=settings_path)
+    loaded = load_settings(path=settings_path)
+
+    assert loaded.settings.save_root("stalker-soc-ee") == enhanced
+    assert loaded.settings.save_root("stalker-soc") is None
+
+    legacy = PathSettings(save_roots=(("soc", enhanced),))
+    assert legacy.save_root("stalker-soc") == enhanced
+
+
 def test_missing_settings_file_is_empty_without_error(tmp_path: Path) -> None:
     loaded = load_settings(path=tmp_path / "missing.json")
 
@@ -118,6 +136,18 @@ def test_settings_view_explains_missing_path_and_can_persist_selection(
         view.save()
 
     assert load_settings(path=settings_path).settings.save_root("stalker2") == selected
+
+
+def test_settings_view_lists_original_and_enhanced_release_choices(
+    qtbot, tmp_path: Path
+) -> None:
+    view = SettingsView(PathSettings(), settings_path=tmp_path / "settings.json")
+    qtbot.addWidget(view)
+
+    ids = [view.game_combo.itemData(index) for index in range(view.game_combo.count())]
+
+    assert "stalker-soc" in ids
+    assert "stalker-soc-ee" in ids
 
 
 def test_main_window_discovers_from_loaded_manual_save_root(

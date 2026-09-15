@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from editor.formats import SaveFormat, detect, detect_fast
 from editor.platforms import save_search_paths
+from editor.releases import official_releases, release_by_id
 
 GAME_TITLES: dict[str, str] = {
     "stalker2": "S.T.A.L.K.E.R. 2: Heart of Chornobyl",
@@ -31,6 +32,10 @@ GAME_TITLES: dict[str, str] = {
     "soc": "S.T.A.L.K.E.R.: Shadow of Chernobyl",
 }
 GAME_IDS: tuple[str, ...] = ("stalker2", "cop", "clear_sky", "soc")
+RELEASE_IDS: tuple[str, ...] = tuple(release.id for release in official_releases())
+RELEASE_TITLES: dict[str, str] = {
+    release.id: release.title for release in official_releases()
+}
 SAVE_SUFFIXES = frozenset({".sav", ".scop", ".scs"})
 
 
@@ -70,6 +75,9 @@ class SaveSlot:
     format_id: str | None = None
     format_title: str | None = None
     detection_error: str | None = None
+    candidate_release_id: str | None = None
+    detected_release_id: str | None = None
+    unsupported_reason: UnsupportedSaveReason | None = None
 
     @property
     def game_id(self) -> str | None:
@@ -92,7 +100,17 @@ class SaveSlot:
             return f"{title} [{self.format_id}]"
         if self.detection_error:
             return f"Ошибка чтения: {self.detection_error}"
+        if self.unsupported_reason is not None:
+            return self.unsupported_reason.message
         return "Не распознано ни одним форматом"
+
+
+@dataclass(frozen=True)
+class UnsupportedSaveReason:
+    """Structured reason kept with a candidate that cannot be opened."""
+
+    code: str
+    message: str
 
 
 @dataclass(frozen=True)
@@ -106,7 +124,9 @@ class SaveDiscovery:
 SearchPathsFn: TypeAlias = Callable[[str], Sequence[Path]]
 DetectFn: TypeAlias = Callable[[bytes], SaveFormat | None]
 SlotDiscoveryFn: TypeAlias = Callable[[], SaveDiscovery]
-_DetectionCacheValue: TypeAlias = tuple[int, int, str | None, str | None, str | None]
+_DetectionCacheValue: TypeAlias = tuple[
+    int, int, str | None, str | None, str | None, str | None, str | None
+]
 
 # Discovery is repeated when the user changes tabs/settings and when several
 # windows are created by the UI test harness.  Cache only the content-detection
@@ -118,6 +138,7 @@ _DETECTION_CACHE: dict[tuple[Path, int], _DetectionCacheValue] = {}
 def discover_save_slots(
     *,
     game_ids: Sequence[str] = GAME_IDS,
+    release_ids: Sequence[str] | None = None,
     search_paths_fn: SearchPathsFn = save_search_paths,
     detect_fn: DetectFn = detect,
 ) -> SaveDiscovery:
@@ -135,9 +156,20 @@ def discover_save_slots(
     detector: DetectFn = detect_fast if detect_fn is detect else detect_fn
     detector_key = 0 if detector is detect_fast else id(detector)
 
-    for game_id in game_ids:
-        candidate_title = GAME_TITLES.get(game_id, game_id)
-        for raw_directory in search_paths_fn(game_id):
+    selectors = tuple(game_ids if release_ids is None else release_ids)
+    for selector in selectors:
+        try:
+            descriptor = release_by_id(selector)
+        except KeyError:
+            descriptor = None
+        candidate_game_id = descriptor.family if descriptor is not None else selector
+        candidate_release_id = descriptor.id if descriptor is not None else selector
+        candidate_title = (
+            descriptor.title
+            if descriptor is not None
+            else GAME_TITLES.get(selector, selector)
+        )
+        for raw_directory in search_paths_fn(selector):
             directory = Path(raw_directory).expanduser()
             if directory not in searched_seen:
                 searched_seen.add(directory)
@@ -165,13 +197,27 @@ def discover_save_slots(
                     slots.append(
                         SaveSlot(
                             path=path,
-                            candidate_game_id=game_id,
+                            candidate_game_id=candidate_game_id,
                             candidate_game_title=candidate_title,
                             size=stat.st_size,
                             modified_ns=stat.st_mtime_ns,
                             format_id=cached[2],
                             format_title=cached[3],
-                            detection_error=cached[4],
+                            detection_error=cached[5],
+                            candidate_release_id=candidate_release_id,
+                            detected_release_id=cached[4],
+                            unsupported_reason=(
+                                None
+                                if cached[2] is not None
+                                else UnsupportedSaveReason(
+                                    code=cached[6] or "unknown_format",
+                                    message=(
+                                        f"Ошибка проверки: {cached[5]}"
+                                        if cached[5]
+                                        else "Не распознано зарегистрированным форматом"
+                                    ),
+                                )
+                            ),
                         )
                     )
                     continue
@@ -183,16 +229,23 @@ def discover_save_slots(
                         stat.st_mtime_ns,
                         None,
                         None,
+                        None,
                         f"{type(exc).__name__}: {exc}",
+                        "read_error",
                     )
                     slots.append(
                         SaveSlot(
                             path=path,
-                            candidate_game_id=game_id,
+                            candidate_game_id=candidate_game_id,
                             candidate_game_title=candidate_title,
                             size=stat.st_size,
                             modified_ns=stat.st_mtime_ns,
                             detection_error=f"{type(exc).__name__}: {exc}",
+                            candidate_release_id=candidate_release_id,
+                            unsupported_reason=UnsupportedSaveReason(
+                                code="read_error",
+                                message=f"Ошибка чтения: {type(exc).__name__}: {exc}",
+                            ),
                         )
                     )
                     continue
@@ -205,16 +258,23 @@ def discover_save_slots(
                         stat.st_mtime_ns,
                         None,
                         None,
+                        None,
                         f"{type(exc).__name__}: {exc}",
+                        "detection_error",
                     )
                     slots.append(
                         SaveSlot(
                             path=path,
-                            candidate_game_id=game_id,
+                            candidate_game_id=candidate_game_id,
                             candidate_game_title=candidate_title,
                             size=stat.st_size,
                             modified_ns=stat.st_mtime_ns,
                             detection_error=f"{type(exc).__name__}: {exc}",
+                            candidate_release_id=candidate_release_id,
+                            unsupported_reason=UnsupportedSaveReason(
+                                code="detection_error",
+                                message=f"Ошибка проверки: {type(exc).__name__}: {exc}",
+                            ),
                         )
                     )
                     continue
@@ -224,17 +284,31 @@ def discover_save_slots(
                     stat.st_mtime_ns,
                     format_.id if format_ is not None else None,
                     format_.title if format_ is not None else None,
+                    format_.release_id if format_ is not None else None,
+                    None,
                     None,
                 )
                 slots.append(
                     SaveSlot(
                         path=path,
-                        candidate_game_id=game_id,
+                        candidate_game_id=candidate_game_id,
                         candidate_game_title=candidate_title,
                         size=stat.st_size,
                         modified_ns=stat.st_mtime_ns,
                         format_id=format_.id if format_ is not None else None,
                         format_title=format_.title if format_ is not None else None,
+                        candidate_release_id=candidate_release_id,
+                        detected_release_id=(
+                            format_.release_id if format_ is not None else None
+                        ),
+                        unsupported_reason=(
+                            None
+                            if format_ is not None
+                            else UnsupportedSaveReason(
+                                code="unknown_format",
+                                message="Не распознано зарегистрированным форматом",
+                            )
+                        ),
                     )
                 )
 
@@ -421,11 +495,14 @@ class SaveSlotsView(QWidget):
 __all__ = [
     "GAME_IDS",
     "GAME_TITLES",
+    "RELEASE_IDS",
+    "RELEASE_TITLES",
     "SAVE_SUFFIXES",
     "SaveDiscovery",
     "SaveSlot",
     "SaveSlotsView",
     "SlotDiscoveryFn",
     "SlotDiscoveryWorker",
+    "UnsupportedSaveReason",
     "discover_save_slots",
 ]
