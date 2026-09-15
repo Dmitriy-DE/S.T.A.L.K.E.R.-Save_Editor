@@ -32,3 +32,23 @@ that every retail language, patch, GOG installation, or Enhanced Edition has
 the same catalog. `prototype` remains `None`; catalog-backed add uses the
 item key/family metadata together with a same-family template already present
 in the selected save, rather than copying prototype bytes from an archive.
+
+## Full-key in-memory writer probe — 2026-09-15
+
+`.venv/bin/python tools/verify_xray_catalog.py` was run
+read-only with one installed official save directory per original release.
+The verifier clones every catalog key through the same serializer-family
+writer helper, rebuilds one temporary container in memory, and parses it
+again. It does not write an edited save or print personal paths.
+
+| Release | Candidate saves | Catalog keys | Keys with a template | Keys visible after round-trip | Failures |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original Shadow of Chernobyl | 4 | 389 | 389 | 389 | 0 |
+| Original Clear Sky | 56 | 417 | 417 | 417 | 0 |
+| Original Call of Pripyat | 168 | 434 | 434 | 434 | 0 |
+
+This is the strongest current evidence that the original desktop/web catalog
+can stage every key in the official resource catalog using an existing save
+template. It is still structural evidence: it does not prove game load/re-save,
+localized display names, correct weight/grid placement, durability/upgrades,
+quest uniqueness, or reference-safe removal.
