@@ -687,7 +687,9 @@ def steam_libraries(
     home_path = _injected_home(home, filesystem_root)
     roots = (
         tuple(
-            _path_value(
+            value.expanduser()
+            if isinstance(value, Path)
+            else _path_value(
                 value,
                 home=home_path,
                 environ=env,
