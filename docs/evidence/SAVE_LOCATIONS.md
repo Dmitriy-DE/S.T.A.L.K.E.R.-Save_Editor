@@ -10,6 +10,7 @@
 |---|---|---|
 | S.T.A.L.K.E.R. 2, Windows/общий | `%LOCALAPPDATA%\Stalker2\Saved\SaveGames` | [PCGamingWiki: S.T.A.L.K.E.R. 2](https://www.pcgamingwiki.com/wiki/S.T.A.L.K.E.R._2%3A_Heart_of_Chornobyl), строка Save game data location; сверено с GOG/Steam строками той же таблицы. |
 | S.T.A.L.K.E.R. 2, Steam | `%LOCALAPPDATA%\Stalker2\Saved\STEAM\SaveGames` | [PCGamingWiki: S.T.A.L.K.E.R. 2](https://www.pcgamingwiki.com/wiki/S.T.A.L.K.E.R._2%3A_Heart_of_Chornobyl), Steam row. |
+| S.T.A.L.K.E.R. 2, Epic/EOS | `%LOCALAPPDATA%\Stalker2\Saved\EOS\SaveGames` | [официальное руководство GSC по сохранениям](https://www.stalker2.com/news/saves-managing-manual), EOS path. |
 | S.T.A.L.K.E.R. 2, GOG | `%LOCALAPPDATA%\Stalker2\Saved\GOG\SaveGames` | [PCGamingWiki: S.T.A.L.K.E.R. 2](https://www.pcgamingwiki.com/wiki/S.T.A.L.K.E.R._2%3A_Heart_of_Chornobyl), GOG row. |
 | S.T.A.L.K.E.R. 2, Game Pass/Microsoft Store | `%LOCALAPPDATA%\Packages\GSCGameWorld.S.T.A.L.K.E.R.2HeartofChornobyl_6fr1t1rwfarwt\SystemAppData\xgs\<user-id>\SaveGames` | [PCGamingWiki: S.T.A.L.K.E.R. 2](https://www.pcgamingwiki.com/wiki/S.T.A.L.K.E.R._2%3A_Heart_of_Chornobyl), Microsoft Store row. `<user-id>` не угадывается: discovery перечисляет существующие каталоги под `xgs`. |
 | Shadow of Chernobyl, оригинал/retail | `%PUBLIC%\Documents\stalker-shoc\savedgames` | [PCGamingWiki: Shadow of Chernobyl](https://www.pcgamingwiki.com/wiki/S.T.A.L.K.E.R.%3A_Shadow_of_Chernobyl), Windows row; страница отдельно перечисляет патчи 1.0004–1.0006. |
@@ -44,7 +45,8 @@ paths and gives the Steam app ID. Поэтому статический путь
 Для старых X-Ray сборок также проверяются `drive_c/users/Public/Documents` и
 `drive_c/ProgramData/Documents`: некоторые retail-конфигурации используют
 `%PUBLIC%`/`Public Documents`. Для S.T.A.L.K.E.R. 2 проверяется
-`drive_c/users/steamuser/AppData/Local/Stalker2/Saved/...`.
+`drive_c/users/steamuser/AppData/Local/Stalker2/Saved/...`, включая
+`SaveGames`, `STEAM`, `EOS` и `GOG`.
 
 App ID сверены по SteamDB: SoC `4500`, Clear Sky `20510`, Call of Pripyat
 `41700`, S.T.A.L.K.E.R. 2 `1643320`, Enhanced `2427410`, `2427420`, `2427430`.

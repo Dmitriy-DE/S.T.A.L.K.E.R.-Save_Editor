@@ -93,6 +93,29 @@ def test_discover_save_slots_surfaces_enhanced_scs_candidates(tmp_path: Path) ->
     )
 
 
+def test_discover_save_slots_explains_unavailable_enhanced_parser(
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "enhanced"
+    folder.mkdir()
+    path = folder / "quicksave.sav"
+    path.write_bytes(b"unknown enhanced save")
+
+    result = discover_save_slots(
+        release_ids=("stalker-cs-ee",),
+        search_paths_fn=lambda _release_id: (folder,),
+    )
+
+    assert result.slots[0].candidate_release_id == "stalker-cs-ee"
+    assert result.slots[0].unsupported_reason == UnsupportedSaveReason(
+        code="unsupported_release",
+        message=(
+            "Найден официальный сейв Enhanced Edition, но его формат "
+            "ещё не подтверждён и не поддерживается"
+        ),
+    )
+
+
 def test_discover_save_slots_records_release_metadata_for_detected_content(
     synthetic_save: bytes, tmp_path: Path
 ) -> None:

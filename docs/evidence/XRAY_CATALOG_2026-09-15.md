@@ -24,11 +24,11 @@ on the Linux host. The probe passed the selected install root to
 | Release | Source accepted | Items | Categories | Result |
 | --- | --- | ---: | --- | --- |
 | Original Shadow of Chernobyl | official packed X-Ray archives | 389 | ammo 51; artifact 60; consumable 12; grenade 14; item 91; outfit 13; weapon 148 | accepted for read-only catalog extraction |
-| Original Clear Sky | unpacked `gamedata` contained an `OGSM` community-mod marker | 0 | — | rejected under official-only scope |
-| Original Call of Pripyat | no verified catalog resource tree found by the provider | 0 | — | catalog unavailable; save keys remain read-only |
+| Original Clear Sky | official packed X-Ray archives; unpacked `gamedata` overlay ignored because it contained an `OGSM` community-mod marker | 417 | ammo 50; artifact 53; consumable 9; grenade 10; item 111; outfit 11; weapon 173 | accepted for read-only catalog extraction |
+| Original Call of Pripyat | official packed X-Ray archives | 434 | ammo 47; artifact 57; consumable 17; grenade 14; item 134; outfit 10; weapon 155 | accepted for read-only catalog extraction |
 
 These counts prove the reader against the current host only. They do not prove
-that every retail language, patch, GOG installation, Enhanced Edition, or
-unmodified Clear Sky/Call of Pripyat resource tree has the same catalog.
-`prototype` remains `None`; no add/clone operation is enabled by this catalog
-slice.
+that every retail language, patch, GOG installation, or Enhanced Edition has
+the same catalog. `prototype` remains `None`; catalog-backed add uses the
+item key/family metadata together with a same-family template already present
+in the selected save, rather than copying prototype bytes from an archive.

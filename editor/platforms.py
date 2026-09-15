@@ -1209,6 +1209,7 @@ def _add_proton_candidates(candidates: list[Path], game: InstalledGame) -> None:
                 (
                     local / "SaveGames",
                     local / "STEAM" / "SaveGames",
+                    local / "EOS" / "SaveGames",
                     local / "GOG" / "SaveGames",
                 )
             )
@@ -1229,6 +1230,34 @@ def _add_proton_candidates(candidates: list[Path], game: InstalledGame) -> None:
     candidates.extend(
         prefix / "ProgramData" / "Documents" / folder / "savedgames"
         for folder in _XRAY_SAVE_DIRS[game.game_id]
+    )
+
+
+def _stalker2_local_save_directories(
+    *,
+    environ: Mapping[str, str],
+    home: Path,
+    filesystem_root: Path | None,
+) -> tuple[Path, ...]:
+    """Return the documented local S2 profile save roots in stable order."""
+
+    local = _env_get(environ, "LOCALAPPDATA")
+    local_root = (
+        _path_value(
+            local,
+            home=home,
+            environ=environ,
+            filesystem_root=filesystem_root,
+        )
+        if local
+        else home / "AppData" / "Local"
+    )
+    saved = local_root / "Stalker2" / "Saved"
+    return (
+        saved / "SaveGames",
+        saved / "STEAM" / "SaveGames",
+        saved / "EOS" / "SaveGames",
+        saved / "GOG" / "SaveGames",
     )
 
 
@@ -1287,22 +1316,11 @@ def _save_directory_candidates(
     candidates: list[Path] = []
 
     if key == "stalker2":
-        local = _env_get(env, "LOCALAPPDATA")
-        local_root = (
-            _path_value(
-                local,
-                home=home_path,
-                environ=env,
-                filesystem_root=filesystem_root,
-            )
-            if local
-            else home_path / "AppData" / "Local"
-        )
         candidates.extend(
-            (
-                local_root / "Stalker2" / "Saved" / "SaveGames",
-                local_root / "Stalker2" / "Saved" / "STEAM" / "SaveGames",
-                local_root / "Stalker2" / "Saved" / "GOG" / "SaveGames",
+            _stalker2_local_save_directories(
+                environ=env,
+                home=home_path,
+                filesystem_root=filesystem_root,
             )
         )
         candidates.extend(
@@ -1470,14 +1488,22 @@ def manual_save_search_paths(
         install_dir = as_path(game_root)
         candidates: list[Path] = []
         if key == "stalker2":
-            # A manually selected S.T.A.L.K.E.R. 2 game folder only scopes the
-            # search to project-relative candidates.  Its documented local
-            # AppData saves can be selected explicitly as a save root.
             candidates.extend(
                 (
                     install_dir / "Saved" / "SaveGames",
                     install_dir / "Saved" / "STEAM" / "SaveGames",
+                    install_dir / "Saved" / "EOS" / "SaveGames",
                     install_dir / "Saved" / "GOG" / "SaveGames",
+                )
+            )
+            # S2 keeps saves under the user profile rather than beside the
+            # executable.  A selected game directory still identifies the
+            # release, so include the documented profile roots as well.
+            candidates.extend(
+                _stalker2_local_save_directories(
+                    environ=env,
+                    home=home_path,
+                    filesystem_root=filesystem_root,
                 )
             )
         elif edition != "enhanced":
@@ -1544,21 +1570,11 @@ def manual_save_search_paths(
             candidates.append(override)
         if name == "windows":
             if game.game_id == "stalker2":
-                local = _env_get(env, "LOCALAPPDATA")
-                local_root = (
-                    _path_value(
-                        local,
-                        home=home_path,
-                        environ=env,
-                        filesystem_root=filesystem_root,
-                    )
-                    if local
-                    else home_path / "AppData" / "Local"
-                )
                 candidates.extend(
-                    (
-                        local_root / "Stalker2" / "Saved" / "SaveGames",
-                        local_root / "Stalker2" / "Saved" / "STEAM" / "SaveGames",
+                    _stalker2_local_save_directories(
+                        environ=env,
+                        home=home_path,
+                        filesystem_root=filesystem_root,
                     )
                 )
             elif game.edition == "original":

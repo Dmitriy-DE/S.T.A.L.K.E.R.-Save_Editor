@@ -135,6 +135,27 @@ _DetectionCacheValue: TypeAlias = tuple[
 _DETECTION_CACHE: dict[tuple[Path, int], _DetectionCacheValue] = {}
 
 
+def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
+    """Explain why a known official candidate cannot currently be opened."""
+
+    try:
+        descriptor = release_by_id(candidate_release_id)
+    except KeyError:
+        descriptor = None
+    if descriptor is not None and descriptor.edition == "enhanced":
+        return UnsupportedSaveReason(
+            code="unsupported_release",
+            message=(
+                "Найден официальный сейв Enhanced Edition, но его формат "
+                "ещё не подтверждён и не поддерживается"
+            ),
+        )
+    return UnsupportedSaveReason(
+        code="unknown_format",
+        message="Не распознано зарегистрированным форматом",
+    )
+
+
 def discover_save_slots(
     *,
     game_ids: Sequence[str] = GAME_IDS,
@@ -209,13 +230,13 @@ def discover_save_slots(
                             unsupported_reason=(
                                 None
                                 if cached[2] is not None
-                                else UnsupportedSaveReason(
-                                    code=cached[6] or "unknown_format",
-                                    message=(
-                                        f"Ошибка проверки: {cached[5]}"
-                                        if cached[5]
-                                        else "Не распознано зарегистрированным форматом"
-                                    ),
+                                else (
+                                    UnsupportedSaveReason(
+                                        code=cached[6] or "detection_error",
+                                        message=f"Ошибка проверки: {cached[5]}",
+                                    )
+                                    if cached[5]
+                                    else _unknown_format_reason(candidate_release_id)
                                 )
                             ),
                         )
@@ -304,10 +325,7 @@ def discover_save_slots(
                         unsupported_reason=(
                             None
                             if format_ is not None
-                            else UnsupportedSaveReason(
-                                code="unknown_format",
-                                message="Не распознано зарегистрированным форматом",
-                            )
+                            else _unknown_format_reason(candidate_release_id)
                         ),
                     )
                 )

@@ -381,6 +381,40 @@ def test_save_search_paths_explains_missing_candidates_without_creating_them(
     assert not home.exists()
 
 
+def test_stalker2_save_search_paths_include_eos_profile(tmp_path: Path) -> None:
+    local_app_data = tmp_path / "local-app-data"
+    expected = (
+        local_app_data
+        / "Stalker2"
+        / "Saved"
+        / "EOS"
+        / "SaveGames"
+    )
+
+    assert expected in save_search_paths(
+        "stalker2",
+        system="Windows",
+        environ={"LOCALAPPDATA": str(local_app_data)},
+        home=tmp_path / "home",
+    )
+
+
+def test_manual_stalker2_game_root_also_checks_documented_local_appdata(
+    tmp_path: Path,
+) -> None:
+    local_app_data = tmp_path / "local-app-data"
+    game_root = tmp_path / "S.T.A.L.K.E.R. 2 Heart of Chornobyl"
+    expected = local_app_data / "Stalker2" / "Saved" / "EOS" / "SaveGames"
+
+    assert expected in manual_save_search_paths(
+        "stalker2",
+        game_root=game_root,
+        system="Windows",
+        environ={"LOCALAPPDATA": str(local_app_data)},
+        home=tmp_path / "home",
+    )
+
+
 def test_manual_game_root_uses_fsgame_override_without_auto_fallback(tmp_path: Path) -> None:
     game_root = tmp_path / "STALKER Clear Sky"
     game_root.mkdir()

@@ -21,10 +21,11 @@ local-file-only и content-detects файл тем же ядром. Capability f
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
 [catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
-Локальный Linux gate текущего прохода: `make check` exit 0, `267 passed`; ruff,
+Локальный Linux gate текущего прохода: `make check` exit 0, `273 passed`; ruff,
 mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
 `tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
-Pages revision `f46c1cf8` прочитан обратно с HTTP 200 после обновления каталога.
+Pages revision `f80a132d` прочитан обратно с HTTP 200 после обновления каталога и
+поиска Enhanced-путей.
 Точные хэши и URL записаны в
 [release evidence](evidence/RELEASE_2026-09-15.md). Это не заменяет Windows
 runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
@@ -124,7 +125,7 @@ commit `23a02a3`). `steam_roots` учитывает Windows registry/fallback и
 legacy и Flatpak Linux; `steam_libraries` сам разбирает KeyValues
 `libraryfolders.vdf`, пропуская битый root с warning; `installed_games`
 проверяет appmanifest и каталог. `save_directories` включает четыре семейства,
-S2 Steam/GOG/Microsoft Store, original `_appdata_`, Enhanced/Legends,
+S2 Steam/EOS/GOG/Microsoft Store, original `_appdata_`, Enhanced/Legends,
 локализованные Documents, Proton prefix и `fsgame*.ltx` override.
 
 Источниковые пути и пробелы evidence записаны в
