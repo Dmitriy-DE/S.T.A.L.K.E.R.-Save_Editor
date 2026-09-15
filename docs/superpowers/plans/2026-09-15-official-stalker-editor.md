@@ -343,9 +343,9 @@ another boundary is required:
 - [x] **Step 7: Update docs and task statuses with exact evidence, commit/PR,
   deployment, and open gates.** A local green suite cannot close missing EE or
   in-game acceptance rows.
-- [ ] **Step 8: Review the final diff, current branch, remote state, generated
-  files, and clean working tree.** Only then report completion or the exact
-  remaining external gate.
+- [x] **Step 8: Review the final diff, current branch, remote state, generated
+  files, and clean working tree.** Final local/remote review is recorded for
+  branch `codex/m06-xray-container` at `7d6cd65`.
 
 ## Plan Completion Criteria
 
