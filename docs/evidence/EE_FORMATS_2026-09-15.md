@@ -22,9 +22,11 @@ providers. The probe did not open Steam, write a save, or print personal paths.
 | Original Call of Pripyat | 1 | 1 | 168 `.scop` | registered original X-Ray profile |
 
 The zero EE rows are a current-host observation, not a claim that the releases
-do not create saves on Windows. Candidate extensions such as `.scs` remain
-visible to desktop discovery as unsupported candidates instead of being
-silently ignored.
+do not create saves on Windows. Desktop discovery now covers the documented
+`Saved Games/<release>- EE/{STEAM,gog}/savedgames` roots, both `Prypiat` and
+`Pripyat` spellings, and the corresponding Proton prefixes. Candidate hints
+include `.sav`, `.scop`, `.scs` and the `.dds`/`.info` sidecars; sidecars remain
+non-editable and all EE candidates remain unsupported until a parser exists.
 
 ## Public leads checked
 

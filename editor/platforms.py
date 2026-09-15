@@ -155,10 +155,16 @@ def _selected_release_ids(selector: str) -> tuple[str, ...]:
         descriptor.id for descriptor in official_releases() if descriptor.family == family
     )
 
-_EE_SAVE_NAMES = {
-    "soc": "STALKER Shadow of Chornobyl - EE",
-    "clear_sky": "STALKER Clear Sky - EE",
-    "cop": "STALKER Call of Prypiat - EE",
+_EE_SAVE_NAMES: dict[str, tuple[str, ...]] = {
+    "soc": ("STALKER Shadow of Chornobyl - EE",),
+    "clear_sky": ("STALKER Clear Sky - EE",),
+    # Both spellings are present in public Steam/PC path references.  Keep
+    # them as independent candidates because Linux Proton paths are case- and
+    # spelling-sensitive even though Windows is not.
+    "cop": (
+        "STALKER Call of Prypiat - EE",
+        "STALKER Call of Pripyat - EE",
+    ),
 }
 
 _DOCUMENT_NAMES = {
@@ -1182,13 +1188,15 @@ def _add_ee_candidates(
     game_id: str,
     roots: Sequence[Path],
 ) -> None:
-    name = _EE_SAVE_NAMES[game_id]
+    names = _EE_SAVE_NAMES[game_id]
     for saved_games in roots:
-        candidates.append(saved_games / name / "STEAM" / "savedgames")
-        # The Shadow page documents the GOG spelling explicitly.  The same
-        # existing-directory probe is useful for the other two EE releases,
-        # whose PCGW pages currently list the GOG edition but omit its path.
-        candidates.append(saved_games / name / "gog" / "savedgames")
+        for name in names:
+            candidates.append(saved_games / name / "STEAM" / "savedgames")
+            # The Shadow page documents the GOG spelling explicitly.  The
+            # same existing-directory probe is useful for the other two EE
+            # releases, whose PCGW pages currently list the GOG edition but
+            # omit its path.
+            candidates.append(saved_games / name / "gog" / "savedgames")
 
 
 def _add_proton_candidates(candidates: list[Path], game: InstalledGame) -> None:
@@ -1211,7 +1219,13 @@ def _add_proton_candidates(candidates: list[Path], game: InstalledGame) -> None:
             candidates.append(documents / folder / "savedgames")
         saved_games = user / "Saved Games"
         if game.edition == "enhanced":
-            candidates.append(saved_games / _EE_SAVE_NAMES[game.game_id] / "STEAM" / "savedgames")
+            for name in _EE_SAVE_NAMES[game.game_id]:
+                candidates.extend(
+                    (
+                        saved_games / name / "STEAM" / "savedgames",
+                        saved_games / name / "gog" / "savedgames",
+                    )
+                )
     candidates.extend(
         prefix / "ProgramData" / "Documents" / folder / "savedgames"
         for folder in _XRAY_SAVE_DIRS[game.game_id]
@@ -1476,6 +1490,29 @@ def manual_save_search_paths(
             )
             if override is not None:
                 candidates.append(override)
+            candidates.append(install_dir / "_appdata_" / "savedgames")
+        else:
+            override = _fsgame_save_directory(
+                install_dir,
+                game_id=key,
+                home=home_path,
+                environ=env,
+                filesystem_root=filesystem_root,
+            )
+            if override is not None:
+                candidates.append(override)
+            _add_ee_candidates(
+                candidates,
+                key,
+                _saved_games_roots(
+                    home=home_path,
+                    environ=env,
+                    filesystem_root=filesystem_root,
+                ),
+            )
+            # Some EE installations have an overridden fsgame path inside
+            # the selected game directory; keep the conventional X-Ray
+            # fallback visible without claiming it is the default.
             candidates.append(install_dir / "_appdata_" / "savedgames")
         return _dedupe_paths(candidates)
 

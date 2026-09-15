@@ -69,7 +69,10 @@ _OFFICIAL_RELEASES = (
         edition="enhanced",
         title="S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition",
         app_ids=(2427420,),
-        extensions=frozenset({".scs", ".sav"}),
+        # Community and cloud metadata report both X-Ray save spellings plus
+        # the shared thumbnail/name sidecars.  These are candidate hints only;
+        # no EE parser is enabled by this declaration.
+        extensions=frozenset({".sav", ".scop", ".scs", ".dds", ".info"}),
     ),
     ReleaseDescriptor(
         id="stalker-cop-ee",
@@ -77,7 +80,7 @@ _OFFICIAL_RELEASES = (
         edition="enhanced",
         title="S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition",
         app_ids=(2427430,),
-        extensions=frozenset({".scop", ".sav", ".scs"}),
+        extensions=frozenset({".sav", ".scop", ".scs", ".dds", ".info"}),
     ),
 )
 _BY_ID = {release.id: release for release in _OFFICIAL_RELEASES}

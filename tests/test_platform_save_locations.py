@@ -184,6 +184,84 @@ def test_manual_release_save_root_stays_exclusive(tmp_path: Path) -> None:
     assert manual_save_search_paths("stalker-cs-ee", save_root=selected) == (selected,)
 
 
+def test_enhanced_paths_cover_pripyat_spelling_and_gog_root(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    paths = save_search_paths(
+        "stalker-cop-ee",
+        system="Windows",
+        environ={},
+        home=home,
+    )
+
+    saved_games = home / "Saved Games"
+    assert (
+        saved_games
+        / "STALKER Call of Pripyat - EE"
+        / "STEAM"
+        / "savedgames"
+    ) in paths
+    assert (
+        saved_games
+        / "STALKER Call of Pripyat - EE"
+        / "gog"
+        / "savedgames"
+    ) in paths
+
+
+def test_manual_enhanced_game_root_also_scopes_standard_saved_games(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    game_root = tmp_path / "library" / "STALKER Clear Sky - Enhanced Edition"
+    game_root.mkdir(parents=True)
+
+    paths = manual_save_search_paths(
+        "stalker-cs-ee",
+        game_root=game_root,
+        system="Windows",
+        environ={},
+        home=home,
+    )
+
+    assert (
+        home
+        / "Saved Games"
+        / "STALKER Clear Sky - EE"
+        / "STEAM"
+        / "savedgames"
+    ) in paths
+
+
+def test_proton_enhanced_paths_include_steam_and_gog_saved_games(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    library = home / ".local" / "share" / "Steam"
+    install_dir = library / "steamapps" / "common" / "STALKER Clear Sky - Enhanced Edition"
+    install_dir.mkdir(parents=True)
+    steamapps = library / "steamapps"
+    (steamapps / "appmanifest_2427420.acf").write_text(
+        _manifest(2427420, "STALKER Clear Sky - Enhanced Edition"),
+        encoding="utf-8",
+    )
+
+    paths = save_search_paths(
+        "stalker-cs-ee",
+        system="Linux",
+        environ={},
+        home=home,
+    )
+    prefix_saved_games = (
+        steamapps
+        / "compatdata"
+        / "2427420"
+        / "pfx"
+        / "drive_c"
+        / "users"
+        / "steamuser"
+        / "Saved Games"
+        / "STALKER Clear Sky - EE"
+    )
+    assert prefix_saved_games / "STEAM" / "savedgames" in paths
+    assert prefix_saved_games / "gog" / "savedgames" in paths
+
+
 
 def test_save_directories_find_localized_documents_directory(tmp_path: Path) -> None:
     documents = tmp_path / "home" / "Документы"

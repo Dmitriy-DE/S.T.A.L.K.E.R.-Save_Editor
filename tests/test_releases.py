@@ -32,5 +32,9 @@ def test_release_by_id_rejects_unknown_or_mod_release() -> None:
 
 def test_ee_descriptors_keep_save_extensions_as_candidate_hints() -> None:
     assert release_by_id("stalker-soc-ee").extensions == frozenset({".sav", ".dds", ".info"})
-    assert release_by_id("stalker-cs-ee").extensions == frozenset({".scs", ".sav"})
-    assert release_by_id("stalker-cop-ee").extensions == frozenset({".scop", ".sav", ".scs"})
+    assert release_by_id("stalker-cs-ee").extensions == frozenset(
+        {".sav", ".scop", ".scs", ".dds", ".info"}
+    )
+    assert release_by_id("stalker-cop-ee").extensions == frozenset(
+        {".sav", ".scop", ".scs", ".dds", ".info"}
+    )
