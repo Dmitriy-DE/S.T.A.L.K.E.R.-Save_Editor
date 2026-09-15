@@ -7,7 +7,7 @@ from pathlib import Path
 
 from save_format import SaveInfo
 
-from .catalog import ItemCatalog
+from .catalog import GameCatalog, ItemCatalog
 from .formats import FormatInspection, SaveFormat, detect_or_raise
 from .models import CloudReceipt, EditPlan, PreparedEdit
 from .storage import (
@@ -74,10 +74,16 @@ class EditorService:
         inspector = self._inspect_fn or format_.inspect
         info = inspector(data, with_inventory=with_inventory)
         catalog: ItemCatalog | None = None
+        game_catalog_loader = getattr(format_, "game_catalog_for_source", None)
+        game_catalog: GameCatalog | None = None
         catalog_loader = getattr(format_, "catalog_for_source", None)
         if callable(catalog_loader):
             selected_source = catalog_source if catalog_source is not None else source_name
             catalog = catalog_loader(str(selected_source) if selected_source is not None else None)
+            if callable(game_catalog_loader):
+                game_catalog = game_catalog_loader(
+                    str(selected_source) if selected_source is not None else None
+                )
         return FormatInspection(
             format_id=format_.id,
             format_title=format_.title,
@@ -86,6 +92,7 @@ class EditorService:
             edition=format_.edition,
             capabilities=format_.capabilities,
             catalog=catalog,
+            game_catalog=game_catalog,
         )
 
     def inspect(
@@ -114,6 +121,7 @@ class EditorService:
         *,
         source_name: str | None = None,
         catalog: ItemCatalog | None = None,
+        game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
         """Prepare and verify one immutable edit plan."""
 
@@ -125,6 +133,7 @@ class EditorService:
             plan,
             source_name=source_name,
             catalog=catalog,
+            game_catalog=game_catalog,
         )
 
     def export_local(

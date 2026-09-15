@@ -19,9 +19,17 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from .catalog import ItemCatalog, ItemDefinition
+from .catalog import (
+    GameCatalog,
+    ItemCatalog,
+    ItemDefinition,
+    UpgradeCatalog,
+    UpgradeDefinition,
+)
+from .catalog_bundle import CatalogBundleError, load_catalog_file
 from .releases import ReleaseDescriptor
 from .xray_container import lzo1x_decompress
+from .xray_factions import factions_from_sections
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +51,7 @@ class _Section:
     bases: tuple[str, ...]
     values: dict[str, str]
     source: str
+    entries: tuple[str, ...] = ()
 
 
 class _ArchiveUnavailableError(Exception):
@@ -290,6 +299,8 @@ def _parse_ltx(text: str, source: str) -> dict[str, _Section]:
             sections[name] = current
             continue
         if current is None or "=" not in line:
+            if current is not None:
+                current.entries = (*current.entries, line)
             continue
         key, value = line.split("=", 1)
         key = key.strip().casefold()
@@ -333,7 +344,12 @@ def _localization(root: Path, files: Mapping[str, bytes] | None = None) -> dict[
     if files is None:
         all_candidates = tuple(
             path
-            for base in (root / "config" / "text", root / "text", root / "localization")
+            for base in (
+                root / "config" / "text",
+                root / "configs" / "text",
+                root / "text",
+                root / "localization",
+            )
             if base.is_dir()
             for path in base.rglob("*.xml")
             if path.is_file()
@@ -513,9 +529,89 @@ def _items_from_sections(
                 source=source,
                 class_name=values.get("class"),
                 serialization_family=_serialization_family(name, values, category),
+                icon_x=_parse_int(values.get("inv_grid_x")),
+                icon_y=_parse_int(values.get("inv_grid_y")),
+                icon_texture=values.get("icons_texture") or "ui_icon_equipment",
             )
         )
     return tuple(items)
+
+
+def _upgrade_item_key(source: str) -> str | None:
+    """Map an official upgrade file name only when its convention is exact.
+
+    Weapon files use ``w_<section>_up.ltx`` while outfit files use
+    ``o_<section>_up.ltx``.  The resulting candidate is accepted only if it
+    exists in the already parsed official item catalog; otherwise it remains
+    unbound rather than becoming a guessed SID.
+    """
+
+    normalized = source.replace("\\", "/").casefold()
+    filename = normalized.rsplit("/", 1)[-1]
+    if not filename.endswith("_up.ltx"):
+        return None
+    stem = filename[: -len("_up.ltx")]
+    if "/weapons/upgrades/" in normalized and stem.startswith("w_"):
+        suffix = stem[2:]
+        return f"wpn_{suffix}" if suffix else None
+    if "/outfit_upgrades/" in normalized and stem.startswith("o_"):
+        return stem[2:] or None
+    if "/outfit_upgrades/" in normalized:
+        # Call of Pripyat names helmet/outfit files directly, e.g.
+        # ``helm_battle_up.ltx``.
+        return stem or None
+    return None
+
+
+def _upgrades_from_sections(
+    sections: Mapping[str, _Section],
+    localization: Mapping[str, str],
+    item_keys: set[str],
+    *,
+    release_id: str,
+    source_root: Path | None,
+) -> UpgradeCatalog | None:
+    upgrades: list[UpgradeDefinition] = []
+    aliases: set[str] = set()
+    for name, section, _values in _resolve_sections(sections):
+        if name.casefold() == "upgraded_inventory":
+            aliases.update(section.entries)
+    for name, section, values in _resolve_sections(sections):
+        if not name.casefold().startswith("up_") or not values.get("section"):
+            continue
+        candidate_item = _upgrade_item_key(section.source)
+        item_key = candidate_item if candidate_item in item_keys else None
+        applicable_items = tuple(
+            alias
+            for alias in sorted(aliases)
+            if candidate_item is not None
+            and (alias == candidate_item or alias.startswith(f"{candidate_item}_"))
+        )
+        name_key = values.get("name")
+        display_name = localization.get(name_key) if name_key else None
+        upgrades.append(
+            UpgradeDefinition(
+                key=name,
+                display_name=display_name or name_key,
+                category=(
+                    "weapon"
+                    if "/weapons/upgrades/" in section.source.replace("\\", "/").casefold()
+                    else "outfit"
+                    if "/outfit_upgrades/" in section.source.replace("\\", "/").casefold()
+                    else None
+                ),
+                item_key=item_key,
+                source=f"{section.source}#{name}",
+                release_id=release_id,
+                section=values.get("section"),
+                property_name=values.get("property"),
+                icon=values.get("icon"),
+                applicable_item_keys=applicable_items,
+            )
+        )
+    if not upgrades:
+        return None
+    return UpgradeCatalog(release_id, source_root, tuple(upgrades))
 
 
 def _read_uncompressed_xdb(path: Path) -> dict[str, bytes]:
@@ -572,8 +668,19 @@ def _read_uncompressed_xdb(path: Path) -> dict[str, bytes]:
     return files
 
 
-def _read_xray_archive(path: Path) -> dict[str, bytes]:
-    """Read only config/localization entries from one X-Ray DB archive."""
+def _read_xray_archive(
+    path: Path,
+    *,
+    suffixes: tuple[str, ...] = (".ltx", ".xml"),
+    names: frozenset[str] | None = None,
+) -> dict[str, bytes]:
+    """Read verified entries from one X-Ray DB archive.
+
+    The normal catalog path asks only for config/localization text. The
+    optional exact-name filter is used by the desktop icon resolver to read a
+    single official DDS from an asset volume without unpacking or copying the
+    archive into the repository.
+    """
 
     file_size = path.stat().st_size
     header_data: bytes | None = None
@@ -668,12 +775,16 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
         files: dict[str, bytes] = {}
         with path.open("rb") as handle:
             for name, real_size, compressed_size, crc, offset in entries:
-                lowered = name.casefold()
-                if not offset or not (
-                    lowered.endswith(".ltx") or lowered.endswith(".xml")
-                ):
+                lowered = name.casefold().replace("\\", "/").lstrip("/")
+                if not offset or not lowered.endswith(suffixes):
                     continue
-                if not any(
+                if names is not None:
+                    if not any(
+                        lowered == candidate or lowered.endswith(f"/{candidate}")
+                        for candidate in names
+                    ):
+                        continue
+                elif not any(
                     marker in lowered
                     for marker in ("config/", "configs/", "localization/")
                 ):
@@ -704,6 +815,47 @@ def _read_xray_archive(path: Path) -> dict[str, bytes]:
     raise _ArchiveUnavailableError("no verified X-Ray archive header variant")
 
 
+def _candidate_asset_archives(root: Path) -> tuple[Path, ...]:
+    """Return official asset volumes without scanning unrelated game files."""
+
+    candidates: set[Path] = set()
+    for candidate_root in (root, root / "resources"):
+        try:
+            entries = tuple(candidate_root.iterdir())
+        except OSError:
+            continue
+        for path in entries:
+            if not path.is_file():
+                continue
+            name = path.name.casefold()
+            if name.startswith(("resources.db", "gamedata.db")):
+                candidates.add(path)
+    return tuple(sorted(candidates, key=lambda path: path.as_posix().casefold()))
+
+
+def read_xray_asset(root: Path, relative: str) -> bytes | None:
+    """Read one exact official asset from a packed installation, if present."""
+
+    normalized = relative.replace("\\", "/").lstrip("/").casefold()
+    if not normalized.endswith(".dds"):
+        normalized = f"{normalized}.dds"
+    candidates = frozenset({normalized, f"gamedata/{normalized}"})
+    for archive in _candidate_asset_archives(Path(root)):
+        try:
+            files = _read_xray_archive(
+                archive,
+                suffixes=(".dds",),
+                names=candidates,
+            )
+        except (_ArchiveUnavailableError, OSError, ValueError):
+            continue
+        for name, data in files.items():
+            lowered = name.replace("\\", "/").lstrip("/").casefold()
+            if lowered == normalized or lowered.endswith(f"/{normalized}"):
+                return data
+    return None
+
+
 def _candidate_archives(root: Path) -> tuple[Path, ...]:
     roots = (root, root / "resources", root / "localization")
     candidates: set[Path] = set()
@@ -721,9 +873,15 @@ def _candidate_archives(root: Path) -> tuple[Path, ...]:
             # in the named index archives below; scanning every asset volume
             # would make a catalog lookup needlessly expensive and can expose
             # no additional LTX/XML entries.
+            is_localization_volume = (
+                candidate_root.name.casefold() == "localization"
+                and name.startswith("x")
+                and name.endswith(".db")
+            )
             if (
                 name.startswith(("gamedata.db", "gamedata.xdb"))
-                or name in {"resources.db", "configs.db", "xenglish.db"}
+                or name in {"resources.db", "configs.db", "xenglish.db", "xrussian.db"}
+                or is_localization_volume
             ):
                 candidates.add(path)
     return tuple(sorted(candidates, key=lambda path: path.as_posix().casefold()))
@@ -746,6 +904,7 @@ class XRayCatalogProvider:
 
     def __init__(self) -> None:
         self._catalog: ItemCatalog | None = None
+        self._game_catalog: GameCatalog | None = None
 
     def load(
         self,
@@ -753,6 +912,7 @@ class XRayCatalogProvider:
         game_root: Path | None = None,
     ) -> ItemCatalog | None:
         self._catalog = None
+        self._game_catalog = None
         if release.family not in {"soc", "clear_sky", "cop"} or release.edition != "original":
             return None
         if game_root is None:
@@ -768,7 +928,7 @@ class XRayCatalogProvider:
         if use_unpacked:
             for path in sorted(data_root.rglob("*.ltx"), key=lambda value: value.as_posix().casefold()):
                 try:
-                    parsed = _parse_ltx(_decode(path.read_bytes()), path.relative_to(data_root).as_posix())
+                    parsed = _parse_ltx(_decode(path.read_bytes()), path.relative_to(root).as_posix())
                 except OSError:
                     continue
                 section_sources.update(parsed)
@@ -799,10 +959,63 @@ class XRayCatalogProvider:
         if not items:
             return None
         self._catalog = ItemCatalog(release.id, source_root, items)
+        upgrades = _upgrades_from_sections(
+            section_sources,
+            localization,
+            {item.key for item in items},
+            release_id=release.id,
+            source_root=source_root,
+        )
+        factions = factions_from_sections(
+            _resolve_sections(section_sources),
+            localization,
+            release_id=release.id,
+            source_root=source_root,
+        )
+        if factions is not None:
+            self._game_catalog = GameCatalog(
+                release.id,
+                self._catalog,
+                factions,
+                upgrades,
+            )
         return self._catalog
+
+    def load_bundle(
+        self,
+        release: ReleaseDescriptor,
+        game_root: Path | None = None,
+    ) -> GameCatalog | None:
+        """Load items and release-scoped communities from one official root."""
+
+        self.load(release, game_root)
+        return self._game_catalog
+
+    def load_generated_bundle(
+        self,
+        release: ReleaseDescriptor,
+        catalog_path: Path | None = None,
+    ) -> GameCatalog | None:
+        """Load the checked-in official metadata snapshot as a safe fallback.
+
+        This path is used only after an explicit official installation root
+        yielded no resource catalog.  It contains keys and UI metadata, not
+        prototypes, game archives or save bytes, so it cannot manufacture a
+        new serializer family or an unknown save reference.
+        """
+
+        if release.family not in {"soc", "clear_sky", "cop"} or release.edition != "original":
+            return None
+        path = catalog_path or Path(__file__).resolve().parents[1] / "web" / "catalogs.json"
+        try:
+            bundles = load_catalog_file(Path(path))
+        except (CatalogBundleError, OSError, ValueError):
+            return None
+        bundle = bundles.get(release.id)
+        return bundle.game_catalog if bundle is not None else None
 
     def resolve(self, key: str) -> ItemDefinition | None:
         return self._catalog.resolve(key) if self._catalog is not None else None
 
 
-__all__ = ["XRayCatalogProvider"]
+__all__ = ["XRayCatalogProvider", "read_xray_asset"]
