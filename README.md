@@ -50,7 +50,9 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - Qt-интерфейс для локальных файлов и Steam Cloud; веб-версия для локальных
   файлов; CLI для исследования. Все три используют одно ядро.
-- Experimental в CLI: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
+- CLI поддерживает batch-редактирование денег/стаков и добавление из официального каталога
+  (`edit --add ITEM=COUNT`); experimental остаются move, detach/deep detach,
+  attach существующего orphan, raw patch и diff-record.
 - Общий UI-free `EditorService` связывает parser, immutable preview, local export,
   backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
   логики правок не имеют.

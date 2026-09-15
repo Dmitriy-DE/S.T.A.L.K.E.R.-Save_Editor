@@ -86,6 +86,7 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--detach", action="append", default=[], metavar="HANDLE[:deep]")
     q.add_argument("--attach", action="append", default=[], metavar="HANDLE=X,Y,W,H")
     q.add_argument("--raw", action="append", default=[], metavar="OFFSET:TYPE:VALUE")
+    q.add_argument("--add", action="append", default=[], metavar="ITEM=COUNT")
     add_export_args(q)
     return p
 
@@ -189,6 +190,7 @@ def _run(argv: list[str] | None) -> int:
             detach: dict[int, bool] = {}
             attach: dict[int, tuple[int, int, int, int]] = {}
             raw_patches: list[RawPatch] = []
+            adds: list[tuple[str, int, str]] = []
             if a.cmd == "set-money": money = a.money
             elif a.cmd == "set-stack": stacks[a.handle] = a.count
             elif a.cmd == "move": moves[a.handle] = (a.x, a.y)
@@ -207,8 +209,11 @@ def _run(argv: list[str] | None) -> int:
                     h, values = spec.split("=", 1); at_x, at_y, at_w, at_h = (int(value, 0) for value in values.split(",")); attach[int(h, 0)] = (at_x, at_y, at_w, at_h)
                 for spec in a.raw:
                     offset, kind, value = spec.split(":", 2); raw_patches.append(RawPatch(int(offset, 0), kind, value, "batch CLI"))
+                for spec in a.add:
+                    item_key, quantity = spec.split("=", 1)
+                    adds.append((item_key, int(quantity, 0), "inventory"))
 
-            if money is None and not (stacks or moves or detach or attach or raw_patches):
+            if money is None and not (stacks or moves or detach or attach or raw_patches or adds):
                 raise SaveError("Нет изменений")
             source_sha = hashlib.sha256(data).hexdigest()
             plan = EditPlan(
@@ -219,8 +224,23 @@ def _run(argv: list[str] | None) -> int:
                 detach=tuple(detach.items()),
                 attach=tuple((handle, x, y, width, height) for handle, (x, y, width, height) in attach.items()),
                 raw=tuple(raw_patches),
+                adds=tuple(adds),
             )
-            prepared = EDITOR_SERVICE.prepare(data, plan, source_name=src.name)
+            catalog = None
+            if adds:
+                inspection = EDITOR_SERVICE.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=str(src),
+                    catalog_source=src,
+                )
+                catalog = inspection.catalog
+            prepared = EDITOR_SERVICE.prepare(
+                data,
+                plan,
+                source_name=str(src),
+                catalog=catalog,
+            )
             suffix = ".scop" if src.suffix.lower() == ".scop" else ".sav"
             destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited" + suffix)
             backup_dir = Path(a.backup_dir) if a.backup_dir else DEFAULT_BACKUP_DIR
@@ -254,6 +274,7 @@ def _run(argv: list[str] | None) -> int:
             for handle, deep in detach.items(): print(f"Detach 0x{handle:08X}: deep={deep}")
             for handle, (at_x, at_y, at_w, at_h) in attach.items(): print(f"Attach 0x{handle:08X}: {at_x},{at_y} {at_w}x{at_h}")
             for patch in raw_patches: print(f"Raw 0x{patch.offset:X}: {patch.kind}={patch.value}")
+            for item_key, quantity, _destination in adds: print(f"Add {item_key} x{quantity}")
         except (OSError, SaveError, ValueError, IndexError) as exc:
             _print_error(exc)
             return 2
