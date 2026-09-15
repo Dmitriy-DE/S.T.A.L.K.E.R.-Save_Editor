@@ -8,6 +8,7 @@ from typing import Protocol
 
 from save_format import SaveError, SaveInfo, inspect_save
 
+from .capabilities import FormatCapabilities
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
 from .xray_save import (
@@ -26,6 +27,9 @@ class SaveFormat(Protocol):
 
     id: str
     title: str
+    release_id: str
+    edition: str
+    capabilities: FormatCapabilities
 
     def detect(self, data: bytes) -> bool:
         """Return whether ``data`` belongs to this format."""
@@ -87,6 +91,13 @@ class FormatDetectionError(SaveError):
 class _Stalker2Format:
     id = "stalker2"
     title = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
+    release_id = "stalker2"
+    edition = "s2"
+    capabilities = FormatCapabilities(
+        read_inventory=True,
+        edit_money=True,
+        edit_stacks=True,
+    )
 
     def detect(self, data: bytes) -> bool:
         """Recognize the confirmed S.T.A.L.K.E.R. 2 container signature.
@@ -127,6 +138,13 @@ class _XRayFormat:
         self.spec = spec
         self.id = spec.id
         self.title = spec.title
+        self.release_id = spec.id
+        self.edition = "original"
+        self.capabilities = FormatCapabilities(
+            read_inventory=True,
+            edit_money=True,
+            edit_stacks=True,
+        )
 
     def detect(self, data: bytes) -> bool:
         # Avoid decompressing the same bytes for all three X-Ray adapters when

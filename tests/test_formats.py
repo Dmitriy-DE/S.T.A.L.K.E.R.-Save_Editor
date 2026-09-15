@@ -34,6 +34,11 @@ def test_registry_contains_stalker2_and_original_xray_families(synthetic_save: b
     ]
     assert by_id("stalker2") is registered[0]
     assert detect(synthetic_save) is registered[0]
+    assert registered[0].release_id == "stalker2"
+    assert registered[0].edition == "s2"
+    assert registered[1].release_id == "stalker-soc"
+    assert registered[2].release_id == "stalker-cs"
+    assert registered[3].release_id == "stalker-cop"
 
 
 @pytest.mark.parametrize(
