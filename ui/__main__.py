@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     if "--diagnostic" in arguments:
         return diagnostic_main(arguments)
     if "--help" in arguments or "-h" in arguments:
-        print("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных .sav.")
+        print("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений.")
         return 0
     try:
         from PySide6.QtWidgets import QApplication

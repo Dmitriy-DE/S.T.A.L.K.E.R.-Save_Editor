@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>S.T.A.L.K.E.R. 2 Save Editor — веб</title>
+<title>S.T.A.L.K.E.R. Save Editor — веб</title>
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
-    <span class="brand-name">S.T.A.L.K.E.R. 2 Save Editor</span>
+    <span class="brand-name">S.T.A.L.K.E.R. Save Editor</span>
     <span class="badge badge-version" id="version">web</span>
   </div>
   <div class="brand-right">ZONE / SAVE WORKBENCH</div>
@@ -24,9 +24,9 @@
   </div>
   <div class="filebar-right">
     <span class="badge" id="crc-badge">CRC-32: —</span>
-    <span class="badge" id="format-badge">UE5 GVAS: —</span>
-    <label class="button" for="file-input">Открыть .sav…</label>
-    <input id="file-input" type="file" accept=".sav" hidden>
+    <span class="badge" id="format-badge">ФОРМАТ: —</span>
+    <label class="button" for="file-input">Открыть сейв…</label>
+    <input id="file-input" type="file" hidden>
   </div>
 </section>
 
@@ -55,7 +55,7 @@
 
       <div class="card block">
         <div class="card-caption">СВОДКА</div>
-        <p id="summary">Открой локальный .sav для проверки CRC и структуры.</p>
+        <p id="summary">Открой локальный сейв для проверки формата и структуры.</p>
         <p class="muted" id="support">Редактирование отключено до успешного анализа.</p>
       </div>
 
@@ -71,7 +71,7 @@
       </fieldset>
 
       <fieldset class="group">
-        <legend>Технические метаданные контейнера (.sav)</legend>
+        <legend>Технические метаданные контейнера</legend>
         <table class="grid" id="metadata">
           <thead><tr><th>Параметр</th><th>Значение в сохранении</th><th>Статус</th></tr></thead>
           <tbody></tbody>
@@ -91,12 +91,23 @@
       </div>
       <table class="grid" id="inventory">
         <thead><tr>
-          <th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
-          <th>Количество</th><th>Вес</th><th>Handle</th><th>Новое количество</th>
+          <th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
+          <th>Количество</th><th>Вес</th><th>Handle</th><th>Изменить / удалить</th>
         </tr></thead>
         <tbody></tbody>
       </table>
       <p class="muted">Количество можно менять только у подтверждённых стаков. Остальное — только чтение.</p>
+      <fieldset class="group" id="item-add-group" disabled>
+        <legend>Добавить предмет</legend>
+        <p class="muted" id="item-add-status">Каталог не загружен.</p>
+        <div class="row">
+          <label for="item-add-select">Предмет</label>
+          <select id="item-add-select"></select>
+          <label for="item-add-quantity">Количество</label>
+          <input id="item-add-quantity" type="number" min="1" max="65535" step="1" value="1">
+          <button class="button" id="item-add-stage">Застейджить добавление</button>
+        </div>
+      </fieldset>
     </div>
 
     <div class="panel" id="panel-changes" hidden>
@@ -124,7 +135,7 @@
   <span class="downloads-title">Десктоп-версия</span>
   <a class="button" id="dl-windows" href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/releases/latest" rel="noopener">Windows x64 (.zip)</a>
   <a class="button" id="dl-linux" href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/releases/latest" rel="noopener">Linux x86_64 (.tar.gz / .deb)</a>
-  <span class="muted">Нужна только для Steam Cloud и журнала резервных копий — редактирование целиком работает здесь.</span>
+  <span class="muted">Нужна для Steam Cloud и журнала резервных копий; браузер работает только с локальной копией.</span>
 </section>
 
 <footer class="footer">

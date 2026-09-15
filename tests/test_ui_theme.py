@@ -18,12 +18,12 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
 
-    assert window.app_title.text() == "S.T.A.L.K.E.R. 2 Save Editor"
+    assert window.app_title.text() == "S.T.A.L.K.E.R. Save Editor"
     assert window.version_badge.text().startswith("v")
     assert window.file_source_badge.text() == "ФАЙЛ НЕ ВЫБРАН"
     assert window.meta_filename.text() == "Сейв не выбран"
     assert window.integrity_badge.text() == "CRC-32: —"
-    assert window.format_badge.text() == "UE5 GVAS: —"
+    assert window.format_badge.text() == "ФОРМАТ: —"
     assert window.tabs.tabBar().isHidden()
     assert window.sidebar.objectName() == "sidebar"
     assert [button.text() for button in window.nav_buttons] == [
@@ -32,6 +32,8 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
         "Изменения",
         "Резервные копии",
         "Steam Cloud",
+        "Найденные сейвы",
+        "Настройки",
     ]
     assert "#111516" in QApplication.instance().styleSheet()
 

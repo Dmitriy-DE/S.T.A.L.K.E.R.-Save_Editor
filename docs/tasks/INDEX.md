@@ -39,15 +39,15 @@
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
 | [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
 | [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |
-| [M01](M01.md) | Реестр форматов сохранений | — | ready | — |
-| [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | waiting_dependencies | — |
-| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | waiting_dependencies | — |
-| [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | waiting_dependencies | — |
-| [M05](M05.md) | Ручные пути и их запоминание | M04 | waiting_dependencies | — |
-| [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | waiting_dependencies | — |
-| [M07](M07.md) | Call of Pripyat: чтение | M06 | waiting_dependencies | — |
-| [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | waiting_dependencies | — |
-| [M09](M09.md) | Редактирование трилогии: деньги и стаки | M08 | waiting_dependencies | — |
+| [M01](M01.md) | Реестр форматов сохранений | — | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M05](M05.md) | Ручные пути и их запоминание | M04 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | accepted (локальный корпус; игровая и Enhanced-проверки открыты) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M07](M07.md) | Call of Pripyat: чтение | M06 | accepted (локальный корпус; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | accepted (локальный корпус; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M09](M09.md) | Редактирование трилогии: деньги и стаки | M08 | in_progress (writer есть; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
 | [M10](M10.md) | Протокол проверки в игре | M06 | waiting_dependencies | — |
 | [M11](M11.md) | Каталоги игры: предметы, группировки, идентификаторы | M06 | waiting_dependencies | — |
 | [M12](M12.md) | Ремонт: прочность оружия и брони | M10, M11 | waiting_dependencies | — |

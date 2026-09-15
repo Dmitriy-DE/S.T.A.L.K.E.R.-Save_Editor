@@ -1,27 +1,58 @@
-# S.T.A.L.K.E.R. 2 HoC — Save Editor
+# S.T.A.L.K.E.R. Save Editor
 
-Локальный редактор сохранений с подключением Steam Cloud для игры через GeForce NOW.
+Единый локальный редактор сохранений официальных PC-версий вселенной
+S.T.A.L.K.E.R. с подключением Steam Cloud для S.T.A.L.K.E.R. 2.
 
-**Сейчас:** один Qt-редактор в Zone-теме поверх общего ядра: локальный анализ,
-поиск и фильтры по инвентарю, staged money/stack edits, immutable preview и
-сохранение в новую копию, browser резервных копий с восстановлением и вкладка
-Steam Cloud с явным connect/list/analyze/upload. Плюс CLI для исследования.
+**Сейчас:** один Qt-редактор и одна статическая web-версия поверх общего
+форматного ядра. Зарегистрированы S.T.A.L.K.E.R. 2 и оригинальные Shadow of
+Chornobyl, Clear Sky и Call of Pripyat; для оригинальной трилогии принимаются
+`.sav` и `.scop` по содержимому контейнера. Desktop умеет auto-discovery
+стандартных каталогов, выбор release-specific профиля и ручную папку/файл.
+
+Для всех зарегистрированных форматов доступны локальный анализ, inventory
+snapshot, immutable preview и сохранение новой копии. В оригинальной трилогии
+доступны деньги, подтверждённые ammo stacks, добавление предметов из
+официального каталога и глубокое удаление actor-owned registry records.
+Каталог и serializer family берутся из установленной официальной игры на
+desktop; в web поставляется компактный metadata-only каталог. Web принимает
+локальный файл и ничего не загружает на сервер.
+
+Enhanced Editions уже есть в release selector и path discovery как отдельные
+официальные профили, но пока **не зарегистрированы как поддержанные форматы**:
+на текущем хосте нет их установок/сейвов и нет достаточного публичного format
+evidence. Их нельзя выдавать за совместимые с оригинальным X-Ray parser.
+Подробная граница: [EE evidence](docs/evidence/EE_FORMATS_2026-09-15.md).
+
+Плюс остаются browser резервных копий с восстановлением и вкладка Steam Cloud с
+явным connect/list/analyze/upload. Плюс CLI для исследования.
 PyInstaller собирает Linux `tar.gz`/`.deb` и Windows `zip`; обе цели проходят
 CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
 wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`.
 
-Что это **не** значит: сигнатура кошелька подтверждена на сейвах одного
-прохождения, поэтому работа с произвольной кампанией или другой версией игры не
-доказана. Редактор фейлится закрыто, если не узнаёт файл, но универсальным его
-называть рано.
+Это не означает поддержку модов, Enhanced Edition или любого неизвестного
+патча: проект принимает только официальные зарегистрированные profiles и
+отказывает закрыто, если контейнер/версия/границы не подтверждены.
 
 ## Что доступно
 
-- Чтение и изменение денег; изменение количества распознанных стаков с пересчётом веса.
+- S.T.A.L.K.E.R. 2: чтение и изменение денег/подтверждённых стаков с
+  сохранением CRC/Kraken safeguards. Структура GVAS-инвентаря и добавление
+  предметов пока не включены без доказанной схемы.
+- Original Shadow of Chornobyl, Clear Sky и Call of Pripyat: strict X-Ray
+  container, actor money, полный actor-owned inventory snapshot, официальные
+  catalog keys и serializer families. Ammo count пишется одновременно в
+  STATE и UPDATE.
+- Для оригинальной трилогии writer умеет добавить предмет из каталога,
+  клонировав существующий registry template той же подтверждённой
+  serializer family, и удалить actor-owned record с новым registry framing.
+  Если в конкретном сейве нет подходящего template или нет каталога, операция
+  отказывается; game load/re-save этого результата ещё не подтверждён.
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - Qt-интерфейс для локальных файлов и Steam Cloud; веб-версия для локальных
   файлов; CLI для исследования. Все три используют одно ядро.
-- Experimental в CLI: move, detach/deep detach, attach существующего orphan, raw patch и diff-record.
+- CLI поддерживает batch-редактирование денег/стаков и добавление из официального каталога
+  (`edit --add ITEM=COUNT`); experimental остаются move, detach/deep detach,
+  attach существующего orphan, raw patch и diff-record.
 - Общий UI-free `EditorService` связывает parser, immutable preview, local export,
   backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
   логики правок не имеют.
@@ -31,7 +62,12 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   копируются, badges, cards и таблица метаданных заполняются только из
   реального snapshot.
 
-**Не реализовано как подтверждённые функции:** создание предмета по SID, клонирование, физическое удаление, прочность, attachments/upgrades, полные названия предметов. `detach` не означает физическое удаление.
+**Не реализовано как подтверждённые production-функции:** полноценная
+inventory grid/move/equipment-семантика, изменение прочности,
+attachments/upgrades, reference-safe удаление квестовых/equipped объектов,
+локализованные названия для всех ключей и структурное добавление в S.T.A.L.K.E.R.
+2. Unknown fields остаются read-only; X-Ray structural proof не означает, что
+игра уже проверила результат загрузкой.
 
 Cloud-процесс использует fresh SHA, exclusive backup/recovery, persisted и
 read-back; после WriteFile state machine различает `verified` и `uncertain` и
@@ -52,7 +88,8 @@ python3 -m ui
 На Windows: `py -3 -m pip install -r requirements.txt` и `py -3 -m ui`.
 
 В интерфейсе можно искать и фильтровать локальный inventory, застейджить
-подтверждённые money/stack изменения, нажать preview и сохранить новую копию.
+подтверждённые money/stack изменения, добавить предмет из каталога или удалить
+actor-owned record, нажать preview и сохранить новую копию.
 На вкладке резервных копий видны hash/status журнала; проверенный backup можно
 восстановить в новый путь, а исходный сейв и backup остаются неизменными. На
 вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
@@ -84,10 +121,15 @@ WebAssembly. Сервера у приложения нет.
 Обновляется одной командой `make web-deploy` (Cloudflare Pages). Сервера у приложения нет — отдаётся только статика, а
 редактор целиком исполняется в браузере посетителя.
 
-Что доступно в вебе: открыть локальный `.sav`, увидеть деньги, инвентарь и
-технические метаданные, поменять баланс и количество подтверждённых стаков,
-скачать изменённую копию. Проверено на реальном сейве: результат совпадает с
-десктопом побайтово — [evidence](docs/evidence/WEB_EDITION_2026-09-14.md).
+Что доступно в вебе: открыть локальный `.sav`, `.scop` или другой файл для
+content-only detection, увидеть определённый release/edition, деньги,
+инвентарь и технические метаданные, поменять подтверждённые money/ammo stacks,
+добавить предмет из встроенного официального metadata-каталога, удалить
+actor-owned record и скачать изменённую копию. Capability flags и read-only
+причины приходят из того же registry, что и в desktop. Проверка S2 и
+оригинального X-Ray bridge зафиксирована в
+[evidence](docs/evidence/WEB_EDITION_2026-09-14.md) и
+`docs/evidence/XRAY_INVENTORY_2026-09-15.md`.
 
 Чего в вебе нет: **Steam Cloud** (helper — локальный процесс рядом со Steam,
 вкладка браузера его не запустит) и журнала резервных копий (в браузере нет

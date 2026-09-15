@@ -1,4 +1,4 @@
-# Веб-версия: проверка эквивалентности ядру — 2026-09-14
+# Веб-версия: проверка эквивалентности ядру — 2026-09-15
 
 Веб-сборка имеет право на существование только если она **тот же редактор**.
 Ниже — фактическая сверка, а не намерение.
@@ -9,7 +9,7 @@
 unpacked_size)`. Компрессор не нужен вообще — `rebuild_uncompressed` пишет
 несжатые блоки. Значит браузеру нужна одна функция распаковки Kraken.
 
-Готовая сборка нашлась: [`ooz-wasm`](https://www.npmjs.com/package/ooz-wasm)
+Для S.T.A.L.K.E.R. 2 готовая сборка нашлась: [`ooz-wasm`](https://www.npmjs.com/package/ooz-wasm)
 2.0.0 — WASM-биндинг к [`powzix/ooz`](https://github.com/powzix/ooz), GPL-3.0,
 с сигнатурой `decompress(data: Uint8Array, rawSize: number)`, совпадающей с
 нашей. Собственная сборка Emscripten не потребовалась.
@@ -48,6 +48,17 @@ Chromium, локальный статический сервер, Pyodide 0.28.3
 fixture и требует совпадения `output_sha256` с десктопным путём. Актуальность
 `web/pysrc.json` и `web/theme.css` проверяется в `make docs-check` и тестами:
 браузер получает ровно те исходники, что лежат в репозитории.
+
+Для оригинального X-Ray добавлен тот же bridge без отдельной web-логики:
+`web_bridge.analyze()` выбирает `stalker-soc`, `stalker-cs` или `stalker-cop`,
+возвращает serialized item names/unknown weights и передаёт `EditPlan` в общий
+`prepare_xray`. Статический `web/catalogs.json` содержит только ключи,
+категории, stack limits и serializer families официальных SoC/CS/CoP ресурсов;
+игровые архивы, локальные пути и save bytes туда не попадают. Regression bridge
+подтверждает CoP money + ammo edit, catalog-backed add, deep remove и
+неизменность исходного SHA. Полный интерактивный browser/Chromium прогон на
+личном X-Ray файле не выполнялся; portable Python LZO оставлен для Pyodide, а
+native `liblzo2` используется только как необязательное desktop acceleration.
 
 ## Границы
 

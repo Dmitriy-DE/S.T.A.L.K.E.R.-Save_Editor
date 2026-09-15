@@ -1036,10 +1036,11 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "ready",
+    "status": "accepted",
     "path": "docs/tasks/M01.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (вошло в PR #53)"
   },
   {
     "id": "M02",
@@ -1060,10 +1061,11 @@
     ],
     "gate": "code",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M02.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (вошло в PR #53)"
   },
   {
     "id": "M03",
@@ -1084,10 +1086,11 @@
     ],
     "gate": "research",
     "priority": "P1",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M03.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (вошло в PR #53)"
   },
   {
     "id": "M04",
@@ -1109,10 +1112,11 @@
     ],
     "gate": "code",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M04.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (вошло в PR #53)"
   },
   {
     "id": "M05",
@@ -1133,10 +1137,11 @@
     ],
     "gate": "code",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M05.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (вошло в PR #53)"
   },
   {
     "id": "M06",
@@ -1157,10 +1162,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M06.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (локальный корпус; игровая и Enhanced-проверки открыты)"
   },
   {
     "id": "M07",
@@ -1181,10 +1187,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M07.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (локальный корпус; M10 игровая проверка открыта)"
   },
   {
     "id": "M08",
@@ -1205,10 +1212,11 @@
     ],
     "gate": "research",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "accepted",
     "path": "docs/tasks/M08.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "accepted (локальный корпус; M10 игровая проверка открыта)"
   },
   {
     "id": "M09",
@@ -1229,10 +1237,11 @@
     ],
     "gate": "code",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "in_progress",
     "path": "docs/tasks/M09.md",
     "github_issue": "",
-    "github_pr": ""
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53",
+    "status_display": "in_progress (writer есть; M10 игровая проверка открыта)"
   },
   {
     "id": "M10",

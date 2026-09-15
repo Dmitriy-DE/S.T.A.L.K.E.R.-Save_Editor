@@ -56,7 +56,7 @@ class ChangesView(QWidget):
         destination = QFormLayout()
         destination_row = QHBoxLayout()
         self.destination_edit = QLineEdit()
-        self.destination_edit.setPlaceholderText("Путь новой копии .sav")
+        self.destination_edit.setPlaceholderText("Путь новой копии сохранения")
         destination_row.addWidget(self.destination_edit, 1)
         self.choose_output_button = QPushButton("Выбрать…")
         self.choose_output_button.clicked.connect(self.choose_output_requested.emit)
@@ -97,7 +97,11 @@ class ChangesView(QWidget):
         info: SaveInfo,
         staged_money: int | None,
         staged_counts: Mapping[int, int],
+        staged_adds: Mapping[str, int] | None = None,
+        staged_detach: Mapping[int, bool] | None = None,
     ) -> None:
+        staged_adds = staged_adds or {}
+        staged_detach = staged_detach or {}
         items = {item.handle: item for item in info.inventory}
         rows: list[tuple[str, str, str, str, str]] = []
         if staged_money is not None:
@@ -123,6 +127,27 @@ class ChangesView(QWidget):
                     str(item.count),
                     str(new_count),
                     "Количество можно изменить" if item.editable_count else "Только чтение",
+                )
+            )
+        for item_key, quantity in sorted(staged_adds.items()):
+            rows.append(
+                (
+                    "Добавление",
+                    item_key,
+                    "—",
+                    f"× {quantity}",
+                    "Официальный serializer family",
+                )
+            )
+        for handle, deep in sorted(staged_detach.items()):
+            item = items.get(int(handle))
+            rows.append(
+                (
+                    "Удаление",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    item.type_key if item is not None else "unknown",
+                    "удалить",
+                    "registry deep detach" if deep else "только чтение",
                 )
             )
 
@@ -194,9 +219,9 @@ class ChangesView(QWidget):
     def choose_output(self) -> Path | None:
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            "Сохранить копию STALKER 2 .sav",
+            "Сохранить копию S.T.A.L.K.E.R.",
             self.destination_edit.text(),
-            "STALKER 2 save (*.sav);;Все файлы (*)",
+            "S.T.A.L.K.E.R. saves (*.sav *.scop *.scs);;Все файлы (*)",
         )
         return Path(filename) if filename else None
 

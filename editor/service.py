@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from save_format import SaveInfo, inspect_save
+from save_format import SaveInfo
 
+from .catalog import ItemCatalog
+from .formats import FormatInspection, SaveFormat, detect_or_raise
 from .models import CloudReceipt, EditPlan, PreparedEdit
-from .prepare import prepare_edit
 from .storage import (
     BackupRecord,
     ExportReceipt,
@@ -47,21 +48,84 @@ class EditorService:
         upload_fn: UploadFn | None = None,
         restore_fn: RestoreFn | None = None,
     ) -> None:
-        self._inspect_fn = inspect_fn or inspect_save
-        self._prepare_fn = prepare_fn or prepare_edit
+        self._inspect_fn = inspect_fn
+        self._prepare_fn = prepare_fn
         self._export_fn = export_fn or storage_export_local
         self._upload_fn = upload_fn or transactions_upload_cloud
         self._restore_fn = restore_fn or storage_restore_backup
 
-    def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
+    @staticmethod
+    def _format_for(
+        data: bytes, *, source_name: str | None = None
+    ) -> SaveFormat:
+        return detect_or_raise(data, display_name=source_name)
+
+    def inspect_result(
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
+        catalog_source: str | Path | None = None,
+    ) -> FormatInspection:
+        """Return parser data together with the selected format metadata."""
+
+        format_ = self._format_for(data, source_name=source_name)
+        inspector = self._inspect_fn or format_.inspect
+        info = inspector(data, with_inventory=with_inventory)
+        catalog: ItemCatalog | None = None
+        catalog_loader = getattr(format_, "catalog_for_source", None)
+        if callable(catalog_loader):
+            selected_source = catalog_source if catalog_source is not None else source_name
+            catalog = catalog_loader(str(selected_source) if selected_source is not None else None)
+        return FormatInspection(
+            format_id=format_.id,
+            format_title=format_.title,
+            info=info,
+            release_id=format_.release_id,
+            edition=format_.edition,
+            capabilities=format_.capabilities,
+            catalog=catalog,
+        )
+
+    def inspect(
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
+        catalog_source: str | Path | None = None,
+    ) -> SaveInfo:
         """Return the read-only save snapshot used by every front end."""
 
-        return self._inspect_fn(data, with_inventory=with_inventory)
+        if self._inspect_fn is not None:
+            return self._inspect_fn(data, with_inventory=with_inventory)
+        return self.inspect_result(
+            data,
+            with_inventory=with_inventory,
+            source_name=source_name,
+            catalog_source=catalog_source,
+        ).info
 
-    def prepare(self, data: bytes, plan: EditPlan) -> PreparedEdit:
+    def prepare(
+        self,
+        data: bytes,
+        plan: EditPlan,
+        *,
+        source_name: str | None = None,
+        catalog: ItemCatalog | None = None,
+    ) -> PreparedEdit:
         """Prepare and verify one immutable edit plan."""
 
-        return self._prepare_fn(data, plan)
+        if self._prepare_fn is not None:
+            return self._prepare_fn(data, plan)
+        format_ = self._format_for(data, source_name=source_name)
+        return format_.prepare(
+            data,
+            plan,
+            source_name=source_name,
+            catalog=catalog,
+        )
 
     def export_local(
         self,

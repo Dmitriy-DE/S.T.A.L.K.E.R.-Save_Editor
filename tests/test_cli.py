@@ -12,9 +12,12 @@ import hashlib
 from pathlib import Path
 
 import pytest
+from test_xray_catalog import _write_unpacked_fixture
+from test_xray_save import _fixture, _fixture_with_base_item
 
 import cli
 import save_format as sf
+from editor.xray_save import COP_FORMAT, inspect_xray
 
 
 def _write_save(tmp_path: Path, data: bytes, name: str = "slot.sav") -> Path:
@@ -121,3 +124,65 @@ def test_missing_file_reports_an_error_instead_of_a_traceback(
     captured = capsys.readouterr()
     assert "Error:" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_xray_info_and_stack_edit_use_the_shared_cli_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    data = _fixture()
+    path = _write_save(tmp_path, data, "slot.scop")
+    output = tmp_path / "edited.scop"
+
+    assert cli.main(["info", str(path)]) == 0
+    info_output = capsys.readouterr().out
+    assert "Format: stalker-cop" in info_output
+    assert "Integrity: X-Ray LZO/container OK" in info_output
+
+    item = inspect_xray(data, COP_FORMAT).inventory[0]
+    assert cli.main(
+        [
+            "set-stack",
+            str(path),
+            hex(item.handle),
+            "44",
+            "-o",
+            str(output),
+            "--backup-dir",
+            str(tmp_path / "backups"),
+        ]
+    ) == 0
+    capsys.readouterr()
+    assert path.read_bytes() == data
+    assert inspect_xray(output.read_bytes(), COP_FORMAT).inventory[0].count == 44
+
+
+def test_xray_cli_add_uses_the_official_catalog_and_keeps_the_source(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    game_root = tmp_path / "cop"
+    _write_unpacked_fixture(game_root)
+    save_dir = game_root / "_appdata_" / "savedgames"
+    save_dir.mkdir(parents=True)
+    path = save_dir / "slot.scop"
+    data = _fixture_with_base_item()
+    path.write_bytes(data)
+    output = tmp_path / "edited.scop"
+
+    assert cli.main(
+        [
+            "edit",
+            str(path),
+            "--add",
+            "device_test=2",
+            "-o",
+            str(output),
+            "--backup-dir",
+            str(tmp_path / "backups"),
+        ]
+    ) == 0
+
+    assert "Add device_test x2" in capsys.readouterr().out
+    assert path.read_bytes() == data
+    after = inspect_xray(output.read_bytes(), COP_FORMAT)
+    added = tuple(item for item in after.inventory if item.type_key == "device_test")
+    assert len(added) == 2

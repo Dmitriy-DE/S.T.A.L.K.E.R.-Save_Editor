@@ -6,6 +6,8 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
+from editor.catalog import ItemCatalog
+from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 
@@ -28,6 +30,7 @@ class OperationWorker(QThread):
         source_path: Path | None = None,
         output_path: Path | None = None,
         backup_dir: Path | None = None,
+        catalog: ItemCatalog | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -38,12 +41,18 @@ class OperationWorker(QThread):
         self.source_path = source_path
         self.output_path = output_path
         self.backup_dir = backup_dir
+        self.catalog = catalog
 
     def run(self) -> None:
         try:
             if self.mode == "preview":
                 self.progress.emit("Подготовка preview: проверка SHA и round-trip…")
-                prepared = self.service.prepare(self.data, self.plan)
+                prepared = self.service.prepare(
+                    self.data,
+                    self.plan,
+                    source_name=self.plan.source.locator,
+                    catalog=self.catalog,
+                )
                 if not isinstance(prepared, PreparedEdit):
                     raise TypeError("EditorService.prepare вернул не PreparedEdit")
                 self.preview_ready.emit(prepared)
@@ -61,6 +70,8 @@ class OperationWorker(QThread):
                 self.apply_ready.emit(receipt)
                 return
             raise ValueError(f"Неизвестный режим операции: {self.mode}")
+        except FormatDetectionError as exc:
+            self.failed.emit(str(exc))
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 

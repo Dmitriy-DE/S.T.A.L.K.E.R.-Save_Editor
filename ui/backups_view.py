@@ -113,7 +113,7 @@ class BackupView(QWidget):
         restore_form = QFormLayout()
         destination_row = QHBoxLayout()
         self.destination_edit = QLineEdit()
-        self.destination_edit.setPlaceholderText("Новый путь для восстановленной копии .sav")
+        self.destination_edit.setPlaceholderText("Новый путь для восстановленной копии сохранения")
         self.destination_edit.textChanged.connect(self._destination_changed)
         destination_row.addWidget(self.destination_edit, 1)
         self.choose_destination_button = QPushButton("Выбрать…")
@@ -241,7 +241,7 @@ class BackupView(QWidget):
             self,
             "Путь восстановленной копии",
             "",
-            "STALKER 2 save (*.sav);;Все файлы (*)",
+            "S.T.A.L.K.E.R. save (*.sav *.scop *.scs);;Все файлы (*)",
         )
         if filename:
             self.destination_edit.setText(filename)

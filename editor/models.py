@@ -45,6 +45,7 @@ class EditPlan:
     detach: tuple[tuple[int, bool], ...] = ()
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
+    adds: tuple[tuple[str, int, str], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -62,6 +63,10 @@ class EditPlan:
             for handle, x, y, width, height in self.attach
         )
         raw = tuple(self.raw)
+        adds = tuple(
+            (str(item_key), int(quantity), str(destination))
+            for item_key, quantity, destination in self.adds
+        )
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -71,12 +76,22 @@ class EditPlan:
             raise ValueError("Duplicate detach handle in edit plan")
         if len({handle for handle, *_ in attach}) != len(attach):
             raise ValueError("Duplicate attach handle in edit plan")
+        if len({(item_key, destination) for item_key, _, destination in adds}) != len(adds):
+            raise ValueError("Duplicate add item/destination in edit plan")
+        for item_key, quantity, destination in adds:
+            if not item_key.strip():
+                raise ValueError("Added item key must be non-empty")
+            if quantity < 1:
+                raise ValueError("Added item quantity must be positive")
+            if destination != "inventory":
+                raise ValueError("Added item destination must be 'inventory'")
 
         object.__setattr__(self, "stacks", stacks)
         object.__setattr__(self, "moves", moves)
         object.__setattr__(self, "detach", detach)
         object.__setattr__(self, "attach", attach)
         object.__setattr__(self, "raw", raw)
+        object.__setattr__(self, "adds", adds)
 
 
 @dataclass(frozen=True)

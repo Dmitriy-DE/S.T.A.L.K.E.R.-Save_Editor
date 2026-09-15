@@ -1,9 +1,8 @@
 // Browser build: the page is a thin shell around the project's own Python core.
 //
-// Pyodide runs save_format.py and editor/prepare.py unchanged, and ooz-wasm
-// supplies the single native call the parser needs - decompress(stream, size).
-// Nothing is uploaded: the file is read with FileReader and handed straight to
-// WebAssembly in this tab.
+// Pyodide runs the shared format registry unchanged.  ooz-wasm supplies the
+// native decoder for S.T.A.L.K.E.R. 2; original X-Ray saves use the bundled
+// pure-Python LZO reader.  Nothing is uploaded: the file stays in this tab.
 
 const PYODIDE_VERSION = "0.28.3";
 const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -18,6 +17,8 @@ const state = {
   snapshot: null,
   money: null,
   stacks: new Map(),
+  adds: new Map(),
+  detach: new Set(),
   prepared: null,
 };
 
@@ -32,7 +33,7 @@ function fail(error) {
 }
 
 async function boot() {
-  setStatus("Загрузка декодера Kraken (WASM)…", "busy");
+  setStatus("Загрузка декодера сохранений…", "busy");
   const ooz = await import(OOZ_URL);
 
   setStatus("Загрузка Python-ядра (Pyodide)…", "busy");
@@ -54,6 +55,8 @@ async function boot() {
   globalThis.__oozDecompress = (stream, size) => ooz.decompress(stream, size);
   const bridge = py.pyimport("web_bridge");
   bridge.install_decoder(globalThis.__oozDecompress);
+  const generatedCatalogs = await (await fetch("catalogs.json")).text();
+  bridge.install_catalogs(generatedCatalogs);
 
   state.py = py;
   state.bridge = bridge;
@@ -61,7 +64,7 @@ async function boot() {
   el("footer-build").textContent =
     `Ядро: ${bundle.source_sha256.slice(0, 12)}… · Pyodide ${PYODIDE_VERSION} · ooz-wasm 2.0.0`;
   el("file-input").disabled = false;
-  setStatus("Ядро готово. Открой локальный .sav.");
+  setStatus("Ядро готово. Открой локальный файл сохранения.");
 }
 
 async function openFile(file) {
@@ -76,6 +79,8 @@ async function openFile(file) {
     state.snapshot = snapshot;
     state.money = null;
     state.stacks.clear();
+    state.adds.clear();
+    state.detach.clear();
     state.prepared = null;
     renderSnapshot(snapshot);
     setStatus(`Анализ завершён за ${ms} мс; snapshot готов`);
@@ -90,17 +95,36 @@ function renderSnapshot(s) {
   el("file-details").textContent = `${s.size_text} • SHA ${s.sha256.slice(0, 12)}…`;
 
   const crc = el("crc-badge");
-  crc.textContent = `CRC-32: ${s.crc_ok ? "PASS" : "FAIL"}`;
-  crc.className = `badge ${s.crc_ok ? "pass" : "fail"}`;
-  el("format-badge").textContent = "UE5 GVAS: НЕ ПОДТВЕРЖДЁН";
+  if (s.crc_present) {
+    crc.textContent = `CRC-32: ${s.crc_ok ? "PASS" : "FAIL"}`;
+    crc.className = `badge ${s.crc_ok ? "pass" : "fail"}`;
+  } else {
+    crc.textContent = `${s.integrity_name}: OK`;
+    crc.className = "badge pass";
+  }
+  el("format-badge").textContent =
+    `ФОРМАТ: ${s.format_title} · ${s.release_id} (${s.edition})`;
+  el("preview-status").textContent = "Предпросмотр ещё не выполнен";
+  el("preview-status").className = "muted";
 
+  el("card-location").textContent = s.level_name ?? "неизвестно";
+  el("card-time").textContent = s.game_time === null ? "—" : String(s.game_time);
   el("card-money").textContent = s.money === null ? "—" : String(s.money);
   el("card-items").textContent = String(s.inventory_count);
   el("summary").textContent =
-    `CRC: ${s.crc_ok ? "OK" : "FAIL"} · Деньги: ${s.money ?? "неизвестно"} · ` +
+    `${s.crc_present ? `CRC: ${s.crc_ok ? "OK" : "FAIL"}` : `${s.integrity_name}: OK`} · ` +
+    `Деньги: ${s.money ?? "неизвестно"} · ` +
     `Предметов: ${s.inventory_count}`;
+  const caps = s.capabilities ?? {};
+  const supportedEdits = [
+    caps.edit_money ? "деньги" : "деньги read-only",
+    caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
+    caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
+    caps.remove_items ? "удаление предметов" : "удаление read-only",
+  ];
   el("support").textContent =
-    "Поддержанные данные: CRC, деньги, снимок инвентаря. Неизвестные записи остаются read-only." +
+    `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
+    `Доступно: ${supportedEdits.join(", ")}; неизвестные поля остаются read-only.` +
     (s.warnings.length ? ` Предупреждения: ${s.warnings.join(" ")}` : "");
 
   const body = el("metadata").tBodies[0];
@@ -122,6 +146,20 @@ function renderSnapshot(s) {
     : "Только чтение: сигнатура кошелька не однозначна";
   if (s.money_editable) el("money-input").value = String(s.money);
 
+  const addGroup = el("item-add-group");
+  const addSelect = el("item-add-select");
+  const catalogItems = s.catalog_items ?? [];
+  addSelect.replaceChildren(...catalogItems.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.key;
+    option.textContent = item.name === item.key ? item.key : `${item.name} · ${item.key}`;
+    return option;
+  }));
+  addGroup.disabled = !(caps.add_items && s.catalog_available && catalogItems.length);
+  el("item-add-status").textContent = s.catalog_available
+    ? `Доступно ключей: ${catalogItems.length}. Источник: ${s.catalog_source === "save-observed" ? "текущий сейв" : "официальный каталог"}.`
+    : "Официальный каталог для браузера не найден в загруженном файле.";
+
   renderInventory();
   renderChanges();
 }
@@ -132,9 +170,13 @@ function visibleItems() {
   return (state.snapshot?.inventory ?? []).filter((item) => {
     if (filter === "editable" && !item.editable) return false;
     if (filter === "readonly" && item.editable) return false;
-    if (filter === "staged" && !state.stacks.has(item.handle)) return false;
+    if (
+      filter === "staged" &&
+      !state.stacks.has(item.handle) &&
+      !state.detach.has(item.handle)
+    ) return false;
     if (!query) return true;
-    return [item.category, item.type_key, item.handle_hex]
+    return [item.name, item.category, item.type_key, item.handle_hex]
       .join(" ")
       .toLowerCase()
       .includes(query);
@@ -146,10 +188,14 @@ function renderInventory() {
   body.replaceChildren(...visibleItems().map((item) => {
     const tr = document.createElement("tr");
     const staged = state.stacks.get(item.handle);
-    tr.className = staged !== undefined ? "staged" : item.editable ? "" : "readonly";
+    tr.className = state.detach.has(item.handle)
+      ? "staged"
+      : staged !== undefined ? "staged" : item.editable ? "" : "readonly";
     for (const cell of [
-      item.category, item.position, item.size_text, item.type_key,
-      String(item.count), item.total_weight.toFixed(3), item.handle_hex,
+      item.name, item.category, item.position, item.size_text, item.type_key,
+      item.count === null ? "неизвестно" : String(item.count),
+      item.total_weight === null ? "неизвестно" : item.total_weight.toFixed(3),
+      item.handle_hex,
     ]) {
       const td = document.createElement("td");
       td.textContent = cell;
@@ -160,11 +206,12 @@ function renderInventory() {
       const input = document.createElement("input");
       input.type = "number";
       input.min = "1";
-      input.max = "9999";
+      input.max = String(state.snapshot.stack_max ?? 1000000);
       input.value = String(staged ?? item.count);
       input.addEventListener("change", () => {
         const value = Number(input.value);
-        if (!Number.isInteger(value) || value < 1) {
+        const max = Number(state.snapshot.stack_max ?? 1000000);
+        if (!Number.isInteger(value) || value < 1 || value > max) {
           input.value = String(item.count);
           return;
         }
@@ -175,9 +222,27 @@ function renderInventory() {
         renderChanges();
       });
       td.append(input);
-    } else {
+    } else if (!state.snapshot.capabilities?.edit_stacks) {
       td.textContent = "только чтение";
       td.className = "muted";
+    }
+    if (state.snapshot.capabilities?.remove_items) {
+      const remove = document.createElement("button");
+      remove.className = "button";
+      remove.type = "button";
+      remove.textContent = state.detach.has(item.handle) ? "Отменить" : "Удалить";
+      remove.addEventListener("click", () => {
+        if (state.detach.has(item.handle)) state.detach.delete(item.handle);
+        else {
+          state.detach.add(item.handle);
+          state.stacks.delete(item.handle);
+        }
+        invalidate();
+        renderInventory();
+        renderChanges();
+      });
+      td.append(document.createTextNode(" "));
+      td.append(remove);
     }
     tr.append(td);
     return tr;
@@ -193,6 +258,13 @@ function renderChanges() {
   for (const [handle, count] of state.stacks) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`Стак ${item.handle_hex}: ${item.count} → ${count}`);
+  }
+  for (const [key, quantity] of state.adds) {
+    items.push(`Добавить ${key} × ${quantity}`);
+  }
+  for (const handle of state.detach) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    items.push(`Удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}`);
   }
   list.replaceChildren(...(items.length
     ? items.map((text) => {
@@ -224,7 +296,9 @@ function preview() {
   try {
     setStatus("Применение изменений…", "busy");
     const stacks = JSON.stringify([...state.stacks.entries()]);
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks));
+    const adds = JSON.stringify([...state.adds.entries()]);
+    const detach = JSON.stringify([...state.detach].map((handle) => [handle, true]));
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -233,6 +307,12 @@ function preview() {
     }
     for (const [handle, before, after] of result.stacks) {
       lines.push(`${handle}: ${before} → ${after}`);
+    }
+    for (const [, key, count] of result.adds ?? []) {
+      lines.push(`добавлен ${key} (${count ?? "без count"})`);
+    }
+    for (const handle of result.removed ?? []) {
+      lines.push(`удалён ${handle}`);
     }
     if (!result.source_unchanged) lines.push("ВНИМАНИЕ: исходные байты изменились");
     el("preview-status").textContent = lines.join(" · ");
@@ -247,7 +327,9 @@ function preview() {
 function download() {
   try {
     const bytes = state.bridge.output_bytes().toJs();
-    const name = state.snapshot.name.replace(/\.sav$/i, "") + "_edited.sav";
+    const match = state.snapshot.name.match(/\.(sav|scop|scs)$/i);
+    const extension = match ? `.${match[1].toLowerCase()}` : ".sav";
+    const name = state.snapshot.name.replace(/\.(sav|scop|scs)$/i, "") + "_edited" + extension;
     const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
     const link = Object.assign(document.createElement("a"), { href: url, download: name });
     link.click();
@@ -292,6 +374,20 @@ el("money-clear").addEventListener("click", () => {
   el("money-input").value = String(state.snapshot.money);
   invalidate();
   renderChanges();
+});
+el("item-add-stage").addEventListener("click", () => {
+  const key = el("item-add-select").value;
+  const quantity = Number(el("item-add-quantity").value);
+  const definition = (state.snapshot?.catalog_items ?? []).find((item) => item.key === key);
+  const max = Number(definition?.max_stack ?? 65535);
+  if (!key || !Number.isInteger(quantity) || quantity < 1 || quantity > max) {
+    setStatus(`Количество должно быть целым числом 1…${max}`, "error");
+    return;
+  }
+  state.adds.set(key, quantity);
+  invalidate();
+  renderChanges();
+  setStatus(`Добавление ${key} × ${quantity} подготовлено; исходный файл не изменён`);
 });
 el("preview").addEventListener("click", preview);
 el("download").addEventListener("click", download);

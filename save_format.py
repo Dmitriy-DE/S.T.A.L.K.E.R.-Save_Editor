@@ -66,14 +66,14 @@ class InventoryLayout:
 @dataclass(frozen=True)
 class InventoryItem:
     handle: int
-    x: int
-    y: int
-    width: int
-    height: int
+    x: int | None
+    y: int | None
+    width: int | None
+    height: int | None
     cells: tuple[tuple[int, int], ...]
-    count: int
-    total_weight: float
-    unit_weight: float
+    count: int | None
+    total_weight: float | None
+    unit_weight: float | None
     kind_code: int
     category: str
     record_offset: int
@@ -81,6 +81,10 @@ class InventoryItem:
     fingerprint: str
     type_key: str
     editable_count: bool
+    display_name: str | None = None
+    position_label: str | None = None
+    size_label: str | None = None
+    count_max: int = 1_000_000
 
     @property
     def handle_hex(self) -> str:
@@ -88,10 +92,14 @@ class InventoryItem:
 
     @property
     def position(self) -> str:
+        if self.position_label is not None or self.x is None or self.y is None:
+            return self.position_label or "неизвестно"
         return f"{self.x},{self.y}"
 
     @property
     def size_text(self) -> str:
+        if self.size_label is not None or self.width is None or self.height is None:
+            return self.size_label or "неизвестно"
         return f"{self.width}×{self.height}"
 
 
@@ -137,6 +145,14 @@ class SaveInfo:
     grid_handle_count: int = 0
     unresolved_handles: tuple[int, ...] = ()
     warnings: tuple[str, ...] = ()
+    crc_present: bool = True
+    integrity_name: str = "CRC-32"
+    format_version: int | None = None
+    game_time: int | None = None
+    time_factor: float | None = None
+    normal_time_factor: float | None = None
+    level_name: str | None = None
+    container_version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -569,6 +585,8 @@ def _patch_stack_in_raw(raw: bytearray, handle: int, new_count: int) -> tuple[in
         raise SaveError(
             f"Handle 0x{handle:08X} не помечен как безопасный stack (count={item.count}, kind={item.kind_code})"
         )
+    if item.count is None or item.unit_weight is None:
+        raise SaveError(f"Handle 0x{handle:08X}: count/weight не подтверждены")
     old_count = item.count
     new_total_weight = item.unit_weight * new_count
     if not math.isfinite(new_total_weight) or new_total_weight > 10_000_000:
@@ -591,6 +609,8 @@ def _patch_move_in_raw(raw: bytearray, handle: int, new_x: int, new_y: int) -> t
     item = items.get(handle)
     if item is None:
         raise SaveError(f"Inventory handle 0x{handle:08X} не найден")
+    if item.x is None or item.y is None or item.width is None or item.height is None:
+        raise SaveError(f"Предмет 0x{handle:08X}: position/size не подтверждены")
     max_x = new_x + item.width - 1
     max_y = new_y + item.height - 1
     if max_x >= GRID_WIDTH or max_y >= 128:

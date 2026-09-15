@@ -180,7 +180,7 @@ class InventoryTableModel(QAbstractTableModel):
             return True
         haystack = " ".join(
             (
-                "Неизвестный объект",
+                item.display_name or "Неизвестный объект",
                 item.category,
                 item.position,
                 item.size_text,
@@ -194,14 +194,31 @@ class InventoryTableModel(QAbstractTableModel):
     def _sort_key(self, item: InventoryItem):
         staged = self._staged_counts.get(item.handle)
         count = staged if staged is not None else item.count
+        position = (
+            item.y is None,
+            item.y if item.y is not None else 0,
+            item.x if item.x is not None else 0,
+        )
+        if item.width is None or item.height is None:
+            size = (True, 0, 0, 0)
+        else:
+            size = (False, item.width * item.height, item.width, item.height)
+        effective_weight = (
+            staged * item.unit_weight
+            if staged is not None and item.unit_weight is not None
+            else item.total_weight
+        )
         values = {
-            self.NAME_COLUMN: "неизвестный объект",
+            self.NAME_COLUMN: (item.display_name or "неизвестный объект").casefold(),
             self.CATEGORY_COLUMN: item.category.casefold(),
-            self.POSITION_COLUMN: (item.y, item.x),
-            self.SIZE_COLUMN: (item.width * item.height, item.width, item.height),
+            self.POSITION_COLUMN: position,
+            self.SIZE_COLUMN: size,
             self.TYPE_KEY_COLUMN: item.type_key.casefold(),
-            self.COUNT_COLUMN: count,
-            self.WEIGHT_COLUMN: (staged * item.unit_weight if staged is not None else item.total_weight),
+            self.COUNT_COLUMN: (count is None, count if count is not None else 0),
+            self.WEIGHT_COLUMN: (
+                effective_weight is None,
+                effective_weight if effective_weight is not None else 0.0,
+            ),
             self.SUPPORT_COLUMN: self._support_text(item).casefold(),
             self.HANDLE_COLUMN: item.handle,
         }
@@ -210,7 +227,7 @@ class InventoryTableModel(QAbstractTableModel):
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
         if column == self.NAME_COLUMN:
-            return "Неизвестный объект"
+            return item.display_name or "Неизвестный объект"
         if column == self.CATEGORY_COLUMN:
             return item.category
         if column == self.POSITION_COLUMN:
@@ -218,11 +235,15 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.SIZE_COLUMN:
             return item.size_text
         if column == self.TYPE_KEY_COLUMN:
-            return f"0x{item.type_key}"
+            return item.type_key if item.display_name is not None else f"0x{item.type_key}"
         if column == self.COUNT_COLUMN:
+            if item.count is None:
+                return "неизвестно"
             return str(item.count) if staged is None else f"{item.count} → {staged}"
         if column == self.WEIGHT_COLUMN:
-            if staged is None:
+            if item.total_weight is None:
+                return "неизвестно"
+            if staged is None or item.unit_weight is None:
                 return f"{item.total_weight:.3f}"
             return f"{item.total_weight:.3f} → {staged * item.unit_weight:.3f}"
         if column == self.SUPPORT_COLUMN:
@@ -233,9 +254,18 @@ class InventoryTableModel(QAbstractTableModel):
 
     def _tooltip(self, item: InventoryItem, column: int) -> str:
         if column == self.NAME_COLUMN:
+            type_key = (
+                item.type_key
+                if item.display_name is not None
+                else f"0x{item.type_key}"
+            )
             return (
-                "Имя не определено: каталог SID/type-key ещё не подтверждён. "
-                f"Type-key: 0x{item.type_key}"
+                (
+                    "Сериализованное имя section key; каталог/перевод не загружен. "
+                    if item.display_name is not None
+                    else "Имя не определено: каталог SID/type-key ещё не подтверждён. "
+                )
+                + f"Type-key: {type_key}"
             )
         if column == self.HANDLE_COLUMN:
             return f"Стабильный идентификатор: {item.handle_hex}"
@@ -247,6 +277,8 @@ class InventoryTableModel(QAbstractTableModel):
     def _support_text(item: InventoryItem) -> str:
         if item.editable_count:
             return "Количество можно изменить"
+        if item.count is None:
+            return "Только чтение: count не извлечён"
         if item.count <= 1:
             return "Только чтение: count=1"
         if item.kind_code not in EDITABLE_STACK_KIND_CODES:

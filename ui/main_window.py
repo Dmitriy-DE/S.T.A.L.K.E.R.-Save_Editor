@@ -7,7 +7,7 @@ snapshot visible when a later file is malformed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -32,9 +32,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.capabilities import FormatCapabilities
+from editor.catalog import ItemCatalog
+from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
 from editor.service import EditorService
+from editor.settings import PathSettings, load_settings, search_paths_for_settings
 from save_format import SaveError, SaveInfo
 
 from .backups_view import BackupView, RestoreWorker
@@ -42,7 +46,22 @@ from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
+from .save_slots_view import (
+    RELEASE_IDS,
+    SaveSlotsView,
+    SlotDiscoveryFn,
+    discover_save_slots,
+)
+from .settings_view import SettingsView
 from .theme import apply_theme
+
+
+def _default_s2_capabilities() -> FormatCapabilities:
+    return FormatCapabilities(
+        read_inventory=True,
+        edit_money=True,
+        edit_stacks=True,
+    )
 
 
 def _human_size(size: int) -> str:
@@ -74,6 +93,12 @@ class LocalSnapshot:
     info: SaveInfo
     source_kind: str = "local"
     locator: str | None = None
+    format_id: str = "stalker2"
+    format_title: str = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
+    release_id: str = ""
+    edition: str = ""
+    capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
+    catalog: ItemCatalog | None = None
 
 
 class InspectWorker(QThread):
@@ -90,8 +115,27 @@ class InspectWorker(QThread):
     def run(self) -> None:
         try:
             data = self.path.read_bytes()
-            info = self.service.inspect(data, with_inventory=True)
-            self.completed.emit(LocalSnapshot(path=self.path, data=data, info=info))
+            result = self.service.inspect_result(
+                data,
+                with_inventory=True,
+                source_name=self.path.name,
+                catalog_source=self.path,
+            )
+            self.completed.emit(
+                LocalSnapshot(
+                    path=self.path,
+                    data=data,
+                    info=result.info,
+                    format_id=result.format_id,
+                    format_title=result.format_title,
+                    release_id=result.release_id,
+                    edition=result.edition,
+                    capabilities=result.capabilities,
+                    catalog=result.catalog,
+                )
+            )
+        except FormatDetectionError as exc:
+            self.failed.emit(str(exc))
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -106,12 +150,24 @@ class MainWindow(QMainWindow):
     restore_ready = Signal(object)
     operation_failed = Signal(str)
 
-    def __init__(self, service: EditorService) -> None:
+    def __init__(
+        self,
+        service: EditorService,
+        *,
+        slot_discovery: SlotDiscoveryFn | None = None,
+        settings_path: Path | None = None,
+    ) -> None:
         super().__init__()
         self.service = service
+        self.settings_load = load_settings(path=settings_path)
+        self.settings_path = self.settings_load.path
+        self.settings = self.settings_load.settings
+        self.slot_discovery = slot_discovery or self._discover_slots
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
+        self.staged_adds: dict[str, int] = {}
+        self.staged_detach: dict[int, bool] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -124,7 +180,7 @@ class MainWindow(QMainWindow):
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
         apply_theme(application if isinstance(application, QApplication) else None)
-        self.setWindowTitle("S.T.A.L.K.E.R. 2 — Save Editor")
+        self.setWindowTitle("S.T.A.L.K.E.R. — Save Editor")
         self.resize(1280, 820)
         self.setMinimumSize(960, 620)
         self._build_ui()
@@ -142,7 +198,7 @@ class MainWindow(QMainWindow):
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(18, 12, 18, 12)
         title_layout.setSpacing(10)
-        self.app_title = QLabel("S.T.A.L.K.E.R. 2 Save Editor")
+        self.app_title = QLabel("S.T.A.L.K.E.R. Save Editor")
         self.app_title.setObjectName("appTitle")
         title_layout.addWidget(self.app_title)
         self.version_badge = QLabel(f"v{_version_text()}")
@@ -167,7 +223,7 @@ class MainWindow(QMainWindow):
         self.meta_filename = QLabel("Сейв не выбран")
         self.meta_filename.setObjectName("metaFilename")
         meta_text.addWidget(self.meta_filename)
-        self.meta_details = QLabel("Открой локальный .sav для проверки CRC и структуры")
+        self.meta_details = QLabel("Открой локальный сейв для проверки формата и структуры")
         self.meta_details.setObjectName("metaDetails")
         self.meta_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         meta_text.addWidget(self.meta_details)
@@ -175,10 +231,10 @@ class MainWindow(QMainWindow):
         self.integrity_badge = QLabel("CRC-32: —")
         self.integrity_badge.setObjectName("integrityBadge")
         meta_layout.addWidget(self.integrity_badge)
-        self.format_badge = QLabel("UE5 GVAS: —")
+        self.format_badge = QLabel("ФОРМАТ: —")
         self.format_badge.setObjectName("formatBadge")
         meta_layout.addWidget(self.format_badge)
-        self.open_button = QPushButton("Открыть .sav…")
+        self.open_button = QPushButton("Открыть сейв…")
         self.open_button.setObjectName("openButton")
         self.open_button.clicked.connect(self.open_local)
         meta_layout.addWidget(self.open_button)
@@ -233,6 +289,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
         self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
+        self.tabs.addTab(self._build_slots_tab(), "Найденные сейвы")
+        self.tabs.addTab(self._build_settings_tab(), "Настройки")
         self.tabs.tabBar().setVisible(False)
         content_layout.addWidget(self.tabs, 1)
 
@@ -243,6 +301,8 @@ class MainWindow(QMainWindow):
             "Изменения",
             "Резервные копии",
             "Steam Cloud",
+            "Найденные сейвы",
+            "Настройки",
         )
         for index, label in enumerate(self.nav_labels):
             button = QPushButton(label)
@@ -304,7 +364,12 @@ class MainWindow(QMainWindow):
         if not buttons:
             return
         inventory = len(self.snapshot.info.inventory) if self.snapshot is not None else None
-        staged = len(self.staged_counts) + (1 if self.staged_money is not None else 0)
+        staged = (
+            len(self.staged_counts)
+            + len(self.staged_adds)
+            + len(self.staged_detach)
+            + (1 if self.staged_money is not None else 0)
+        )
         counters: dict[int, int | None] = {1: inventory, 2: staged or None}
         for index, button in enumerate(buttons):
             count = counters.get(index)
@@ -356,7 +421,7 @@ class MainWindow(QMainWindow):
         summary_caption = QLabel("Сводка")
         summary_caption.setObjectName("metricCaption")
         details_layout.addWidget(summary_caption)
-        self.summary_label = QLabel("Открой локальный .sav для проверки CRC и структуры.")
+        self.summary_label = QLabel("Открой локальный сейв для проверки формата и структуры.")
         self.summary_label.setWordWrap(True)
         self.summary_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         details_layout.addWidget(self.summary_label)
@@ -389,7 +454,7 @@ class MainWindow(QMainWindow):
         money_layout.addLayout(money_row)
         layout.addWidget(money_box)
 
-        metadata_box = QGroupBox("Технические метаданные контейнера (.sav)")
+        metadata_box = QGroupBox("Технические метаданные контейнера")
         metadata_layout = QVBoxLayout(metadata_box)
         metadata_layout.setContentsMargins(10, 10, 10, 10)
         self.metadata_table = QTableWidget(0, 3)
@@ -424,43 +489,73 @@ class MainWindow(QMainWindow):
         money = "неизвестно" if info.money is None else str(info.money)
         money_status = (
             "редактируется"
-            if info.money is not None and info.money_anchor_count == 1
+            if (
+                snapshot.capabilities.edit_money
+                and info.money is not None
+                and info.money_anchor_count == 1
+            )
             else f"read-only (anchor × {info.money_anchor_count})"
         )
         unresolved = len(info.unresolved_handles)
-        return (
+        common_rows = (
             ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
+            ("Формат", snapshot.format_id, snapshot.format_title),
             (
-                "CRC-32",
-                f"{info.stored_crc32:08X}",
-                "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
+                "Релиз",
+                snapshot.release_id or snapshot.format_id,
+                f"edition={snapshot.edition or 'unknown'}",
             ),
             ("SHA-256", info.sha256, "исходный снимок"),
             (
                 "Размер контейнера",
                 f"{_human_size(info.packed_size)} → {_human_size(info.unpacked_size)}",
-                "Kraken распакован",
+                "Kraken распакован" if info.crc_present else "LZO1X распакован",
             ),
             ("Баланс купонов", money, money_status),
-            ("Owned handles", str(len(info.owned_handles)), "прочитано"),
-            (
-                "Grid handles",
-                f"{len({item.handle for item in info.inventory})} / {info.grid_handle_count}",
-                "разобрано / объявлено",
-            ),
-            ("Grid cells", str(info.grid_cell_count), "прочитано"),
-            ("Объекты инвентаря", str(len(info.inventory)), "в сетке"),
-            ("Orphan handles", str(len(info.orphans)), "вне сетки"),
-            (
-                "Unresolved handles",
-                str(unresolved),
-                "read-only" if unresolved else "нет",
-            ),
-            (
-                "UE5 GVAS schema",
-                "не разобрана",
-                "контейнер валиден, схема не подтверждена",
-            ),
+        )
+        if info.crc_present:
+            rows = list(common_rows[:2])
+            rows.append(
+                (
+                    "CRC-32",
+                    f"{info.stored_crc32:08X}",
+                    "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
+                )
+            )
+            rows.extend(common_rows[2:])
+            rows.extend(
+                (
+                    ("Owned handles", str(len(info.owned_handles)), "прочитано"),
+                    (
+                        "Grid handles",
+                        f"{len({item.handle for item in info.inventory})} / {info.grid_handle_count}",
+                        "разобрано / объявлено",
+                    ),
+                    ("Grid cells", str(info.grid_cell_count), "прочитано"),
+                    ("Объекты инвентаря", str(len(info.inventory)), "в сетке"),
+                    ("Orphan handles", str(len(info.orphans)), "вне сетки"),
+                    (
+                        "Unresolved handles",
+                        str(unresolved),
+                        "read-only" if unresolved else "нет",
+                    ),
+                    (
+                        "UE5 GVAS schema",
+                        "не разобрана",
+                        "контейнер валиден, схема не подтверждена",
+                    ),
+                )
+            )
+            return tuple(rows)
+        return (*common_rows,
+            ("Actor objects", f"{len(info.inventory)} / {len(info.owned_handles)}", "прочитано по parent actor"),
+            ("Grid cells", "0", "в X-Ray не используется"),
+            ("Целостность", info.integrity_name, "проверен контейнер и LZO payload"),
+            ("X-Ray outer version", str(info.container_version), "подтверждён"),
+            ("Actor spawn version", str(info.format_version), "подтверждён"),
+            ("Время игры", "неизвестно" if info.game_time is None else str(info.game_time), "прочитано"),
+            ("Уровень", info.level_name or "неизвестно", "прочитано из SPAWN" if info.level_name else "не найден"),
+            ("Unresolved handles", str(len(info.unresolved_handles)), "read-only" if info.unresolved_handles else "нет"),
         )
 
     def _render_metadata_rows(self, snapshot: LocalSnapshot | None) -> None:
@@ -477,6 +572,8 @@ class MainWindow(QMainWindow):
         self.inventory_view.stage_requested.connect(self._stage_stack_change)
         self.inventory_view.clear_selected_requested.connect(self._clear_selected_stack)
         self.inventory_view.clear_all_requested.connect(self._clear_all_stacks)
+        self.inventory_view.add_requested.connect(self._stage_item_add)
+        self.inventory_view.remove_selected_requested.connect(self._stage_item_remove)
         # Keep the old attribute available to small integrations while the
         # actual view now uses a stable-handle QAbstractTableModel.
         self.inventory_table = self.inventory_view.table
@@ -506,6 +603,42 @@ class MainWindow(QMainWindow):
         self.cloud_view.busy_changed.connect(self._on_cloud_busy)
         return self.cloud_view
 
+    def _build_slots_tab(self) -> QWidget:
+        self.save_slots_view = SaveSlotsView(self.slot_discovery, parent=self)
+        self.save_slots_view.open_requested.connect(self._start_inspect)
+        self.save_slots_view.discovery_failed.connect(self._on_slot_discovery_failed)
+        # Discovery is asynchronous and read-only.  No path is opened as a
+        # side effect; the user still has to double-click a row or use the
+        # manual file picker above.
+        self.save_slots_view.refresh()
+        return self.save_slots_view
+
+    def _discover_slots(self):
+        return discover_save_slots(
+            release_ids=RELEASE_IDS,
+            search_paths_fn=lambda release_id: search_paths_for_settings(
+                release_id, self.settings
+            )
+        )
+
+    def _build_settings_tab(self) -> QWidget:
+        self.settings_view = SettingsView(
+            self.settings,
+            settings_path=self.settings_path,
+            load_error=self.settings_load.error,
+            parent=self,
+        )
+        self.settings_view.settings_changed.connect(self._on_settings_changed)
+        return self.settings_view
+
+    def _on_settings_changed(self, settings: PathSettings) -> None:
+        self.settings = settings
+        self.status_label.setText("Настройки обновлены; обновляю список сохранений…")
+        self.save_slots_view.refresh()
+
+    def _on_slot_discovery_failed(self, message: str) -> None:
+        self.status_label.setText(f"Поиск слотов не выполнен: {message}")
+
     @staticmethod
     def _placeholder(text: str) -> QWidget:
         box = QGroupBox()
@@ -519,9 +652,9 @@ class MainWindow(QMainWindow):
     def open_local(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            "Открыть STALKER 2 .sav",
+            "Открыть сохранение S.T.A.L.K.E.R.",
             "",
-            "STALKER 2 save (*.sav);;Все файлы (*)",
+            "S.T.A.L.K.E.R. saves (*.sav *.scop *.scs);;Все файлы (*)",
         )
         if filename:
             self._start_inspect(Path(filename))
@@ -536,9 +669,9 @@ class MainWindow(QMainWindow):
         if self.snapshot is None:
             self.file_source_badge.setText("ЧТЕНИЕ ФАЙЛА")
             self.meta_filename.setText(path.name)
-            self.meta_details.setText("Проверка CRC, SHA и структуры…")
+            self.meta_details.setText("Проверка формата, SHA и структуры…")
             self.integrity_badge.setText("CRC-32: …")
-            self.format_badge.setText("UE5 GVAS: анализ…")
+            self.format_badge.setText("ФОРМАТ: анализ…")
         self.status_label.setText(f"Анализ: {path.name}…")
         self.error_label.clear()
         self.error_label.setVisible(False)
@@ -560,7 +693,12 @@ class MainWindow(QMainWindow):
     def _on_analysis_failed(self, message: str) -> None:
         filename = self._pending_path.name if self._pending_path else "Сейв"
         self.status_label.setText("Анализ не выполнен; предыдущий корректный snapshot сохранён")
-        self.error_label.setText(f"{filename}: {message}")
+        display_message = (
+            message
+            if message.startswith("Error: Формат файла ")
+            else f"{filename}: {message}"
+        )
+        self.error_label.setText(display_message)
         self.error_label.setVisible(True)
         self.analysis_failed.emit(message)
 
@@ -576,13 +714,16 @@ class MainWindow(QMainWindow):
         info = snapshot.info
         self.staged_counts.clear()
         self.staged_money = None
+        self.staged_adds.clear()
+        self.staged_detach.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
         money = "unknown" if info.money is None else str(info.money)
         source_label = "Steam Cloud" if snapshot.source_kind == "cloud" else "локальный"
         self.source_label.setText(
-            f"Сейв: {snapshot.path.name} • {source_label} • {_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+            f"Сейв: {snapshot.path.name} • {source_label} • Формат {snapshot.format_id} • "
+            f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
         self.file_source_badge.setText(
             "STEAM CLOUD" if snapshot.source_kind == "cloud" else "ЛОКАЛЬНЫЙ ФАЙЛ"
@@ -591,30 +732,46 @@ class MainWindow(QMainWindow):
         self.meta_details.setText(
             f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
-        self.integrity_badge.setText(f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}")
-        # The current parser validates the Kraken container and known fields;
-        # it does not prove a complete UE5 GVAS schema. Keep that distinction
-        # visible instead of copying the reference's demo success badge.
-        self.format_badge.setText("UE5 GVAS: НЕ ПОДТВЕРЖДЁН")
-        self.location_card_value.setText("—")
-        self.time_card_value.setText("—")
+        self.integrity_badge.setText(
+            f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}"
+            if info.crc_present
+            else f"{info.integrity_name}: OK"
+        )
+        self.format_badge.setText(
+            "UE5 GVAS: НЕ ПОДТВЕРЖДЁН"
+            if info.crc_present
+            else f"ФОРМАТ: {snapshot.format_title}"
+        )
+        self.location_card_value.setText(info.level_name or "неизвестно")
+        self.time_card_value.setText("—" if info.game_time is None else str(info.game_time))
         self.money_card_value.setText(money)
         self.inventory_card_value.setText(str(len(info.inventory)))
+        integrity = f"CRC: {crc}" if info.crc_present else f"{info.integrity_name}: OK"
         self.summary_label.setText(
-            f"CRC: {crc}    Money: {money}    Inventory: {len(info.inventory)}    "
+            f"{integrity}    Money: {money}    Inventory: {len(info.inventory)}    "
             f"Grid cells: {info.grid_cell_count}    Orphans: {len(info.orphans)}"
         )
         warnings = " ".join(info.warnings)
         self.support_label.setText(
-            "Поддержанные данные: CRC, money, inventory snapshot. "
-            "Неизвестные handles остаются read-only."
+            (
+                "Поддержанные данные: CRC, money, inventory snapshot. "
+                if info.crc_present
+                else "Поддержанные данные: X-Ray container, money, actor inventory snapshot. "
+            )
+            + "Неизвестные handles остаются read-only."
             + (f" Предупреждения: {warnings}" if warnings else "")
         )
         self._render_metadata_rows(snapshot)
         self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
-        self.changes_view.set_staged(info, self.staged_money, self.staged_counts)
+        self.changes_view.set_staged(
+            info,
+            self.staged_money,
+            self.staged_counts,
+            self.staged_adds,
+            self.staged_detach,
+        )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
         self.error_label.clear()
@@ -624,19 +781,64 @@ class MainWindow(QMainWindow):
 
     def _render_inventory(self, info: SaveInfo) -> None:
         self.inventory_view.set_items(info.inventory)
+        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        self.inventory_view.set_editing_enabled(
+            capabilities is None or capabilities.edit_stacks,
+            reason=(
+                "Только чтение: формат не разрешает редактирование количества"
+                if capabilities is not None and not capabilities.edit_stacks
+                else None
+            ),
+        )
         self.inventory_view.set_staged_counts(self.staged_counts)
+        catalog = self.snapshot.catalog if self.snapshot is not None else None
+        can_add = bool(
+            capabilities is not None
+            and capabilities.add_items
+            and catalog is not None
+        )
+        self.inventory_view.set_catalog(
+            catalog,
+            enabled=can_add,
+            reason=(
+                "Добавление доступно только для официального каталога выбранной игры"
+                if capabilities is not None and capabilities.add_items and catalog is None
+                else "Формат не разрешает добавление предметов"
+                if capabilities is not None and not capabilities.add_items
+                else None
+            ),
+        )
+        self.inventory_view.set_remove_enabled(
+            bool(capabilities is not None and capabilities.remove_items),
+            reason=(
+                "Формат не разрешает удаление предметов"
+                if capabilities is not None and not capabilities.remove_items
+                else None
+            ),
+        )
+        self.inventory_view.set_removed_handles(self.staged_detach)
         self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_money(self, info: SaveInfo) -> None:
-        if info.money is None or info.money_anchor_count != 1:
+        can_edit_money = (
+            self.snapshot is not None
+            and self.snapshot.capabilities.edit_money
+            and info.money is not None
+            and info.money_anchor_count == 1
+        )
+        if not can_edit_money:
             self.money_card_value.setText("—")
-            self.money_status_label.setText(
-                f"Только чтение: wallet anchor найден {info.money_anchor_count} раз(а)"
+            reason = (
+                "формат не разрешает редактирование денег"
+                if self.snapshot is not None and not self.snapshot.capabilities.edit_money
+                else f"wallet anchor найден {info.money_anchor_count} раз(а)"
             )
+            self.money_status_label.setText(f"Только чтение: {reason}")
             self.money_spin.setEnabled(False)
             self.money_stage_button.setEnabled(False)
             self.money_clear_button.setEnabled(False)
             return
+        assert info.money is not None
         effective = self.staged_money if self.staged_money is not None else info.money
         self.money_card_value.setText(str(effective))
         self.money_status_label.setText(f"{info.money} → {effective}")
@@ -659,6 +861,9 @@ class MainWindow(QMainWindow):
             return
         info = self.snapshot.info
         value = self.money_spin.value()
+        if not self.snapshot.capabilities.edit_money:
+            self.money_status_label.setText("Только чтение: формат не разрешает редактирование денег")
+            return
         if info.money is None or info.money_anchor_count != 1:
             self.money_status_label.setText("Только чтение: wallet anchor не подтверждён")
             return
@@ -691,22 +896,32 @@ class MainWindow(QMainWindow):
         )
 
     def _stage_stack_change(self, handle: int, new_count: int) -> None:
+        if self.snapshot is not None and not self.snapshot.capabilities.edit_stacks:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает редактирование stack count"
+            )
+            return
         item = self._find_inventory_item(handle)
         if item is None:
             self.inventory_view.show_editability_message(
                 f"Только чтение: handle 0x{int(handle):08X} не найден в текущем snapshot"
             )
             return
-        if not (1 <= int(new_count) <= 1_000_000):
+        max_count = item.count_max
+        if not (1 <= int(new_count) <= max_count):
             self.inventory_view.show_editability_message(
-                "Новое количество отклонено: допустим диапазон 1..1000000"
+                f"Новое количество отклонено: допустимый диапазон 1..{max_count}"
             )
             return
         if not item.editable_count:
             reason = (
+                "count не извлечён"
+                if item.count is None
+                else (
                 "count=1"
                 if item.count <= 1
                 else f"неподтверждённый kind={item.kind_code}"
+                )
             )
             self.inventory_view.show_editability_message(f"Только чтение: {reason}")
             return
@@ -723,6 +938,71 @@ class MainWindow(QMainWindow):
             f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
         )
 
+    def _stage_item_add(self, item_key: str, quantity: int) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.add_items:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает добавление предметов"
+            )
+            return
+        catalog = self.snapshot.catalog
+        definition = catalog.resolve(item_key) if catalog is not None else None
+        if definition is None:
+            self.inventory_view.show_editability_message(
+                f"Предмет {item_key!r} отсутствует в официальном каталоге"
+            )
+            return
+        value = int(quantity)
+        if value < 1 or value > 65535:
+            self.inventory_view.show_editability_message(
+                "Количество нового предмета должно быть в диапазоне 1..65535"
+            )
+            return
+        if (
+            definition.serialization_family == "ammo"
+            and definition.max_stack is not None
+            and value > definition.max_stack
+        ):
+            self.inventory_view.show_editability_message(
+                f"Для {item_key} допустимо не больше {definition.max_stack} за стак"
+            )
+            return
+        self.staged_adds[item_key] = value
+        self._render_changes()
+        self._invalidate_preview("изменилось staged добавление предмета")
+        self.status_label.setText(
+            f"Добавление staged: {item_key} × {value}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _stage_item_remove(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.remove_items:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает удаление предметов"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):04X} не найден"
+            )
+            return
+        handle = int(handle)
+        if handle in self.staged_detach:
+            self.staged_detach.pop(handle, None)
+            message = f"Удаление отменено для {item.type_key}"
+        else:
+            self.staged_detach[handle] = True
+            self.staged_counts.pop(handle, None)
+            message = f"Удаление staged для {item.type_key}"
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_removed_handles(self.staged_detach)
+        self._render_changes()
+        self._invalidate_preview("изменился staged список удалений")
+        self.status_label.setText(f"{message}; bytes сейва не изменены — нужен preview")
+
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self.inventory_view.set_staged_counts(self.staged_counts)
@@ -735,25 +1015,36 @@ class MainWindow(QMainWindow):
     def _clear_all_stacks(self) -> None:
         self.staged_counts.clear()
         self.staged_money = None
+        self.staged_adds.clear()
+        self.staged_detach.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_removed_handles(self.staged_detach)
         self._render_changes()
         self._invalidate_preview("все staged-правки очищены")
         self.status_label.setText("Все staged-правки очищены; bytes сейва не изменены")
 
     def _render_changes(self) -> None:
         self._sync_nav_counters()
+        self.inventory_view.set_clear_all_enabled(self._has_staged_changes())
         if self.snapshot is None:
             return
         self.changes_view.set_staged(
             self.snapshot.info,
             self.staged_money,
             self.staged_counts,
+            self.staged_adds,
+            self.staged_detach,
         )
 
     def _has_staged_changes(self) -> bool:
-        return self.staged_money is not None or bool(self.staged_counts)
+        return bool(
+            self.staged_money is not None
+            or self.staged_counts
+            or self.staged_adds
+            or self.staged_detach
+        )
 
     def _update_action_buttons(self) -> None:
         local_busy = self._operation_thread is not None and self._operation_thread.isRunning()
@@ -803,6 +1094,11 @@ class MainWindow(QMainWindow):
             ),
             money=self.staged_money,
             stacks=tuple(sorted(self.staged_counts.items())),
+            detach=tuple(sorted(self.staged_detach.items())),
+            adds=tuple(
+                (item_key, quantity, "inventory")
+                for item_key, quantity in sorted(self.staged_adds.items())
+            ),
         )
 
     def _busy_now(self) -> bool:
@@ -833,6 +1129,7 @@ class MainWindow(QMainWindow):
             mode="preview",
             data=self.snapshot.data if self.snapshot is not None else b"",
             plan=plan,
+            catalog=self.snapshot.catalog if self.snapshot is not None else None,
             parent=self,
         )
         worker.preview_ready.connect(self._on_preview_ready)
@@ -932,6 +1229,7 @@ class MainWindow(QMainWindow):
             source_path=source_path,
             output_path=output_path,
             backup_dir=backup_path,
+            catalog=self.snapshot.catalog,
             parent=self,
         )
         worker.set_prepared(self.prepared_edit)
@@ -986,6 +1284,11 @@ class MainWindow(QMainWindow):
             info=snapshot.info,
             source_kind="cloud",
             locator=snapshot.name,
+            format_id=snapshot.format_id,
+            format_title=snapshot.format_title,
+            release_id=snapshot.release_id,
+            edition=snapshot.edition,
+            capabilities=snapshot.capabilities,
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)

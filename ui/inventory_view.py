@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.catalog import ItemCatalog
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
 from .inventory_model import InventoryTableModel
@@ -33,11 +34,20 @@ class InventoryView(QWidget):
     stage_requested = Signal(int, int)
     clear_selected_requested = Signal(int)
     clear_all_requested = Signal()
+    add_requested = Signal(str, int)
+    remove_selected_requested = Signal(int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.model = InventoryTableModel(self)
         self.selected_handle: int | None = None
+        self._editing_enabled = True
+        self._catalog: ItemCatalog | None = None
+        self._add_enabled = False
+        self._add_reason: str | None = None
+        self._remove_enabled = False
+        self._remove_reason: str | None = None
+        self._removed_handles: set[int] = set()
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -107,11 +117,39 @@ class InventoryView(QWidget):
         self.clear_all_button.setEnabled(False)
         self.clear_all_button.clicked.connect(self.clear_all_requested.emit)
         count_row.addWidget(self.clear_all_button)
+        self.remove_item_button = QPushButton("Удалить из инвентаря")
+        self.remove_item_button.setEnabled(False)
+        self.remove_item_button.clicked.connect(self._remove_selected)
+        count_row.addWidget(self.remove_item_button)
         form.addRow("Новое количество", count_row)
         layout.addWidget(editor)
 
+        add_box = QGroupBox("Добавить предмет из официального каталога")
+        add_form = QFormLayout(add_box)
+        self.catalog_status_label = QLabel(
+            "Открой оригинальный игровой сейв, чтобы загрузить каталог."
+        )
+        self.catalog_status_label.setWordWrap(True)
+        add_form.addRow("Каталог", self.catalog_status_label)
+        self.add_combo = QComboBox()
+        self.add_combo.setMinimumContentsLength(28)
+        self.add_combo.currentIndexChanged.connect(self._on_add_selection_changed)
+        add_form.addRow("Предмет", self.add_combo)
+        add_row = QHBoxLayout()
+        self.add_quantity_spin = QSpinBox()
+        self.add_quantity_spin.setRange(1, 65535)
+        self.add_quantity_spin.setEnabled(False)
+        add_row.addWidget(self.add_quantity_spin)
+        self.add_button = QPushButton("Застейджить добавление")
+        self.add_button.setEnabled(False)
+        self.add_button.clicked.connect(self._stage_add)
+        add_row.addWidget(self.add_button)
+        add_form.addRow("Количество", add_row)
+        layout.addWidget(add_box)
+
     def set_items(self, items: Iterable[InventoryItem]) -> None:
         values = tuple(items)
+        self.count_spin.setMaximum(max((item.count_max for item in values), default=1_000_000))
         self.model.set_items(values)
         current_category = self.category_combo.currentText()
         categories = sorted({item.category for item in values}, key=str.casefold)
@@ -133,12 +171,63 @@ class InventoryView(QWidget):
         self.table.clearSelection()
         self._update_editor(None)
 
+    def set_catalog(
+        self,
+        catalog: ItemCatalog | None,
+        *,
+        enabled: bool,
+        reason: str | None = None,
+    ) -> None:
+        """Expose only definitions proven for the selected release."""
+
+        self._catalog = catalog
+        self._add_enabled = bool(enabled and catalog is not None)
+        self._add_reason = reason
+        self.add_combo.blockSignals(True)
+        self.add_combo.clear()
+        if catalog is not None:
+            for definition in sorted(catalog.items, key=lambda item: item.key.casefold()):
+                label = definition.display_name or definition.key
+                if label != definition.key:
+                    label = f"{label} · {definition.key}"
+                self.add_combo.addItem(label, definition.key)
+        self.add_combo.blockSignals(False)
+        self.catalog_status_label.setText(
+            reason
+            or (
+                f"Загружено определений: {len(catalog.items)}"
+                if catalog is not None
+                else "Официальный каталог выбранной игры не найден; добавление отключено."
+            )
+        )
+        self._on_add_selection_changed(self.add_combo.currentIndex())
+
+    def set_remove_enabled(self, enabled: bool, *, reason: str | None = None) -> None:
+        self._remove_enabled = bool(enabled)
+        self._remove_reason = reason
+        self._update_remove_button(self._selected_item())
+
+    def set_removed_handles(self, handles: Mapping[int, bool]) -> None:
+        self._removed_handles = {int(handle) for handle, deep in handles.items() if deep}
+        self._update_remove_button(self._selected_item())
+
+    def set_editing_enabled(self, enabled: bool, *, reason: str | None = None) -> None:
+        self._editing_enabled = bool(enabled)
+        if reason is not None and not self._editing_enabled:
+            self.editability_label.setText(reason)
+        self._update_editor(self._selected_item())
+
     def set_staged_counts(self, counts: Mapping[int, int]) -> None:
         selected = self.selected_handle
         self.model.set_staged_counts(counts)
         self.model.set_changed_handles(counts)
         self._restore_selection(selected)
         self.clear_all_button.setEnabled(bool(counts))
+
+    def set_clear_all_enabled(self, enabled: bool) -> None:
+        """Keep the global staged-clear action available for add/remove edits."""
+
+        self.clear_all_button.setEnabled(bool(enabled))
 
     def show_editability_message(self, message: str) -> None:
         self.editability_label.setText(message)
@@ -176,10 +265,13 @@ class InventoryView(QWidget):
         )
 
     def _update_editor(self, item: InventoryItem | None) -> None:
+        self._update_remove_button(item)
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.editability_label.setText(
-                "Выбери строку; неподтверждённые записи остаются read-only."
+                "Только чтение: формат не разрешает редактирование количества"
+                if not self._editing_enabled
+                else "Выбери строку; неподтверждённые записи остаются read-only."
             )
             self.count_spin.blockSignals(True)
             self.count_spin.setEnabled(False)
@@ -189,14 +281,28 @@ class InventoryView(QWidget):
             self.clear_selected_button.setEnabled(False)
             return
 
+        if not self._editing_enabled:
+            self.editability_label.setText(
+                "Только чтение: формат не разрешает редактирование количества"
+            )
+            self.count_spin.blockSignals(True)
+            self.count_spin.setEnabled(False)
+            self.count_spin.setValue(item.count if item.count is not None else 1)
+            self.count_spin.blockSignals(False)
+            self.stage_button.setEnabled(False)
+            self.clear_selected_button.setEnabled(False)
+            return
+
         staged = self.model.staged_count(item.handle)
-        effective_count = staged if staged is not None else item.count
+        effective_count = staged if staged is not None else (item.count if item.count is not None else 1)
         self.selected_label.setText(
             f"{item.handle_hex} • type-key 0x{item.type_key} • "
             f"позиция {item.position} • {item.category}"
         )
         if not item.editable_count:
-            if item.count <= 1:
+            if item.count is None:
+                reason = "Только чтение: count не извлечён"
+            elif item.count <= 1:
                 reason = "Только чтение: count=1"
             elif item.kind_code not in EDITABLE_STACK_KIND_CODES:
                 reason = f"Только чтение: неизвестный kind={item.kind_code}"
@@ -205,7 +311,7 @@ class InventoryView(QWidget):
             self.editability_label.setText(reason)
             self.count_spin.blockSignals(True)
             self.count_spin.setEnabled(False)
-            self.count_spin.setValue(item.count)
+            self.count_spin.setValue(item.count if item.count is not None else 1)
             self.count_spin.blockSignals(False)
             self.stage_button.setEnabled(False)
             self.clear_selected_button.setEnabled(staged is not None)
@@ -213,7 +319,7 @@ class InventoryView(QWidget):
 
         self.editability_label.setText(
             f"Можно изменить количество: {item.count} → {effective_count} "
-            "(допустимо 1..1000000; bytes пока не изменены)"
+            f"(допустимо 1..{item.count_max}; bytes пока не изменены)"
         )
         self.count_spin.blockSignals(True)
         self.count_spin.setEnabled(True)
@@ -221,6 +327,38 @@ class InventoryView(QWidget):
         self.count_spin.blockSignals(False)
         self.stage_button.setEnabled(True)
         self.clear_selected_button.setEnabled(staged is not None)
+
+    def _update_remove_button(self, item: InventoryItem | None) -> None:
+        if item is None:
+            self.remove_item_button.setEnabled(False)
+            self.remove_item_button.setText("Удалить из инвентаря")
+            return
+        if not self._remove_enabled:
+            self.remove_item_button.setEnabled(False)
+            self.remove_item_button.setText("Удалить из инвентаря")
+            if self._remove_reason:
+                self.editability_label.setText(self._remove_reason)
+            return
+        removed = item.handle in self._removed_handles
+        self.remove_item_button.setEnabled(True)
+        self.remove_item_button.setText(
+            "Отменить удаление" if removed else "Удалить из инвентаря"
+        )
+
+    def _on_add_selection_changed(self, _index: int) -> None:
+        enabled = self._add_enabled and self.add_combo.currentIndex() >= 0
+        self.add_quantity_spin.setEnabled(enabled)
+        self.add_button.setEnabled(enabled)
+
+    def _stage_add(self) -> None:
+        key = self.add_combo.currentData()
+        if key is None:
+            return
+        self.add_requested.emit(str(key), self.add_quantity_spin.value())
+
+    def _remove_selected(self) -> None:
+        if self.selected_handle is not None and self._remove_enabled:
+            self.remove_selected_requested.emit(self.selected_handle)
 
     def _on_count_changed(self, _value: int) -> None:
         # The spin box range is the first validation layer.  Keeping the

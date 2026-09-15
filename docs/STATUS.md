@@ -1,4 +1,34 @@
-# Состояние и пробелы — 2026-09-13
+# Состояние и пробелы — 2026-09-15
+
+## Актуальный official-release pass
+
+Текущая рабочая ветка `codex/m06-xray-container` расширяет старый S2-only
+редактор одним shared registry для официальных PC-профилей:
+
+| Profile | Registry status | Proven capability |
+|---|---|---|
+| S.T.A.L.K.E.R. 2 | зарегистрирован | существующие S2 money/stack/CRC/Kraken safeguards; structural GVAS add не включён |
+| Original Shadow of Chornobyl | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| Original Clear Sky | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| Original Call of Pripyat | зарегистрирован | X-Ray read, money, ammo stacks, official catalog-backed add и deep remove |
+| Shadow of Chornobyl EE | descriptor/path discovery only | unavailable; no accepted format sample |
+| Clear Sky EE | descriptor/path discovery only | unavailable; no accepted format sample |
+| Call of Pripyat EE | descriptor/path discovery only | unavailable; no accepted format sample |
+
+Desktop использует release-specific auto/manual save discovery; browser остаётся
+local-file-only и content-detects файл тем же ядром. Capability flags теперь
+управляют Qt/web controls. Community mods намеренно вне scope. X-Ray evidence:
+[container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
+[catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
+
+Локальный Linux gate текущего прохода: `make check` exit 0, `278 passed`; ruff,
+mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
+`tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
+Pages revision `4d833b6f` прочитан обратно с HTTP 200 после обновления каталога и
+поиска Enhanced-путей.
+Точные хэши и URL записаны в
+[release evidence](evidence/RELEASE_2026-09-15.md). Это не заменяет Windows
+runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 
 ## Подтверждённая база
 
@@ -35,16 +65,16 @@
 
 | Область | Сейчас | Задачи |
 |---|---|---|
-| Надёжность | Матрица `tests` зелёная 4/4 (Linux и Windows × Python 3.11/3.12), lint и typecheck в каждой job, self-test на личном файле | — |
+| Надёжность | Общий parser gate покрывает S.T.A.L.K.E.R. 2 и подтверждённые оригинальные X-Ray containers; полный release gate всё ещё требует Windows/runtime evidence | B02 |
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | Маленький seed SID, связи с save не доказаны | R01–R02 |
+| Названия и каталог | Официальные metadata-каталоги загружаются desktop/web; часть локализации и SID semantics не доказана | R01–R02 |
 | Прочность | Поле не доказано | R03–R04 |
-| Новые предметы/clone | Нет allocator/registry/prototype evidence | R05–R07 |
-| Настоящее удаление | Только detach | R08 |
+| Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
+| Настоящее удаление | X-Ray deep removal actor-owned registry record; reference-safe/equipped deletion не доказано | R08 |
 | Attachments/upgrades | Нет подтверждённой схемы | R09–R10 |
-| Размер output | Полностью несжатые restart blocks, примерно 27 MB | R11 |
+| Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
 
@@ -52,13 +82,119 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 
 ## Веб-версия
 
-`web/` запускает то же ядро в браузере через Pyodide, нативная распаковка —
-`ooz-wasm`. Сверка на реальном сейве: распаковка и обе правки дают те же
-SHA-256, что десктоп ([evidence](evidence/WEB_EDITION_2026-09-14.md)).
+`web/` запускает то же multi-format ядро в браузере через Pyodide: `ooz-wasm`
+для S.T.A.L.K.E.R. 2 и portable Python LZO для оригинальной трилогии. Веб
+принимает файл локально, распознаёт только зарегистрированный формат и
+отказывает на неизвестном; для оригинальной трилогии доступны чтение денег,
+serialized inventory, правка денег/ammo stacks, add из компактного официального
+metadata-каталога и deep remove. Сверка S2
+остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
+покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
 [разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.pages.dev>,
 обновление — `make web-deploy` (Cloudflare Pages). Проверено
-живьём: страница, стили, ядро и мост отдаются, редактор открывает сейв.
+живьём: страница, стили, ядро, мост и metadata catalog отдаются с HTTP 200.
+
+## M01 — реестр форматов — 2026-09-15
+
+На ветке `codex/m01-format-registry` реализован статический реестр форматов
+([PR #48](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/48),
+commit `559bb1a`). В нём зарегистрирован только `stalker2`; адаптер делегирует
+существующим `save_format.inspect_save` и `editor.prepare.prepare_edit`.
+`EditorService` выбирает формат по содержимому, а local/Cloud snapshots
+передают ID и title формата. `make check` и `make test` прошли локально на
+Linux (`165 passed`). M02 и X-Ray форматы ещё не реализованы; Windows,
+игровая загрузка и shared/production deployment этим результатом не доказаны.
+
+## M02 — content-only detection — 2026-09-15
+
+На ветке `codex/m02-format-detection` реализован общий отказ для неизвестного
+формата ([PR #49](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49),
+commit `2e12375`). Core-сообщение включает имя файла, размер, причины отказа и
+список поддержанных форматов и передаётся без повторной диагностики в CLI, Qt
+и web bridge. Покрыты empty, truncated, мусорный бинарник, ELF-like чужой
+бинарник и текстовый `.sav`; исходные байты не меняются. Полный Linux gate:
+`make check` exit 0, `make test` exit 0 (`173 passed`). Реальные X-Ray сейвы,
+Windows и игровая загрузка этим результатом не подтверждены.
+
+## M03 — исследование и discovery путей — 2026-09-15
+
+На ветке `codex/m03-save-locations` реализованы read-only поисковые функции в
+`editor/platforms.py` ([PR #50](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50),
+commit `23a02a3`). `steam_roots` учитывает Windows registry/fallback и обычный,
+legacy и Flatpak Linux; `steam_libraries` сам разбирает KeyValues
+`libraryfolders.vdf`, пропуская битый root с warning; `installed_games`
+проверяет appmanifest и каталог. `save_directories` включает четыре семейства,
+S2 Steam/EOS/GOG/Microsoft Store, original `_appdata_`, Enhanced/Legends,
+локализованные Documents, Proton prefix и `fsgame*.ltx` override.
+
+Источниковые пути и пробелы evidence записаны в
+[`SAVE_LOCATIONS.md`](evidence/SAVE_LOCATIONS.md). Synthetic tree покрывает
+alternate library, malformed VDF, localized Documents, Proton, Microsoft Store
+profile и отсутствие записи. `PYTHON=.venv/bin/python make check` — exit 0;
+`PYTHON=.venv/bin/python make test` — exit 0 (`183 passed`). Реальные установки,
+Windows/GOG/Proton runtime и игровая загрузка не проверялись; отдельная GOG
+path row для Clear Sky/Call of Prypiat Enhanced upstream-источниками не дана и
+не объявлена подтверждённой.
+
+## M04 — выбор слота из найденной папки — 2026-09-15
+
+На ветке `codex/m04-save-slots` добавлена асинхронная read-only вкладка
+«Найденные сейвы» ([PR #51](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/51),
+commit `dc094b4`). Она использует кандидатные пути M03, перечисляет `.sav`,
+сортирует их по времени изменения от новых к старым и определяет формат только
+через общий content detector. Неизвестные файлы остаются видимыми с честной
+пометкой; явное открытие использует существующий путь `MainWindow` и общий
+`FormatDetectionError`. Пустой список показывает все проверенные пути, ручной
+выбор файла сохранён, автоматического открытия и записи в игровые каталоги нет.
+`make check` и `make test` прошли локально на Linux (`187 passed`). Реальные
+X-Ray сейвы, Windows/Proton runtime и игровая загрузка этим результатом не
+подтверждены.
+
+## M05 — ручные пути и их запоминание — 2026-09-15
+
+На ветке `codex/m05-manual-paths` добавлены versioned локальные настройки
+([PR #52](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/52),
+commit `851a30c`). JSON хранится в `user_data_dir()/settings.json`, пишется
+атомарно и не попадает в репозиторий. Qt-вкладка позволяет задать корень Steam,
+папку игры и папку сохранений по каждой игре. Действующий ручной путь имеет
+приоритет над автоматическим поиском; исчезнувший путь показывает сообщение и
+возвращает auto-search, а битый/чужой JSON заменяется в памяти пустыми
+настройками без падения. `make check` и `make test` прошли локально на Linux
+(`197 passed`). Реальные Windows/GOG/Proton установки и игровой runtime этим
+результатом не подтверждены.
+
+## M06–M09 — оригинальная X-Ray трилогия — 2026-09-15
+
+В [XRAY_CONTAINER](evidence/XRAY_CONTAINER.md) зафиксированы raw LZO1X,
+внешний `magic/version/unpacked_len`, chunks и границы принятого корпуса.
+Общий `editor/xray_save.py` добавляет SoC/CS/CoP через таблицу specs:
+
+- SoC: outer 3, actor spawn 118, 4/4 локальных файлов;
+- CS: outer 5, actor spawn 124 на локальном корпусе, 56/56 файлов;
+- CoP: outer 6, actor spawn 128, 168/168 `.scop` файлов.
+
+Qt, CLI и web используют один detector/reader. Автопоиск принимает `.sav`,
+`.scop` и `.scs`-кандидаты, ручной picker и browser не ограничены расширением;
+неизвестный формат получает явный отказ. На desktop поиск кеширует неизменившийся
+size/mtime результат, а полный inspect всегда перечитывает bytes и SHA.
+
+Подтверждённая локальная правка — actor money и ammo stack count (STATE +
+UPDATE), с immutable `EditPlan`, source SHA, backup/atomic export и повторным
+parse. Object windows и length-changing registry framing индексируются строго.
+Для оригинальной трилогии catalog-backed writer добавляет предметы из
+официального metadata-каталога через same-family registry template и удаляет
+actor-owned record как deep operation; SoC/CS/CoP representative in-memory
+прогон покрыл десять serializer families в каждом релизе. Move, equipment,
+прочность, durability/upgrades, attachments и reference-safe deletion остаются
+read-only. Enhanced Editions также не объявлены поддержанными: evidence записан
+отдельно в `EE_FORMATS_2026-09-15.md`.
+
+Локальный корпус подтверждает чтение и no-op SHA-preserving round-trip; game
+load/re-save, Windows runtime и Enhanced остаются внешними gates. Реализация и
+регрессии находятся в текущем проходе ветки `codex/m06-xray-container`, а
+исторические PR #53–#56 остаются открытыми документными карточками до
+переноса соответствующих коммитов.
 
 ## Текущий проход B02
 
