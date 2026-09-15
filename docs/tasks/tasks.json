@@ -1212,14 +1212,14 @@
   },
   {
     "id": "M09",
-    "title": "Редактирование трилогии",
+    "title": "Редактирование трилогии: деньги и стаки",
     "depends_on": [
       "M08"
     ],
     "files": [
       "docs/tasks/M09.md"
     ],
-    "contract": "prepare для трилогии: деньги и подтверждённые стаки через существующий EditPlan. Вход только после принятого чтения и round-trip. Обязательна проверка загрузкой в самой игре.",
+    "contract": "Базовые правки трилогии через существующий EditPlan. Остальные возможности полного редактора — карточки M10-M16.",
     "steps": [
       "См. карточку: scope, границы и критерий приёмки."
     ],
@@ -1231,6 +1231,177 @@
     "priority": "P3",
     "status": "waiting_dependencies",
     "path": "docs/tasks/M09.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M10",
+    "title": "Протокол проверки в игре",
+    "depends_on": [
+      "M06"
+    ],
+    "files": [
+      "docs/tasks/M10.md"
+    ],
+    "contract": "Воспроизводимая процедура: правка одного значения, загрузка в игре, повторное сохранение и разбор результата своим парсером. Результат в docs/evidence/INGAME_VERIFICATION.md. Разблокирует все записи.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M10.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M11",
+    "title": "Каталоги игры: предметы, группировки, идентификаторы",
+    "depends_on": [
+      "M06"
+    ],
+    "files": [
+      "docs/tasks/M11.md"
+    ],
+    "contract": "Группировки и идентификаторы читаются из ресурсов установленной игры так же, как уже читаются предметы. Зашитых в код списков быть не должно.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P1",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M11.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M12",
+    "title": "Ремонт: прочность оружия и брони",
+    "depends_on": [
+      "M10",
+      "M11"
+    ],
+    "files": [
+      "docs/tasks/M12.md"
+    ],
+    "contract": "Прочность в слотах экипировки и в инвентаре. Порядок сериализации брать из исходников ixray/OpenXRay, диапазон подтверждать на корпусе.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M12.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M13",
+    "title": "Предметы: добавить, удалить, изменить количество",
+    "depends_on": [
+      "M10",
+      "M11"
+    ],
+    "files": [
+      "docs/tasks/M13.md"
+    ],
+    "contract": "Добавление только из каталога установленной игры; согласованное изменение количества в обоих местах состояния; квестовые предметы — уровень 'опасно'.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M13.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M14",
+    "title": "Отношения с группировками",
+    "depends_on": [
+      "M10",
+      "M11"
+    ],
+    "files": [
+      "docs/tasks/M14.md"
+    ],
+    "contract": "Реестр отношений сообществ и актёра; диапазоны и пороги враждебности из исходников. Чистое Небо отличается от остальных.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M14.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M15",
+    "title": "Принадлежность игрока к группировке",
+    "depends_on": [
+      "M14"
+    ],
+    "files": [
+      "docs/tasks/M15.md"
+    ],
+    "contract": "Сообщество актёра. Предупреждать конкретно, не блокировать; обязательная резервная копия; отрицательный результат по игре — тоже результат.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P3",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M15.md",
+    "github_issue": "",
+    "github_pr": ""
+  },
+  {
+    "id": "M16",
+    "title": "Запись в папку игры с резервной копией и восстановлением",
+    "depends_on": [
+      "M10"
+    ],
+    "files": [
+      "docs/tasks/M16.md"
+    ],
+    "contract": "Явная запись в слот игры: backup с хэшем, временный файл, атомарная замена, перечитывание. Восстановление в один шаг. В вебе отсутствует.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "waiting_dependencies",
+    "path": "docs/tasks/M16.md",
     "github_issue": "",
     "github_pr": ""
   }

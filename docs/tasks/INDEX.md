@@ -47,7 +47,14 @@
 | [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | waiting_dependencies | — |
 | [M07](M07.md) | Call of Pripyat: чтение | M06 | waiting_dependencies | — |
 | [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | waiting_dependencies | — |
-| [M09](M09.md) | Редактирование трилогии | M08 | waiting_dependencies | — |
+| [M09](M09.md) | Редактирование трилогии: деньги и стаки | M08 | waiting_dependencies | — |
+| [M10](M10.md) | Протокол проверки в игре | M06 | waiting_dependencies | — |
+| [M11](M11.md) | Каталоги игры: предметы, группировки, идентификаторы | M06 | waiting_dependencies | — |
+| [M12](M12.md) | Ремонт: прочность оружия и брони | M10, M11 | waiting_dependencies | — |
+| [M13](M13.md) | Предметы: добавить, удалить, изменить количество | M10, M11 | waiting_dependencies | — |
+| [M14](M14.md) | Отношения с группировками | M10, M11 | waiting_dependencies | — |
+| [M15](M15.md) | Принадлежность игрока к группировке | M14 | waiting_dependencies | — |
+| [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
 
 <!-- END GENERATED TASK TABLE -->
 
