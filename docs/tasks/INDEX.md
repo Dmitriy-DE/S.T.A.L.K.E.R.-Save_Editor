@@ -39,15 +39,22 @@
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
 | [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
 | [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |
-| [M01](M01.md) | Реестр форматов сохранений | — | in_review (PR #48) | [PR #48](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/48) |
-| [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | in_review (PR #49) | [PR #49](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/49) |
-| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | in_review (PR #50) | [PR #50](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/50) |
-| [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | in_review (PR #51) | [PR #51](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/51) |
-| [M05](M05.md) | Ручные пути и их запоминание | M04 | in_review (PR #52) | [PR #52](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/52) |
-| [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | in_review (local corpus; game/Enhanced gates open) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
-| [M07](M07.md) | Call of Pripyat: чтение | M06 | in_progress (local reader; game-pair gate open) | — |
-| [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | in_progress (local reader; Enhanced/game gates open) | — |
-| [M09](M09.md) | Редактирование трилогии | M08 | in_progress (safe writer; game load gate open) | — |
+| [M01](M01.md) | Реестр форматов сохранений | — | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M02](M02.md) | Определение игры по файлу и честный отказ | M01 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M03](M03.md) | Где лежат сохранения: исследование и поиск | M01 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M04](M04.md) | Выбор слота из найденной папки | M03, M02 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M05](M05.md) | Ручные пути и их запоминание | M04 | accepted (вошло в PR #53) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M06](M06.md) | Контейнер X-Ray: распаковка и байт-в-байт сборка | M01 | accepted (локальный корпус; игровая и Enhanced-проверки открыты) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M07](M07.md) | Call of Pripyat: чтение | M06 | accepted (локальный корпус; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | accepted (локальный корпус; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M09](M09.md) | Редактирование трилогии: деньги и стаки | M08 | in_progress (writer есть; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
+| [M10](M10.md) | Протокол проверки в игре | M06 | waiting_dependencies | — |
+| [M11](M11.md) | Каталоги игры: предметы, группировки, идентификаторы | M06 | waiting_dependencies | — |
+| [M12](M12.md) | Ремонт: прочность оружия и брони | M10, M11 | waiting_dependencies | — |
+| [M13](M13.md) | Предметы: добавить, удалить, изменить количество | M10, M11 | waiting_dependencies | — |
+| [M14](M14.md) | Отношения с группировками | M10, M11 | waiting_dependencies | — |
+| [M15](M15.md) | Принадлежность игрока к группировке | M14 | waiting_dependencies | — |
+| [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
 
 <!-- END GENERATED TASK TABLE -->
 
