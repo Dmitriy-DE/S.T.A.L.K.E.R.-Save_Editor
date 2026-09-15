@@ -15,7 +15,7 @@ the selected release:
    file or a game directory:
 
    ```bash
-   python tools/prepare_ingame_verification.py \
+   python -m tools.prepare_ingame_verification \
      --release <release-id> \
      --source /absolute/path/to/save \
      --workspace /absolute/path/to/private/m10/<release-id> \
@@ -32,7 +32,7 @@ the selected release:
 6. Parse the game re-save and record the command output:
 
    ```bash
-   python tools/verify_ingame_result.py \
+   python -m tools.verify_ingame_result \
      --manifest /absolute/path/to/private/m10/<release-id>/manifest.json \
      --resaved /absolute/path/to/private/m10/<release-id>/resaved-save
    ```

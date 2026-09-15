@@ -9,10 +9,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from editor.formats import FormatDetectionError
-from editor.service import EditorService
-from save_format import SaveError
-from tools.prepare_ingame_verification import VerificationManifest
+# Keep the documented module/script entry points independent of the current
+# working directory.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from editor.formats import FormatDetectionError  # noqa: E402
+from editor.service import EditorService  # noqa: E402
+from save_format import SaveError  # noqa: E402
+from tools.prepare_ingame_verification import VerificationManifest  # noqa: E402
 
 
 @dataclass(frozen=True)

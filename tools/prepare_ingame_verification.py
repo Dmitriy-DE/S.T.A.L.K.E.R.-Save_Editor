@@ -16,11 +16,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy2
 
-from editor.formats import detect_or_raise
-from editor.models import EditPlan, SourceRef
-from editor.releases import official_releases, release_by_id
-from editor.service import EditorService
-from save_format import SaveError
+# Keep the documented ``python tools/prepare_ingame_verification.py`` entry
+# point usable from outside the repository root, like the other tools.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from editor.formats import detect_or_raise  # noqa: E402
+from editor.models import EditPlan, SourceRef  # noqa: E402
+from editor.releases import official_releases, release_by_id  # noqa: E402
+from editor.service import EditorService  # noqa: E402
+from save_format import SaveError  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -200,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Manifest: {manifest.manifest_path}")
         print(
             "После ручной загрузки и повторного сохранения в игре запустите: "
-            f"python tools/verify_ingame_result.py --manifest {manifest.manifest_path} "
+            f"python -m tools.verify_ingame_result --manifest {manifest.manifest_path} "
             "--resaved /path/to/in-game-resaved-save"
         )
         return 0
