@@ -68,6 +68,28 @@ def test_libraryfolders_vdf_finds_library_on_another_disk(tmp_path: Path) -> Non
     )
 
 
+def test_libraryfolders_vdf_preserves_unescaped_windows_separators(
+    tmp_path: Path,
+) -> None:
+    steam = tmp_path / "steam"
+    other = tmp_path / "C" / "SteamLibrary"
+    vdf = steam / "steamapps" / "libraryfolders.vdf"
+    vdf.parent.mkdir(parents=True)
+    other.mkdir(parents=True)
+    vdf.write_text(
+        '"libraryfolders" { "0" { "path" "C:\\SteamLibrary" } }',
+        encoding="utf-8",
+    )
+
+    assert steam_libraries(
+        system="Windows",
+        environ={},
+        home=tmp_path / "home",
+        filesystem_root=tmp_path,
+        steam_library_roots=(steam,),
+    ) == (steam, other)
+
+
 def test_broken_libraryfolders_is_skipped_without_hiding_other_library(
     tmp_path: Path,
 ) -> None:

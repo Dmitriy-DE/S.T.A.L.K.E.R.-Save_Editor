@@ -586,8 +586,17 @@ def _tokenize_vdf(text: str) -> list[str]:
                     index += 1
                     break
                 if character == "\\" and index + 1 < length:
-                    value.append(text[index + 1])
-                    index += 2
+                    escaped = text[index + 1]
+                    if escaped in ('\\', '"'):
+                        value.append(escaped)
+                        index += 2
+                    else:
+                        # Windows VDF files commonly contain single
+                        # backslashes in paths (for example ``C:\\Games``),
+                        # while doubled backslashes and escaped quotes still
+                        # use the normal KeyValues escape rule.
+                        value.append("\\")
+                        index += 1
                     continue
                 value.append(character)
                 index += 1
