@@ -11,6 +11,7 @@ pytest.importorskip("pytestqt")
 
 
 from editor.capabilities import FormatCapabilities
+from editor.formats import FormatInspection
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
 from steam_cloud import CloudFile
@@ -21,6 +22,33 @@ from ui.main_window import MainWindow
 # developer machine and not on a loaded CI runner, where the same test timed out
 # while the work was still progressing - a slow machine is not a defect.
 SIGNAL_TIMEOUT_MS = 30_000
+
+
+class _ApprovedCloudService(EditorService):
+    """Keep this routing test independent from the M10 release gate."""
+
+    def inspect_result(
+        self,
+        data: bytes,
+        *,
+        with_inventory: bool = True,
+        source_name: str | None = None,
+        catalog_source: str | Path | None = None,
+    ) -> FormatInspection:
+        result = super().inspect_result(
+            data,
+            with_inventory=with_inventory,
+            source_name=source_name,
+            catalog_source=catalog_source,
+        )
+        return replace(
+            result,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_money=True,
+                edit_stacks=True,
+            ),
+        )
 
 
 class FakeCloudTransport:
@@ -218,6 +246,12 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     with qtbot.waitSignal(view.upload_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         view.start_upload()
 
+    # ``upload_ready`` is emitted by the worker's ``completed`` signal; the
+    # QThread still needs one event-loop turn to emit ``finished`` and clear
+    # the widget-owned worker reference.  Wait for that lifecycle boundary
+    # before pytest-qt tears the widget down (Windows is particularly strict
+    # about destroying a running QThread).
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     receipt = blocker.args[0]
     assert receipt.status == ("verified" if persisted else "uncertain")
     assert len(transport.write_calls) == 1
@@ -235,6 +269,10 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
+    # The production registry stays read-only until M10 game evidence.  Use a
+    # scoped approved cloud service so this test can still cover the cloud
+    # preview/upload transaction without re-rendering the live window.
+    window.cloud_view.service = _ApprovedCloudService()
     window.cloud_view.worker_factory = lambda _path: transport
     window.cloud_view.helper_path = tmp_path / "helper"
     window.cloud_view.helper_edit.setText(str(tmp_path / "helper"))
@@ -256,21 +294,6 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # window is busy.  On a fast machine that window is too short to notice.
     qtbot.waitUntil(lambda: not window._cloud_busy, timeout=SIGNAL_TIMEOUT_MS)
 
-    # This test exercises the cloud transaction routing itself.  The real
-    # registry capability is intentionally read-only until M10 game evidence;
-    # inject an explicitly approved synthetic capability for this unit test.
-    assert window.snapshot is not None
-    window._render_snapshot(
-        replace(
-            window.snapshot,
-            capabilities=FormatCapabilities(
-                read_inventory=True,
-                edit_money=True,
-                edit_stacks=True,
-            ),
-        )
-    )
-
     window.money_spin.setValue(900)
     window._stage_money()
     with qtbot.waitSignal(window.preview_ready, timeout=SIGNAL_TIMEOUT_MS):
@@ -278,6 +301,7 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     with qtbot.waitSignal(window.apply_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         window._start_cloud_upload()
 
+    qtbot.waitUntil(lambda: not window.cloud_view.is_busy, timeout=SIGNAL_TIMEOUT_MS)
     assert blocker.args[0].status == "verified"
     assert [filename for filename, _data in transport.write_calls] == [name]
 
