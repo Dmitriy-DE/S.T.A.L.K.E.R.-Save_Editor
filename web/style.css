@@ -167,6 +167,7 @@ table.grid td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle)
 table.grid tr.readonly td { color: var(--text-disabled); }
 table.grid tr.staged td { color: var(--olive); }
 table.grid input[type="number"] { width: 120px; padding: 4px 7px; }
+table.grid input.condition-input { width: 82px; }
 
 .muted { color: var(--text-secondary); }
 .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -36,6 +37,8 @@ class InventoryView(QWidget):
     clear_all_requested = Signal()
     add_requested = Signal(str, int)
     remove_selected_requested = Signal(int)
+    durability_stage_requested = Signal(int, float)
+    durability_clear_requested = Signal(int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -48,6 +51,10 @@ class InventoryView(QWidget):
         self._remove_enabled = False
         self._remove_reason: str | None = None
         self._removed_handles: set[int] = set()
+        self._durability_enabled = False
+        self._durability_reason: str | None = None
+        self._staged_counts: dict[int, int] = {}
+        self._staged_durability: dict[int, float] = {}
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -122,6 +129,30 @@ class InventoryView(QWidget):
         self.remove_item_button.clicked.connect(self._remove_selected)
         count_row.addWidget(self.remove_item_button)
         form.addRow("Новое количество", count_row)
+
+        condition_row = QHBoxLayout()
+        self.condition_spin = QDoubleSpinBox()
+        self.condition_spin.setRange(0.0, 100.0)
+        self.condition_spin.setDecimals(1)
+        self.condition_spin.setSingleStep(1.0)
+        self.condition_spin.setSuffix(" %")
+        self.condition_spin.setEnabled(False)
+        self.condition_spin.valueChanged.connect(self._on_condition_changed)
+        condition_row.addWidget(self.condition_spin)
+        self.condition_stage_button = QPushButton("Застейджить прочность")
+        self.condition_stage_button.setEnabled(False)
+        self.condition_stage_button.clicked.connect(self._stage_condition)
+        condition_row.addWidget(self.condition_stage_button)
+        self.condition_clear_button = QPushButton("Очистить прочность")
+        self.condition_clear_button.setEnabled(False)
+        self.condition_clear_button.clicked.connect(self._clear_condition)
+        condition_row.addWidget(self.condition_clear_button)
+        form.addRow("Прочность", condition_row)
+        self.condition_status_label = QLabel(
+            "Для оружия и экипировки с подтверждённым condition доступно изменение 0…100%."
+        )
+        self.condition_status_label.setWordWrap(True)
+        form.addRow("Состояние", self.condition_status_label)
         layout.addWidget(editor)
 
         add_box = QGroupBox("Добавить предмет из официального каталога")
@@ -149,6 +180,8 @@ class InventoryView(QWidget):
 
     def set_items(self, items: Iterable[InventoryItem]) -> None:
         values = tuple(items)
+        self._staged_counts.clear()
+        self._staged_durability.clear()
         self.count_spin.setMaximum(max((item.count_max for item in values), default=1_000_000))
         self.model.set_items(values)
         current_category = self.category_combo.currentText()
@@ -170,6 +203,26 @@ class InventoryView(QWidget):
         self.selected_handle = None
         self.table.clearSelection()
         self._update_editor(None)
+
+    def set_durability_enabled(
+        self,
+        enabled: bool,
+        *,
+        reason: str | None = None,
+    ) -> None:
+        self._durability_enabled = bool(enabled)
+        self._durability_reason = reason
+        self._update_editor(self._selected_item())
+
+    def set_staged_durability(self, durability: Mapping[int, float]) -> None:
+        self._staged_durability = {
+            int(handle): float(value) for handle, value in durability.items()
+        }
+        self.model.set_staged_durability(self._staged_durability)
+        self.model.set_changed_handles(
+            set(self._staged_counts) | set(self._staged_durability)
+        )
+        self._update_editor(self._selected_item())
 
     def set_catalog(
         self,
@@ -219,8 +272,11 @@ class InventoryView(QWidget):
 
     def set_staged_counts(self, counts: Mapping[int, int]) -> None:
         selected = self.selected_handle
-        self.model.set_staged_counts(counts)
-        self.model.set_changed_handles(counts)
+        self._staged_counts = {int(handle): int(value) for handle, value in counts.items()}
+        self.model.set_staged_counts(self._staged_counts)
+        self.model.set_changed_handles(
+            set(self._staged_counts) | set(self._staged_durability)
+        )
         self._restore_selection(selected)
         self.clear_all_button.setEnabled(bool(counts))
 
@@ -266,6 +322,7 @@ class InventoryView(QWidget):
 
     def _update_editor(self, item: InventoryItem | None) -> None:
         self._update_remove_button(item)
+        self._update_condition_editor(item)
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.editability_label.setText(
@@ -327,6 +384,84 @@ class InventoryView(QWidget):
         self.count_spin.blockSignals(False)
         self.stage_button.setEnabled(True)
         self.clear_selected_button.setEnabled(staged is not None)
+
+    def _update_condition_editor(self, item: InventoryItem | None) -> None:
+        self.condition_spin.blockSignals(True)
+        self.condition_stage_button.setEnabled(False)
+        self.condition_clear_button.setEnabled(False)
+        if item is None:
+            self.condition_spin.setEnabled(False)
+            self.condition_spin.setValue(0.0)
+            self.condition_status_label.setText(
+                self._durability_reason or "Выбери оружие или экипировку."
+            )
+            self.condition_spin.blockSignals(False)
+            return
+        if not self._durability_enabled:
+            self.condition_spin.setEnabled(False)
+            self.condition_spin.setValue(
+                item.condition * 100.0 if item.condition is not None else 0.0
+            )
+            self.condition_status_label.setText(
+                self._durability_reason
+                or "Только чтение: правка прочности не подтверждена для этого релиза."
+            )
+            self.condition_spin.blockSignals(False)
+            return
+        if not item.condition_editable or item.condition is None:
+            self.condition_spin.setEnabled(False)
+            self.condition_spin.setValue(
+                item.condition * 100.0 if item.condition is not None else 0.0
+            )
+            self.condition_status_label.setText(
+                "Только чтение: condition для этого объекта не разобран."
+            )
+            self.condition_spin.blockSignals(False)
+            return
+
+        staged = self._staged_durability.get(item.handle)
+        effective = staged if staged is not None else item.condition
+        self.condition_spin.setEnabled(True)
+        self.condition_spin.setValue(effective * 100.0)
+        self.condition_stage_button.setEnabled(True)
+        self.condition_clear_button.setEnabled(staged is not None)
+        mirror = (
+            "STATE f32 + UPDATE q8 + client-data mirror"
+            if item.condition_editable
+            else "STATE f32"
+        )
+        prefix = f"{self._durability_reason}; " if self._durability_reason else "Подтверждено: "
+        self.condition_status_label.setText(
+            f"{prefix}{mirror}; bytes пока не изменены."
+        )
+        self.condition_spin.blockSignals(False)
+
+    def _on_condition_changed(self, _value: float) -> None:
+        item = self._selected_item()
+        self.condition_stage_button.setEnabled(
+            item is not None
+            and self._durability_enabled
+            and item.condition_editable
+            and item.condition is not None
+        )
+
+    def _stage_condition(self) -> None:
+        item = self._selected_item()
+        if (
+            item is None
+            or not self._durability_enabled
+            or not item.condition_editable
+            or item.condition is None
+        ):
+            return
+        self.durability_stage_requested.emit(
+            item.handle,
+            self.condition_spin.value() / 100.0,
+        )
+
+    def _clear_condition(self) -> None:
+        if self.selected_handle is not None:
+            self.durability_clear_requested.emit(self.selected_handle)
 
     def _update_remove_button(self, item: InventoryItem | None) -> None:
         if item is None:

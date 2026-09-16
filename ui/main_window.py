@@ -7,6 +7,7 @@ snapshot visible when a later file is malformed.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -168,6 +169,7 @@ class MainWindow(QMainWindow):
         self.staged_money: int | None = None
         self.staged_adds: dict[str, int] = {}
         self.staged_detach: dict[int, bool] = {}
+        self.staged_durability: dict[int, float] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -574,6 +576,8 @@ class MainWindow(QMainWindow):
         self.inventory_view.clear_all_requested.connect(self._clear_all_stacks)
         self.inventory_view.add_requested.connect(self._stage_item_add)
         self.inventory_view.remove_selected_requested.connect(self._stage_item_remove)
+        self.inventory_view.durability_stage_requested.connect(self._stage_item_durability)
+        self.inventory_view.durability_clear_requested.connect(self._clear_item_durability)
         # Keep the old attribute available to small integrations while the
         # actual view now uses a stable-handle QAbstractTableModel.
         self.inventory_table = self.inventory_view.table
@@ -716,6 +720,7 @@ class MainWindow(QMainWindow):
         self.staged_money = None
         self.staged_adds.clear()
         self.staged_detach.clear()
+        self.staged_durability.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -771,6 +776,7 @@ class MainWindow(QMainWindow):
             self.staged_counts,
             self.staged_adds,
             self.staged_detach,
+            self.staged_durability,
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -817,6 +823,20 @@ class MainWindow(QMainWindow):
             ),
         )
         self.inventory_view.set_removed_handles(self.staged_detach)
+        can_edit_durability = bool(
+            capabilities is not None and capabilities.edit_durability
+        )
+        self.inventory_view.set_durability_enabled(
+            can_edit_durability,
+            reason=(
+                "Только чтение: правка прочности не подтверждена для этого релиза"
+                if capabilities is not None and not capabilities.edit_durability
+                else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"
+                if capabilities is not None and capabilities.is_experimental("edit_durability")
+                else None
+            ),
+        )
+        self.inventory_view.set_staged_durability(self.staged_durability)
         self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_money(self, info: SaveInfo) -> None:
@@ -1003,6 +1023,51 @@ class MainWindow(QMainWindow):
         self._invalidate_preview("изменился staged список удалений")
         self.status_label.setText(f"{message}; bytes сейва не изменены — нужен preview")
 
+    def _stage_item_durability(self, handle: int, condition: float) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.edit_durability:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает редактирование прочности"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None or not item.condition_editable or item.condition is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):04X} не имеет подтверждённого condition"
+            )
+            return
+        value = float(condition)
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            self.inventory_view.show_editability_message(
+                "Прочность должна быть в диапазоне 0…100%"
+            )
+            return
+        if math.isclose(value, item.condition, rel_tol=0.0, abs_tol=1e-6):
+            self.staged_durability.pop(item.handle, None)
+        else:
+            self.staged_durability[item.handle] = value
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged значение прочности")
+        self.status_label.setText(
+            f"Прочность staged для {item.type_key}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_item_durability(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            return
+        self.staged_durability.pop(item.handle, None)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("staged прочность очищена")
+        self.status_label.setText(
+            f"Прочность очищена для {item.type_key}; bytes сейва не изменены"
+        )
+
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self.inventory_view.set_staged_counts(self.staged_counts)
@@ -1017,9 +1082,11 @@ class MainWindow(QMainWindow):
         self.staged_money = None
         self.staged_adds.clear()
         self.staged_detach.clear()
+        self.staged_durability.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_staged_durability(self.staged_durability)
         self.inventory_view.set_removed_handles(self.staged_detach)
         self._render_changes()
         self._invalidate_preview("все staged-правки очищены")
@@ -1036,6 +1103,7 @@ class MainWindow(QMainWindow):
             self.staged_counts,
             self.staged_adds,
             self.staged_detach,
+            self.staged_durability,
         )
 
     def _has_staged_changes(self) -> bool:
@@ -1044,6 +1112,7 @@ class MainWindow(QMainWindow):
             or self.staged_counts
             or self.staged_adds
             or self.staged_detach
+            or self.staged_durability
         )
 
     def _update_action_buttons(self) -> None:
@@ -1099,6 +1168,7 @@ class MainWindow(QMainWindow):
                 (item_key, quantity, "inventory")
                 for item_key, quantity in sorted(self.staged_adds.items())
             ),
+            durability=tuple(sorted(self.staged_durability.items())),
         )
 
     def _busy_now(self) -> bool:

@@ -99,9 +99,11 @@ class ChangesView(QWidget):
         staged_counts: Mapping[int, int],
         staged_adds: Mapping[str, int] | None = None,
         staged_detach: Mapping[int, bool] | None = None,
+        staged_durability: Mapping[int, float] | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
+        staged_durability = staged_durability or {}
         items = {item.handle: item for item in info.inventory}
         rows: list[tuple[str, str, str, str, str]] = []
         if staged_money is not None:
@@ -148,6 +150,24 @@ class ChangesView(QWidget):
                     item.type_key if item is not None else "unknown",
                     "удалить",
                     "registry deep detach" if deep else "только чтение",
+                )
+            )
+        for handle, condition in sorted(staged_durability.items()):
+            item = items.get(int(handle))
+            before = (
+                f"{item.condition * 100.0:.1f}%"
+                if item is not None and item.condition is not None
+                else "unknown"
+            )
+            rows.append(
+                (
+                    "Прочность",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    before,
+                    f"{float(condition) * 100.0:.1f}%",
+                    "STATE f32 + UPDATE q8 + client-data mirror"
+                    if item is not None and item.condition_editable
+                    else "Только чтение",
                 )
             )
 

@@ -176,7 +176,9 @@ class _XRayFormat:
                 edit_stacks=True,
                 add_items=True,
                 remove_items=True,
+                edit_durability=True,
                 catalog=True,
+                experimental_fields=frozenset({"edit_durability"}),
             ),
         )
 

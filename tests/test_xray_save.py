@@ -84,6 +84,7 @@ def _spawn(
     version: int,
     state: bytes,
     update: bytes,
+    client_data: bytes = b"",
 ) -> bytes:
     packet = bytearray(struct.pack("<H", 1))
     packet += _z(name) + _z("")
@@ -95,7 +96,7 @@ def _spawn(
     if version > 120:
         packet += struct.pack("<H", 1)  # single-player game type
     packet += struct.pack("<H", 0)  # script version
-    packet += struct.pack("<H", 0)  # client data size
+    packet += struct.pack("<H", len(client_data)) + client_data
     packet += struct.pack("<H", 0)  # spawn id
     packet += struct.pack("<H", len(state) + 2) + state
     assert len(packet) <= 0xFFFF

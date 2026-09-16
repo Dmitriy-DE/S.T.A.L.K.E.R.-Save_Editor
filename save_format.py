@@ -7,6 +7,7 @@ import zlib
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Literal
 
 from editor.codec import CodecError
 from editor.codec import decompress as codec_decompress
@@ -85,6 +86,9 @@ class InventoryItem:
     position_label: str | None = None
     size_label: str | None = None
     count_max: int = 1_000_000
+    condition: float | None = None
+    condition_editable: bool = False
+    storage: Literal["equipped", "inventory"] | None = None
 
     @property
     def handle_hex(self) -> str:

@@ -275,6 +275,9 @@ def analyze(data: bytes, name: str) -> str:
                     "total_weight": None if item.total_weight is None else round(item.total_weight, 3),
                     "weight_known": item.total_weight is not None,
                     "name": item.display_name or "Неизвестный объект",
+                    "condition": item.condition,
+                    "condition_editable": bool(item.condition_editable),
+                    "storage": item.storage,
                     "editable": bool(
                         format_.capabilities.edit_stacks and item.editable_count
                     ),
@@ -291,6 +294,7 @@ def prepare(
     stacks_json: str,
     adds_json: str = "[]",
     detach_json: str = "[]",
+    durability_json: str = "[]",
 ) -> str:
     """Apply staged edits to the analyzed bytes and keep the result in memory."""
 
@@ -310,6 +314,10 @@ def prepare(
         )
         for entry in json.loads(detach_json)
     )
+    durability = tuple(
+        (int(entry[0]), float(entry[1]))
+        for entry in json.loads(durability_json)
+    )
     normalized_money = _optional_int(money)
     plan = EditPlan(
         source=SourceRef(
@@ -321,6 +329,7 @@ def prepare(
         stacks=stacks,
         adds=adds,
         detach=detach,
+        durability=durability,
     )
     format_ = _state.get("format")
     if format_ is None:
@@ -341,6 +350,10 @@ def prepare(
     if detach and not format_.capabilities.remove_items:
         raise sf.SaveError(
             f"Формат {format_.release_id} не разрешает удаление предметов до игрового evidence"
+        )
+    if durability and not format_.capabilities.edit_durability:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку прочности до игрового evidence"
         )
     prepared = format_.prepare(
         data,
@@ -365,6 +378,8 @@ def prepare(
         for handle, _deep in detach
         if handle not in {item.handle for item in after.inventory}
     ]
+    before_conditions = {item.handle: item.condition for item in before.inventory}
+    after_conditions = {item.handle: item.condition for item in after.inventory}
     return json.dumps(
         {
             "output_sha256": prepared.output_sha256,
@@ -377,6 +392,14 @@ def prepare(
             ],
             "adds": added_items,
             "removed": removed_handles,
+            "durability": [
+                [
+                    f"0x{handle:08X}",
+                    before_conditions.get(handle),
+                    after_conditions.get(handle),
+                ]
+                for handle, _condition in durability
+            ],
             "source_unchanged": hashlib.sha256(data).hexdigest() == _state["sha256"],
         },
         ensure_ascii=False,

@@ -17,6 +17,7 @@ const state = {
   snapshot: null,
   money: null,
   stacks: new Map(),
+  durability: new Map(),
   adds: new Map(),
   detach: new Set(),
   prepared: null,
@@ -79,6 +80,7 @@ async function openFile(file) {
     state.snapshot = snapshot;
     state.money = null;
     state.stacks.clear();
+    state.durability.clear();
     state.adds.clear();
     state.detach.clear();
     state.prepared = null;
@@ -121,6 +123,7 @@ function renderSnapshot(s) {
     caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
+    caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
   ];
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
@@ -173,6 +176,7 @@ function visibleItems() {
     if (
       filter === "staged" &&
       !state.stacks.has(item.handle) &&
+      !state.durability.has(item.handle) &&
       !state.detach.has(item.handle)
     ) return false;
     if (!query) return true;
@@ -188,19 +192,53 @@ function renderInventory() {
   body.replaceChildren(...visibleItems().map((item) => {
     const tr = document.createElement("tr");
     const staged = state.stacks.get(item.handle);
+    const stagedDurability = state.durability.get(item.handle);
     tr.className = state.detach.has(item.handle)
       ? "staged"
-      : staged !== undefined ? "staged" : item.editable ? "" : "readonly";
+      : staged !== undefined || stagedDurability !== undefined ? "staged" : item.editable ? "" : "readonly";
     for (const cell of [
       item.name, item.category, item.position, item.size_text, item.type_key,
       item.count === null ? "неизвестно" : String(item.count),
       item.total_weight === null ? "неизвестно" : item.total_weight.toFixed(3),
-      item.handle_hex,
     ]) {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.append(td);
     }
+    const conditionTd = document.createElement("td");
+    if (item.condition === null || item.condition === undefined) {
+      conditionTd.textContent = "неизвестно";
+    } else if (item.condition_editable && state.snapshot.capabilities?.edit_durability) {
+      const input = document.createElement("input");
+      input.className = "condition-input";
+      input.type = "number";
+      input.min = "0";
+      input.max = "100";
+      input.step = "0.1";
+      input.value = String(((stagedDurability ?? item.condition) * 100).toFixed(1));
+      input.title = "Экспериментально: STATE/UPDATE/client-data mirrors; исходный файл не меняется до preview";
+      input.addEventListener("change", () => {
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          input.value = String((item.condition * 100).toFixed(1));
+          return;
+        }
+        const normalized = value / 100;
+        if (Math.abs(normalized - item.condition) <= 0.000001) state.durability.delete(item.handle);
+        else state.durability.set(item.handle, normalized);
+        invalidate();
+        renderInventory();
+        renderChanges();
+      });
+      conditionTd.append(input);
+    } else {
+      conditionTd.textContent = `${(item.condition * 100).toFixed(1)}%`;
+      conditionTd.className = "muted";
+    }
+    tr.append(conditionTd);
+    const handleTd = document.createElement("td");
+    handleTd.textContent = item.handle_hex;
+    tr.append(handleTd);
     const td = document.createElement("td");
     if (item.editable) {
       const input = document.createElement("input");
@@ -236,6 +274,7 @@ function renderInventory() {
         else {
           state.detach.add(item.handle);
           state.stacks.delete(item.handle);
+          state.durability.delete(item.handle);
         }
         invalidate();
         renderInventory();
@@ -258,6 +297,10 @@ function renderChanges() {
   for (const [handle, count] of state.stacks) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`Стак ${item.handle_hex}: ${item.count} → ${count}`);
+  }
+  for (const [handle, condition] of state.durability) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
   }
   for (const [key, quantity] of state.adds) {
     items.push(`Добавить ${key} × ${quantity}`);
@@ -298,7 +341,8 @@ function preview() {
     const stacks = JSON.stringify([...state.stacks.entries()]);
     const adds = JSON.stringify([...state.adds.entries()]);
     const detach = JSON.stringify([...state.detach].map((handle) => [handle, true]));
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach));
+    const durability = JSON.stringify([...state.durability.entries()]);
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -313,6 +357,9 @@ function preview() {
     }
     for (const handle of result.removed ?? []) {
       lines.push(`удалён ${handle}`);
+    }
+    for (const [handle, before, after] of result.durability ?? []) {
+      lines.push(`прочность ${handle}: ${before === null ? "?" : `${(before * 100).toFixed(1)}%`} → ${after === null ? "?" : `${(after * 100).toFixed(1)}%`}`);
     }
     if (!result.source_unchanged) lines.push("ВНИМАНИЕ: исходные байты изменились");
     el("preview-status").textContent = lines.join(" · ");

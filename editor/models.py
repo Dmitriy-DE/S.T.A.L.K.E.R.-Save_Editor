@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,7 @@ class EditPlan:
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
     adds: tuple[tuple[str, int, str], ...] = ()
+    durability: tuple[tuple[int, float], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -67,6 +69,9 @@ class EditPlan:
             (str(item_key), int(quantity), str(destination))
             for item_key, quantity, destination in self.adds
         )
+        durability = tuple(
+            (int(handle), float(condition)) for handle, condition in self.durability
+        )
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -78,6 +83,13 @@ class EditPlan:
             raise ValueError("Duplicate attach handle in edit plan")
         if len({(item_key, destination) for item_key, _, destination in adds}) != len(adds):
             raise ValueError("Duplicate add item/destination in edit plan")
+        if len({handle for handle, _ in durability}) != len(durability):
+            raise ValueError("Duplicate durability handle in edit plan")
+        for handle, condition in durability:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Durability handle must be in the range 1…65534")
+            if not math.isfinite(condition) or not 0.0 <= condition <= 1.0:
+                raise ValueError("Durability value must be finite and in the range 0…1")
         for item_key, quantity, destination in adds:
             if not item_key.strip():
                 raise ValueError("Added item key must be non-empty")
@@ -92,6 +104,7 @@ class EditPlan:
         object.__setattr__(self, "attach", attach)
         object.__setattr__(self, "raw", raw)
         object.__setattr__(self, "adds", adds)
+        object.__setattr__(self, "durability", durability)
 
 
 @dataclass(frozen=True)

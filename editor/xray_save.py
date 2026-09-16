@@ -3,8 +3,9 @@
 The original games do not use the S.T.A.L.K.E.R. 2 GVAS/CRC container.  They
 store a versioned chunk stream in a raw LZO1X payload.  This module keeps the
 format-specific part small and explicit: it parses the common object envelope,
-the actor money field, and the ``CSE_ALifeItemAmmo`` count fields documented in
-the public X-Ray source.  Unknown object state remains untouched.
+the actor money field, confirmed inventory condition fields, and the
+``CSE_ALifeItemAmmo`` count fields documented in the public X-Ray source.
+Unknown object state remains untouched.
 
 Structural item edits use an official item catalog plus an existing registry
 record from the same serializer family.  The save still remains the source of
@@ -17,12 +18,19 @@ import hashlib
 import math
 import struct
 from dataclasses import dataclass, replace
+from typing import Literal
 
 from save_format import InventoryItem, SaveInfo
 
 from .catalog import ItemCatalog, ItemDefinition, catalog_from_items
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
+from .xray_item_state import (
+    CONDITION_FAMILIES,
+    ConditionCodecError,
+    patch_condition,
+    read_condition_anchor,
+)
 
 _M_SPAWN = 1
 _M_UPDATE = 0
@@ -173,6 +181,8 @@ class _SpawnRecord:
     position: tuple[float, float, float]
     spawn_offset: int
     spawn_end: int
+    client_data_offset: int | None
+    client_data_end: int | None
     state_size: int
     state_start: int
     state_end: int
@@ -192,12 +202,20 @@ class XRayObject:
     record_end: int
     spawn_offset: int
     spawn_end: int
+    client_data_offset: int | None
+    client_data_end: int | None
     state_size: int
     state_offset: int
     state_end: int
     update_offset: int
     update_end: int
     update_size: int
+    condition: float | None = None
+    condition_offset: int | None = None
+    client_condition_offset: int | None = None
+    update_condition_offset: int | None = None
+    condition_family: str | None = None
+    storage: Literal["equipped", "inventory"] | None = None
     count: int | None = None
     update_count: int | None = None
     ammo_state_offset: int | None = None
@@ -391,11 +409,15 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         reader.u16()  # game type
     if version > 69:
         reader.u16()  # script version
+    client_data_offset: int | None = None
+    client_data_end: int | None = None
     if version > 70:
         client_size = reader.u16() if version > 93 else reader.u8()
         if client_size > 256 * 1024:
             raise _fail(f"объект {name!r}: client data слишком велик")
+        client_data_offset = packet_offset + reader.pos
         reader.bytes(client_size)
+        client_data_end = packet_offset + reader.pos
     if version > 79:
         reader.u16()  # spawn id
 
@@ -417,6 +439,8 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         position=position,
         spawn_offset=packet_offset,
         spawn_end=packet_offset + len(packet),
+        client_data_offset=client_data_offset,
+        client_data_end=client_data_end,
         state_size=state_size,
         state_start=packet_offset + state_start_rel,
         state_end=packet_offset + state_end_rel,
@@ -457,6 +481,8 @@ def _parse_objects(raw: bytes, chunk: XRayChunk) -> tuple[XRayObject, ...]:
             record_end=data_offset + reader.pos,
             spawn_offset=spawn.spawn_offset,
             spawn_end=spawn.spawn_end,
+            client_data_offset=spawn.client_data_offset,
+            client_data_end=spawn.client_data_end,
             state_size=spawn.state_size,
             state_offset=spawn.state_start,
             state_end=spawn.state_end,
@@ -531,6 +557,8 @@ def _parse_actor_probe(
                 record_end=data_offset + reader.pos,
                 spawn_offset=spawn.spawn_offset,
                 spawn_end=spawn.spawn_end,
+                client_data_offset=spawn.client_data_offset,
+                client_data_end=spawn.client_data_end,
                 state_size=spawn.state_size,
                 state_offset=spawn.state_start,
                 state_end=spawn.state_end,
@@ -558,7 +586,9 @@ def _category_for_name(name: str) -> tuple[int, str]:
         return 5, "Патроны"
     if lowered.startswith(("wpn_", "weapon_")):
         return 0, "Оружие"
-    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
+    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")) or lowered.endswith(
+        ("_outfit", "_helmet", "_helm", "_armor")
+    ):
         return 1, "Броня/экипировка"
     if lowered.startswith(("af_", "artifact_")):
         return 2, "Артефакт"
@@ -588,7 +618,9 @@ def _inferred_serialization_family(name: str) -> str:
         return "pda"
     if lowered.startswith(("detector_", "device_detector")):
         return "detector"
-    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
+    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")) or lowered.endswith(
+        ("_outfit", "_helmet", "_helm", "_armor")
+    ):
         return "outfit"
     if lowered.startswith(("wpn_", "weapon_")):
         if lowered.endswith("_knife"):
@@ -679,8 +711,17 @@ def _inventory_items(
             unresolved.append(obj.object_id)
             warnings.append(
                 f"Handle 0x{obj.object_id:04X}: ammo count не разобран, только read-only"
-            )
+        )
         editable = anchors_ok if ammo else False
+        condition_editable = (
+            obj.condition is not None
+            and obj.condition_offset is not None
+            and obj.condition_family in CONDITION_FAMILIES
+        )
+        if obj.condition_family in CONDITION_FAMILIES and not condition_editable:
+            warnings.append(
+                f"Handle 0x{obj.object_id:04X}: condition не разобран, только read-only"
+            )
         items.append(
             InventoryItem(
                 handle=obj.object_id,
@@ -700,9 +741,20 @@ def _inventory_items(
                 type_key=obj.name,
                 editable_count=editable,
                 display_name=obj.name,
-                position_label="в инвентаре",
+                position_label=(
+                    "экипировано (слот подтверждён)"
+                    if obj.storage == "equipped"
+                    else (
+                        "инвентарь actor"
+                        if obj.storage == "inventory"
+                        else "инвентарь actor; слот не определён"
+                    )
+                ),
                 size_label="неизвестно",
                 count_max=_MAX_AMMO_COUNT,
+                condition=obj.condition,
+                condition_editable=condition_editable,
+                storage=obj.storage,
             )
         )
     items.sort(key=lambda item: item.handle)
@@ -737,6 +789,45 @@ def _annotate_ammo_objects(raw: bytes, objects: tuple[XRayObject, ...], actor_id
                     ammo_update_offset=update_offset,
                 )
             )
+    return tuple(annotated)
+
+
+def _annotate_inventory_conditions(
+    raw: bytes,
+    objects: tuple[XRayObject, ...],
+    actor_id: int,
+) -> tuple[XRayObject, ...]:
+    """Attach only source-confirmed STATE/UPDATE condition anchors."""
+
+    annotated: list[XRayObject] = []
+    for obj in objects:
+        if obj.parent_id != actor_id:
+            annotated.append(obj)
+            continue
+        family = _inferred_serialization_family(obj.name)
+        if family not in CONDITION_FAMILIES:
+            annotated.append(obj)
+            continue
+        try:
+            anchor = read_condition_anchor(raw, obj, family)
+        except ConditionCodecError:
+            annotated.append(obj)
+            continue
+        known_fields = tuple(
+            field for field in obj.unknown_fields if field != "durability"
+        )
+        annotated.append(
+            replace(
+                obj,
+                condition=anchor.value,
+                condition_offset=anchor.state_offset,
+                client_condition_offset=anchor.client_offset,
+                update_condition_offset=anchor.update_offset,
+                condition_family=family,
+                storage=anchor.storage,
+                unknown_fields=known_fields,
+            )
+        )
     return tuple(annotated)
 
 
@@ -826,6 +917,7 @@ def parse_xray(
     except XRaySaveError:
         raise
     if with_inventory:
+        objects = _annotate_inventory_conditions(container.raw, objects, actor.object_id)
         objects = _annotate_ammo_objects(container.raw, objects, actor.object_id)
 
     inventory: tuple[InventoryItem, ...] = ()
@@ -1271,7 +1363,7 @@ def prepare_xray(
         )
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
-    if plan.money is None and not plan.stacks:
+    if plan.money is None and not plan.stacks and not plan.durability:
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1302,6 +1394,24 @@ def prepare_xray(
         struct.pack_into("<H", raw, obj.ammo_state_offset, count)
         struct.pack_into("<H", raw, obj.ammo_update_offset, count)
 
+    requested_durability = dict(plan.durability)
+    for handle, condition in requested_durability.items():
+        obj = parsed.object_by_id(handle)
+        if (
+            obj.condition is None
+            or obj.condition_family not in CONDITION_FAMILIES
+            or obj.condition_offset is None
+        ):
+            raise XRaySaveError(
+                f"X-Ray save: object 0x{handle:04X} не является подтверждённым item condition"
+            )
+        try:
+            patch_condition(raw, obj, obj.condition_family, condition)
+        except ConditionCodecError as exc:
+            raise XRaySaveError(
+                f"X-Ray save: condition для 0x{handle:04X} не разобран: {exc}"
+            ) from exc
+
     rebuilt = parsed.container.build(bytes(raw))
     after = parse_xray(rebuilt, spec, with_inventory=True)
     if plan.money is not None and after.money != plan.money:
@@ -1314,6 +1424,20 @@ def prepare_xray(
             raise XRaySaveError(
                 f"X-Ray save: round-trip ammo 0x{handle:04X} не совпал с {count}"
             )
+    for handle, condition in requested_durability.items():
+        checked = after.object_by_id(handle)
+        if checked.condition is None or not math.isclose(
+            checked.condition, condition, rel_tol=0.0, abs_tol=1e-6
+        ):
+            raise XRaySaveError(
+                f"X-Ray save: round-trip condition 0x{handle:04X} не совпал с {condition}"
+            )
+        if checked.update_condition_offset is not None:
+            expected = min(255, max(0, math.floor(condition * 255.0 + 0.5)))
+            if after.container.raw[checked.update_condition_offset] != expected:
+                raise XRaySaveError(
+                    f"X-Ray save: round-trip UPDATE condition 0x{handle:04X} не совпал"
+                )
     for handle, _ in plan.detach:
         if any(item.handle == handle for item in after.inventory):
             raise XRaySaveError(
