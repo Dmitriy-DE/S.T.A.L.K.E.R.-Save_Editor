@@ -417,6 +417,94 @@ def _record_end_guesses(raw: bytes, starts: dict[int, int]) -> dict[int, int]:
     return result
 
 
+_S2_NAME_TABLE_MAX_ENTRIES = 8192
+_S2_NAME_MAX_BYTES = 4096
+
+
+def _decode_s2_name(value: bytes) -> str | None:
+    """Decode one embedded S2 name without accepting binary table data."""
+
+    try:
+        decoded = value.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if any(not character.isprintable() and character not in "\t" for character in decoded):
+        return None
+    return decoded
+
+
+def _parse_s2_name_table(raw: bytes | bytearray, start: int) -> tuple[str, ...] | None:
+    """Parse one counted UTF-8 string array at ``start`` if it is complete."""
+
+    if start < 0 or start + 2 > len(raw):
+        return None
+    count = struct.unpack_from("<H", raw, start)[0]
+    if not (1 <= count <= _S2_NAME_TABLE_MAX_ENTRIES):
+        return None
+
+    offset = start + 2
+    names: list[str] = []
+    for _ in range(count):
+        if offset + 2 > len(raw):
+            return None
+        byte_count = struct.unpack_from("<H", raw, offset)[0]
+        if byte_count > _S2_NAME_MAX_BYTES or offset + 2 + byte_count > len(raw):
+            return None
+        value = _decode_s2_name(bytes(raw[offset + 2 : offset + 2 + byte_count]))
+        if value is None:
+            return None
+        names.append(value)
+        offset += 2 + byte_count
+    return tuple(names)
+
+
+def locate_s2_item_name_table(
+    raw: bytes | bytearray,
+    type_keys: Iterable[bytes] = (),
+) -> tuple[str, ...] | None:
+    """Locate the save-local item name table used by the S2 compact key.
+
+    The currently observed S2 saves serialize a counted string table whose
+    first entry is ``GunAK74_ST``.  The low two bytes of an inventory
+    ``type_key`` are an index into that table.  This helper exposes only that
+    save-local display metadata; it does not turn the entry into a public SID
+    and does not provide a constructor/writer.
+    """
+
+    indexes: list[int] = []
+    for type_key in type_keys:
+        if len(type_key) != 3:
+            continue
+        indexes.append(type_key[1] | (type_key[2] << 8))
+    needle = struct.pack("<H", len(b"GunAK74_ST")) + b"GunAK74_ST"
+    search_from = 0
+    while True:
+        name_offset = raw.find(needle, search_from)
+        if name_offset < 0:
+            return None
+        # ``name_offset`` points at the u16 byte length immediately after the
+        # table's u16 entry count.
+        table_start = name_offset - 2
+        names = _parse_s2_name_table(raw, table_start)
+        if names is not None and names[0] == "GunAK74_ST" and (
+            not indexes or any(index < len(names) for index in indexes)
+        ):
+            return names
+        search_from = name_offset + 1
+
+
+def _s2_display_name(
+    name_table: tuple[str, ...] | None,
+    type_key: bytes,
+) -> str | None:
+    if name_table is None or len(type_key) != 3:
+        return None
+    index = type_key[1] | (type_key[2] << 8)
+    if not (0 <= index < len(name_table)):
+        return None
+    return name_table[index] or None
+
+
 def _inventory_details(
     raw: bytes, layout: InventoryLayout | None = None
 ) -> tuple[tuple[InventoryItem, ...], tuple[int, ...], tuple[str, ...]]:
@@ -427,6 +515,10 @@ def _inventory_details(
 
     starts = _record_start_map(raw, layout.owned_handles)
     ends = _record_end_guesses(raw, starts)
+    name_table = locate_s2_item_name_table(
+        raw,
+        tuple(raw[offset + 8 : offset + 11] for offset in starts.values()),
+    )
     items: list[InventoryItem] = []
     unresolved = set(layout.unresolved_handles)
     warnings = list(layout.warnings)
@@ -461,9 +553,11 @@ def _inventory_details(
             )
         editable = count > 1 and kind in EDITABLE_STACK_KIND_CODES and handle not in unresolved
         fingerprint = raw[rec_off + 4 : rec_off + 18].hex()
-        # The 3 bytes at +8..+10 are stable across nearby saves and are useful
-        # as a research key, but are NOT yet claimed to be a public SID/hash.
+        # The first byte remains an opaque S2 serialization discriminator. The
+        # lower two bytes resolve through the save-local name table when the
+        # table is present; neither field is claimed to be a public SID/hash.
         type_key = raw[rec_off + 8 : rec_off + 11].hex()
+        display_name = _s2_display_name(name_table, raw[rec_off + 8 : rec_off + 11])
         items.append(
             InventoryItem(
                 handle=handle,
@@ -482,6 +576,7 @@ def _inventory_details(
                 fingerprint=fingerprint,
                 type_key=type_key,
                 editable_count=editable,
+                display_name=display_name,
             )
         )
     items.sort(key=lambda it: (it.y, it.x, it.handle))
