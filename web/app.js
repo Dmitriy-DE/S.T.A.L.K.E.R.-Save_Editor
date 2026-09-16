@@ -18,6 +18,7 @@ const state = {
   money: null,
   stacks: new Map(),
   durability: new Map(),
+  relations: new Map(),
   adds: new Map(),
   detach: new Set(),
   prepared: null,
@@ -81,6 +82,7 @@ async function openFile(file) {
     state.money = null;
     state.stacks.clear();
     state.durability.clear();
+    state.relations.clear();
     state.adds.clear();
     state.detach.clear();
     state.prepared = null;
@@ -124,6 +126,7 @@ function renderSnapshot(s) {
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
     caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
+    caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
   ];
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
@@ -163,8 +166,69 @@ function renderSnapshot(s) {
     ? `Доступно ключей: ${catalogItems.length}. Источник: ${s.catalog_source === "save-observed" ? "текущий сейв" : "официальный каталог"}.`
     : "Официальный каталог для браузера не найден в загруженном файле.";
 
+  renderFaction(s);
   renderInventory();
   renderChanges();
+}
+
+function renderFaction(s) {
+  const group = el("faction-group");
+  const body = el("faction-relations").tBodies[0];
+  const rows = s.faction_relations ?? [];
+  const caps = s.capabilities ?? {};
+  const enabled = Boolean(caps.edit_relations && s.faction_catalog_available && s.faction_relations_editable && rows.length);
+  group.disabled = !enabled;
+  el("faction-status").textContent = enabled
+    ? `Загружено группировок: ${rows.length}; goodwill ${s.faction_goodwill_min ?? "?"}…${s.faction_goodwill_max ?? "?"}. Изменения staged, исходный сейв не изменён.`
+    : s.faction_catalog_available
+      ? "Relation registry или actor relation row не подтверждены; только чтение."
+      : "Официальный faction catalog для этого релиза не найден.";
+  const warning = el("faction-warning");
+  warning.hidden = !enabled;
+  body.replaceChildren(...rows.map((row) => {
+    const tr = document.createElement("tr");
+    const staged = state.relations.get(row.key);
+    const current = row.stored ? Number(row.value) : 0;
+    const name = document.createElement("td");
+    name.textContent = row.name === row.key ? row.key : `${row.name} · ${row.key}`;
+    name.title = `community id: ${row.numeric_id}`;
+    tr.append(name);
+    const currentCell = document.createElement("td");
+    currentCell.textContent = row.stored ? String(row.value) : "0 (default)";
+    tr.append(currentCell);
+    const inputCell = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = String(s.faction_goodwill_min ?? -2147483648);
+    input.max = String(s.faction_goodwill_max ?? 2147483647);
+    input.step = "1";
+    input.value = String(staged ?? current);
+    inputCell.append(input);
+    tr.append(inputCell);
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.className = "button";
+    button.type = "button";
+    button.textContent = staged === undefined ? "Застейджить" : "Отношение*";
+    button.addEventListener("click", () => {
+      const value = Number(input.value);
+      const min = Number(s.faction_goodwill_min ?? -2147483648);
+      const max = Number(s.faction_goodwill_max ?? 2147483647);
+      if (!Number.isInteger(value) || value < min || value > max) {
+        setStatus(`Goodwill должен быть целым числом ${min}…${max}`, "error");
+        return;
+      }
+      if (value === current) state.relations.delete(row.key);
+      else state.relations.set(row.key, value);
+      invalidate();
+      renderFaction(state.snapshot);
+      renderChanges();
+      setStatus(`Отношение ${row.key} подготовлено; исходный файл не изменён`);
+    });
+    actionCell.append(button);
+    tr.append(actionCell);
+    return tr;
+  }));
 }
 
 function visibleItems() {
@@ -302,6 +366,11 @@ function renderChanges() {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
   }
+  for (const [key, goodwill] of state.relations) {
+    const row = (state.snapshot.faction_relations ?? []).find((item) => item.key === key);
+    const before = row?.stored ? row.value : 0;
+    items.push(`С риском: отношение ${key}: ${before} → ${goodwill}; backup обязателен`);
+  }
   for (const [key, quantity] of state.adds) {
     items.push(`ОПАСНО: добавить ${key} × ${quantity}; backup обязателен`);
   }
@@ -342,7 +411,8 @@ function preview() {
     const adds = JSON.stringify([...state.adds.entries()]);
     const detach = JSON.stringify([...state.detach].map((handle) => [handle, true]));
     const durability = JSON.stringify([...state.durability.entries()]);
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability));
+    const relations = JSON.stringify([...state.relations.entries()]);
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -360,6 +430,9 @@ function preview() {
     }
     for (const [handle, before, after] of result.durability ?? []) {
       lines.push(`прочность ${handle}: ${before === null ? "?" : `${(before * 100).toFixed(1)}%`} → ${after === null ? "?" : `${(after * 100).toFixed(1)}%`}`);
+    }
+    for (const [key, before, after] of result.faction_relations ?? []) {
+      lines.push(`отношение ${key}: ${before ?? 0} → ${after ?? "?"} (experimental)`);
     }
     if (!result.source_unchanged) lines.push("ВНИМАНИЕ: исходные байты изменились");
     el("preview-status").textContent = lines.join(" · ");

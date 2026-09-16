@@ -22,6 +22,7 @@ _MUTATION_CAPABILITY_FIELDS: frozenset[str] = frozenset(
         "add_items",
         "remove_items",
         "edit_durability",
+        "edit_relations",
     }
 )
 
@@ -43,6 +44,7 @@ class FormatCapabilities:
     edit_durability: bool = False
     edit_upgrades: bool = False
     catalog: bool = False
+    edit_relations: bool = False
     experimental_fields: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
@@ -77,6 +79,7 @@ class FormatCapabilities:
             "edit_durability": self.edit_durability,
             "edit_upgrades": self.edit_upgrades,
             "catalog": self.catalog,
+            "edit_relations": self.edit_relations,
             "experimental_fields": sorted(self.experimental_fields),
         }
 
@@ -109,6 +112,7 @@ def gate_mutations_for_release(
         remove_items=False,
         edit_durability=False,
         edit_upgrades=False,
+        edit_relations=False,
         experimental_fields=frozenset(),
     )
 

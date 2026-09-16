@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.catalog import FactionCatalog
 from editor.models import PreparedEdit
 from save_format import SaveInfo
 
@@ -100,10 +101,13 @@ class ChangesView(QWidget):
         staged_adds: Mapping[str, int] | None = None,
         staged_detach: Mapping[int, bool] | None = None,
         staged_durability: Mapping[int, float] | None = None,
+        staged_faction_relations: Mapping[str, int] | None = None,
+        faction_catalog: FactionCatalog | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
         staged_durability = staged_durability or {}
+        staged_faction_relations = staged_faction_relations or {}
 
         def item_risk(text: str) -> str:
             return f"ОПАСНО: {text}; backup обязателен"
@@ -172,6 +176,29 @@ class ChangesView(QWidget):
                     "STATE f32 + UPDATE q8 + client-data mirror"
                     if item is not None and item.condition_editable
                     else "Только чтение",
+                )
+            )
+        current_relations = dict(info.faction_relations)
+        for key, goodwill in sorted(staged_faction_relations.items()):
+            faction = faction_catalog.resolve(key) if faction_catalog is not None else None
+            numeric_id = faction.numeric_id if faction is not None else None
+            before = (
+                str(current_relations[numeric_id])
+                if numeric_id is not None and numeric_id in current_relations
+                else "0 (default)"
+            )
+            label = (
+                f"{faction.display_name or faction.key} · {faction.key}"
+                if faction is not None and faction.display_name not in (None, faction.key)
+                else faction.key if faction is not None else key
+            )
+            rows.append(
+                (
+                    "Отношение",
+                    label,
+                    before,
+                    str(goodwill),
+                    "С риском: Relation registry; round-trip проверка; backup обязателен",
                 )
             )
 

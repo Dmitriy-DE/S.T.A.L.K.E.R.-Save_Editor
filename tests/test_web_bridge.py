@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "web"))
 
 import web_bridge  # noqa: E402 - web/ must be on sys.path first
 from test_xray_durability import _condition_fixture  # noqa: E402
+from test_xray_relations import _registry  # noqa: E402
 from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
@@ -164,6 +165,75 @@ def test_web_bridge_exposes_confirmed_xray_storage_place() -> None:
 
     assert item["storage"] == "equipped"
     assert item["position"] == "экипировано (слот подтверждён)"
+
+
+def test_web_bridge_exposes_and_prepares_xray_faction_relations() -> None:
+    payload = {
+        "schema_version": 1,
+        "releases": {
+            "stalker-cop": {
+                "items": [
+                    {
+                        "key": "ammo_9x39_pab9",
+                        "category": "ammo",
+                        "max_stack": 30,
+                        "serialization_family": "ammo",
+                    }
+                ],
+                "factions": [
+                    {
+                        "key": "actor",
+                        "display_name": "Actor",
+                        "numeric_id": 0,
+                        "source": "fixture",
+                    },
+                    {
+                        "key": "bandit",
+                        "display_name": "Bandit",
+                        "numeric_id": 1,
+                        "source": "fixture",
+                    },
+                ],
+                "goodwill_min": -3000,
+                "goodwill_max": 1000,
+            }
+        },
+    }
+    old_items = web_bridge._catalogs.get("stalker-cop")
+    old_factions = web_bridge._faction_catalogs.get("stalker-cop")
+    try:
+        web_bridge.install_catalogs(json.dumps(payload))
+        data = _fixture(registry=_registry())
+        snapshot = json.loads(web_bridge.analyze(data, "relations.scop"))
+
+        assert snapshot["capabilities"]["edit_relations"] is True
+        assert snapshot["faction_catalog_available"] is True
+        assert snapshot["faction_relations_editable"] is True
+        assert [(row["key"], row["value"]) for row in snapshot["faction_relations"]] == [
+            ("actor", 100),
+            ("bandit", -100),
+        ]
+
+        result = json.loads(
+            web_bridge.prepare(
+                None,
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                json.dumps([["bandit", 375]]),
+            )
+        )
+        assert result["faction_relations"] == [["bandit", -100, 375]]
+    finally:
+        if old_items is None:
+            web_bridge._catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._catalogs["stalker-cop"] = old_items
+        if old_factions is None:
+            web_bridge._faction_catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._faction_catalogs["stalker-cop"] = old_factions
 
 
 def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:

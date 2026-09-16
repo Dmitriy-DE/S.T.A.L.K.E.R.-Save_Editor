@@ -41,6 +41,7 @@ MODULES = (
     "editor/xray_catalog.py",
     "editor/xray_save.py",
     "editor/xray_item_state.py",
+    "editor/xray_relations.py",
 )
 
 

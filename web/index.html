@@ -70,6 +70,19 @@
         </div>
       </fieldset>
 
+      <fieldset class="group" id="faction-group" disabled>
+        <legend>Отношения с группировками</legend>
+        <p id="faction-status" class="muted">Открой X-Ray сейв с официальным каталогом.</p>
+        <p id="faction-warning" class="muted faction-warning" hidden>
+          Сюжет и AI могут пересчитать goodwill после загрузки. Перед записью
+          сделай backup исходного сейва.
+        </p>
+        <table class="grid" id="faction-relations">
+          <thead><tr><th>Группировка</th><th>Текущее goodwill</th><th>Новое</th><th>Действие</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </fieldset>
+
       <fieldset class="group">
         <legend>Технические метаданные контейнера</legend>
         <table class="grid" id="metadata">

@@ -177,8 +177,9 @@ class _XRayFormat:
                 add_items=True,
                 remove_items=True,
                 edit_durability=True,
+                edit_relations=True,
                 catalog=True,
-                experimental_fields=frozenset({"edit_durability"}),
+                experimental_fields=frozenset({"edit_durability", "edit_relations"}),
             ),
         )
 
@@ -294,7 +295,13 @@ class _XRayFormat:
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
         selected_catalog = catalog or self.catalog_for_source(source_name)
-        return prepare_xray(data, plan, self.spec, catalog=selected_catalog)
+        return prepare_xray(
+            data,
+            plan,
+            self.spec,
+            catalog=selected_catalog,
+            faction_catalog=game_catalog.factions if game_catalog is not None else None,
+        )
 
 
 STALKER2_FORMAT: SaveFormat = _Stalker2Format()

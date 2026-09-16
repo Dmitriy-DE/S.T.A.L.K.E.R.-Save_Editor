@@ -157,6 +157,8 @@ class SaveInfo:
     normal_time_factor: float | None = None
     level_name: str | None = None
     container_version: int | None = None
+    faction_relations: tuple[tuple[int, int], ...] = ()
+    faction_relations_editable: bool = False
 
 
 @dataclass(frozen=True)

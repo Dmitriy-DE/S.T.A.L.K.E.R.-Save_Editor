@@ -111,7 +111,12 @@ def _chunk(kind: int, payload: bytes) -> bytes:
     return struct.pack("<II", kind, len(payload)) + payload
 
 
-def _fixture(version: int = 128, outer: int = 6) -> bytes:
+def _fixture(
+    version: int = 128,
+    outer: int = 6,
+    *,
+    registry: bytes = b"registry",
+) -> bytes:
     actor = _spawn(
         "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
     )
@@ -131,7 +136,7 @@ def _fixture(version: int = 128, outer: int = 6) -> bytes:
             _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
             _chunk(1, b"\x00" * 8),
             _chunk(2, objects),
-            _chunk(9, b"registry"),
+            _chunk(9, registry),
         )
     )
     return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)

@@ -22,7 +22,7 @@ from typing import Literal
 
 from save_format import InventoryItem, SaveInfo
 
-from .catalog import ItemCatalog, ItemDefinition, catalog_from_items
+from .catalog import FactionCatalog, ItemCatalog, ItemDefinition, catalog_from_items
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
 from .xray_item_state import (
@@ -30,6 +30,12 @@ from .xray_item_state import (
     ConditionCodecError,
     patch_condition,
     read_condition_anchor,
+)
+from .xray_relations import (
+    XRayRelationError,
+    XRayRelationRegistry,
+    parse_relation_registry,
+    patch_relation_registry,
 )
 
 _M_SPAWN = 1
@@ -239,6 +245,9 @@ class XRaySave:
     actor_id: int
     money: int
     money_offset: int
+    faction_relations: tuple[tuple[int, int], ...]
+    relation_registry: XRayRelationRegistry | None
+    faction_relations_editable: bool
     game_time: int | None
     time_factor: float | None
     normal_time_factor: float | None
@@ -916,6 +925,18 @@ def parse_xray(
         money_offset, money = _parse_actor_state(container.raw, actor)
     except XRaySaveError:
         raise
+
+    relation_registry: XRayRelationRegistry | None = None
+    relation_error: str | None = None
+    relation_chunk = _chunk_once(chunks, 9, required=False)
+    if relation_chunk is not None and strict_registry:
+        try:
+            relation_registry = parse_relation_registry(relation_chunk.data, spec.id)
+        except XRayRelationError as exc:
+            # The save remains readable, but a malformed relation prefix must
+            # never become an editable goodwill surface.
+            relation_registry = None
+            relation_error = str(exc)
     if with_inventory:
         objects = _annotate_inventory_conditions(container.raw, objects, actor.object_id)
         objects = _annotate_ammo_objects(container.raw, objects, actor.object_id)
@@ -924,6 +945,24 @@ def parse_xray(
     owned_handles: tuple[int, ...] = ()
     unresolved: tuple[int, ...] = ()
     warnings: list[str] = []
+    faction_relations: tuple[tuple[int, int], ...] = ()
+    faction_relations_editable = False
+    if relation_registry is not None:
+        try:
+            actor_relations = relation_registry.for_character(actor.object_id)
+        except XRayRelationError as exc:
+            warnings.append(f"X-Ray: actor relation row read-only: {exc}")
+        else:
+            faction_relations_editable = True
+            faction_relations = tuple(
+                (entry.community_index, entry.value)
+                for entry in actor_relations.communities
+            )
+    elif relation_chunk is not None and strict_registry:
+        detail = f": {relation_error}" if relation_error else ""
+        warnings.append(
+            f"X-Ray: relation registry не разобран, goodwill только read-only{detail}"
+        )
     if with_inventory:
         inventory, owned_handles, unresolved, item_warnings = _inventory_items(
             container.raw, objects, actor.object_id
@@ -938,6 +977,8 @@ def parse_xray(
         actor_id=actor.object_id,
         money=money,
         money_offset=money_offset,
+        faction_relations=faction_relations,
+        relation_registry=relation_registry,
         game_time=game_time,
         time_factor=time_factor,
         normal_time_factor=normal_time_factor,
@@ -947,6 +988,7 @@ def parse_xray(
         owned_handles=owned_handles,
         unresolved_handles=unresolved,
         warnings=tuple(dict.fromkeys(warnings)),
+        faction_relations_editable=faction_relations_editable,
     )
 
 
@@ -994,6 +1036,8 @@ def inspect_xray(
         time_factor=parsed.time_factor,
         normal_time_factor=parsed.normal_time_factor,
         level_name=parsed.level_name,
+        faction_relations=parsed.faction_relations,
+        faction_relations_editable=parsed.faction_relations_editable,
     )
 
 
@@ -1024,6 +1068,23 @@ def _rebuild_with_object_chunk(parsed: XRaySave, object_data: bytes) -> bytes:
     return parsed.container.build(raw)
 
 
+def _relation_chunk_data(parsed: XRaySave) -> XRayChunk:
+    chunk = _chunk_once(parsed.container.chunks, 9)
+    assert chunk is not None
+    return chunk
+
+
+def _rebuild_with_relation_chunk(parsed: XRaySave, relation_data: bytes) -> bytes:
+    """Replace only the relation-registry chunk and preserve its tail."""
+
+    relation_chunk = _relation_chunk_data(parsed)
+    chunks: list[bytes] = []
+    for chunk in parsed.container.chunks:
+        payload = relation_data if chunk.offset == relation_chunk.offset else chunk.data
+        chunks.append(struct.pack("<II", chunk.type, len(payload)) + payload)
+    return parsed.container.build(b"".join(chunks))
+
+
 def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
     object_chunk = _object_chunk_data(parsed)
     data_start = object_chunk.offset + 8
@@ -1036,6 +1097,105 @@ def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
         raise _fail("OBJECT registry нельзя оставить без actor")
     object_data = struct.pack("<I", count - 1) + object_chunk.data[4:start] + object_chunk.data[end:]
     return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _validated_faction_catalog(
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> FactionCatalog:
+    if faction_catalog is None:
+        raise _fail(
+            f"для изменений группировок нужен официальный faction catalog {spec.id!r}"
+        )
+    if faction_catalog.release_id != spec.id:
+        raise _fail(
+            f"faction catalog release {faction_catalog.release_id!r} не совпадает "
+            f"с save release {spec.id!r}"
+        )
+    if not faction_catalog.factions:
+        raise _fail(f"faction catalog {spec.id!r} не содержит communities")
+    return faction_catalog
+
+
+def _faction_numeric_id(
+    catalog: FactionCatalog,
+    key: str,
+) -> int:
+    try:
+        faction = catalog.resolve(key)
+    except LookupError as exc:
+        raise _fail(
+            f"faction {key!r} отсутствует в официальном catalog {catalog.release_id!r}"
+        ) from exc
+    if faction.numeric_id is None:
+        raise _fail(
+            f"faction {key!r} не имеет подтверждённого numeric community id"
+        )
+    return faction.numeric_id
+
+
+def _apply_xray_relation_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> bytes:
+    """Patch goodwill values in the actor's serialized relation row."""
+
+    if not plan.faction_relations:
+        return bytes(data)
+    catalog = _validated_faction_catalog(spec, faction_catalog)
+    if catalog.goodwill_min is None or catalog.goodwill_max is None:
+        raise _fail(
+            f"для {spec.id!r} не подтверждены community goodwill limits; запись запрещена"
+        )
+
+    requested = tuple(
+        (_faction_numeric_id(catalog, key), goodwill)
+        for key, goodwill in plan.faction_relations
+    )
+    for community_index, goodwill in requested:
+        if not catalog.goodwill_min <= goodwill <= catalog.goodwill_max:
+            raise _fail(
+                f"goodwill для community {community_index} должен быть в диапазоне "
+                f"{catalog.goodwill_min}…{catalog.goodwill_max}"
+            )
+
+    working = bytes(data)
+    for community_index, goodwill in requested:
+        current = parse_xray(working, spec, with_inventory=True)
+        registry = current.relation_registry
+        if registry is None:
+            raise _fail("relation registry не разобран; goodwill остаётся read-only")
+        try:
+            relation_data = patch_relation_registry(
+                _relation_chunk_data(current).data,
+                registry,
+                character_id=current.actor_id,
+                community_index=community_index,
+                goodwill=goodwill,
+            )
+        except XRayRelationError as exc:
+            raise _fail(str(exc)) from exc
+        working = _rebuild_with_relation_chunk(current, relation_data)
+    return working
+
+
+def _verify_xray_relation_edits(
+    parsed: XRaySave,
+    plan: EditPlan,
+    faction_catalog: FactionCatalog | None,
+) -> None:
+    if not plan.faction_relations:
+        return
+    catalog = _validated_faction_catalog(parsed.spec, faction_catalog)
+    actual = dict(parsed.faction_relations)
+    for key, goodwill in plan.faction_relations:
+        community_index = _faction_numeric_id(catalog, key)
+        if actual.get(community_index) != goodwill:
+            raise _fail(
+                f"round-trip goodwill для {key!r} не совпал с {goodwill}"
+            )
 
 
 def _append_object_record(parsed: XRaySave, record: bytes) -> bytes:
@@ -1337,6 +1497,7 @@ def prepare_xray(
     spec: XRayFormatSpec,
     *,
     catalog: ItemCatalog | None = None,
+    faction_catalog: FactionCatalog | None = None,
 ) -> PreparedEdit:
     """Prepare proven X-Ray edits and verify their structural round-trip."""
 
@@ -1354,16 +1515,25 @@ def prepare_xray(
     parsed = parse_xray(payload, spec, with_inventory=True)
     before_structural = parsed
     working_data = payload
+    if plan.faction_relations:
+        working_data = _apply_xray_relation_edits(
+            working_data,
+            plan,
+            spec,
+            faction_catalog,
+        )
     if plan.detach or plan.adds:
         working_data = _apply_xray_structural_edits(
-            payload,
+            working_data,
             plan,
             spec,
             catalog,
         )
+    if working_data != payload:
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
-    if plan.money is None and not plan.stacks and not plan.durability:
+    if plan.money is None and not plan.stacks and not plan.durability and not plan.faction_relations:
+        _verify_xray_relation_edits(parsed, plan, faction_catalog)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1414,6 +1584,7 @@ def prepare_xray(
 
     rebuilt = parsed.container.build(bytes(raw))
     after = parse_xray(rebuilt, spec, with_inventory=True)
+    _verify_xray_relation_edits(after, plan, faction_catalog)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"

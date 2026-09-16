@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
-from editor.catalog import ItemCatalog
+from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
@@ -45,6 +45,7 @@ from save_format import SaveError, SaveInfo
 from .backups_view import BackupView, RestoreWorker
 from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
+from .faction_view import FactionView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
 from .save_slots_view import (
@@ -100,6 +101,7 @@ class LocalSnapshot:
     edition: str = ""
     capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
     catalog: ItemCatalog | None = None
+    game_catalog: GameCatalog | None = None
 
 
 class InspectWorker(QThread):
@@ -133,6 +135,7 @@ class InspectWorker(QThread):
                     edition=result.edition,
                     capabilities=result.capabilities,
                     catalog=result.catalog,
+                    game_catalog=result.game_catalog,
                 )
             )
         except FormatDetectionError as exc:
@@ -170,6 +173,7 @@ class MainWindow(QMainWindow):
         self.staged_adds: dict[str, int] = {}
         self.staged_detach: dict[int, bool] = {}
         self.staged_durability: dict[int, float] = {}
+        self.staged_faction_relations: dict[str, int] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -370,6 +374,7 @@ class MainWindow(QMainWindow):
             len(self.staged_counts)
             + len(self.staged_adds)
             + len(self.staged_detach)
+            + len(self.staged_faction_relations)
             + (1 if self.staged_money is not None else 0)
         )
         counters: dict[int, int | None] = {1: inventory, 2: staged or None}
@@ -455,6 +460,10 @@ class MainWindow(QMainWindow):
         money_row.addWidget(self.money_clear_button)
         money_layout.addLayout(money_row)
         layout.addWidget(money_box)
+
+        self.faction_view = FactionView(self)
+        self.faction_view.relation_stage_requested.connect(self._stage_faction_relation)
+        layout.addWidget(self.faction_view)
 
         metadata_box = QGroupBox("Технические метаданные контейнера")
         metadata_layout = QVBoxLayout(metadata_box)
@@ -721,6 +730,7 @@ class MainWindow(QMainWindow):
         self.staged_adds.clear()
         self.staged_detach.clear()
         self.staged_durability.clear()
+        self.staged_faction_relations.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -770,6 +780,7 @@ class MainWindow(QMainWindow):
         self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
+        self._render_factions(info)
         self.changes_view.set_staged(
             info,
             self.staged_money,
@@ -777,6 +788,8 @@ class MainWindow(QMainWindow):
             self.staged_adds,
             self.staged_detach,
             self.staged_durability,
+            self.staged_faction_relations,
+            snapshot.game_catalog.factions if snapshot.game_catalog is not None else None,
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -838,6 +851,37 @@ class MainWindow(QMainWindow):
         )
         self.inventory_view.set_staged_durability(self.staged_durability)
         self.inventory_card_value.setText(str(len(info.inventory)))
+
+    def _render_factions(self, info: SaveInfo) -> None:
+        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        catalog = (
+            self.snapshot.game_catalog.factions
+            if self.snapshot is not None and self.snapshot.game_catalog is not None
+            else None
+        )
+        self.faction_view.set_catalog(
+            catalog,
+            relation_enabled=bool(
+                capabilities is not None
+                and capabilities.edit_relations
+                and info.faction_relations_editable
+            ),
+            reason=(
+                "Экспериментально: Relation registry X-Ray; backup обязателен"
+                if capabilities is not None
+                and capabilities.edit_relations
+                and info.faction_relations_editable
+                and capabilities.is_experimental("edit_relations")
+                else "Только чтение: actor relation row не подтверждён"
+                if capabilities is not None
+                and capabilities.edit_relations
+                and not info.faction_relations_editable
+                else "Только чтение: отношения не подтверждены для этого релиза"
+                if capabilities is not None and not capabilities.edit_relations
+                else None
+            ),
+        )
+        self.faction_view.set_state(info, self.staged_faction_relations)
 
     def _render_money(self, info: SaveInfo) -> None:
         can_edit_money = (
@@ -1068,6 +1112,53 @@ class MainWindow(QMainWindow):
             f"Прочность очищена для {item.type_key}; bytes сейва не изменены"
         )
 
+    def _stage_faction_relation(self, key: str, goodwill: int) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_relations or not self.snapshot.info.faction_relations_editable:
+            self.faction_view.status_label.setText(
+                "Только чтение: формат не разрешает редактирование отношений"
+            )
+            return
+        game_catalog = self.snapshot.game_catalog
+        if game_catalog is None:
+            self.faction_view.status_label.setText(
+                "Только чтение: официальный faction catalog не найден"
+            )
+            return
+        try:
+            faction = game_catalog.factions.resolve(key)
+        except CatalogLookupError as exc:
+            self.faction_view.status_label.setText(str(exc))
+            return
+        if faction.numeric_id is None:
+            self.faction_view.status_label.setText(
+                f"Только чтение: у {key} нет подтверждённого numeric community id"
+            )
+            return
+        minimum = game_catalog.factions.goodwill_min
+        maximum = game_catalog.factions.goodwill_max
+        if minimum is None or maximum is None or not minimum <= goodwill <= maximum:
+            self.faction_view.status_label.setText(
+                f"Goodwill отклонён: допустим диапазон {minimum}…{maximum}"
+            )
+            return
+        current = dict(self.snapshot.info.faction_relations).get(faction.numeric_id, 0)
+        if int(goodwill) == current:
+            self.staged_faction_relations.pop(key, None)
+        else:
+            self.staged_faction_relations[key] = int(goodwill)
+        self.faction_view.set_state(
+            self.snapshot.info,
+            self.staged_faction_relations,
+        )
+        self._render_changes()
+        self._invalidate_preview("изменилось staged отношение группировки")
+        self.status_label.setText(
+            f"Отношение staged: {key} → {goodwill}; bytes сейва не изменены — нужен preview"
+        )
+
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self.inventory_view.set_staged_counts(self.staged_counts)
@@ -1083,8 +1174,10 @@ class MainWindow(QMainWindow):
         self.staged_adds.clear()
         self.staged_detach.clear()
         self.staged_durability.clear()
+        self.staged_faction_relations.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
+            self._render_factions(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
         self.inventory_view.set_staged_durability(self.staged_durability)
         self.inventory_view.set_removed_handles(self.staged_detach)
@@ -1104,6 +1197,10 @@ class MainWindow(QMainWindow):
             self.staged_adds,
             self.staged_detach,
             self.staged_durability,
+            self.staged_faction_relations,
+            self.snapshot.game_catalog.factions
+            if self.snapshot.game_catalog is not None
+            else None,
         )
 
     def _has_staged_changes(self) -> bool:
@@ -1113,6 +1210,7 @@ class MainWindow(QMainWindow):
             or self.staged_adds
             or self.staged_detach
             or self.staged_durability
+            or self.staged_faction_relations
         )
 
     def _update_action_buttons(self) -> None:
@@ -1169,6 +1267,7 @@ class MainWindow(QMainWindow):
                 for item_key, quantity in sorted(self.staged_adds.items())
             ),
             durability=tuple(sorted(self.staged_durability.items())),
+            faction_relations=tuple(sorted(self.staged_faction_relations.items())),
         )
 
     def _busy_now(self) -> bool:
@@ -1200,6 +1299,7 @@ class MainWindow(QMainWindow):
             data=self.snapshot.data if self.snapshot is not None else b"",
             plan=plan,
             catalog=self.snapshot.catalog if self.snapshot is not None else None,
+            game_catalog=self.snapshot.game_catalog if self.snapshot is not None else None,
             parent=self,
         )
         worker.preview_ready.connect(self._on_preview_ready)
@@ -1300,6 +1400,7 @@ class MainWindow(QMainWindow):
             output_path=output_path,
             backup_dir=backup_path,
             catalog=self.snapshot.catalog,
+            game_catalog=self.snapshot.game_catalog,
             parent=self,
         )
         worker.set_prepared(self.prepared_edit)

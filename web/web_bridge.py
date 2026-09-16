@@ -15,7 +15,7 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
-from editor.catalog import FactionCatalog, ItemCatalog, UpgradeCatalog
+from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
@@ -210,6 +210,9 @@ def analyze(data: bytes, name: str) -> str:
     else:
         catalog_source = "generated-official" if catalog is not None else None
     _state["catalog"] = catalog
+    faction_catalog = _faction_catalogs.get(format_.id)
+    _state["faction_catalog"] = faction_catalog
+    relation_values = dict(info.faction_relations)
 
     return json.dumps(
         {
@@ -235,6 +238,38 @@ def analyze(data: bytes, name: str) -> str:
                     "icon_texture": item.icon_texture,
                 }
                 for item in (catalog.items if catalog is not None else ())
+            ],
+            "faction_catalog_available": faction_catalog is not None
+            and bool(faction_catalog.factions),
+            "catalog_factions": [
+                {
+                    "key": faction.key,
+                    "name": faction.display_name or faction.key,
+                    "numeric_id": faction.numeric_id,
+                }
+                for faction in (
+                    faction_catalog.factions if faction_catalog is not None else ()
+                )
+            ],
+            "faction_goodwill_min": (
+                faction_catalog.goodwill_min if faction_catalog is not None else None
+            ),
+            "faction_goodwill_max": (
+                faction_catalog.goodwill_max if faction_catalog is not None else None
+            ),
+            "faction_relations_editable": info.faction_relations_editable,
+            "faction_relations": [
+                {
+                    "key": faction.key,
+                    "name": faction.display_name or faction.key,
+                    "numeric_id": faction.numeric_id,
+                    "value": relation_values.get(faction.numeric_id, 0),
+                    "stored": faction.numeric_id in relation_values,
+                }
+                for faction in (
+                    faction_catalog.factions if faction_catalog is not None else ()
+                )
+                if faction.numeric_id is not None
             ],
             "sha256": info.sha256,
             "crc_ok": info.crc_ok,
@@ -295,6 +330,7 @@ def prepare(
     adds_json: str = "[]",
     detach_json: str = "[]",
     durability_json: str = "[]",
+    relations_json: str = "[]",
 ) -> str:
     """Apply staged edits to the analyzed bytes and keep the result in memory."""
 
@@ -318,6 +354,10 @@ def prepare(
         (int(entry[0]), float(entry[1]))
         for entry in json.loads(durability_json)
     )
+    faction_relations = tuple(
+        (str(entry[0]), int(entry[1]))
+        for entry in json.loads(relations_json)
+    )
     normalized_money = _optional_int(money)
     plan = EditPlan(
         source=SourceRef(
@@ -330,6 +370,7 @@ def prepare(
         adds=adds,
         detach=detach,
         durability=durability,
+        faction_relations=faction_relations,
     )
     format_ = _state.get("format")
     if format_ is None:
@@ -355,11 +396,25 @@ def prepare(
         raise sf.SaveError(
             f"Формат {format_.release_id} не разрешает правку прочности до игрового evidence"
         )
+    if faction_relations and not format_.capabilities.edit_relations:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку отношений до игрового evidence"
+        )
     prepared = format_.prepare(
         data,
         plan,
         source_name=str(_state.get("name") or "save.sav"),
         catalog=_state.get("catalog"),
+        game_catalog=(
+            GameCatalog(
+                format_.release_id,
+                _state.get("catalog"),
+                _state.get("faction_catalog"),
+            )
+            if isinstance(_state.get("catalog"), ItemCatalog)
+            and isinstance(_state.get("faction_catalog"), FactionCatalog)
+            else None
+        ),
     )
     _state["output"] = prepared.data
 
@@ -380,6 +435,13 @@ def prepare(
     ]
     before_conditions = {item.handle: item.condition for item in before.inventory}
     after_conditions = {item.handle: item.condition for item in after.inventory}
+    before_relations = dict(before.faction_relations)
+    after_relations = dict(after.faction_relations)
+    faction_catalog = _state.get("faction_catalog")
+    faction_ids = {
+        faction.key: faction.numeric_id
+        for faction in (faction_catalog.factions if isinstance(faction_catalog, FactionCatalog) else ())
+    }
     return json.dumps(
         {
             "output_sha256": prepared.output_sha256,
@@ -399,6 +461,14 @@ def prepare(
                     after_conditions.get(handle),
                 ]
                 for handle, _condition in durability
+            ],
+            "faction_relations": [
+                [
+                    key,
+                    before_relations.get(faction_ids.get(key)),
+                    after_relations.get(faction_ids.get(key)),
+                ]
+                for key, _goodwill in faction_relations
             ],
             "source_unchanged": hashlib.sha256(data).hexdigest() == _state["sha256"],
         },
