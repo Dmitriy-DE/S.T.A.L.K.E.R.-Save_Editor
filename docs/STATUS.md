@@ -79,7 +79,7 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
-| Настоящее удаление | X-Ray deep removal actor-owned registry record; reference-safe/equipped deletion не доказано | R08 |
+| Настоящее удаление | X-Ray deep removal теперь блокирует известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23, R08 |
 | Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; SoC/S2/Enhanced и attachments остаются read-only | M17, R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
@@ -254,6 +254,12 @@ evidence](evidence/S2_CATALOG_2026-09-16.md).
 не открывает S2 Add/clone/upgrade writer, но теперь граница проверяется общей
 командой без записи личных файлов. Подробности: [M22](tasks/M22.md) и [S2
 mapping evidence](evidence/S2_MAPPING_2026-09-16.md).
+
+В M23 structural X-Ray `deep detach` получил read-only preflight по известным
+`object_id`/`parent_id` edges: actor-owned leaf можно удалить, а explicit
+equipped, direct dependent и unresolved target блокируются до записи. Полный
+opaque reference graph и game load/re-save не заявляются. Подробности:
+[M23](tasks/M23.md) и [X-Ray delete evidence](evidence/XRAY_DELETE_2026-09-16.md).
 
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.

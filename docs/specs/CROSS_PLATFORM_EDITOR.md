@@ -137,6 +137,14 @@ prototype bytes или право add/clone/upgrade. Browser принимает 
 release-scoped metadata bundle только когда он явно сгенерирован из official
 resource root; сайт не получает доступ к локальной папке игры автоматически.
 
+Для original X-Ray `EditPlan.detach` остаётся явно structural операцией. Перед
+удалением writer запускает `editor.xray_delete.analyze_xray_delete(...)` и
+отказывает для отсутствующего/unresolved target, explicit equipped placement,
+не-actor-owned record и любого parsed registry child по `parent_id`. Этот
+preflight не извлекает ссылки из opaque STATE/UPDATE и не доказывает quest
+семантику или game load/re-save; отсутствие decoded placement не считается
+доказательством, что предмет экипирован.
+
 M22 добавляет `editor.s2_mapping.analyze_s2_samples(...)` как read-only
 evidence helper. Он сравнивает handle/type-key observations между явно
 переданными samples, возвращает только hashes/агрегаты и всегда оставляет

@@ -31,6 +31,7 @@ from .catalog import (
 )
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
+from .xray_delete import analyze_xray_delete
 from .xray_item_state import (
     CONDITION_FAMILIES,
     ConditionCodecError,
@@ -1861,11 +1862,12 @@ def _apply_xray_structural_edits(
             raise XRaySaveError(
                 "X-Ray save: только deep detach подтверждён для registry object"
             )
-        obj = current.object_by_id(handle)
-        if obj.parent_id != current.actor_id:
+        analysis = analyze_xray_delete(current, handle)
+        if not analysis.allowed:
             raise XRaySaveError(
-                f"X-Ray save: object 0x{handle:04X} не принадлежит actor inventory"
+                f"X-Ray save: delete 0x{handle:04X} отказан: {analysis.message}"
             )
+        obj = current.object_by_id(handle)
         working = _remove_object_record(current, obj)
 
     for item_key, quantity, destination in plan.adds:
