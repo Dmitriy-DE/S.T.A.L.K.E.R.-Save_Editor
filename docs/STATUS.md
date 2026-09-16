@@ -196,7 +196,7 @@ actor-owned record как deep operation; SoC/CS/CoP representative in-memory
 До M10 эти базовые результаты не открывали UI/web mutation; Move, equipment, attachments
 и reference-safe deletion остаются read-only. M12–M20 вынесли прочность,
 отношения, player community, in-place replacement, X-Ray upgrades и placement
-в отдельные stacked review-карточки; M17 (PR #65) и M20 структурно проверены,
+в отдельные stacked review-карточки; M17 (PR #65) и M20 (PR #68) структурно проверены,
 но controlled game load/re-save для новых полей ещё не выполнялся.
 Enhanced Editions также не объявлены поддержанными: evidence записан отдельно
 в `EE_FORMATS_2026-09-15.md`.
