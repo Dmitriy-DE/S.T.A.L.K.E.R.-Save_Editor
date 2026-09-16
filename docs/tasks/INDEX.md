@@ -57,7 +57,8 @@
 | [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
 | [M17](M17.md) | Улучшения оружия и экипировки X-Ray | M10, M11 | in_review (PR #65; structural round-trip; M10 game load/re-save pending) | [PR #65](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65) |
 | [M18](M18.md) | Локальный Support project UI | M17 | in_review (PR #66; Qt/web modal and clipboard checks; visual assets not copied) | [PR #66](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/66) |
-| [M19](M19.md) | Иконки инвентаря и визуальный слой | M11, M18 | in_review (Qt official atlas/fallback glyph; web accessible glyph; checks pending final gate) | — |
+| [M19](M19.md) | Иконки инвентаря и визуальный слой | M11, M18 | in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests) | [PR #67](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67) |
+| [M20](M20.md) | Перенос предметов между слотами, поясом и рюкзаком X-Ray | M19 | in_review (ветка codex/m20-xray-placement; structural round-trip; M10 game load/re-save pending) | — |
 
 <!-- END GENERATED TASK TABLE -->
 

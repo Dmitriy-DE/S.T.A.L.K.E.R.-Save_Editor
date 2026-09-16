@@ -51,6 +51,7 @@ class EditPlan:
     faction_relations: tuple[tuple[str, int], ...] = ()
     player_faction: str | None = None
     upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
+    placements: tuple[tuple[int, str, int | None], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -96,6 +97,21 @@ class EditPlan:
                     raise ValueError("upgrade key must not contain NUL")
             normalized_upgrades.append((int(handle), keys))
         upgrades = tuple(normalized_upgrades)
+        normalized_placements: list[tuple[int, str, int | None]] = []
+        for handle, placement_type, slot_id in self.placements:
+            normalized_type = str(placement_type).strip().casefold()
+            normalized_slot = None if slot_id is None else int(slot_id)
+            if normalized_type not in {"slot", "belt", "ruck"}:
+                raise ValueError("placement type must be slot, belt, or ruck")
+            if normalized_type == "slot":
+                if normalized_slot is None:
+                    raise ValueError("slot placement requires a slot id")
+                if not 1 <= normalized_slot <= 13:
+                    raise ValueError("placement slot must be in the range 1…13")
+            elif normalized_slot is not None:
+                raise ValueError("belt/ruck placement must not include a slot id")
+            normalized_placements.append((int(handle), normalized_type, normalized_slot))
+        placements = tuple(normalized_placements)
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -113,9 +129,14 @@ class EditPlan:
             raise ValueError("Duplicate faction relation in edit plan")
         if len({handle for handle, _ in upgrades}) != len(upgrades):
             raise ValueError("Duplicate upgrade handle in edit plan")
+        if len({handle for handle, *_ in placements}) != len(placements):
+            raise ValueError("Duplicate placement handle in edit plan")
         for handle, _keys in upgrades:
             if not 1 <= handle <= 0xFFFE:
                 raise ValueError("Upgrade handle must be in the range 1…65534")
+        for handle, _placement_type, _slot_id in placements:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Placement handle must be in the range 1…65534")
         for key, goodwill in faction_relations:
             if not key:
                 raise ValueError("faction key must be non-empty")
@@ -151,6 +172,7 @@ class EditPlan:
         object.__setattr__(self, "faction_relations", faction_relations)
         object.__setattr__(self, "player_faction", player_faction)
         object.__setattr__(self, "upgrades", upgrades)
+        object.__setattr__(self, "placements", placements)
 
 
 @dataclass(frozen=True)

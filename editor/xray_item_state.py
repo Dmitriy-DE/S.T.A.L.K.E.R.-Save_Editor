@@ -21,6 +21,10 @@ class ConditionCodecError(ValueError):
     """The requested object does not expose a safe condition anchor."""
 
 
+class PlacementCodecError(ValueError):
+    """The requested object does not expose a safe inventory-place anchor."""
+
+
 CONDITION_FAMILIES = frozenset(
     {
         "weapon",
@@ -33,6 +37,19 @@ CONDITION_FAMILIES = frozenset(
 _UPDATE_CONDITION_RELATIVE_OFFSETS = (3, 4)
 _Q8_STEP = 1.0 / 255.0
 _SLOTS_COUNT = 14
+_FIRST_SLOT = 1
+
+
+@dataclass(frozen=True)
+class PlacementAnchor:
+    """A source-defined ``SInvItemPlace`` value in X-Ray client-data."""
+
+    value: int
+    offset: int
+    placement_type: Literal["slot", "belt", "ruck"]
+    slot_id: int
+    base_slot_id: int
+    storage: Literal["equipped", "inventory"]
 
 
 @dataclass(frozen=True)
@@ -94,6 +111,95 @@ def _storage_from_place(value: int) -> Literal["equipped", "inventory"] | None:
     if place_type in {2, 3}:  # eItemPlaceBelt / eItemPlaceRuck
         return "inventory"
     return None
+
+
+def _decode_place(value: int, *, offset: int) -> PlacementAnchor:
+    placement_code = value & 0x0F
+    slot_id = (value >> 4) & 0x3F
+    base_slot_id = (value >> 10) & 0x3F
+    if placement_code == 1:  # eItemPlaceSlot
+        if not _FIRST_SLOT <= slot_id < _SLOTS_COUNT:
+            raise PlacementCodecError(
+                f"slot id={slot_id} вне диапазона {_FIRST_SLOT}…{_SLOTS_COUNT - 1}"
+            )
+        if not _FIRST_SLOT <= base_slot_id < _SLOTS_COUNT:
+            raise PlacementCodecError(
+                f"base slot id={base_slot_id} вне диапазона "
+                f"{_FIRST_SLOT}…{_SLOTS_COUNT - 1}"
+            )
+        return PlacementAnchor(
+            value=value,
+            offset=offset,
+            placement_type="slot",
+            slot_id=slot_id,
+            base_slot_id=base_slot_id,
+            storage="equipped",
+        )
+    if placement_code == 2:  # eItemPlaceBelt
+        return PlacementAnchor(
+            value=value,
+            offset=offset,
+            placement_type="belt",
+            slot_id=slot_id,
+            base_slot_id=base_slot_id,
+            storage="inventory",
+        )
+    if placement_code == 3:  # eItemPlaceRuck
+        return PlacementAnchor(
+            value=value,
+            offset=offset,
+            placement_type="ruck",
+            slot_id=slot_id,
+            base_slot_id=base_slot_id,
+            storage="inventory",
+        )
+    raise PlacementCodecError(f"неизвестный eItemPlace type={placement_code}")
+
+
+def read_placement_anchor(
+    raw: bytes,
+    obj: XRayObject,
+    client_place_offset: int,
+) -> PlacementAnchor:
+    """Read one release-specific ``SInvItemPlace`` without scanning nearby bytes."""
+
+    if obj.client_data_offset is None or obj.client_data_end is None:
+        raise PlacementCodecError("client-data отсутствует")
+    if client_place_offset < 0:
+        raise PlacementCodecError("client-data place offset отрицателен")
+    offset = obj.client_data_offset + client_place_offset
+    if offset + 2 > obj.client_data_end:
+        raise PlacementCodecError("client-data короче подтверждённого place поля")
+    value = struct.unpack_from("<H", raw, offset)[0]
+    return _decode_place(value, offset=offset)
+
+
+def patch_placement(
+    raw: bytearray,
+    obj: XRayObject,
+    client_place_offset: int,
+    placement_type: str,
+    slot_id: int | None,
+) -> PlacementAnchor:
+    """Patch only the source-defined place bits and preserve other client-data."""
+
+    current = read_placement_anchor(bytes(raw), obj, client_place_offset)
+    normalized_type = str(placement_type).strip().casefold()
+    if normalized_type not in {"slot", "belt", "ruck"}:
+        raise PlacementCodecError("placement type must be slot, belt, or ruck")
+    if normalized_type == "slot":
+        if slot_id is None or not _FIRST_SLOT <= int(slot_id) < _SLOTS_COUNT:
+            raise PlacementCodecError(
+                f"slot placement requires slot id {_FIRST_SLOT}…{_SLOTS_COUNT - 1}"
+            )
+        value = (current.value & 0xFC00) | (int(slot_id) << 4) | 1
+    else:
+        if slot_id is not None:
+            raise PlacementCodecError("belt/ruck placement must not include a slot id")
+        code = 2 if normalized_type == "belt" else 3
+        value = (current.value & 0xFFF0) | code
+    struct.pack_into("<H", raw, current.offset, value)
+    return _decode_place(value, offset=current.offset)
 
 
 def _matching_client_condition(
@@ -162,6 +268,10 @@ __all__ = [
     "CONDITION_FAMILIES",
     "ConditionAnchor",
     "ConditionCodecError",
+    "PlacementAnchor",
+    "PlacementCodecError",
     "patch_condition",
+    "patch_placement",
     "read_condition_anchor",
+    "read_placement_anchor",
 ]

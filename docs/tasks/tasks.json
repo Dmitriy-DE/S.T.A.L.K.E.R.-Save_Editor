@@ -1503,5 +1503,52 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67",
     "status_display": "in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests)"
+  },
+  {
+    "id": "M20",
+    "title": "Перенос предметов между слотами, поясом и рюкзаком X-Ray",
+    "depends_on": [
+      "M19"
+    ],
+    "files": [
+      "docs/tasks/M20.md",
+      "docs/evidence/XRAY_PLACEMENT_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/models.py",
+      "editor/capabilities.py",
+      "editor/formats.py",
+      "editor/xray_item_state.py",
+      "editor/xray_save.py",
+      "save_format.py",
+      "ui/changes_view.py",
+      "ui/inventory_model.py",
+      "ui/inventory_view.py",
+      "ui/main_window.py",
+      "web/web_bridge.py",
+      "web/app.js",
+      "tests/test_xray_placement.py",
+      "tests/test_ui_placement.py",
+      "tests/test_web_bridge.py",
+      "tests/test_web_inventory_icons.py",
+      "tests/test_capabilities.py",
+      "tests/test_xray_durability.py"
+    ],
+    "contract": "Для original SoC/CS/CoP EditPlan.placements задаёт source-defined SInvItemPlace; Qt и web staging используют один immutable plan, а S2/Enhanced/unknown anchors остаются read-only.",
+    "steps": [
+      "См. карточку: scope, source-backed boundary, corpus и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M20.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_review (ветка codex/m20-xray-placement; structural round-trip; M10 game load/re-save pending)"
   }
 ]

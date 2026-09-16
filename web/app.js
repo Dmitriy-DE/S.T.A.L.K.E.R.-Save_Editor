@@ -19,6 +19,7 @@ const state = {
   stacks: new Map(),
   durability: new Map(),
   upgrades: new Map(),
+  placements: new Map(),
   relations: new Map(),
   playerFaction: null,
   adds: new Map(),
@@ -85,6 +86,7 @@ async function openFile(file) {
     state.stacks.clear();
     state.durability.clear();
     state.upgrades.clear();
+    state.placements.clear();
     state.relations.clear();
     state.playerFaction = null;
     state.adds.clear();
@@ -131,6 +133,7 @@ function renderSnapshot(s) {
     caps.remove_items ? "удаление предметов" : "удаление read-only",
     caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
     caps.edit_upgrades && s.upgrade_catalog_available ? "улучшения оружия/экипировки (experimental)" : "улучшения read-only",
+    caps.edit_placement ? "размещение предметов (experimental)" : "размещение read-only",
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
     caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable ? "группировка игрока (experimental)" : "группировка игрока read-only",
   ];
@@ -279,6 +282,7 @@ function visibleItems() {
       !state.stacks.has(item.handle) &&
       !state.durability.has(item.handle) &&
       !state.upgrades.has(item.handle) &&
+      !state.placements.has(item.handle) &&
       !state.detach.has(item.handle)
     ) return false;
     if (!query) return true;
@@ -390,6 +394,60 @@ function renderUpgradeEditor(item, cell) {
   cell.append(details);
 }
 
+function placementLabel(placementType, slotId) {
+  if (placementType === "slot" && slotId !== null && slotId !== undefined) {
+    return `Слот ${slotId}`;
+  }
+  return { belt: "Пояс", ruck: "Рюкзак" }[placementType] ?? "Неизвестно";
+}
+
+function renderPlacementEditor(item, cell) {
+  const caps = state.snapshot?.capabilities ?? {};
+  if (!item.placement_editable || !caps.edit_placement) {
+    return;
+  }
+  const current = [
+    item.placement_type,
+    item.placement_type === "slot" ? item.placement_slot : null,
+  ];
+  const effective = state.placements.get(item.handle) ?? current;
+  const wrap = document.createElement("div");
+  wrap.className = "placement-editor";
+  const select = document.createElement("select");
+  select.title = "Экспериментально: client-data SInvItemPlace; backup обязателен";
+  const options = [
+    ["ruck", null],
+    ["belt", null],
+    ...Array.from({ length: 13 }, (_, index) => ["slot", index + 1]),
+  ];
+  for (const [placementType, slotId] of options) {
+    const option = document.createElement("option");
+    option.value = slotId === null ? placementType : `${placementType}:${slotId}`;
+    option.textContent = placementLabel(placementType, slotId);
+    option.selected = placementType === effective[0] && slotId === effective[1];
+    select.append(option);
+  }
+  const button = document.createElement("button");
+  button.className = "button";
+  button.type = "button";
+  button.textContent = state.placements.has(item.handle) ? "Позиция*" : "Позиция";
+  button.addEventListener("click", () => {
+    const [placementType, rawSlot] = select.value.split(":");
+    const slotId = rawSlot === undefined ? null : Number(rawSlot);
+    if (placementType === current[0] && slotId === current[1]) {
+      state.placements.delete(item.handle);
+    } else {
+      state.placements.set(item.handle, [placementType, slotId]);
+    }
+    invalidate();
+    renderInventory();
+    renderChanges();
+    setStatus(`Позиция ${item.type_key} подготовлена; исходный файл не изменён`);
+  });
+  wrap.append(select, button);
+  cell.append(wrap);
+}
+
 function renderInventory() {
   const body = el("inventory").tBodies[0];
   body.replaceChildren(...visibleItems().map((item) => {
@@ -398,7 +456,7 @@ function renderInventory() {
     const stagedDurability = state.durability.get(item.handle);
     tr.className = state.detach.has(item.handle)
       ? "staged"
-      : staged !== undefined || stagedDurability !== undefined || state.upgrades.has(item.handle)
+      : staged !== undefined || stagedDurability !== undefined || state.upgrades.has(item.handle) || state.placements.has(item.handle)
         ? "staged"
         : item.editable ? "" : "readonly";
     const iconTd = document.createElement("td");
@@ -496,6 +554,7 @@ function renderInventory() {
       td.append(document.createTextNode(" "));
       td.append(remove);
     }
+    renderPlacementEditor(item, td);
     tr.append(td);
     return tr;
   }));
@@ -518,6 +577,11 @@ function renderChanges() {
   for (const [handle, values] of state.upgrades) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`ОПАСНО: улучшения ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item?.upgrades ?? []).join(", ") || "нет"} → ${values.join(", ") || "нет"}; backup обязателен`);
+  }
+  for (const [handle, [placementType, slotId]] of state.placements) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    const before = item?.position ?? "неизвестно";
+    items.push(`ОПАСНО: позиция ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${before} → ${placementLabel(placementType, slotId)}; backup обязателен`);
   }
   for (const [key, goodwill] of state.relations) {
     const row = (state.snapshot.faction_relations ?? []).find((item) => item.key === key);
@@ -579,7 +643,8 @@ function preview() {
     const relations = JSON.stringify([...state.relations.entries()]);
     const playerFaction = JSON.stringify(state.playerFaction);
     const upgrades = JSON.stringify([...state.upgrades.entries()]);
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction, upgrades));
+    const placements = JSON.stringify([...state.placements.entries()].map(([handle, [placementType, slotId]]) => [handle, placementType, slotId]));
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction, upgrades, placements));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -600,6 +665,11 @@ function preview() {
     }
     for (const [handle, before, after] of result.upgrades ?? []) {
       lines.push(`улучшения ${handle}: ${(before ?? []).join(", ") || "нет"} → ${(after ?? []).join(", ") || "нет"} (experimental)`);
+    }
+    for (const [handle, before, after] of result.placements ?? []) {
+      const beforeLabel = placementLabel(before?.[0], before?.[1]);
+      const afterLabel = placementLabel(after?.[0], after?.[1]);
+      lines.push(`позиция ${handle}: ${beforeLabel} → ${afterLabel} (experimental)`);
     }
     for (const [key, before, after] of result.faction_relations ?? []) {
       lines.push(`отношение ${key}: ${before ?? 0} → ${after ?? "?"} (experimental)`);

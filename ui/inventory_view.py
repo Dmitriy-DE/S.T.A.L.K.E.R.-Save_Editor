@@ -45,6 +45,8 @@ class InventoryView(QWidget):
     durability_clear_requested = Signal(int)
     upgrades_stage_requested = Signal(int, object)
     upgrades_clear_requested = Signal(int)
+    placement_stage_requested = Signal(int, str, object)
+    placement_clear_requested = Signal(int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -59,8 +61,11 @@ class InventoryView(QWidget):
         self._removed_handles: set[int] = set()
         self._durability_enabled = False
         self._durability_reason: str | None = None
+        self._placement_enabled = False
+        self._placement_reason: str | None = None
         self._staged_counts: dict[int, int] = {}
         self._staged_durability: dict[int, float] = {}
+        self._staged_placements: dict[int, tuple[str, int | None]] = {}
         self._upgrade_catalog: UpgradeCatalog | None = None
         self._upgrades_enabled = False
         self._upgrades_reason: str | None = None
@@ -167,6 +172,28 @@ class InventoryView(QWidget):
         self.condition_status_label.setWordWrap(True)
         form.addRow("Состояние", self.condition_status_label)
 
+        placement_row = QHBoxLayout()
+        self.placement_combo = QComboBox()
+        self.placement_combo.setEnabled(False)
+        self.placement_combo.setToolTip(
+            "Позиция предмета в client-data; writer принимает только подтверждённый X-Ray place."
+        )
+        placement_row.addWidget(self.placement_combo, 1)
+        self.placement_stage_button = QPushButton("Застейджить позицию")
+        self.placement_stage_button.setEnabled(False)
+        self.placement_stage_button.clicked.connect(self._stage_placement)
+        placement_row.addWidget(self.placement_stage_button)
+        self.placement_clear_button = QPushButton("Очистить позицию")
+        self.placement_clear_button.setEnabled(False)
+        self.placement_clear_button.clicked.connect(self._clear_placement)
+        placement_row.addWidget(self.placement_clear_button)
+        form.addRow("Позиция", placement_row)
+        self.placement_status_label = QLabel(
+            "Для оригинальной трилогии позиция доступна только при точном client-data anchor."
+        )
+        self.placement_status_label.setWordWrap(True)
+        form.addRow("Размещение", self.placement_status_label)
+
         upgrade_row = QVBoxLayout()
         self.upgrade_list = QListWidget()
         self.upgrade_list.setObjectName("upgradeList")
@@ -220,6 +247,7 @@ class InventoryView(QWidget):
         values = tuple(items)
         self._staged_counts.clear()
         self._staged_durability.clear()
+        self._staged_placements.clear()
         self._staged_upgrades.clear()
         self.count_spin.setMaximum(max((item.count_max for item in values), default=1_000_000))
         self.model.set_items(values)
@@ -261,6 +289,7 @@ class InventoryView(QWidget):
         self.model.set_changed_handles(
             set(self._staged_counts)
             | set(self._staged_durability)
+            | set(self._staged_placements)
             | set(self._staged_upgrades)
         )
         self._update_editor(self._selected_item())
@@ -277,6 +306,33 @@ class InventoryView(QWidget):
         self._upgrades_reason = reason
         self._update_editor(self._selected_item())
 
+    def set_placement_enabled(
+        self,
+        enabled: bool,
+        *,
+        reason: str | None = None,
+    ) -> None:
+        self._placement_enabled = bool(enabled)
+        self._placement_reason = reason
+        self._update_editor(self._selected_item())
+
+    def set_staged_placements(
+        self,
+        placements: Mapping[int, tuple[str, int | None]],
+    ) -> None:
+        self._staged_placements = {
+            int(handle): (str(value[0]), None if value[1] is None else int(value[1]))
+            for handle, value in placements.items()
+        }
+        self.model.set_staged_placements(self._staged_placements)
+        self.model.set_changed_handles(
+            set(self._staged_counts)
+            | set(self._staged_durability)
+            | set(self._staged_placements)
+            | set(self._staged_upgrades)
+        )
+        self._update_editor(self._selected_item())
+
     def set_staged_upgrades(
         self,
         upgrades: Mapping[int, tuple[str, ...]],
@@ -288,6 +344,7 @@ class InventoryView(QWidget):
         self.model.set_changed_handles(
             set(self._staged_counts)
             | set(self._staged_durability)
+            | set(self._staged_placements)
             | set(self._staged_upgrades)
         )
         self._update_editor(self._selected_item())
@@ -360,6 +417,7 @@ class InventoryView(QWidget):
         self.model.set_changed_handles(
             set(self._staged_counts)
             | set(self._staged_durability)
+            | set(self._staged_placements)
             | set(self._staged_upgrades)
         )
         self._restore_selection(selected)
@@ -408,6 +466,7 @@ class InventoryView(QWidget):
     def _update_editor(self, item: InventoryItem | None) -> None:
         self._update_remove_button(item)
         self._update_condition_editor(item)
+        self._update_placement_editor(item)
         self._update_upgrade_editor(item)
         if item is None:
             self.selected_label.setText("Строка не выбрана")
@@ -548,6 +607,99 @@ class InventoryView(QWidget):
     def _clear_condition(self) -> None:
         if self.selected_handle is not None:
             self.durability_clear_requested.emit(self.selected_handle)
+
+    @staticmethod
+    def _placement_label(placement_type: str, slot_id: int | None) -> str:
+        if placement_type == "slot" and slot_id is not None:
+            return f"Слот {slot_id}"
+        return {"belt": "Пояс", "ruck": "Рюкзак"}.get(
+            placement_type,
+            "Неизвестная позиция",
+        )
+
+    def _update_placement_editor(self, item: InventoryItem | None) -> None:
+        self.placement_combo.blockSignals(True)
+        self.placement_combo.clear()
+        self.placement_stage_button.setEnabled(False)
+        self.placement_clear_button.setEnabled(False)
+        if item is None:
+            self.placement_combo.setEnabled(False)
+            self.placement_status_label.setText(
+                self._placement_reason or "Выбери предмет с подтверждённым client-data place."
+            )
+            self.placement_combo.blockSignals(False)
+            return
+        if not self._placement_enabled:
+            self.placement_combo.setEnabled(False)
+            self.placement_status_label.setText(
+                self._placement_reason
+                or "Только чтение: правка позиции не подтверждена для этого релиза."
+            )
+            self.placement_combo.blockSignals(False)
+            return
+        if not item.placement_editable or item.placement_type is None:
+            self.placement_combo.setEnabled(False)
+            self.placement_status_label.setText(
+                "Только чтение: точный client-data place для этого предмета не разобран."
+            )
+            self.placement_combo.blockSignals(False)
+            return
+
+        self.placement_combo.setEnabled(True)
+        options: list[tuple[str, str, int | None]] = [
+            ("Рюкзак", "ruck", None),
+            ("Пояс", "belt", None),
+        ]
+        options.extend((f"Слот {slot}", "slot", slot) for slot in range(1, 14))
+        for label, placement_type, slot_id in options:
+            self.placement_combo.addItem(label, (placement_type, slot_id))
+        effective = self._staged_placements.get(
+            item.handle,
+            (item.placement_type, item.placement_slot if item.placement_type == "slot" else None),
+        )
+        for index in range(self.placement_combo.count()):
+            if self.placement_combo.itemData(index) == effective:
+                self.placement_combo.setCurrentIndex(index)
+                break
+        self.placement_stage_button.setEnabled(True)
+        self.placement_clear_button.setEnabled(item.handle in self._staged_placements)
+        prefix = (
+            "Экспериментально: client-data SInvItemPlace; backup обязателен. "
+            if self._placement_reason is None
+            else f"{self._placement_reason} "
+        )
+        self.placement_status_label.setText(
+            f"{prefix}Текущее: {self._placement_label(item.placement_type, item.placement_slot)}; "
+            "bytes пока не изменены."
+        )
+        self.placement_combo.blockSignals(False)
+
+    def _stage_placement(self) -> None:
+        item = self._selected_item()
+        value = self.placement_combo.currentData()
+        if (
+            item is None
+            or not self._placement_enabled
+            or not item.placement_editable
+            or not isinstance(value, (tuple, list))
+            or len(value) != 2
+        ):
+            return
+        placement_type = str(value[0])
+        slot_id = None if value[1] is None else int(value[1])
+        current = (
+            item.placement_type,
+            item.placement_slot if item.placement_type == "slot" else None,
+        )
+        desired = (placement_type, slot_id)
+        if desired == current:
+            self.placement_clear_requested.emit(item.handle)
+        else:
+            self.placement_stage_requested.emit(item.handle, placement_type, slot_id)
+
+    def _clear_placement(self) -> None:
+        if self.selected_handle is not None:
+            self.placement_clear_requested.emit(self.selected_handle)
 
     def _update_upgrade_editor(self, item: InventoryItem | None) -> None:
         self.upgrade_list.blockSignals(True)

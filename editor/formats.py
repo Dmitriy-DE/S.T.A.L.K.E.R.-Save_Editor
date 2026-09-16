@@ -180,12 +180,14 @@ class _XRayFormat:
                 edit_upgrades=spec.id in {"stalker-cs", "stalker-cop"},
                 edit_relations=True,
                 edit_player_faction=True,
+                edit_placement=True,
                 catalog=True,
                 experimental_fields=frozenset(
                     {
                         "edit_durability",
                         "edit_relations",
                         "edit_player_faction",
+                        "edit_placement",
                         *(
                             {"edit_upgrades"}
                             if spec.id in {"stalker-cs", "stalker-cop"}

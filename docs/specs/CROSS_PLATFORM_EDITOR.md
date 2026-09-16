@@ -64,6 +64,7 @@ class EditPlan:
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
     upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
+    placements: tuple[tuple[int, str, int | None], ...] = ()
 
 @dataclass(frozen=True)
 class PreparedEdit:
@@ -116,6 +117,16 @@ S02: `prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit` verifies source
 сохранить или удалить, но новый ID без exact catalog/applicability не
 принимается. Браузер только staging/preview/download, desktop replacement
 проходит обычный M16 backup/read-back pipeline.
+
+Для оригинального X-Ray `EditPlan.placements` содержит уникальные тройки
+`(handle, placement_type, slot_id)`, где `placement_type` равен `slot`, `belt`
+или `ruck`; `slot` требует номер 1…13, а `belt`/`ruck` используют `None`.
+Writer меняет только подтверждённое `SInvItemPlace` в actor-owned client-data
+по release-specific offset. Поле доступно как experimental capability только
+для original SoC/CS/CoP с точным client-data anchor; неизвестный или
+неподтверждённый place остаётся read-only. Qt и web используют один этот
+immutable plan, показывают before → after, а preview/backup/read-back guards
+остаются обязательными.
 
 U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 

@@ -1,4 +1,4 @@
-# Состояние и пробелы — 2026-09-15
+# Состояние и пробелы — 2026-09-16
 
 ## Актуальный official-release pass
 
@@ -76,10 +76,11 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
 | Названия и каталог | Официальные metadata-каталоги загружаются desktop/web; часть локализации и SID semantics не доказана | R01–R02 |
-| Прочность | Поле не доказано | R03–R04 |
+| Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
+| Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
 | Настоящее удаление | X-Ray deep removal actor-owned registry record; reference-safe/equipped deletion не доказано | R08 |
-| Attachments/upgrades | Нет подтверждённой схемы | R09–R10 |
+| Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; SoC/S2/Enhanced и attachments остаются read-only | M17, R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
@@ -192,11 +193,11 @@ parse. Object windows и length-changing registry framing индексируют
 официального metadata-каталога через same-family registry template и удаляет
 actor-owned record как deep operation; SoC/CS/CoP representative in-memory
 прогон покрыл десять serializer families в каждом релизе. Эти локальные
-результаты не открывают UI/web mutation до M10. Move, equipment, attachments
-и reference-safe deletion остаются read-only. M12–M17 вынесли прочность,
-отношения, player community, in-place replacement и X-Ray upgrades в
-отдельные stacked review-карточки; M17 (PR #65) структурно проверен, но
-controlled game load/re-save ещё не выполнялся.
+До M10 эти базовые результаты не открывали UI/web mutation; Move, equipment, attachments
+и reference-safe deletion остаются read-only. M12–M20 вынесли прочность,
+отношения, player community, in-place replacement, X-Ray upgrades и placement
+в отдельные stacked review-карточки; M17 (PR #65) и M20 структурно проверены,
+но controlled game load/re-save для новых полей ещё не выполнялся.
 Enhanced Editions также не объявлены поддержанными: evidence записан отдельно
 в `EE_FORMATS_2026-09-15.md`.
 
@@ -232,6 +233,12 @@ X-Ray reference записана в [UI support evidence](evidence/UI_SUPPORT_20
 координаты official atlas остаются в tooltip. При недоступном atlas обе витрины
 используют честный fallback, без копирования `.dds` или шрифтов в репозиторий.
 Подробности: [M19](tasks/M19.md).
+
+В M20 добавлены source-backed `SInvItemPlace` read/write и staging переноса
+actor-owned предметов между слотами, поясом и рюкзаком для оригинальных
+SoC/CS/CoP. Все три локальных корпуса разбираются без ошибок; exact anchor и
+round-trip проходят, но M10 game load/re-save нового place ещё не выполнялся.
+Подробности: [M20](tasks/M20.md) и [XRAY placement evidence](evidence/XRAY_PLACEMENT_2026-09-16.md).
 
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.

@@ -114,12 +114,14 @@ class ChangesView(QWidget):
         staged_player_faction: str | None = None,
         staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
         upgrade_catalog: UpgradeCatalog | None = None,
+        staged_placements: Mapping[int, tuple[str, int | None]] | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
         staged_durability = staged_durability or {}
         staged_faction_relations = staged_faction_relations or {}
         staged_upgrades = staged_upgrades or {}
+        staged_placements = staged_placements or {}
 
         def item_risk(text: str) -> str:
             return f"ОПАСНО: {text}; backup обязателен"
@@ -265,6 +267,26 @@ class ChangesView(QWidget):
                         if upgrade_catalog is not None
                         else "STATE m_upgrades vector"
                     ),
+                )
+            )
+        placement_labels = {"slot": "слот", "belt": "пояс", "ruck": "рюкзак"}
+        for handle, (placement_type, slot_id) in sorted(staged_placements.items()):
+            item = items.get(int(handle))
+            before = item.position if item is not None else "unknown"
+            after = (
+                f"экипировано (слот {slot_id})"
+                if placement_type == "slot" and slot_id is not None
+                else placement_labels.get(placement_type, placement_type)
+            )
+            rows.append(
+                (
+                    "Позиция",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    before,
+                    after,
+                    item_risk("client-data SInvItemPlace")
+                    if item is not None and item.placement_editable
+                    else "Только чтение",
                 )
             )
 

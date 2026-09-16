@@ -164,12 +164,49 @@ def test_web_bridge_exposes_and_prepares_experimental_condition_edit() -> None:
 
 
 def test_web_bridge_exposes_confirmed_xray_storage_place() -> None:
-    data = _condition_fixture(version=128, outer=6, client_place=0x0411)
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
     snapshot = json.loads(web_bridge.analyze(data, "equipped.scop"))
     item = snapshot["inventory"][0]
 
     assert item["storage"] == "equipped"
-    assert item["position"] == "экипировано (слот подтверждён)"
+    assert item["position"] == "экипировано (слот 2)"
+    assert item["placement_type"] == "slot"
+    assert item["placement_slot"] == 2
+    assert item["placement_base_slot"] == 3
+    assert item["placement_editable"] is True
+    assert snapshot["capabilities"]["edit_placement"] is True
+
+
+def test_web_bridge_prepares_xray_inventory_placement() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+    snapshot = json.loads(web_bridge.analyze(data, "placement.scop"))
+    assert snapshot["capabilities"]["edit_placement"] is True
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "null",
+            "[]",
+            json.dumps([[0x3456, "slot", 4]]),
+        )
+    )
+
+    assert result["placements"] == [
+        ["0x00003456", ["slot", 2], ["slot", 4]]
+    ]
 
 
 def test_web_bridge_exposes_and_prepares_xray_faction_relations() -> None:

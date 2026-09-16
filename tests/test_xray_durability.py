@@ -53,8 +53,6 @@ def _condition_fixture(
     update[update_condition_offset] = round(condition * 255)
     if client_place is None:
         client_data = b""
-    elif outer in {3, 5}:
-        client_data = struct.pack("<HfB", client_place, condition, 0)
     else:
         client_data = b"\x02" + struct.pack("<HfB", client_place, condition, 0)
     item = _spawn(
@@ -158,7 +156,7 @@ def test_xray_condition_writer_updates_client_mirror_and_reports_storage() -> No
     obj = parsed.object_by_id(item.handle)
 
     assert item.storage == "equipped"
-    assert item.position == "экипировано (слот подтверждён)"
+    assert item.position == "экипировано (слот 1)"
     assert obj.client_condition_offset is not None
 
     prepared = prepare_xray(
@@ -179,7 +177,7 @@ def test_xray_condition_reader_reports_inventory_and_rejects_invalid_slot() -> N
         COP_FORMAT,
     ).inventory[0]
     assert inventory.storage == "inventory"
-    assert inventory.position == "инвентарь actor"
+    assert inventory.position == "рюкзак"
 
     invalid = parse_xray(
         _condition_fixture(version=128, outer=6, client_place=(1 | (63 << 4) | (63 << 10))),

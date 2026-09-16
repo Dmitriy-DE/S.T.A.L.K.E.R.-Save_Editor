@@ -25,6 +25,7 @@ _MUTATION_CAPABILITY_FIELDS: frozenset[str] = frozenset(
         "edit_upgrades",
         "edit_relations",
         "edit_player_faction",
+        "edit_placement",
     }
 )
 
@@ -48,6 +49,7 @@ class FormatCapabilities:
     catalog: bool = False
     edit_relations: bool = False
     edit_player_faction: bool = False
+    edit_placement: bool = False
     experimental_fields: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
@@ -84,6 +86,7 @@ class FormatCapabilities:
             "catalog": self.catalog,
             "edit_relations": self.edit_relations,
             "edit_player_faction": self.edit_player_faction,
+            "edit_placement": self.edit_placement,
             "experimental_fields": sorted(self.experimental_fields),
         }
 
@@ -118,6 +121,7 @@ def gate_mutations_for_release(
         edit_upgrades=False,
         edit_relations=False,
         edit_player_faction=False,
+        edit_placement=False,
         experimental_fields=frozenset(),
     )
 

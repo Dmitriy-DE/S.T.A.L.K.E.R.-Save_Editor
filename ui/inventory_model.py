@@ -63,6 +63,7 @@ class InventoryTableModel(QAbstractTableModel):
         self._changed_handles: frozenset[int] = frozenset()
         self._staged_counts: dict[int, int] = {}
         self._staged_durability: dict[int, float] = {}
+        self._staged_placements: dict[int, tuple[str, int | None]] = {}
         self._icon_provider: IconProvider | None = None
         self._sort_column = self.POSITION_COLUMN
         self._sort_order = Qt.SortOrder.AscendingOrder
@@ -91,6 +92,7 @@ class InventoryTableModel(QAbstractTableModel):
         # A new save snapshot cannot inherit edits from another source file.
         self._staged_counts = {}
         self._staged_durability = {}
+        self._staged_placements = {}
         self._rebuild()
 
     def set_staged_counts(self, counts: Mapping[int, int]) -> None:
@@ -100,6 +102,16 @@ class InventoryTableModel(QAbstractTableModel):
     def set_staged_durability(self, durability: Mapping[int, float]) -> None:
         self._staged_durability = {
             int(handle): float(value) for handle, value in durability.items()
+        }
+        self._rebuild()
+
+    def set_staged_placements(
+        self,
+        placements: Mapping[int, tuple[str, int | None]],
+    ) -> None:
+        self._staged_placements = {
+            int(handle): (str(value[0]), None if value[1] is None else int(value[1]))
+            for handle, value in placements.items()
         }
         self._rebuild()
 
@@ -173,7 +185,9 @@ class InventoryTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._tooltip(item, index.column())
         if role == Qt.ItemDataRole.BackgroundRole and (
-            item.handle in self._staged_counts or item.handle in self._staged_durability
+            item.handle in self._staged_counts
+            or item.handle in self._staged_durability
+            or item.handle in self._staged_placements
         ):
             return self._CHANGED_BRUSH
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in {
@@ -260,6 +274,18 @@ class InventoryTableModel(QAbstractTableModel):
         }
         return (values.get(self._sort_column, ""), item.handle)
 
+    def _position_text(self, item: InventoryItem) -> str:
+        staged = self._staged_placements.get(item.handle)
+        if staged is not None:
+            placement_type, slot_id = staged
+            if placement_type == "slot" and slot_id is not None:
+                return f"экипировано (слот {slot_id})"
+            return {"belt": "пояс", "ruck": "рюкзак"}.get(
+                placement_type,
+                item.position,
+            )
+        return item.position
+
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
         if column == self.NAME_COLUMN:
@@ -267,7 +293,7 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.CATEGORY_COLUMN:
             return item.category
         if column == self.POSITION_COLUMN:
-            return item.position
+            return self._position_text(item)
         if column == self.SIZE_COLUMN:
             return item.size_text
         if column == self.TYPE_KEY_COLUMN:

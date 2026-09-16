@@ -34,8 +34,11 @@ from .xray_container import XRayChunk, XRayContainer, XRayError
 from .xray_item_state import (
     CONDITION_FAMILIES,
     ConditionCodecError,
+    PlacementCodecError,
     patch_condition,
+    patch_placement,
     read_condition_anchor,
+    read_placement_anchor,
 )
 from .xray_relations import (
     XRayRelationError,
@@ -62,6 +65,7 @@ class XRayFormatSpec:
     extension: str
     outer_versions: frozenset[int]
     actor_versions: frozenset[int]
+    client_place_offset: int
 
 
 SOC_FORMAT = XRayFormatSpec(
@@ -70,6 +74,7 @@ SOC_FORMAT = XRayFormatSpec(
     extension=".sav",
     outer_versions=frozenset({3}),
     actor_versions=frozenset({118}),
+    client_place_offset=1,
 )
 CS_FORMAT = XRayFormatSpec(
     id="stalker-cs",
@@ -77,6 +82,7 @@ CS_FORMAT = XRayFormatSpec(
     extension=".sav",
     outer_versions=frozenset({5}),
     actor_versions=frozenset({122, 123, 124}),
+    client_place_offset=1,
 )
 COP_FORMAT = XRayFormatSpec(
     id="stalker-cop",
@@ -84,6 +90,7 @@ COP_FORMAT = XRayFormatSpec(
     extension=".scop",
     outer_versions=frozenset({6}),
     actor_versions=frozenset({128}),
+    client_place_offset=1,
 )
 XRAY_FORMATS = (SOC_FORMAT, CS_FORMAT, COP_FORMAT)
 
@@ -235,6 +242,10 @@ class XRayObject:
     upgrades: tuple[str, ...] | None = None
     upgrades_offset: int | None = None
     upgrades_end: int | None = None
+    placement_type: Literal["slot", "belt", "ruck"] | None = None
+    placement_slot: int | None = None
+    placement_base_slot: int | None = None
+    placement_offset: int | None = None
     unknown_fields: tuple[str, ...] = (
         "prototype",
         "durability",
@@ -837,12 +848,24 @@ def _inventory_items(
                 editable_count=editable,
                 display_name=obj.name,
                 position_label=(
-                    "экипировано (слот подтверждён)"
-                    if obj.storage == "equipped"
+                    f"экипировано (слот {obj.placement_slot})"
+                    if obj.placement_type == "slot" and obj.placement_slot is not None
                     else (
-                        "инвентарь actor"
-                        if obj.storage == "inventory"
-                        else "инвентарь actor; слот не определён"
+                        "пояс"
+                        if obj.placement_type == "belt"
+                        else (
+                            "рюкзак"
+                            if obj.placement_type == "ruck"
+                            else (
+                                "экипировано (слот подтверждён)"
+                                if obj.storage == "equipped"
+                                else (
+                                    "инвентарь actor"
+                                    if obj.storage == "inventory"
+                                    else "инвентарь actor; слот не определён"
+                                )
+                            )
+                        )
                     )
                 ),
                 size_label="неизвестно",
@@ -852,6 +875,10 @@ def _inventory_items(
                 storage=obj.storage,
                 upgrades=obj.upgrades,
                 upgrades_editable=obj.upgrades is not None,
+                placement_type=obj.placement_type,
+                placement_slot=obj.placement_slot,
+                placement_base_slot=obj.placement_base_slot,
+                placement_editable=obj.placement_offset is not None,
             )
         )
     items.sort(key=lambda item: item.handle)
@@ -921,6 +948,41 @@ def _annotate_inventory_conditions(
                 client_condition_offset=anchor.client_offset,
                 update_condition_offset=anchor.update_offset,
                 condition_family=family,
+                storage=anchor.storage if anchor.storage is not None else obj.storage,
+                unknown_fields=known_fields,
+            )
+        )
+    return tuple(annotated)
+
+
+def _annotate_inventory_placements(
+    raw: bytes,
+    objects: tuple[XRayObject, ...],
+    actor_id: int,
+    client_place_offset: int,
+) -> tuple[XRayObject, ...]:
+    """Attach a place only at the exact client-data offset for this release."""
+
+    annotated: list[XRayObject] = []
+    for obj in objects:
+        if obj.parent_id != actor_id:
+            annotated.append(obj)
+            continue
+        try:
+            anchor = read_placement_anchor(raw, obj, client_place_offset)
+        except PlacementCodecError:
+            annotated.append(obj)
+            continue
+        known_fields = tuple(
+            field for field in obj.unknown_fields if field != "inventory position"
+        )
+        annotated.append(
+            replace(
+                obj,
+                placement_type=anchor.placement_type,
+                placement_slot=anchor.slot_id,
+                placement_base_slot=anchor.base_slot_id,
+                placement_offset=anchor.offset,
                 storage=anchor.storage,
                 unknown_fields=known_fields,
             )
@@ -1061,6 +1123,12 @@ def parse_xray(
             relation_registry = None
             relation_error = str(exc)
     if with_inventory:
+        objects = _annotate_inventory_placements(
+            container.raw,
+            objects,
+            actor.object_id,
+            spec.client_place_offset,
+        )
         objects = _annotate_inventory_conditions(container.raw, objects, actor.object_id)
         objects = _annotate_inventory_upgrades(container.raw, objects, actor.object_id)
         objects = _annotate_ammo_objects(container.raw, objects, actor.object_id)
@@ -1377,6 +1445,59 @@ def _verify_xray_upgrade_edits(
         if checked.upgrades != desired:
             raise _fail(
                 f"round-trip upgrades для 0x{handle:04X} не совпал с {desired!r}"
+            )
+
+
+def _apply_xray_placement_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+) -> bytes:
+    """Patch only confirmed ``SInvItemPlace`` values in actor-owned items."""
+
+    working = bytes(data)
+    for handle, placement_type, slot_id in plan.placements:
+        current = parse_xray(working, spec, with_inventory=True)
+        obj = current.object_by_id(handle)
+        if obj.parent_id != current.actor_id:
+            raise _fail(
+                f"object 0x{handle:04X} не принадлежит actor inventory; "
+                "placement read-only"
+            )
+        if obj.placement_offset is None:
+            raise _fail(
+                f"object 0x{handle:04X} не имеет подтверждённого client-data place; "
+                "позиция остаётся read-only"
+            )
+        raw = bytearray(current.container.raw)
+        try:
+            patch_placement(
+                raw,
+                obj,
+                spec.client_place_offset,
+                placement_type,
+                slot_id,
+            )
+        except PlacementCodecError as exc:
+            raise _fail(
+                f"placement для 0x{handle:04X} не разобран: {exc}"
+            ) from exc
+        working = current.container.build(bytes(raw))
+    return working
+
+
+def _verify_xray_placement_edits(parsed: XRaySave, plan: EditPlan) -> None:
+    """Require the requested decoded place after rebuilding the container."""
+
+    for handle, placement_type, slot_id in plan.placements:
+        checked = parsed.object_by_id(handle)
+        if checked.placement_type != placement_type:
+            raise _fail(
+                f"round-trip placement для 0x{handle:04X} не совпал с {placement_type!r}"
+            )
+        if placement_type == "slot" and checked.placement_slot != slot_id:
+            raise _fail(
+                f"round-trip slot для 0x{handle:04X} не совпал с {slot_id}"
             )
 
 
@@ -1868,6 +1989,8 @@ def prepare_xray(
             spec,
             upgrade_catalog,
         )
+    if plan.placements:
+        working_data = _apply_xray_placement_edits(working_data, plan, spec)
     if working_data != payload:
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
@@ -1878,10 +2001,12 @@ def prepare_xray(
         and not plan.faction_relations
         and plan.player_faction is None
         and not plan.upgrades
+        and not plan.placements
     ):
         _verify_xray_relation_edits(parsed, plan, faction_catalog)
         _verify_xray_player_faction_edit(parsed, plan, faction_catalog)
         _verify_xray_upgrade_edits(parsed, plan, upgrade_catalog)
+        _verify_xray_placement_edits(parsed, plan)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1935,6 +2060,7 @@ def prepare_xray(
     _verify_xray_relation_edits(after, plan, faction_catalog)
     _verify_xray_player_faction_edit(after, plan, faction_catalog)
     _verify_xray_upgrade_edits(after, plan, upgrade_catalog)
+    _verify_xray_placement_edits(after, plan)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"

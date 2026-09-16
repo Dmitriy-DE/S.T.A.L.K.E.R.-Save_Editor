@@ -91,6 +91,10 @@ class InventoryItem:
     storage: Literal["equipped", "inventory"] | None = None
     upgrades: tuple[str, ...] | None = None
     upgrades_editable: bool = False
+    placement_type: Literal["slot", "belt", "ruck"] | None = None
+    placement_slot: int | None = None
+    placement_base_slot: int | None = None
+    placement_editable: bool = False
 
     @property
     def handle_hex(self) -> str:
