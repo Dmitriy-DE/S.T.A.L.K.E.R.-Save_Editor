@@ -192,8 +192,11 @@ parse. Object windows и length-changing registry framing индексируют
 официального metadata-каталога через same-family registry template и удаляет
 actor-owned record как deep operation; SoC/CS/CoP representative in-memory
 прогон покрыл десять serializer families в каждом релизе. Эти локальные
-результаты не открывают UI/web mutation до M10. Move, equipment, прочность,
-durability/upgrades, attachments и reference-safe deletion остаются read-only.
+результаты не открывают UI/web mutation до M10. Move, equipment, attachments
+и reference-safe deletion остаются read-only. M12–M17 вынесли прочность,
+отношения, player community, in-place replacement и X-Ray upgrades в
+отдельные stacked review-карточки; M17 (PR #65) структурно проверен, но
+controlled game load/re-save ещё не выполнялся.
 Enhanced Editions также не объявлены поддержанными: evidence записан отдельно
 в `EE_FORMATS_2026-09-15.md`.
 
@@ -216,6 +219,11 @@ B01 добавляет воспроизводимый PyInstaller onedir builder
 Linux x86_64 portable `tar.gz` и Debian/Ubuntu `.deb`, Windows x64 `zip` с
 `SaveEditor.exe`; runtime Python, Qt и native decoder должны лежать внутри
 bundle. Исходный core остаётся stdlib-only, `pytest` не попадает в runtime.
+
+В текущем M18-проходе Support project добавлен как локальный Qt `QDialog` и
+web modal с clipboard-only Copy/Copied feedback. Платёжные APIs, backend,
+tracking, QR и startup/recurring popups не добавлялись; визуальная адаптация
+X-Ray reference записана в [UI support evidence](evidence/UI_SUPPORT_2026-09-16.md).
 
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.

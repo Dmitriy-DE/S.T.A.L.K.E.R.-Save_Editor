@@ -36,7 +36,16 @@ body {
 
 .brand-name { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-right { margin-left: auto; color: var(--text-disabled); font-size: 11px; letter-spacing: 1px; }
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.brand-right { color: var(--text-disabled); font-size: 11px; letter-spacing: 1px; }
+.support-button {
+  color: #d8ba8c;
+  border-color: var(--rust);
+  font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+  font-size: 12px;
+  padding: 5px 9px;
+}
+.support-button:hover { color: #ffd23f; border-color: #ffd23f; }
 
 .badge {
   border: 1px solid var(--border);
@@ -174,6 +183,66 @@ table.grid td:nth-child(9) { min-width: 190px; }
 .upgrade-list { display: grid; gap: 4px; margin: 6px 0; max-height: 170px; overflow: auto; }
 .upgrade-list label { display: flex; gap: 5px; align-items: flex-start; color: var(--text-secondary); font-size: 12px; }
 .upgrade-editor button { padding: 4px 7px; font-size: 12px; }
+
+.support-modal {
+  margin: auto;
+  border: 1px solid var(--rust);
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+}
+.support-modal::backdrop { background: rgb(0 0 0 / 72%); }
+.support-modal-card {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  background: linear-gradient(145deg, var(--bg-panel), var(--bg-base));
+  border: 2px solid #5f4a3d;
+  box-shadow: 0 14px 45px rgb(0 0 0 / 55%);
+}
+.support-modal-card h2 {
+  margin: 0 0 8px;
+  color: #ffd23f;
+  font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+  font-size: 19px;
+  letter-spacing: .5px;
+}
+.support-modal-card > p { margin: 0 0 16px; }
+.support-close {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+}
+.support-entry {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #5f4a3d;
+}
+.support-entry h3 {
+  margin: 0;
+  color: #d4a64b;
+  font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+  font-size: 14px;
+  letter-spacing: .3px;
+}
+.support-label { margin-top: 5px; color: var(--text-secondary); font-size: 12px; }
+.support-value-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.support-value-row code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #d8ba8c;
+  font: 12px/1.4 "JetBrains Mono", Consolas, monospace;
+}
+.support-copy { flex: none; padding: 4px 8px; font-size: 12px; }
+.support-copy:hover { color: #ffd23f; border-color: #ffd23f; }
 
 .muted { color: var(--text-secondary); }
 .faction-warning { color: var(--olive); }

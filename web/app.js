@@ -645,6 +645,55 @@ el("item-add-stage").addEventListener("click", () => {
   setStatus(`Добавление ${key} × ${quantity} подготовлено; исходный файл не изменён`);
 });
 
+const supportModal = el("support-modal");
+el("support-button").addEventListener("click", () => {
+  if (typeof supportModal.showModal === "function") {
+    supportModal.showModal();
+  } else {
+    supportModal.hidden = false;
+  }
+});
+el("support-close").addEventListener("click", () => {
+  if (typeof supportModal.close === "function") {
+    supportModal.close();
+  } else {
+    supportModal.hidden = true;
+  }
+});
+supportModal.addEventListener("click", (event) => {
+  if (event.target !== supportModal) return;
+  if (typeof supportModal.close === "function") {
+    supportModal.close();
+  } else {
+    supportModal.hidden = true;
+  }
+});
+for (const button of document.querySelectorAll(".support-copy")) {
+  button.addEventListener("click", async () => {
+    const value = button.dataset.copy ?? "";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const input = Object.assign(document.createElement("textarea"), { value });
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.append(input);
+        input.select();
+        const copied = document.execCommand("copy");
+        input.remove();
+        if (!copied) throw new Error("clipboard unavailable");
+      }
+      const original = button.textContent;
+      button.textContent = "Copied";
+      window.setTimeout(() => { button.textContent = original ?? "Copy"; }, 1200);
+    } catch (error) {
+      fail(`Не удалось скопировать: ${error}`);
+    }
+  });
+}
+
 el("preview").addEventListener("click", preview);
 el("download").addEventListener("click", download);
 

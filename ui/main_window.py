@@ -56,6 +56,7 @@ from .save_slots_view import (
     discover_save_slots,
 )
 from .settings_view import SettingsView
+from .support_dialog import SupportDialog
 from .theme import apply_theme
 
 
@@ -185,6 +186,7 @@ class MainWindow(QMainWindow):
         self._operation_thread: QThread | None = None
         self._operation_kind: str | None = None
         self._cloud_busy = False
+        self._support_dialog: SupportDialog | None = None
 
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
@@ -217,6 +219,11 @@ class MainWindow(QMainWindow):
         ui_hint = QLabel("ZONE / SAVE WORKBENCH")
         ui_hint.setObjectName("sidebarStatus")
         title_layout.addWidget(ui_hint)
+        self.support_button = QPushButton("♡ Support project")
+        self.support_button.setObjectName("supportButton")
+        self.support_button.setToolTip("Поддержать проект")
+        self.support_button.clicked.connect(self._show_support_dialog)
+        title_layout.addWidget(self.support_button)
         layout.addWidget(title_bar)
 
         meta_bar = QFrame()
@@ -356,6 +363,20 @@ class MainWindow(QMainWindow):
     def _select_tab(self, index: int) -> None:
         if 0 <= index < self.tabs.count():
             self.tabs.setCurrentIndex(index)
+
+    def _show_support_dialog(self) -> None:
+        if self._support_dialog is not None and self._support_dialog.isVisible():
+            self._support_dialog.raise_()
+            self._support_dialog.activateWindow()
+            return
+        dialog = SupportDialog(self)
+        self._support_dialog = dialog
+        dialog.finished.connect(lambda _result: self._clear_support_dialog(dialog))
+        dialog.open()
+
+    def _clear_support_dialog(self, dialog: SupportDialog) -> None:
+        if self._support_dialog is dialog:
+            self._support_dialog = None
 
     def _sync_nav_state(self, index: int) -> None:
         for button_index, button in enumerate(getattr(self, "nav_buttons", [])):

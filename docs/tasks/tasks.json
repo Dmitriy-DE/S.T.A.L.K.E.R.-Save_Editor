@@ -1441,5 +1441,31 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65",
     "status_display": "in_review (PR #65; structural round-trip; M10 game load/re-save pending)"
+  },
+  {
+    "id": "M18",
+    "title": "Локальный Support project UI",
+    "depends_on": [
+      "M17"
+    ],
+    "files": [
+      "docs/tasks/M18.md",
+      "docs/evidence/UI_SUPPORT_2026-09-16.md"
+    ],
+    "contract": "Небольшая кнопка в правом верхнем углу Qt/web открывает локальный modal/dialog с PayPal, Binance Pay и USDT; Copy/Copied работает без APIs, backend, tracking и QR.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P3",
+    "status": "in_review",
+    "path": "docs/tasks/M18.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_review (Qt/web modal and clipboard checks; visual assets not copied)"
   }
 ]
