@@ -248,6 +248,13 @@ desktop source discovery и shared browser bundle contract. S2 compact
 расширялся догадочными данными. Подробности: [M21](tasks/M21.md) и [S2 catalog
 evidence](evidence/S2_CATALOG_2026-09-16.md).
 
+В M22 появился воспроизводимый read-only анализ нескольких S2 сейвов. На
+доступном corpus есть 34 общих handle; у 13 меняется compact `type_key`, а
+`052000` встречается у двух разных handle. Это не подтверждает SID mapping и
+не открывает S2 Add/clone/upgrade writer, но теперь граница проверяется общей
+командой без записи личных файлов. Подробности: [M22](tasks/M22.md) и [S2
+mapping evidence](evidence/S2_MAPPING_2026-09-16.md).
+
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.
 Разбор всех находок: [CI_AND_WINDOWS](evidence/CI_AND_WINDOWS_2026-09-14.md).

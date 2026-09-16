@@ -137,6 +137,13 @@ prototype bytes или право add/clone/upgrade. Browser принимает 
 release-scoped metadata bundle только когда он явно сгенерирован из official
 resource root; сайт не получает доступ к локальной папке игры автоматически.
 
+M22 добавляет `editor.s2_mapping.analyze_s2_samples(...)` как read-only
+evidence helper. Он сравнивает handle/type-key observations между явно
+переданными samples, возвращает только hashes/агрегаты и всегда оставляет
+mapping status `unconfirmed`; public SID не присваивается по совпадению ключа.
+CLI-анализатор не пишет сейвы и не входит в browser runtime. Confirmed mapping
+по-прежнему требует SID-labelled controlled save pair и game load/re-save.
+
 U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 
 ## Запись и отмена

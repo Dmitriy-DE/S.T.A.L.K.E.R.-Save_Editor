@@ -1588,5 +1588,38 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69",
     "status_display": "in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending)"
+  },
+  {
+    "id": "M22",
+    "title": "Воспроизводимый анализ S2 compact key ↔ prototype SID",
+    "depends_on": [
+      "M21"
+    ],
+    "files": [
+      "docs/tasks/M22.md",
+      "docs/evidence/S2_MAPPING_2026-09-16.md",
+      "docs/STATUS.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/s2_mapping.py",
+      "tools/analyze_s2_mapping.py",
+      "tests/test_s2_mapping.py"
+    ],
+    "contract": "Read-only multi-save S2 analysis reports opaque handle/type_key observations and never confirms a SID mapping or writes save bytes.",
+    "steps": [
+      "См. карточку: controlled corpus, negative evidence and mapping gate."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_progress",
+    "path": "docs/tasks/M22.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_progress (read-only S2 key evidence; mapping and game-labelled pair pending)"
   }
 ]
