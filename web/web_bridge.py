@@ -400,21 +400,21 @@ def prepare(
         raise sf.SaveError(
             f"Формат {format_.release_id} не разрешает правку отношений до игрового evidence"
         )
+    item_catalog = _state.get("catalog")
+    faction_catalog = _state.get("faction_catalog")
+    selected_catalog = item_catalog if isinstance(item_catalog, ItemCatalog) else None
+    game_catalog = (
+        GameCatalog(format_.release_id, selected_catalog, faction_catalog)
+        if selected_catalog is not None
+        and isinstance(faction_catalog, FactionCatalog)
+        else None
+    )
     prepared = format_.prepare(
         data,
         plan,
         source_name=str(_state.get("name") or "save.sav"),
-        catalog=_state.get("catalog"),
-        game_catalog=(
-            GameCatalog(
-                format_.release_id,
-                _state.get("catalog"),
-                _state.get("faction_catalog"),
-            )
-            if isinstance(_state.get("catalog"), ItemCatalog)
-            and isinstance(_state.get("faction_catalog"), FactionCatalog)
-            else None
-        ),
+        catalog=selected_catalog,
+        game_catalog=game_catalog,
     )
     _state["output"] = prepared.data
 
