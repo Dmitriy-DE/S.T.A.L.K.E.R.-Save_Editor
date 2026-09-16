@@ -59,6 +59,7 @@
 | [M18](M18.md) | Локальный Support project UI | M17 | in_review (PR #66; Qt/web modal and clipboard checks; visual assets not copied) | [PR #66](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/66) |
 | [M19](M19.md) | Иконки инвентаря и визуальный слой | M11, M18 | in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests) | [PR #67](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67) |
 | [M20](M20.md) | Перенос предметов между слотами, поясом и рюкзаком X-Ray | M19 | in_review (PR #68; structural round-trip; M10 game load/re-save pending) | [PR #68](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/68) |
+| [M21](M21.md) | Read-only каталог прототипов S.T.A.L.K.E.R. 2 | M11, M19 | in_review (read-only S2 CFG catalog; SID/save mapping and game load pending) | — |
 
 <!-- END GENERATED TASK TABLE -->
 

@@ -10,7 +10,7 @@ shared registry для официальных PC-профилей. Ветка M1
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
-| S.T.A.L.K.E.R. 2 | зарегистрирован | read и локальный writer; mutation capability ждёт M10 game load/re-save |
+| S.T.A.L.K.E.R. 2 | зарегистрирован | read, локальный money/stack parser и optional official CFG catalog; mutation capability и SID mapping ждут evidence |
 | Original Shadow of Chornobyl | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
 | Original Clear Sky | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
 | Original Call of Pripyat | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
@@ -75,7 +75,7 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | Официальные metadata-каталоги загружаются desktop/web; часть локализации и SID semantics не доказана | R01–R02 |
+| Названия и каталог | Оригинальные metadata-каталоги загружаются desktop/web; S2 loose official CFG catalog читается read-only, но compact save-key ↔ prototype SID и локализация не доказаны | R01–R02, M21 |
 | Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
@@ -239,6 +239,14 @@ actor-owned предметов между слотами, поясом и рюк
 SoC/CS/CoP. Все три локальных корпуса разбираются без ошибок; exact anchor и
 round-trip проходят, но M10 game load/re-save нового place ещё не выполнялся.
 Подробности: [M20](tasks/M20.md) и [XRAY placement evidence](evidence/XRAY_PLACEMENT_2026-09-16.md).
+
+В M21 добавлен read-only reader official S2 prototype CFG: точные SID,
+категории, вес, max stack, equipment slot и upgrade SID; он подключён к
+desktop source discovery и shared browser bundle contract. S2 compact
+`type_key` пока не связан с prototype SID, поэтому add/clone/upgrade writer не
+открыт. S2 не установлен на текущем хосте, статический `web/catalogs.json` не
+расширялся догадочными данными. Подробности: [M21](tasks/M21.md) и [S2 catalog
+evidence](evidence/S2_CATALOG_2026-09-16.md).
 
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.

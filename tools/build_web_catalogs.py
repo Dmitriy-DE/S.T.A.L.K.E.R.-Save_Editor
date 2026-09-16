@@ -1,4 +1,4 @@
-"""Generate the compact, metadata-only browser item catalog.
+"""Generate compact, metadata-only browser catalogs for official installs.
 
 The input roots are explicit official installation resource roots.  The output
 contains serialized item keys and the already-proven serializer metadata only;
@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from editor.releases import release_by_id  # noqa: E402
+from editor.s2_catalog import S2CatalogProvider  # noqa: E402
 from editor.xray_catalog import XRayCatalogProvider  # noqa: E402
 
 
@@ -35,14 +36,17 @@ def _parse_root(value: str) -> tuple[str, Path]:
 
 def build_catalogs(roots: Sequence[tuple[str, Path]]) -> dict[str, object]:
     provider = XRayCatalogProvider()
+    s2_provider = S2CatalogProvider()
     releases: dict[str, object] = {}
     for release_id, root in roots:
         release = release_by_id(release_id)
-        bundle = provider.load_bundle(release, root)
+        bundle = (
+            s2_provider.load_bundle(release, root)
+            if release.family == "stalker2"
+            else provider.load_bundle(release, root)
+        )
         if bundle is None:
-            raise ValueError(
-                f"official item/faction catalog unavailable for {release_id}"
-            )
+            raise ValueError(f"official catalog unavailable for {release_id}")
         catalog = bundle.items
         releases[release_id] = {
             "source": "official-resource-metadata",
@@ -51,6 +55,8 @@ def build_catalogs(roots: Sequence[tuple[str, Path]]) -> dict[str, object]:
                     "key": item.key,
                     "display_name": item.display_name,
                     "category": item.category,
+                    "unit_weight": item.unit_weight,
+                    "slots": list(item.slots),
                     "max_stack": item.max_stack,
                     "serialization_family": item.serialization_family,
                     "icon_x": item.icon_x,

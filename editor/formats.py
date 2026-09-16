@@ -14,6 +14,7 @@ from .catalog import GameCatalog, ItemCatalog
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
 from .releases import release_by_id
+from .s2_catalog import S2CatalogProvider
 from .xray_catalog import XRayCatalogProvider
 from .xray_save import (
     COP_FORMAT,
@@ -116,6 +117,7 @@ class _Stalker2Format:
             read_inventory=True,
             edit_money=True,
             edit_stacks=True,
+            catalog=True,
         ),
     )
 
@@ -146,6 +148,42 @@ class _Stalker2Format:
 
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_save(data, with_inventory=with_inventory)
+
+    @staticmethod
+    def _roots_for_source(source_name: str | None) -> tuple[Path, ...]:
+        if not source_name:
+            return ()
+        source = Path(source_name).expanduser()
+        if not source.is_absolute() and not source.exists():
+            return ()
+        try:
+            source = source.resolve()
+        except OSError:
+            return ()
+        start = source.parent if source.is_file() else source
+        return (start, *start.parents)
+
+    def catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
+        """Read official loose S2 prototype metadata, never save mappings."""
+
+        provider = S2CatalogProvider()
+        release = release_by_id(self.release_id)
+        for root in self._roots_for_source(source_name):
+            catalog = provider.load(release, root)
+            if catalog is not None:
+                return catalog
+        return None
+
+    def game_catalog_for_source(self, source_name: str | None) -> GameCatalog | None:
+        """Expose S2 item/upgrades metadata with no faction or writer claim."""
+
+        provider = S2CatalogProvider()
+        release = release_by_id(self.release_id)
+        for root in self._roots_for_source(source_name):
+            catalog = provider.load_bundle(release, root)
+            if catalog is not None:
+                return catalog
+        return None
 
     def prepare(
         self,

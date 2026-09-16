@@ -128,6 +128,15 @@ Writer меняет только подтверждённое `SInvItemPlace` в
 immutable plan, показывают before → after, а preview/backup/read-back guards
 остаются обязательными.
 
+Для S.T.A.L.K.E.R. 2 официальный loose resource tree может дать отдельный
+read-only metadata catalog: prototype SID, category, weight, max stack, slot и
+upgrade SID. Desktop and an explicitly generated browser bundle carry these
+metadata fields. Prototype SID не равен compact `type_key` из `.sav` без отдельного
+mapping evidence; поэтому такой каталог не включает `serialization_family`,
+prototype bytes или право add/clone/upgrade. Browser принимает этот
+release-scoped metadata bundle только когда он явно сгенерирован из official
+resource root; сайт не получает доступ к локальной папке игры автоматически.
+
 U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 
 ## Запись и отмена

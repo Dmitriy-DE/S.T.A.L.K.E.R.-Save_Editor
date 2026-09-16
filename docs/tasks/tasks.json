@@ -1550,5 +1550,43 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/68",
     "status_display": "in_review (PR #68; structural round-trip; M10 game load/re-save pending)"
+  },
+  {
+    "id": "M21",
+    "title": "Read-only каталог прототипов S.T.A.L.K.E.R. 2",
+    "depends_on": [
+      "M11",
+      "M19"
+    ],
+    "files": [
+      "docs/tasks/M21.md",
+      "docs/evidence/S2_CATALOG_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/s2_catalog.py",
+      "editor/formats.py",
+      "editor/catalog_bundle.py",
+      "tools/build_web_bundle.py",
+      "tools/build_web_catalogs.py",
+      "web/pysrc.json",
+      "tests/test_s2_catalog.py",
+      "tests/test_catalog_bundle.py"
+    ],
+    "contract": "Official loose S2 ItemPrototypes CFG metadata is read-only; prototype SID is never treated as the compact save type_key, and S2 add/upgrade writers stay disabled.",
+    "steps": [
+      "См. карточку: source boundary, official-only filters и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M21.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_review (read-only S2 CFG catalog; SID/save mapping and game load pending)"
   }
 ]
