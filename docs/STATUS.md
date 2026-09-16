@@ -80,7 +80,7 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
 | Настоящее удаление | X-Ray deep removal и Qt/web staging блокируют известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23–M24, R08 |
-| Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; SoC/S2/Enhanced и attachments остаются read-only | M17, R09–R10 |
+| Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; X-Ray addon flags/config compatibility mapped read-only, controlled attach/detach и game read-back отсутствуют; SoC/S2/Enhanced остаются read-only | M17, R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
