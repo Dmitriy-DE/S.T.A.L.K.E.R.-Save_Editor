@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QPushButton, QSpinBox
 
 from editor.catalog import FactionCatalog, FactionDefinition
 from save_format import SaveInfo
+from ui.changes_view import ChangesView
 from ui.faction_view import FactionView
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,5 +108,37 @@ def test_web_faction_controls_use_the_shared_bridge_and_zone_styles() -> None:
     assert "relations," in script
     assert "experimental_fields" in script
     assert "Экспериментально" in script
+    assert "ОПАСНО" in script
+    assert "С риском" in script
     assert "compact-grid" in styles
     assert "faction-warning" in styles
+
+
+def test_changes_view_marks_behavior_and_inventory_risks(qtbot) -> None:
+    view = ChangesView()
+    qtbot.addWidget(view)
+
+    view.set_staged(
+        _info(),
+        None,
+        {},
+        staged_adds={"ammo_9x39": 1},
+        staged_detach={0x1234: True},
+        staged_faction_relations={"bandit": 375},
+        staged_player_faction="bandit",
+        faction_catalog=_catalog(),
+        experimental_fields={
+            "add_items",
+            "remove_items",
+            "edit_relations",
+            "edit_player_faction",
+        },
+    )
+
+    support = [
+        view.changes_table.item(row, 4).text()
+        for row in range(view.changes_table.rowCount())
+    ]
+    assert any(text.startswith("ОПАСНО:") for text in support[:2])
+    assert any(text.startswith("С риском:") for text in support)
+    assert sum(text.startswith("ОПАСНО:") for text in support) == 3

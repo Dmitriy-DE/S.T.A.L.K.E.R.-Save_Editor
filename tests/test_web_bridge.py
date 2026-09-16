@@ -309,6 +309,15 @@ def test_web_bridge_exposes_and_prepares_experimental_condition_edit() -> None:
     assert result["durability"] == [["0x00003456", pytest.approx(0.25), pytest.approx(0.75)]]
 
 
+def test_web_bridge_exposes_confirmed_xray_storage_place() -> None:
+    data = _condition_fixture(version=128, outer=6, client_place=0x0411)
+    snapshot = json.loads(web_bridge.analyze(data, "equipped.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["storage"] == "equipped"
+    assert item["position"] == "экипировано (слот подтверждён)"
+
+
 def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:
     data = _fixture()
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))

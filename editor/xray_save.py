@@ -18,6 +18,7 @@ import hashlib
 import math
 import struct
 from dataclasses import dataclass, replace
+from typing import Literal
 
 from save_format import InventoryItem, SaveInfo
 
@@ -200,6 +201,8 @@ class _SpawnRecord:
     position: tuple[float, float, float]
     spawn_offset: int
     spawn_end: int
+    client_data_offset: int | None
+    client_data_end: int | None
     state_size: int
     state_size_offset: int
     state_start: int
@@ -220,6 +223,8 @@ class XRayObject:
     record_end: int
     spawn_offset: int
     spawn_end: int
+    client_data_offset: int | None
+    client_data_end: int | None
     state_size: int
     state_size_offset: int
     state_offset: int
@@ -229,8 +234,10 @@ class XRayObject:
     update_size: int
     condition: float | None = None
     condition_offset: int | None = None
+    client_condition_offset: int | None = None
     update_condition_offset: int | None = None
     condition_family: str | None = None
+    storage: Literal["equipped", "inventory"] | None = None
     count: int | None = None
     update_count: int | None = None
     ammo_state_offset: int | None = None
@@ -496,11 +503,15 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         reader.u16()  # game type
     if version > 69:
         reader.u16()  # script version
+    client_data_offset: int | None = None
+    client_data_end: int | None = None
     if version > 70:
         client_size = reader.u16() if version > 93 else reader.u8()
         if client_size > 256 * 1024:
             raise _fail(f"объект {name!r}: client data слишком велик")
+        client_data_offset = packet_offset + reader.pos
         reader.bytes(client_size)
+        client_data_end = packet_offset + reader.pos
     if version > 79:
         reader.u16()  # spawn id
 
@@ -523,6 +534,8 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         position=position,
         spawn_offset=packet_offset,
         spawn_end=packet_offset + len(packet),
+        client_data_offset=client_data_offset,
+        client_data_end=client_data_end,
         state_size=state_size,
         state_size_offset=packet_offset + state_size_offset_rel,
         state_start=packet_offset + state_start_rel,
@@ -564,6 +577,8 @@ def _parse_objects(raw: bytes, chunk: XRayChunk) -> tuple[XRayObject, ...]:
             record_end=data_offset + reader.pos,
             spawn_offset=spawn.spawn_offset,
             spawn_end=spawn.spawn_end,
+            client_data_offset=spawn.client_data_offset,
+            client_data_end=spawn.client_data_end,
             state_size=spawn.state_size,
             state_size_offset=spawn.state_size_offset,
             state_offset=spawn.state_start,
@@ -639,6 +654,8 @@ def _parse_actor_probe(
                 record_end=data_offset + reader.pos,
                 spawn_offset=spawn.spawn_offset,
                 spawn_end=spawn.spawn_end,
+                client_data_offset=spawn.client_data_offset,
+                client_data_end=spawn.client_data_end,
                 state_size=spawn.state_size,
                 state_size_offset=spawn.state_size_offset,
                 state_offset=spawn.state_start,
@@ -822,14 +839,22 @@ def _inventory_items(
                 type_key=obj.name,
                 editable_count=editable,
                 display_name=obj.name,
-                position_label="инвентарь actor; слот не определён",
+                position_label=(
+                    "экипировано (слот подтверждён)"
+                    if obj.storage == "equipped"
+                    else (
+                        "инвентарь actor"
+                        if obj.storage == "inventory"
+                        else "инвентарь actor; слот не определён"
+                    )
+                ),
                 size_label="неизвестно",
                 count_max=_MAX_AMMO_COUNT,
                 upgrades=obj.upgrades,
                 upgrade_editable=obj.upgrades_count_offset is not None,
                 condition=obj.condition,
                 condition_editable=condition_editable,
-                storage=None,
+                storage=obj.storage,
             )
         )
     items.sort(key=lambda item: item.handle)
@@ -928,8 +953,10 @@ def _annotate_inventory_conditions(
                 obj,
                 condition=anchor.value,
                 condition_offset=anchor.state_offset,
+                client_condition_offset=anchor.client_offset,
                 update_condition_offset=anchor.update_offset,
                 condition_family=family,
+                storage=anchor.storage,
                 unknown_fields=known_fields,
             )
         )

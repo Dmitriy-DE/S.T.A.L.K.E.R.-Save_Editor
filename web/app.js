@@ -201,15 +201,22 @@ function renderSnapshot(s) {
   const experimental = new Set(caps.experimental_fields ?? []);
   const editLabel = (field, text) =>
     experimental.has(field) ? `Экспериментально: ${text}` : text;
+  const riskLabel = (field, text) => {
+    if (["add_items", "remove_items", "edit_player_faction"].includes(field)) {
+      return `ОПАСНО: ${text}`;
+    }
+    if (field === "edit_relations") return `С риском: ${text}`;
+    return editLabel(field, text);
+  };
   const supportedEdits = [
     caps.edit_money ? editLabel("edit_money", "деньги") : "деньги read-only",
     caps.edit_stacks ? editLabel("edit_stacks", "количество подтверждённых стаков") : "stack count read-only",
-    caps.add_items && s.catalog_available ? editLabel("add_items", "добавление из каталога") : "добавление read-only",
-    caps.remove_items ? editLabel("remove_items", "удаление предметов") : "удаление read-only",
+    caps.add_items && s.catalog_available ? riskLabel("add_items", "добавление из каталога") : "добавление read-only",
+    caps.remove_items ? riskLabel("remove_items", "удаление предметов") : "удаление read-only",
     caps.edit_durability ? editLabel("edit_durability", "прочность оружия/экипировки") : "прочность read-only",
     caps.edit_upgrades ? editLabel("edit_upgrades", "апгрейды ЧН/ЗП") : "апгрейды read-only",
-    caps.edit_relations ? editLabel("edit_relations", "отношения группировок") : "отношения read-only",
-    caps.edit_player_faction ? editLabel("edit_player_faction", "принадлежность игрока") : "принадлежность read-only",
+    caps.edit_relations ? riskLabel("edit_relations", "отношения группировок") : "отношения read-only",
+    caps.edit_player_faction ? riskLabel("edit_player_faction", "принадлежность игрока") : "принадлежность read-only",
   ];
   const experimentalWarning = experimental.size
     ? " Экспериментальные поля: перед проверкой сохрани резервную копию; браузер исходник не перезаписывает."
@@ -689,6 +696,16 @@ function renderInventory() {
 function renderChanges() {
   const list = el("changes-list");
   const items = [];
+  const experimental = new Set(state.snapshot?.capabilities?.experimental_fields ?? []);
+  const editLabel = (field, text) =>
+    experimental.has(field) ? `Экспериментально: ${text}` : text;
+  const riskLabel = (field, text) => {
+    if (["add_items", "remove_items", "edit_player_faction"].includes(field)) {
+      return `ОПАСНО: ${text}`;
+    }
+    if (field === "edit_relations") return `С риском: ${text}`;
+    return editLabel(field, text);
+  };
   if (state.money !== null) {
     items.push(`Деньги: ${state.snapshot.money} → ${state.money}`);
   }
@@ -697,14 +714,17 @@ function renderChanges() {
     items.push(`Стак ${item.handle_hex}: ${item.count} → ${count}`);
   }
   for (const [key, quantity] of state.adds) {
-    items.push(`${state.snapshot.capabilities?.experimental_fields?.includes("add_items") ? "Экспериментально: " : ""}Добавить ${key} × ${quantity}`);
+    items.push(riskLabel("add_items", `Добавить ${key} × ${quantity}`));
   }
   for (const [handle, upgrades] of state.upgrades) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     const before = item?.upgrades ?? [];
     items.push(
-      `${state.snapshot.capabilities?.experimental_fields?.includes("edit_upgrades") ? "Экспериментально: " : ""}Апгрейды ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ` +
-      `${before.join(", ") || "нет"} → ${upgrades.join(", ") || "нет"}`
+      riskLabel(
+        "edit_upgrades",
+        `Апгрейды ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ` +
+        `${before.join(", ") || "нет"} → ${upgrades.join(", ") || "нет"}`,
+      ),
     );
   }
   for (const [handle, condition] of state.durability) {
@@ -713,17 +733,30 @@ function renderChanges() {
       ? "unknown"
       : `${(item.condition * 100).toFixed(1)}%`;
     items.push(
-      `${state.snapshot.capabilities?.experimental_fields?.includes("edit_durability") ? "Экспериментально: " : ""}Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ` +
-      `${before} → ${(condition * 100).toFixed(1)}%`
+      riskLabel(
+        "edit_durability",
+        `Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ` +
+        `${before} → ${(condition * 100).toFixed(1)}%`,
+      ),
     );
   }
   for (const handle of state.detach) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
-    items.push(`${state.snapshot.capabilities?.experimental_fields?.includes("remove_items") ? "Экспериментально: " : ""}Удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}`);
+    items.push(
+      riskLabel(
+        "remove_items",
+        `Удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}`,
+      ),
+    );
   }
   for (const [key, value] of state.factionRelations) {
     const row = (state.snapshot.faction_relations ?? []).find((entry) => entry.key === key);
-    items.push(`${state.snapshot.capabilities?.experimental_fields?.includes("edit_relations") ? "Экспериментально: " : ""}Отношение ${key}: ${row?.value ?? "unknown"} → ${value}`);
+    items.push(
+      riskLabel(
+        "edit_relations",
+        `Отношение ${key}: ${row?.value ?? "unknown"} → ${value}`,
+      ),
+    );
   }
   if (state.playerFaction !== null) {
     const before = state.snapshot.player_faction_key ?? (
@@ -731,7 +764,12 @@ function renderChanges() {
         ? "unknown"
         : `#${state.snapshot.player_faction_index}`
     );
-    items.push(`${state.snapshot.capabilities?.experimental_fields?.includes("edit_player_faction") ? "Экспериментально: " : ""}Группировка игрока: ${before} → ${state.playerFaction}`);
+    items.push(
+      riskLabel(
+        "edit_player_faction",
+        `Группировка игрока: ${before} → ${state.playerFaction}`,
+      ),
+    );
   }
   list.replaceChildren(...(items.length
     ? items.map((text) => {

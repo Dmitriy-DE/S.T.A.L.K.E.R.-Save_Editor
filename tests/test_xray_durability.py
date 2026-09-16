@@ -38,6 +38,7 @@ def _condition_fixture(
     name: str = "wpn_test",
     condition: float = 0.25,
     update_condition_offset: int = 3,
+    client_place: int | None = None,
 ) -> bytes:
     actor = _spawn(
         "actor",
@@ -50,6 +51,12 @@ def _condition_fixture(
     update = bytearray(8)
     struct.pack_into("<H", update, 0, 0)
     update[update_condition_offset] = round(condition * 255)
+    if client_place is None:
+        client_data = b""
+    elif outer in {3, 5}:
+        client_data = struct.pack("<HfB", client_place, condition, 0)
+    else:
+        client_data = b"\x02" + struct.pack("<HfB", client_place, condition, 0)
     item = _spawn(
         name,
         0x3456,
@@ -57,6 +64,7 @@ def _condition_fixture(
         version,
         _condition_state(version, condition),
         bytes(update),
+        client_data,
     )
     objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(item, bytes(update))
     raw = b"".join(
@@ -136,6 +144,49 @@ def test_xray_prepare_patches_state_and_matching_update_condition(
     assert obj.condition == pytest.approx(0.75)
     assert after.inventory[0].condition == pytest.approx(0.75)
     assert after.container.raw[obj.update_offset + update_offset] == round(0.75 * 255)
+
+
+def test_xray_condition_writer_updates_client_mirror_and_reports_storage() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=0x0411,  # source layout: slot 1, base slot 1
+    )
+
+    parsed = parse_xray(data, COP_FORMAT)
+    item = parsed.inventory[0]
+    obj = parsed.object_by_id(item.handle)
+
+    assert item.storage == "equipped"
+    assert item.position == "экипировано (слот подтверждён)"
+    assert obj.client_condition_offset is not None
+
+    prepared = prepare_xray(
+        data,
+        EditPlan(source=_source(data), durability=((item.handle, 0.75),)),
+        COP_FORMAT,
+    )
+    after = parse_xray(prepared.data, COP_FORMAT)
+    checked = after.object_by_id(item.handle)
+
+    assert checked.client_condition_offset is not None
+    assert struct.unpack_from("<f", after.container.raw, checked.client_condition_offset)[0] == pytest.approx(0.75)
+
+
+def test_xray_condition_reader_reports_inventory_and_rejects_invalid_slot() -> None:
+    inventory = parse_xray(
+        _condition_fixture(version=128, outer=6, client_place=0x0013),
+        COP_FORMAT,
+    ).inventory[0]
+    assert inventory.storage == "inventory"
+    assert inventory.position == "инвентарь actor"
+
+    invalid = parse_xray(
+        _condition_fixture(version=128, outer=6, client_place=(1 | (63 << 4) | (63 << 10))),
+        COP_FORMAT,
+    ).inventory[0]
+    assert invalid.storage is None
+    assert invalid.position == "инвентарь actor; слот не определён"
 
 
 def test_xray_durability_rejects_unknown_item_and_invalid_values() -> None:

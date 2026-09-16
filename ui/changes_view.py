@@ -123,6 +123,10 @@ class ChangesView(QWidget):
         experimental = set(experimental_fields)
 
         def support(field: str, text: str) -> str:
+            if field in {"add_items", "remove_items", "edit_player_faction"}:
+                return f"ОПАСНО: {text}; backup обязателен"
+            if field == "edit_relations":
+                return f"С риском: {text}; backup обязателен"
             return (
                 f"Экспериментально: {text}; backup обязателен"
                 if field in experimental
