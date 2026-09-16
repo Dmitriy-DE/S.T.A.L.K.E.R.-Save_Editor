@@ -60,7 +60,7 @@
 | [M19](M19.md) | Иконки инвентаря и визуальный слой | M11, M18 | in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests) | [PR #67](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67) |
 | [M20](M20.md) | Перенос предметов между слотами, поясом и рюкзаком X-Ray | M19 | in_review (PR #68; structural round-trip; M10 game load/re-save pending) | [PR #68](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/68) |
 | [M21](M21.md) | Read-only каталог прототипов S.T.A.L.K.E.R. 2 | M11, M19 | in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending) | [PR #69](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69) |
-| [M22](M22.md) | Воспроизводимый анализ S2 compact key ↔ prototype SID | M21 | in_progress (read-only S2 key evidence; mapping and game-labelled pair pending) | — |
+| [M22](M22.md) | Воспроизводимый анализ S2 compact key ↔ prototype SID | M21 | in_review (PR #70; read-only S2 key evidence; mapping and game-labelled pair pending) | [PR #70](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/70) |
 
 <!-- END GENERATED TASK TABLE -->
 

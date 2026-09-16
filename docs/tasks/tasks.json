@@ -1262,7 +1262,7 @@
     ],
     "gate": "research",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "in_review",
     "path": "docs/tasks/M10.md",
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/57",
@@ -1616,10 +1616,10 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "in_progress",
+    "status": "in_review",
     "path": "docs/tasks/M22.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_progress (read-only S2 key evidence; mapping and game-labelled pair pending)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/70",
+    "status_display": "in_review (PR #70; read-only S2 key evidence; mapping and game-labelled pair pending)"
   }
 ]
