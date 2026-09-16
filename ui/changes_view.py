@@ -104,6 +104,10 @@ class ChangesView(QWidget):
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
         staged_durability = staged_durability or {}
+
+        def item_risk(text: str) -> str:
+            return f"ОПАСНО: {text}; backup обязателен"
+
         items = {item.handle: item for item in info.inventory}
         rows: list[tuple[str, str, str, str, str]] = []
         if staged_money is not None:
@@ -138,7 +142,7 @@ class ChangesView(QWidget):
                     item_key,
                     "—",
                     f"× {quantity}",
-                    "Официальный serializer family",
+                    item_risk("Официальный serializer family"),
                 )
             )
         for handle, deep in sorted(staged_detach.items()):
@@ -149,7 +153,7 @@ class ChangesView(QWidget):
                     item.handle_hex if item is not None else f"0x{int(handle):08X}",
                     item.type_key if item is not None else "unknown",
                     "удалить",
-                    "registry deep detach" if deep else "только чтение",
+                    item_risk("registry deep detach") if deep else "только чтение",
                 )
             )
         for handle, condition in sorted(staged_durability.items()):

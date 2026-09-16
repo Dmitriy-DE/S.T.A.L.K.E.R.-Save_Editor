@@ -303,11 +303,11 @@ function renderChanges() {
     items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
   }
   for (const [key, quantity] of state.adds) {
-    items.push(`Добавить ${key} × ${quantity}`);
+    items.push(`ОПАСНО: добавить ${key} × ${quantity}; backup обязателен`);
   }
   for (const handle of state.detach) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
-    items.push(`Удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}`);
+    items.push(`ОПАСНО: удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}; backup обязателен`);
   }
   list.replaceChildren(...(items.length
     ? items.map((text) => {
