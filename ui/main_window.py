@@ -176,6 +176,7 @@ class MainWindow(QMainWindow):
         self.staged_durability: dict[int, float] = {}
         self.staged_faction_relations: dict[str, int] = {}
         self.staged_player_faction: str | None = None
+        self.staged_upgrades: dict[int, tuple[str, ...]] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -378,6 +379,7 @@ class MainWindow(QMainWindow):
             + len(self.staged_detach)
             + len(self.staged_durability)
             + len(self.staged_faction_relations)
+            + len(self.staged_upgrades)
             + (1 if self.staged_player_faction is not None else 0)
             + (1 if self.staged_money is not None else 0)
         )
@@ -594,6 +596,8 @@ class MainWindow(QMainWindow):
         self.inventory_view.remove_selected_requested.connect(self._stage_item_remove)
         self.inventory_view.durability_stage_requested.connect(self._stage_item_durability)
         self.inventory_view.durability_clear_requested.connect(self._clear_item_durability)
+        self.inventory_view.upgrades_stage_requested.connect(self._stage_item_upgrades)
+        self.inventory_view.upgrades_clear_requested.connect(self._clear_item_upgrades)
         # Keep the old attribute available to small integrations while the
         # actual view now uses a stable-handle QAbstractTableModel.
         self.inventory_table = self.inventory_view.table
@@ -741,6 +745,7 @@ class MainWindow(QMainWindow):
         self.staged_durability.clear()
         self.staged_faction_relations.clear()
         self.staged_player_faction = None
+        self.staged_upgrades.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -801,6 +806,12 @@ class MainWindow(QMainWindow):
             self.staged_faction_relations,
             snapshot.game_catalog.factions if snapshot.game_catalog is not None else None,
             staged_player_faction=self.staged_player_faction,
+            staged_upgrades=self.staged_upgrades,
+            upgrade_catalog=(
+                snapshot.game_catalog.upgrades
+                if snapshot.game_catalog is not None
+                else None
+            ),
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -861,6 +872,29 @@ class MainWindow(QMainWindow):
             ),
         )
         self.inventory_view.set_staged_durability(self.staged_durability)
+        game_catalog = self.snapshot.game_catalog if self.snapshot is not None else None
+        can_edit_upgrades = bool(
+            capabilities is not None
+            and capabilities.edit_upgrades
+            and game_catalog is not None
+            and game_catalog.upgrades is not None
+        )
+        self.inventory_view.set_upgrades_enabled(
+            can_edit_upgrades,
+            game_catalog.upgrades if game_catalog is not None else None,
+            reason=(
+                "Добавление/удаление улучшений доступно только для официального каталога ЧС/ЗП"
+                if capabilities is not None
+                and capabilities.edit_upgrades
+                and (game_catalog is None or game_catalog.upgrades is None)
+                else "Только чтение: улучшения не подтверждены для этого релиза"
+                if capabilities is not None and not capabilities.edit_upgrades
+                else "Экспериментально: STATE m_upgrades vector; backup обязателен"
+                if capabilities is not None and capabilities.is_experimental("edit_upgrades")
+                else None
+            ),
+        )
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
         self.inventory_card_value.setText(str(len(info.inventory)))
 
     def _render_factions(self, info: SaveInfo) -> None:
@@ -1132,6 +1166,50 @@ class MainWindow(QMainWindow):
             f"Прочность очищена для {item.type_key}; bytes сейва не изменены"
         )
 
+    def _stage_item_upgrades(self, handle: int, values: object) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_upgrades:
+            self.inventory_view.show_editability_message(
+                "Только чтение: правка улучшений не подтверждена для этого релиза"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None or item.upgrades is None or not item.upgrades_editable:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):08X} не имеет подтверждённого upgrades vector"
+            )
+            return
+        if not isinstance(values, (tuple, list)):
+            self.inventory_view.show_editability_message("Список улучшений отклонён")
+            return
+        desired = tuple(str(value) for value in values)
+        if desired == item.upgrades:
+            self.staged_upgrades.pop(item.handle, None)
+        else:
+            self.staged_upgrades[item.handle] = desired
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self._render_changes()
+        self._invalidate_preview("изменился staged список улучшений")
+        self.status_label.setText(
+            f"Улучшения staged для {item.type_key}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_item_upgrades(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            return
+        self.staged_upgrades.pop(item.handle, None)
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self._render_changes()
+        self._invalidate_preview("staged улучшения очищены")
+        self.status_label.setText(
+            f"Улучшения очищены для {item.type_key}; bytes сейва не изменены"
+        )
+
     def _stage_faction_relation(self, key: str, goodwill: int) -> None:
         if self.snapshot is None:
             return
@@ -1238,11 +1316,13 @@ class MainWindow(QMainWindow):
         self.staged_durability.clear()
         self.staged_faction_relations.clear()
         self.staged_player_faction = None
+        self.staged_upgrades.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
             self._render_factions(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
         self.inventory_view.set_staged_durability(self.staged_durability)
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
         self.inventory_view.set_removed_handles(self.staged_detach)
         self._render_changes()
         self._invalidate_preview("все staged-правки очищены")
@@ -1265,6 +1345,12 @@ class MainWindow(QMainWindow):
             if self.snapshot.game_catalog is not None
             else None,
             staged_player_faction=self.staged_player_faction,
+            staged_upgrades=self.staged_upgrades,
+            upgrade_catalog=(
+                self.snapshot.game_catalog.upgrades
+                if self.snapshot.game_catalog is not None
+                else None
+            ),
         )
 
     def _has_staged_changes(self) -> bool:
@@ -1275,6 +1361,7 @@ class MainWindow(QMainWindow):
             or self.staged_detach
             or self.staged_durability
             or self.staged_faction_relations
+            or self.staged_upgrades
             or self.staged_player_faction is not None
         )
 
@@ -1340,6 +1427,7 @@ class MainWindow(QMainWindow):
             durability=tuple(sorted(self.staged_durability.items())),
             faction_relations=tuple(sorted(self.staged_faction_relations.items())),
             player_faction=self.staged_player_faction,
+            upgrades=tuple(sorted(self.staged_upgrades.items())),
         )
 
     def _busy_now(self) -> bool:

@@ -173,6 +173,7 @@ def _operation_summary(plan: EditPlan) -> dict[str, object]:
         "raw_count": len(plan.raw),
         "add_count": len(plan.adds),
         "durability_count": len(plan.durability),
+        "upgrade_count": len(plan.upgrades),
         "relation_count": len(plan.faction_relations),
         "player_faction": plan.player_faction is not None,
     }

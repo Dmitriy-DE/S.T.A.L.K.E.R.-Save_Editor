@@ -212,6 +212,8 @@ def analyze(data: bytes, name: str) -> str:
     _state["catalog"] = catalog
     faction_catalog = _faction_catalogs.get(format_.id)
     _state["faction_catalog"] = faction_catalog
+    upgrade_catalog = _upgrade_catalogs.get(format_.id)
+    _state["upgrade_catalog"] = upgrade_catalog
     relation_values = dict(info.faction_relations)
 
     return json.dumps(
@@ -249,6 +251,26 @@ def analyze(data: bytes, name: str) -> str:
                 }
                 for faction in (
                     faction_catalog.factions if faction_catalog is not None else ()
+                )
+            ],
+            "upgrade_catalog_available": (
+                format_.capabilities.edit_upgrades
+                and upgrade_catalog is not None
+                and bool(upgrade_catalog.upgrades)
+            ),
+            "catalog_upgrades": [
+                {
+                    "key": upgrade.key,
+                    "name": upgrade.display_name or upgrade.key,
+                    "category": upgrade.category,
+                    "item_key": upgrade.item_key,
+                    "applicable_item_keys": list(upgrade.applicable_item_keys),
+                    "section": upgrade.section,
+                    "property_name": upgrade.property_name,
+                    "icon": upgrade.icon,
+                }
+                for upgrade in (
+                    upgrade_catalog.upgrades if upgrade_catalog is not None else ()
                 )
             ],
             "faction_goodwill_min": (
@@ -318,6 +340,12 @@ def analyze(data: bytes, name: str) -> str:
                     "condition": item.condition,
                     "condition_editable": bool(item.condition_editable),
                     "storage": item.storage,
+                    "upgrades": None if item.upgrades is None else list(item.upgrades),
+                    "upgrade_editable": bool(
+                        format_.capabilities.edit_upgrades
+                        and item.upgrades_editable
+                        and upgrade_catalog is not None
+                    ),
                     "editable": bool(
                         format_.capabilities.edit_stacks and item.editable_count
                     ),
@@ -337,6 +365,7 @@ def prepare(
     durability_json: str = "[]",
     relations_json: str = "[]",
     player_faction_json: str = "null",
+    upgrades_json: str = "[]",
 ) -> str:
     """Apply staged edits to the analyzed bytes and keep the result in memory."""
 
@@ -371,6 +400,10 @@ def prepare(
         player_faction = player_faction_value
     else:
         raise sf.SaveError("player faction должен быть catalog key или null")
+    upgrades = tuple(
+        (int(entry[0]), tuple(str(value) for value in entry[1]))
+        for entry in json.loads(upgrades_json)
+    )
     normalized_money = _optional_int(money)
     plan = EditPlan(
         source=SourceRef(
@@ -385,6 +418,7 @@ def prepare(
         durability=durability,
         faction_relations=faction_relations,
         player_faction=player_faction,
+        upgrades=upgrades,
     )
     format_ = _state.get("format")
     if format_ is None:
@@ -419,12 +453,22 @@ def prepare(
             f"Формат {format_.release_id} не разрешает смену группировки игрока "
             "до игрового evidence"
         )
+    if upgrades and not format_.capabilities.edit_upgrades:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку upgrades до игрового evidence"
+        )
     item_catalog = _state.get("catalog")
     faction_catalog = _state.get("faction_catalog")
+    upgrade_catalog = _state.get("upgrade_catalog")
+    if not isinstance(faction_catalog, FactionCatalog):
+        faction_catalog = FactionCatalog(format_.release_id, None, ())
     game_catalog = (
-        GameCatalog(format_.release_id, item_catalog, faction_catalog)
+        GameCatalog(format_.release_id, item_catalog, faction_catalog, upgrade_catalog)
         if isinstance(item_catalog, ItemCatalog)
-        and isinstance(faction_catalog, FactionCatalog)
+        and (
+            isinstance(_state.get("faction_catalog"), FactionCatalog)
+            or isinstance(upgrade_catalog, UpgradeCatalog)
+        )
         else None
     )
     prepared = format_.prepare(
@@ -457,6 +501,8 @@ def prepare(
     after_relations = dict(after.faction_relations)
     before_player_faction = before.player_faction_index
     after_player_faction = after.player_faction_index
+    before_upgrades = {item.handle: item.upgrades for item in before.inventory}
+    after_upgrades = {item.handle: item.upgrades for item in after.inventory}
     faction_catalog = _state.get("faction_catalog")
     faction_ids = {
         faction.key: faction.numeric_id
@@ -491,6 +537,14 @@ def prepare(
                 for key, _goodwill in faction_relations
             ],
             "player_faction": [before_player_faction, after_player_faction],
+            "upgrades": [
+                [
+                    f"0x{handle:08X}",
+                    None if before_upgrades.get(handle) is None else list(before_upgrades[handle] or ()),
+                    None if after_upgrades.get(handle) is None else list(after_upgrades[handle] or ()),
+                ]
+                for handle, _values in upgrades
+            ],
             "source_unchanged": hashlib.sha256(data).hexdigest() == _state["sha256"],
         },
         ensure_ascii=False,

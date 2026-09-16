@@ -22,6 +22,7 @@ _MUTATION_CAPABILITY_FIELDS: frozenset[str] = frozenset(
         "add_items",
         "remove_items",
         "edit_durability",
+        "edit_upgrades",
         "edit_relations",
         "edit_player_faction",
     }

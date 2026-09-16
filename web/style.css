@@ -168,6 +168,12 @@ table.grid tr.readonly td { color: var(--text-disabled); }
 table.grid tr.staged td { color: var(--olive); }
 table.grid input[type="number"] { width: 120px; padding: 4px 7px; }
 table.grid input.condition-input { width: 82px; }
+table.grid td:nth-child(9) { min-width: 190px; }
+.upgrade-editor { min-width: 170px; }
+.upgrade-editor summary { cursor: pointer; color: var(--olive); }
+.upgrade-list { display: grid; gap: 4px; margin: 6px 0; max-height: 170px; overflow: auto; }
+.upgrade-list label { display: flex; gap: 5px; align-items: flex-start; color: var(--text-secondary); font-size: 12px; }
+.upgrade-editor button { padding: 4px 7px; font-size: 12px; }
 
 .muted { color: var(--text-secondary); }
 .faction-warning { color: var(--olive); }

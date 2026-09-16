@@ -50,6 +50,7 @@ class EditPlan:
     durability: tuple[tuple[int, float], ...] = ()
     faction_relations: tuple[tuple[str, int], ...] = ()
     player_faction: str | None = None
+    upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -81,6 +82,20 @@ class EditPlan:
         player_faction = (
             None if self.player_faction is None else str(self.player_faction).strip()
         )
+        normalized_upgrades: list[tuple[int, tuple[str, ...]]] = []
+        for handle, values in self.upgrades:
+            if isinstance(values, (str, bytes, bytearray)):
+                raise TypeError("upgrade values must be a sequence of exact keys")
+            keys = tuple(str(value) for value in values)
+            if len(set(keys)) != len(keys):
+                raise ValueError("Duplicate upgrade key in one upgrade vector")
+            for key in keys:
+                if not key:
+                    raise ValueError("upgrade key must be non-empty")
+                if "\x00" in key:
+                    raise ValueError("upgrade key must not contain NUL")
+            normalized_upgrades.append((int(handle), keys))
+        upgrades = tuple(normalized_upgrades)
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -96,6 +111,11 @@ class EditPlan:
             raise ValueError("Duplicate durability handle in edit plan")
         if len({key for key, _ in faction_relations}) != len(faction_relations):
             raise ValueError("Duplicate faction relation in edit plan")
+        if len({handle for handle, _ in upgrades}) != len(upgrades):
+            raise ValueError("Duplicate upgrade handle in edit plan")
+        for handle, _keys in upgrades:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Upgrade handle must be in the range 1…65534")
         for key, goodwill in faction_relations:
             if not key:
                 raise ValueError("faction key must be non-empty")
@@ -130,6 +150,7 @@ class EditPlan:
         object.__setattr__(self, "durability", durability)
         object.__setattr__(self, "faction_relations", faction_relations)
         object.__setattr__(self, "player_faction", player_faction)
+        object.__setattr__(self, "upgrades", upgrades)
 
 
 @dataclass(frozen=True)

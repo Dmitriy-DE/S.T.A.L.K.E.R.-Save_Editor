@@ -18,6 +18,7 @@ const state = {
   money: null,
   stacks: new Map(),
   durability: new Map(),
+  upgrades: new Map(),
   relations: new Map(),
   playerFaction: null,
   adds: new Map(),
@@ -83,6 +84,7 @@ async function openFile(file) {
     state.money = null;
     state.stacks.clear();
     state.durability.clear();
+    state.upgrades.clear();
     state.relations.clear();
     state.playerFaction = null;
     state.adds.clear();
@@ -128,6 +130,7 @@ function renderSnapshot(s) {
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
     caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
+    caps.edit_upgrades && s.upgrade_catalog_available ? "улучшения оружия/экипировки (experimental)" : "улучшения read-only",
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
     caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable ? "группировка игрока (experimental)" : "группировка игрока read-only",
   ];
@@ -275,6 +278,7 @@ function visibleItems() {
       filter === "staged" &&
       !state.stacks.has(item.handle) &&
       !state.durability.has(item.handle) &&
+      !state.upgrades.has(item.handle) &&
       !state.detach.has(item.handle)
     ) return false;
     if (!query) return true;
@@ -285,6 +289,73 @@ function visibleItems() {
   });
 }
 
+function upgradeDefinitionsFor(item) {
+  return (state.snapshot?.catalog_upgrades ?? []).filter((upgrade) =>
+    (upgrade.applicable_item_keys ?? []).includes(item.type_key) ||
+    upgrade.item_key === item.type_key,
+  );
+}
+
+function renderUpgradeEditor(item, cell) {
+  if (!Array.isArray(item.upgrades)) {
+    cell.textContent = "только чтение";
+    cell.className = "muted";
+    return;
+  }
+  const caps = state.snapshot?.capabilities ?? {};
+  if (!item.upgrade_editable || !caps.edit_upgrades || !state.snapshot.upgrade_catalog_available) {
+    cell.textContent = item.upgrades.length ? item.upgrades.join(", ") : "нет";
+    cell.className = "muted mono";
+    return;
+  }
+
+  const current = item.upgrades;
+  const effective = state.upgrades.get(item.handle) ?? current;
+  const definitions = upgradeDefinitionsFor(item);
+  const known = new Map(definitions.map((upgrade) => [upgrade.key, upgrade]));
+  const keys = [...current, ...definitions.map((upgrade) => upgrade.key)]
+    .filter((key, index, values) => values.indexOf(key) === index);
+  const details = document.createElement("details");
+  details.className = "upgrade-editor";
+  const summary = document.createElement("summary");
+  summary.textContent = `${effective.length} выбрано · изменить`;
+  details.append(summary);
+  const list = document.createElement("div");
+  list.className = "upgrade-list";
+  for (const key of keys) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = key;
+    checkbox.checked = effective.includes(key);
+    const definition = known.get(key);
+    const text = definition
+      ? (definition.name === key ? key : `${definition.name} · ${key}`)
+      : `Неизвестный ID · ${key}`;
+    label.append(checkbox, document.createTextNode(text));
+    list.append(label);
+  }
+  details.append(list);
+  const action = document.createElement("button");
+  action.className = "button";
+  action.type = "button";
+  action.textContent = "Застейджить";
+  action.addEventListener("click", () => {
+    const desired = [...list.querySelectorAll("input:checked")].map((input) => input.value);
+    if (desired.length === current.length && desired.every((key, index) => key === current[index])) {
+      state.upgrades.delete(item.handle);
+    } else {
+      state.upgrades.set(item.handle, desired);
+    }
+    invalidate();
+    renderInventory();
+    renderChanges();
+    setStatus(`Улучшения ${item.type_key} подготовлены; исходный файл не изменён`);
+  });
+  details.append(action);
+  cell.append(details);
+}
+
 function renderInventory() {
   const body = el("inventory").tBodies[0];
   body.replaceChildren(...visibleItems().map((item) => {
@@ -293,7 +364,9 @@ function renderInventory() {
     const stagedDurability = state.durability.get(item.handle);
     tr.className = state.detach.has(item.handle)
       ? "staged"
-      : staged !== undefined || stagedDurability !== undefined ? "staged" : item.editable ? "" : "readonly";
+      : staged !== undefined || stagedDurability !== undefined || state.upgrades.has(item.handle)
+        ? "staged"
+        : item.editable ? "" : "readonly";
     for (const cell of [
       item.name, item.category, item.position, item.size_text, item.type_key,
       item.count === null ? "неизвестно" : String(item.count),
@@ -334,6 +407,9 @@ function renderInventory() {
       conditionTd.className = "muted";
     }
     tr.append(conditionTd);
+    const upgradesTd = document.createElement("td");
+    renderUpgradeEditor(item, upgradesTd);
+    tr.append(upgradesTd);
     const handleTd = document.createElement("td");
     handleTd.textContent = item.handle_hex;
     tr.append(handleTd);
@@ -373,6 +449,7 @@ function renderInventory() {
           state.detach.add(item.handle);
           state.stacks.delete(item.handle);
           state.durability.delete(item.handle);
+          state.upgrades.delete(item.handle);
         }
         invalidate();
         renderInventory();
@@ -399,6 +476,10 @@ function renderChanges() {
   for (const [handle, condition] of state.durability) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
+  }
+  for (const [handle, values] of state.upgrades) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    items.push(`ОПАСНО: улучшения ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item?.upgrades ?? []).join(", ") || "нет"} → ${values.join(", ") || "нет"}; backup обязателен`);
   }
   for (const [key, goodwill] of state.relations) {
     const row = (state.snapshot.faction_relations ?? []).find((item) => item.key === key);
@@ -459,7 +540,8 @@ function preview() {
     const durability = JSON.stringify([...state.durability.entries()]);
     const relations = JSON.stringify([...state.relations.entries()]);
     const playerFaction = JSON.stringify(state.playerFaction);
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction));
+    const upgrades = JSON.stringify([...state.upgrades.entries()]);
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction, upgrades));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -477,6 +559,9 @@ function preview() {
     }
     for (const [handle, before, after] of result.durability ?? []) {
       lines.push(`прочность ${handle}: ${before === null ? "?" : `${(before * 100).toFixed(1)}%`} → ${after === null ? "?" : `${(after * 100).toFixed(1)}%`}`);
+    }
+    for (const [handle, before, after] of result.upgrades ?? []) {
+      lines.push(`улучшения ${handle}: ${(before ?? []).join(", ") || "нет"} → ${(after ?? []).join(", ") || "нет"} (experimental)`);
     }
     for (const [key, before, after] of result.faction_relations ?? []) {
       lines.push(`отношение ${key}: ${before ?? 0} → ${after ?? "?"} (experimental)`);
@@ -559,6 +644,7 @@ el("item-add-stage").addEventListener("click", () => {
   renderChanges();
   setStatus(`Добавление ${key} × ${quantity} подготовлено; исходный файл не изменён`);
 });
+
 el("preview").addEventListener("click", preview);
 el("download").addEventListener("click", download);
 

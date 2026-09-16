@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.catalog import FactionCatalog
+from editor.catalog import FactionCatalog, UpgradeCatalog
 from editor.models import PreparedEdit
 from save_format import SaveInfo
 
@@ -112,11 +112,14 @@ class ChangesView(QWidget):
         staged_faction_relations: Mapping[str, int] | None = None,
         faction_catalog: FactionCatalog | None = None,
         staged_player_faction: str | None = None,
+        staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
+        upgrade_catalog: UpgradeCatalog | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
         staged_durability = staged_durability or {}
         staged_faction_relations = staged_faction_relations or {}
+        staged_upgrades = staged_upgrades or {}
 
         def item_risk(text: str) -> str:
             return f"ОПАСНО: {text}; backup обязателен"
@@ -243,6 +246,25 @@ class ChangesView(QWidget):
                     ),
                     faction_label(selected, staged_player_faction),
                     "ОПАСНО: actor STATE community; сюжет может перезаписать; backup обязателен",
+                )
+            )
+        for handle, values in sorted(staged_upgrades.items()):
+            item = items.get(int(handle))
+            before_values = item.upgrades if item is not None else None
+            display_values = tuple(str(value) for value in values)
+            rows.append(
+                (
+                    "Улучшения",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    "unknown"
+                    if before_values is None
+                    else ", ".join(before_values) or "нет",
+                    ", ".join(display_values) or "нет",
+                    item_risk(
+                        "STATE m_upgrades vector; официальный catalog"
+                        if upgrade_catalog is not None
+                        else "STATE m_upgrades vector"
+                    ),
                 )
             )
 

@@ -1414,5 +1414,32 @@
     "path": "docs/tasks/M16.md",
     "github_issue": "",
     "github_pr": ""
+  },
+  {
+    "id": "M17",
+    "title": "Улучшения оружия и экипировки X-Ray",
+    "depends_on": [
+      "M10",
+      "M11"
+    ],
+    "files": [
+      "docs/tasks/M17.md",
+      "docs/evidence/XRAY_UPGRADES_2026-09-16.md"
+    ],
+    "contract": "Для оригинальных ЧН/ЗП редактировать только подтверждённый STATE m_upgrades vector через release- и item-scoped официальный каталог; SoC, S2 и Enhanced остаются read-only.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M17.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_review (structural round-trip; M10 game load/re-save pending)"
   }
 ]

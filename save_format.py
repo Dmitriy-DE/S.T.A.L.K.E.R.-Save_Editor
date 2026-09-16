@@ -89,6 +89,8 @@ class InventoryItem:
     condition: float | None = None
     condition_editable: bool = False
     storage: Literal["equipped", "inventory"] | None = None
+    upgrades: tuple[str, ...] | None = None
+    upgrades_editable: bool = False
 
     @property
     def handle_hex(self) -> str:

@@ -177,11 +177,21 @@ class _XRayFormat:
                 add_items=True,
                 remove_items=True,
                 edit_durability=True,
+                edit_upgrades=spec.id in {"stalker-cs", "stalker-cop"},
                 edit_relations=True,
                 edit_player_faction=True,
                 catalog=True,
                 experimental_fields=frozenset(
-                    {"edit_durability", "edit_relations", "edit_player_faction"}
+                    {
+                        "edit_durability",
+                        "edit_relations",
+                        "edit_player_faction",
+                        *(
+                            {"edit_upgrades"}
+                            if spec.id in {"stalker-cs", "stalker-cop"}
+                            else set()
+                        ),
+                    }
                 ),
             ),
         )
@@ -304,6 +314,7 @@ class _XRayFormat:
             self.spec,
             catalog=selected_catalog,
             faction_catalog=game_catalog.factions if game_catalog is not None else None,
+            upgrade_catalog=game_catalog.upgrades if game_catalog is not None else None,
         )
 
 

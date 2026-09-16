@@ -63,6 +63,7 @@ class EditPlan:
     detach: tuple[tuple[int, bool], ...] = ()
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
+    upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
 
 @dataclass(frozen=True)
 class PreparedEdit:
@@ -108,6 +109,14 @@ class CloudReceipt:
 
 S02: `prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit` verifies source hash and rejects raw with attach/detach before calling existing patch_save. S03: `export_local(source_path: Path, output_path: Path, prepared: PreparedEdit, backup_dir: Path) -> ExportReceipt` rejects stale source and same-path exports by default. S06: `upload_cloud(worker: CloudTransport, prepared: PreparedEdit, backup_dir: Path) -> CloudReceipt`; remote path comes only from plan.source, failures before write raise an error, ambiguous outcomes after write return uncertain without automatic retry. CloudTransport provides read_file, write_file, sync, wait_persisted, list_files with existing worker meanings.
 
+Для оригинального X-Ray `EditPlan.upgrades` содержит уникальные пары
+`(handle, tuple[serialized_upgrade_id, ...])`. Writer открывает эту операцию
+только для release-scoped каталога официальных ресурсов и только для
+подтверждённого `m_upgrades` vector; уже записанный неизвестный ID можно
+сохранить или удалить, но новый ID без exact catalog/applicability не
+принимается. Браузер только staging/preview/download, desktop replacement
+проходит обычный M16 backup/read-back pipeline.
+
 U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 
 ## Запись и отмена
@@ -140,6 +149,10 @@ schema пока не подтверждена и не отображается �
 [Поиск предметов] [Категория] [Только изменённые]
 Предмет / категория | Количество | Вес | Статус поддержки
 Выбранный предмет: текущее → новое; причина read-only
+
+Для ЧС/ЗП при подтверждённом векторе: текущие улучшения → каталоговые
+варианты; неизвестные уже записанные ID явно отмечены и не предлагаются для
+добавления.
 
 [Сбросить изменения]       [Предпросмотр] [Сохранить копию]
 ```

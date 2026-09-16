@@ -22,7 +22,13 @@ from typing import Literal
 
 from save_format import InventoryItem, SaveInfo
 
-from .catalog import FactionCatalog, ItemCatalog, ItemDefinition, catalog_from_items
+from .catalog import (
+    FactionCatalog,
+    ItemCatalog,
+    ItemDefinition,
+    UpgradeCatalog,
+    catalog_from_items,
+)
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
 from .xray_item_state import (
@@ -226,6 +232,9 @@ class XRayObject:
     update_count: int | None = None
     ammo_state_offset: int | None = None
     ammo_update_offset: int | None = None
+    upgrades: tuple[str, ...] | None = None
+    upgrades_offset: int | None = None
+    upgrades_end: int | None = None
     unknown_fields: tuple[str, ...] = (
         "prototype",
         "durability",
@@ -441,6 +450,30 @@ def _parse_ammo_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
         version=obj.version,
         label=f"{obj.name} STATE",
     )
+
+
+def _parse_upgrade_state_window(
+    raw: bytes,
+    *,
+    state_offset: int,
+    state_end: int,
+    version: int,
+    label: str,
+) -> tuple[int, tuple[str, ...], int]:
+    """Read the source-backed CSE_ALifeInventoryItem upgrade vector."""
+
+    if version <= 123:
+        raise _fail(f"{label}: m_upgrades отсутствует до spawn version 124")
+    reader = _Reader(raw[state_offset:state_end], label=label)
+    _read_dynamic_visual_state(reader, version)
+    if version > 52:
+        reader.f32()  # condition
+    upgrades_offset = state_offset + reader.pos
+    count = reader.u32()
+    if count > _MAX_VECTOR:
+        raise _fail(f"{label}: upgrades count={count} слишком велик")
+    values = tuple(reader.zstring() for _ in range(count))
+    return upgrades_offset, values, state_offset + reader.pos
 
 
 def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
@@ -817,6 +850,8 @@ def _inventory_items(
                 condition=obj.condition,
                 condition_editable=condition_editable,
                 storage=obj.storage,
+                upgrades=obj.upgrades,
+                upgrades_editable=obj.upgrades is not None,
             )
         )
     items.sort(key=lambda item: item.handle)
@@ -887,6 +922,44 @@ def _annotate_inventory_conditions(
                 update_condition_offset=anchor.update_offset,
                 condition_family=family,
                 storage=anchor.storage,
+                unknown_fields=known_fields,
+            )
+        )
+    return tuple(annotated)
+
+
+def _annotate_inventory_upgrades(
+    raw: bytes,
+    objects: tuple[XRayObject, ...],
+    actor_id: int,
+) -> tuple[XRayObject, ...]:
+    """Attach exact upgrade-vector boundaries for actor-owned X-Ray items."""
+
+    annotated: list[XRayObject] = []
+    for obj in objects:
+        if obj.parent_id != actor_id or obj.version <= 123:
+            annotated.append(obj)
+            continue
+        try:
+            upgrades_offset, upgrades, upgrades_end = _parse_upgrade_state_window(
+                raw,
+                state_offset=obj.state_offset,
+                state_end=obj.state_end,
+                version=obj.version,
+                label=f"{obj.name} STATE",
+            )
+        except XRaySaveError:
+            annotated.append(obj)
+            continue
+        known_fields = tuple(
+            field for field in obj.unknown_fields if field != "upgrades"
+        )
+        annotated.append(
+            replace(
+                obj,
+                upgrades=upgrades,
+                upgrades_offset=upgrades_offset,
+                upgrades_end=upgrades_end,
                 unknown_fields=known_fields,
             )
         )
@@ -989,6 +1062,7 @@ def parse_xray(
             relation_error = str(exc)
     if with_inventory:
         objects = _annotate_inventory_conditions(container.raw, objects, actor.object_id)
+        objects = _annotate_inventory_upgrades(container.raw, objects, actor.object_id)
         objects = _annotate_ammo_objects(container.raw, objects, actor.object_id)
 
     inventory: tuple[InventoryItem, ...] = ()
@@ -1152,6 +1226,158 @@ def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
         raise _fail("OBJECT registry нельзя оставить без actor")
     object_data = struct.pack("<I", count - 1) + object_chunk.data[4:start] + object_chunk.data[end:]
     return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _replace_object_record(parsed: XRaySave, obj: XRayObject, record: bytes) -> bytes:
+    """Replace one registry record while preserving all neighboring records."""
+
+    object_chunk = _object_chunk_data(parsed)
+    data_start = object_chunk.offset + 8
+    start = obj.record_offset - data_start
+    end = obj.record_end - data_start
+    if start < 4 or end > len(object_chunk.data) or start >= end:
+        raise _fail(f"object 0x{obj.object_id:04X}: record boundary недействителен")
+    if len(record) > 0xFFFF * 2:
+        raise _fail(f"object 0x{obj.object_id:04X}: record слишком велик")
+    count = struct.unpack_from("<I", object_chunk.data, 0)[0]
+    object_data = struct.pack("<I", count) + object_chunk.data[4:start] + record + object_chunk.data[end:]
+    return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _encode_upgrade_vector(values: tuple[str, ...]) -> bytes:
+    if len(values) > _MAX_VECTOR:
+        raise _fail(f"upgrades count={len(values)} слишком велик")
+    encoded: list[bytes] = []
+    for value in values:
+        if not value:
+            raise _fail("upgrade key must be non-empty")
+        if "\x00" in value:
+            raise _fail("upgrade key must not contain NUL")
+        raw_value = value.encode("utf-8")
+        if len(raw_value) > _MAX_STRING:
+            raise _fail("upgrade key слишком длинный")
+        encoded.append(raw_value + b"\x00")
+    return struct.pack("<I", len(values)) + b"".join(encoded)
+
+
+def _validated_upgrade_catalog(
+    spec: XRayFormatSpec,
+    upgrade_catalog: UpgradeCatalog | None,
+) -> UpgradeCatalog:
+    if upgrade_catalog is None:
+        raise _fail(
+            f"для изменений upgrades нужен официальный upgrade catalog {spec.id!r}"
+        )
+    if upgrade_catalog.release_id != spec.id:
+        raise _fail(
+            f"upgrade catalog release {upgrade_catalog.release_id!r} не совпадает "
+            f"с save release {spec.id!r}"
+        )
+    if not upgrade_catalog.upgrades:
+        raise _fail(f"upgrade catalog {spec.id!r} не содержит upgrades")
+    return upgrade_catalog
+
+
+def _upgrade_record(
+    parsed: XRaySave,
+    obj: XRayObject,
+    desired: tuple[str, ...],
+) -> bytes:
+    if obj.upgrades is None or obj.upgrades_offset is None or obj.upgrades_end is None:
+        raise _fail(
+            f"object 0x{obj.object_id:04X} не имеет подтверждённого m_upgrades vector"
+        )
+    spawn = parsed.spawn_bytes(obj)
+    vector_start = obj.upgrades_offset - obj.spawn_offset
+    vector_end = obj.upgrades_end - obj.spawn_offset
+    state_size_offset = obj.state_offset - obj.spawn_offset - 2
+    if (
+        vector_start < 0
+        or vector_start >= vector_end
+        or vector_end > len(spawn)
+        or state_size_offset < 0
+        or state_size_offset + 2 > len(spawn)
+    ):
+        raise _fail(f"object 0x{obj.object_id:04X}: upgrades boundary недействителен")
+    encoded = _encode_upgrade_vector(desired)
+    rewritten = bytearray(spawn[:vector_start] + encoded + spawn[vector_end:])
+    delta = len(encoded) - (vector_end - vector_start)
+    state_size = obj.state_size + delta
+    if not 2 <= state_size <= 0xFFFF:
+        raise _fail(f"object 0x{obj.object_id:04X}: STATE size выходит за u16")
+    if len(rewritten) > 0xFFFF:
+        raise _fail(f"object 0x{obj.object_id:04X}: SPAWN packet превышает u16 размер")
+    struct.pack_into("<H", rewritten, state_size_offset, state_size)
+    _parse_spawn(bytes(rewritten), 0)
+    update = parsed.update_bytes(obj)
+    if len(update) > 0xFFFF:
+        raise _fail(f"object 0x{obj.object_id:04X}: UPDATE packet превышает u16 размер")
+    return (
+        struct.pack("<H", len(rewritten))
+        + bytes(rewritten)
+        + struct.pack("<H", len(update))
+        + update
+    )
+
+
+def _apply_xray_upgrade_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    upgrade_catalog: UpgradeCatalog | None,
+) -> bytes:
+    if not plan.upgrades:
+        return bytes(data)
+    catalog = _validated_upgrade_catalog(spec, upgrade_catalog)
+    working = bytes(data)
+    for handle, desired in plan.upgrades:
+        current = parse_xray(working, spec, with_inventory=True)
+        obj = current.object_by_id(handle)
+        if obj.parent_id != current.actor_id:
+            raise _fail(
+                f"object 0x{handle:04X} не принадлежит actor inventory; upgrades read-only"
+            )
+        if obj.upgrades is None:
+            raise _fail(
+                f"object 0x{handle:04X} не имеет подтверждённого m_upgrades vector"
+            )
+        existing = set(obj.upgrades)
+        for key in desired:
+            if key in existing:
+                continue
+            definition = catalog.resolve(key)
+            if definition is None:
+                raise _fail(
+                    f"upgrade {key!r} отсутствует в официальном catalog {catalog.release_id!r}"
+                )
+            if not definition.applies_to(obj.name):
+                raise _fail(
+                    f"upgrade {key!r} не применим к item {obj.name!r}"
+                )
+        if desired == obj.upgrades:
+            continue
+        working = _replace_object_record(
+            current,
+            obj,
+            _upgrade_record(current, obj, desired),
+        )
+    return working
+
+
+def _verify_xray_upgrade_edits(
+    parsed: XRaySave,
+    plan: EditPlan,
+    upgrade_catalog: UpgradeCatalog | None,
+) -> None:
+    if not plan.upgrades:
+        return
+    _validated_upgrade_catalog(parsed.spec, upgrade_catalog)
+    for handle, desired in plan.upgrades:
+        checked = parsed.object_by_id(handle)
+        if checked.upgrades != desired:
+            raise _fail(
+                f"round-trip upgrades для 0x{handle:04X} не совпал с {desired!r}"
+            )
 
 
 def _validated_faction_catalog(
@@ -1596,6 +1822,7 @@ def prepare_xray(
     *,
     catalog: ItemCatalog | None = None,
     faction_catalog: FactionCatalog | None = None,
+    upgrade_catalog: UpgradeCatalog | None = None,
 ) -> PreparedEdit:
     """Prepare proven X-Ray edits and verify their structural round-trip."""
 
@@ -1634,6 +1861,13 @@ def prepare_xray(
             spec,
             catalog,
         )
+    if plan.upgrades:
+        working_data = _apply_xray_upgrade_edits(
+            working_data,
+            plan,
+            spec,
+            upgrade_catalog,
+        )
     if working_data != payload:
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
@@ -1643,9 +1877,11 @@ def prepare_xray(
         and not plan.durability
         and not plan.faction_relations
         and plan.player_faction is None
+        and not plan.upgrades
     ):
         _verify_xray_relation_edits(parsed, plan, faction_catalog)
         _verify_xray_player_faction_edit(parsed, plan, faction_catalog)
+        _verify_xray_upgrade_edits(parsed, plan, upgrade_catalog)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1698,6 +1934,7 @@ def prepare_xray(
     after = parse_xray(rebuilt, spec, with_inventory=True)
     _verify_xray_relation_edits(after, plan, faction_catalog)
     _verify_xray_player_faction_edit(after, plan, faction_catalog)
+    _verify_xray_upgrade_edits(after, plan, upgrade_catalog)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"

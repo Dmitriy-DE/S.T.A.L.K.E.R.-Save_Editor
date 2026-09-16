@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QSpinBox,
     QTableView,
@@ -23,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.catalog import ItemCatalog
+from editor.catalog import ItemCatalog, UpgradeCatalog
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
 from .inventory_model import InventoryTableModel
@@ -39,6 +41,8 @@ class InventoryView(QWidget):
     remove_selected_requested = Signal(int)
     durability_stage_requested = Signal(int, float)
     durability_clear_requested = Signal(int)
+    upgrades_stage_requested = Signal(int, object)
+    upgrades_clear_requested = Signal(int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -55,6 +59,10 @@ class InventoryView(QWidget):
         self._durability_reason: str | None = None
         self._staged_counts: dict[int, int] = {}
         self._staged_durability: dict[int, float] = {}
+        self._upgrade_catalog: UpgradeCatalog | None = None
+        self._upgrades_enabled = False
+        self._upgrades_reason: str | None = None
+        self._staged_upgrades: dict[int, tuple[str, ...]] = {}
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -153,6 +161,31 @@ class InventoryView(QWidget):
         )
         self.condition_status_label.setWordWrap(True)
         form.addRow("Состояние", self.condition_status_label)
+
+        upgrade_row = QVBoxLayout()
+        self.upgrade_list = QListWidget()
+        self.upgrade_list.setObjectName("upgradeList")
+        self.upgrade_list.setMaximumHeight(150)
+        self.upgrade_list.setToolTip(
+            "Только официальные upgrades выбранного релиза; неизвестные уже записанные ID сохраняются."
+        )
+        upgrade_row.addWidget(self.upgrade_list)
+        upgrade_actions = QHBoxLayout()
+        self.upgrade_stage_button = QPushButton("Застейджить улучшения")
+        self.upgrade_stage_button.setEnabled(False)
+        self.upgrade_stage_button.clicked.connect(self._stage_upgrades)
+        upgrade_actions.addWidget(self.upgrade_stage_button)
+        self.upgrade_clear_button = QPushButton("Очистить улучшения")
+        self.upgrade_clear_button.setEnabled(False)
+        self.upgrade_clear_button.clicked.connect(self._clear_upgrades)
+        upgrade_actions.addWidget(self.upgrade_clear_button)
+        upgrade_row.addLayout(upgrade_actions)
+        self.upgrade_status_label = QLabel(
+            "Для ЧН вектора улучшений нет; для ЧС/ЗП нужен официальный каталог."
+        )
+        self.upgrade_status_label.setWordWrap(True)
+        upgrade_row.addWidget(self.upgrade_status_label)
+        form.addRow("Улучшения", upgrade_row)
         layout.addWidget(editor)
 
         add_box = QGroupBox("Добавить предмет из официального каталога")
@@ -182,6 +215,7 @@ class InventoryView(QWidget):
         values = tuple(items)
         self._staged_counts.clear()
         self._staged_durability.clear()
+        self._staged_upgrades.clear()
         self.count_spin.setMaximum(max((item.count_max for item in values), default=1_000_000))
         self.model.set_items(values)
         current_category = self.category_combo.currentText()
@@ -220,7 +254,36 @@ class InventoryView(QWidget):
         }
         self.model.set_staged_durability(self._staged_durability)
         self.model.set_changed_handles(
-            set(self._staged_counts) | set(self._staged_durability)
+            set(self._staged_counts)
+            | set(self._staged_durability)
+            | set(self._staged_upgrades)
+        )
+        self._update_editor(self._selected_item())
+
+    def set_upgrades_enabled(
+        self,
+        enabled: bool,
+        catalog: UpgradeCatalog | None,
+        *,
+        reason: str | None = None,
+    ) -> None:
+        self._upgrades_enabled = bool(enabled)
+        self._upgrade_catalog = catalog
+        self._upgrades_reason = reason
+        self._update_editor(self._selected_item())
+
+    def set_staged_upgrades(
+        self,
+        upgrades: Mapping[int, tuple[str, ...]],
+    ) -> None:
+        self._staged_upgrades = {
+            int(handle): tuple(str(value) for value in values)
+            for handle, values in upgrades.items()
+        }
+        self.model.set_changed_handles(
+            set(self._staged_counts)
+            | set(self._staged_durability)
+            | set(self._staged_upgrades)
         )
         self._update_editor(self._selected_item())
 
@@ -275,7 +338,9 @@ class InventoryView(QWidget):
         self._staged_counts = {int(handle): int(value) for handle, value in counts.items()}
         self.model.set_staged_counts(self._staged_counts)
         self.model.set_changed_handles(
-            set(self._staged_counts) | set(self._staged_durability)
+            set(self._staged_counts)
+            | set(self._staged_durability)
+            | set(self._staged_upgrades)
         )
         self._restore_selection(selected)
         self.clear_all_button.setEnabled(bool(counts))
@@ -323,6 +388,7 @@ class InventoryView(QWidget):
     def _update_editor(self, item: InventoryItem | None) -> None:
         self._update_remove_button(item)
         self._update_condition_editor(item)
+        self._update_upgrade_editor(item)
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.editability_label.setText(
@@ -462,6 +528,98 @@ class InventoryView(QWidget):
     def _clear_condition(self) -> None:
         if self.selected_handle is not None:
             self.durability_clear_requested.emit(self.selected_handle)
+
+    def _update_upgrade_editor(self, item: InventoryItem | None) -> None:
+        self.upgrade_list.blockSignals(True)
+        self.upgrade_list.clear()
+        self.upgrade_stage_button.setEnabled(False)
+        self.upgrade_clear_button.setEnabled(False)
+        if item is None:
+            self.upgrade_list.setEnabled(False)
+            self.upgrade_status_label.setText(
+                self._upgrades_reason or "Выбери оружие или экипировку."
+            )
+            self.upgrade_list.blockSignals(False)
+            return
+        if item.upgrades is None:
+            self.upgrade_list.setEnabled(False)
+            self.upgrade_status_label.setText(
+                self._upgrades_reason
+                or "Только чтение: m_upgrades отсутствует или не разобран для этого объекта."
+            )
+            self.upgrade_list.blockSignals(False)
+            return
+        if not self._upgrades_enabled or self._upgrade_catalog is None:
+            self.upgrade_list.setEnabled(False)
+            self.upgrade_status_label.setText(
+                self._upgrades_reason
+                or "Только чтение: правка улучшений не подтверждена для этого релиза."
+            )
+            self.upgrade_list.blockSignals(False)
+            return
+
+        definitions = self._upgrade_catalog.for_item(item.type_key)
+        known = {definition.key: definition for definition in definitions}
+        keys = list(item.upgrades)
+        keys.extend(definition.key for definition in definitions if definition.key not in keys)
+        effective = self._staged_upgrades.get(item.handle, item.upgrades)
+        selected = set(effective)
+        self.upgrade_list.setEnabled(True)
+        for key in keys:
+            definition = known.get(key)
+            label = (
+                definition.display_name or definition.key
+                if definition is not None
+                else f"Неизвестный ID · {key}"
+            )
+            if definition is not None and label != definition.key:
+                label = f"{label} · {definition.key}"
+            entry = QListWidgetItem(label)
+            entry.setData(Qt.ItemDataRole.UserRole, key)
+            entry.setFlags(
+                Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
+            )
+            entry.setCheckState(
+                Qt.CheckState.Checked if key in selected else Qt.CheckState.Unchecked
+            )
+            if definition is None:
+                entry.setToolTip(
+                    "ID уже записан в сейве, но отсутствует в официальном каталоге; "
+                    "его можно сохранить или удалить, но нельзя добавить заново."
+                )
+            self.upgrade_list.addItem(entry)
+        self.upgrade_stage_button.setEnabled(True)
+        self.upgrade_clear_button.setEnabled(item.handle in self._staged_upgrades)
+        prefix = (
+            "Экспериментально: STATE m_upgrades vector; backup обязателен. "
+            if self._upgrades_reason is None
+            else f"{self._upgrades_reason} "
+        )
+        self.upgrade_status_label.setText(
+            f"{prefix}Официальных вариантов для {item.type_key}: {len(definitions)}; "
+            "bytes пока не изменены."
+        )
+        self.upgrade_list.blockSignals(False)
+
+    def _stage_upgrades(self) -> None:
+        item = self._selected_item()
+        if (
+            item is None
+            or item.upgrades is None
+            or not self._upgrades_enabled
+            or self._upgrade_catalog is None
+        ):
+            return
+        values: list[str] = []
+        for index in range(self.upgrade_list.count()):
+            entry = self.upgrade_list.item(index)
+            if entry.checkState() == Qt.CheckState.Checked:
+                values.append(str(entry.data(Qt.ItemDataRole.UserRole)))
+        self.upgrades_stage_requested.emit(item.handle, tuple(values))
+
+    def _clear_upgrades(self) -> None:
+        if self.selected_handle is not None:
+            self.upgrades_clear_requested.emit(self.selected_handle)
 
     def _update_remove_button(self, item: InventoryItem | None) -> None:
         if item is None:
