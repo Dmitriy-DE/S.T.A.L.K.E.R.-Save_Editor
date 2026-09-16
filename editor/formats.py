@@ -178,8 +178,11 @@ class _XRayFormat:
                 remove_items=True,
                 edit_durability=True,
                 edit_relations=True,
+                edit_player_faction=True,
                 catalog=True,
-                experimental_fields=frozenset({"edit_durability", "edit_relations"}),
+                experimental_fields=frozenset(
+                    {"edit_durability", "edit_relations", "edit_player_faction"}
+                ),
             ),
         )
 

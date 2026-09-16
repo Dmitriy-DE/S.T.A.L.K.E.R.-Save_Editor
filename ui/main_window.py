@@ -174,6 +174,7 @@ class MainWindow(QMainWindow):
         self.staged_detach: dict[int, bool] = {}
         self.staged_durability: dict[int, float] = {}
         self.staged_faction_relations: dict[str, int] = {}
+        self.staged_player_faction: str | None = None
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -374,7 +375,9 @@ class MainWindow(QMainWindow):
             len(self.staged_counts)
             + len(self.staged_adds)
             + len(self.staged_detach)
+            + len(self.staged_durability)
             + len(self.staged_faction_relations)
+            + (1 if self.staged_player_faction is not None else 0)
             + (1 if self.staged_money is not None else 0)
         )
         counters: dict[int, int | None] = {1: inventory, 2: staged or None}
@@ -463,6 +466,9 @@ class MainWindow(QMainWindow):
 
         self.faction_view = FactionView(self)
         self.faction_view.relation_stage_requested.connect(self._stage_faction_relation)
+        self.faction_view.player_faction_stage_requested.connect(
+            self._stage_player_faction
+        )
         layout.addWidget(self.faction_view)
 
         metadata_box = QGroupBox("Технические метаданные контейнера")
@@ -731,6 +737,7 @@ class MainWindow(QMainWindow):
         self.staged_detach.clear()
         self.staged_durability.clear()
         self.staged_faction_relations.clear()
+        self.staged_player_faction = None
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -790,6 +797,7 @@ class MainWindow(QMainWindow):
             self.staged_durability,
             self.staged_faction_relations,
             snapshot.game_catalog.factions if snapshot.game_catalog is not None else None,
+            staged_player_faction=self.staged_player_faction,
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -866,6 +874,11 @@ class MainWindow(QMainWindow):
                 and capabilities.edit_relations
                 and info.faction_relations_editable
             ),
+            player_enabled=bool(
+                capabilities is not None
+                and capabilities.edit_player_faction
+                and info.player_faction_editable
+            ),
             reason=(
                 "Экспериментально: Relation registry X-Ray; backup обязателен"
                 if capabilities is not None
@@ -881,7 +894,11 @@ class MainWindow(QMainWindow):
                 else None
             ),
         )
-        self.faction_view.set_state(info, self.staged_faction_relations)
+        self.faction_view.set_state(
+            info,
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
 
     def _render_money(self, info: SaveInfo) -> None:
         can_edit_money = (
@@ -1152,11 +1169,53 @@ class MainWindow(QMainWindow):
         self.faction_view.set_state(
             self.snapshot.info,
             self.staged_faction_relations,
+            self.staged_player_faction,
         )
         self._render_changes()
         self._invalidate_preview("изменилось staged отношение группировки")
         self.status_label.setText(
             f"Отношение staged: {key} → {goodwill}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _stage_player_faction(self, key: str) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_player_faction or not self.snapshot.info.player_faction_editable:
+            self.faction_view.status_label.setText(
+                "Только чтение: принадлежность игрока не подтверждена для этого сейва"
+            )
+            return
+        game_catalog = self.snapshot.game_catalog
+        if game_catalog is None:
+            self.faction_view.status_label.setText(
+                "Только чтение: официальный faction catalog не найден"
+            )
+            return
+        try:
+            faction = game_catalog.factions.resolve(key)
+        except CatalogLookupError as exc:
+            self.faction_view.status_label.setText(str(exc))
+            return
+        if faction.numeric_id is None:
+            self.faction_view.status_label.setText(
+                f"Только чтение: у {key} нет подтверждённого numeric community id"
+            )
+            return
+        current = self.snapshot.info.player_faction_index
+        if faction.numeric_id == current:
+            self.staged_player_faction = None
+        else:
+            self.staged_player_faction = key
+        self.faction_view.set_state(
+            self.snapshot.info,
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
+        self._render_changes()
+        self._invalidate_preview("изменилось staged принадлежность игрока")
+        self.status_label.setText(
+            f"Принадлежность игрока staged: {key}; bytes сейва не изменены — нужен preview"
         )
 
     def _clear_selected_stack(self, handle: int) -> None:
@@ -1175,6 +1234,7 @@ class MainWindow(QMainWindow):
         self.staged_detach.clear()
         self.staged_durability.clear()
         self.staged_faction_relations.clear()
+        self.staged_player_faction = None
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
             self._render_factions(self.snapshot.info)
@@ -1201,6 +1261,7 @@ class MainWindow(QMainWindow):
             self.snapshot.game_catalog.factions
             if self.snapshot.game_catalog is not None
             else None,
+            staged_player_faction=self.staged_player_faction,
         )
 
     def _has_staged_changes(self) -> bool:
@@ -1211,6 +1272,7 @@ class MainWindow(QMainWindow):
             or self.staged_detach
             or self.staged_durability
             or self.staged_faction_relations
+            or self.staged_player_faction is not None
         )
 
     def _update_action_buttons(self) -> None:
@@ -1268,6 +1330,7 @@ class MainWindow(QMainWindow):
             ),
             durability=tuple(sorted(self.staged_durability.items())),
             faction_relations=tuple(sorted(self.staged_faction_relations.items())),
+            player_faction=self.staged_player_faction,
         )
 
     def _busy_now(self) -> bool:

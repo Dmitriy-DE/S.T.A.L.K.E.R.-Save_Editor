@@ -19,6 +19,7 @@ const state = {
   stacks: new Map(),
   durability: new Map(),
   relations: new Map(),
+  playerFaction: null,
   adds: new Map(),
   detach: new Set(),
   prepared: null,
@@ -83,6 +84,7 @@ async function openFile(file) {
     state.stacks.clear();
     state.durability.clear();
     state.relations.clear();
+    state.playerFaction = null;
     state.adds.clear();
     state.detach.clear();
     state.prepared = null;
@@ -127,6 +129,7 @@ function renderSnapshot(s) {
     caps.remove_items ? "удаление предметов" : "удаление read-only",
     caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
+    caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable ? "группировка игрока (experimental)" : "группировка игрока read-only",
   ];
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
@@ -175,16 +178,47 @@ function renderFaction(s) {
   const group = el("faction-group");
   const body = el("faction-relations").tBodies[0];
   const rows = s.faction_relations ?? [];
+  const factions = (s.catalog_factions ?? []).filter((faction) => faction.numeric_id !== null && faction.numeric_id !== undefined);
   const caps = s.capabilities ?? {};
   const enabled = Boolean(caps.edit_relations && s.faction_catalog_available && s.faction_relations_editable && rows.length);
-  group.disabled = !enabled;
-  el("faction-status").textContent = enabled
+  const playerEnabled = Boolean(caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable && factions.length);
+  group.disabled = !(enabled || playerEnabled);
+  el("faction-status").textContent = enabled || playerEnabled
     ? `Загружено группировок: ${rows.length}; goodwill ${s.faction_goodwill_min ?? "?"}…${s.faction_goodwill_max ?? "?"}. Изменения staged, исходный сейв не изменён.`
     : s.faction_catalog_available
-      ? "Relation registry или actor relation row не подтверждены; только чтение."
+      ? "Relation registry или actor community не подтверждены; только чтение."
       : "Официальный faction catalog для этого релиза не найден.";
   const warning = el("faction-warning");
-  warning.hidden = !enabled;
+  warning.hidden = !(enabled || playerEnabled);
+
+  const playerSelect = el("player-faction-select");
+  playerSelect.replaceChildren(...factions.map((faction) => {
+    const option = document.createElement("option");
+    option.value = faction.key;
+    option.textContent = faction.name === faction.key ? faction.key : `${faction.name} · ${faction.key}`;
+    return option;
+  }));
+  const currentFaction = factions.find((faction) => faction.numeric_id === s.player_faction_index);
+  el("player-faction-current").textContent = currentFaction
+    ? (currentFaction.name === currentFaction.key ? currentFaction.key : `${currentFaction.name} · ${currentFaction.key}`)
+    : s.player_faction_index === null || s.player_faction_index === undefined
+      ? "неизвестно"
+      : `community id ${s.player_faction_index} (нет в каталоге)`;
+  const selectedPlayerFaction = state.playerFaction ?? currentFaction?.key ?? factions[0]?.key ?? "";
+  playerSelect.value = selectedPlayerFaction;
+  playerSelect.disabled = !playerEnabled;
+  const playerStage = el("player-faction-stage");
+  playerStage.disabled = !playerEnabled;
+  playerStage.textContent = state.playerFaction === null ? "Застейджить" : "Группировка*";
+  playerStage.onclick = () => {
+    const key = playerSelect.value;
+    if (!key) return;
+    state.playerFaction = key === currentFaction?.key ? null : key;
+    invalidate();
+    renderFaction(state.snapshot);
+    renderChanges();
+    setStatus(`Принадлежность игрока ${key} подготовлена; исходный файл не изменён`);
+  };
   body.replaceChildren(...rows.map((row) => {
     const tr = document.createElement("tr");
     const staged = state.relations.get(row.key);
@@ -371,6 +405,18 @@ function renderChanges() {
     const before = row?.stored ? row.value : 0;
     items.push(`С риском: отношение ${key}: ${before} → ${goodwill}; backup обязателен`);
   }
+  if (state.playerFaction !== null) {
+    const current = (state.snapshot.catalog_factions ?? []).find(
+      (faction) => faction.numeric_id === state.snapshot.player_faction_index,
+    );
+    const target = (state.snapshot.catalog_factions ?? []).find(
+      (faction) => faction.key === state.playerFaction,
+    );
+    const label = (faction, fallback) => faction
+      ? (faction.name === faction.key ? faction.key : `${faction.name} · ${faction.key}`)
+      : fallback;
+    items.push(`ОПАСНО: группировка игрока ${label(current, "неизвестно")} → ${label(target, state.playerFaction)}; сюжет может перезаписать; backup обязателен`);
+  }
   for (const [key, quantity] of state.adds) {
     items.push(`ОПАСНО: добавить ${key} × ${quantity}; backup обязателен`);
   }
@@ -412,7 +458,8 @@ function preview() {
     const detach = JSON.stringify([...state.detach].map((handle) => [handle, true]));
     const durability = JSON.stringify([...state.durability.entries()]);
     const relations = JSON.stringify([...state.relations.entries()]);
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations));
+    const playerFaction = JSON.stringify(state.playerFaction);
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -433,6 +480,9 @@ function preview() {
     }
     for (const [key, before, after] of result.faction_relations ?? []) {
       lines.push(`отношение ${key}: ${before ?? 0} → ${after ?? "?"} (experimental)`);
+    }
+    if (result.player_faction?.[0] !== result.player_faction?.[1]) {
+      lines.push(`группировка игрока: ${result.player_faction[0] ?? "?"} → ${result.player_faction[1] ?? "?"} (experimental)`);
     }
     if (!result.source_unchanged) lines.push("ВНИМАНИЕ: исходные байты изменились");
     el("preview-status").textContent = lines.join(" · ");

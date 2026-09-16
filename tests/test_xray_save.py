@@ -24,7 +24,12 @@ def _z(value: str) -> bytes:
     return value.encode("utf-8") + b"\x00"
 
 
-def _state_base(version: int, *, money: int | None = None) -> bytes:
+def _state_base(
+    version: int,
+    *,
+    money: int | None = None,
+    community: int = -1,
+) -> bytes:
     # CSE_ALifeObject + CSE_ALifeDynamicObjectVisual + creature/trader actor
     # inheritance as serialized by the public X-Ray source.  The fixture only
     # needs the prefix through the money field; the remaining actor fields are
@@ -46,7 +51,7 @@ def _state_base(version: int, *, money: int | None = None) -> bytes:
         state += _z("")  # specific character
         state += struct.pack("<I", 0)  # trader flags
         state += _z("default")
-        state += struct.pack("<iii", -1, -1, -1)
+        state += struct.pack("<iii", community, -1, -1)
         state += _z("")  # raw character name
         if version > 124:
             state += b"\x01\x00"  # deadbody flags
@@ -116,9 +121,15 @@ def _fixture(
     outer: int = 6,
     *,
     registry: bytes = b"registry",
+    player_community: int = -1,
 ) -> bytes:
     actor = _spawn(
-        "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
+        "actor",
+        0,
+        0xFFFF,
+        version,
+        _state_base(version, money=1234, community=player_community),
+        struct.pack("<H", 0),
     )
     ammo_update = struct.pack("<H", 0) + b"\x00" + struct.pack("<H", 30)
     ammo = _spawn(

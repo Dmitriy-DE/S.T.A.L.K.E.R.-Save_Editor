@@ -235,6 +235,16 @@ class XRayObject:
 
 
 @dataclass(frozen=True)
+class _ActorStateDetails:
+    """Source-backed actor STATE anchors shared by all original releases."""
+
+    money_offset: int
+    money: int
+    player_faction_offset: int | None
+    player_faction_index: int | None
+
+
+@dataclass(frozen=True)
 class XRaySave:
     """A parsed save and its format-specific, fixed-size edit anchors."""
 
@@ -245,6 +255,9 @@ class XRaySave:
     actor_id: int
     money: int
     money_offset: int
+    player_faction_index: int | None
+    player_faction_offset: int | None
+    player_faction_editable: bool
     faction_relations: tuple[tuple[int, int], ...]
     relation_registry: XRayRelationRegistry | None
     faction_relations_editable: bool
@@ -324,7 +337,7 @@ def _read_dynamic_visual_state(reader: _Reader, version: int) -> None:
             reader.u8()
 
 
-def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
+def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetails:
     reader = _Reader(raw[obj.state_offset : obj.state_end], label="actor STATE")
     version = obj.version
 
@@ -354,7 +367,47 @@ def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
         money = reader.u32()
     else:
         raise _fail(f"actor spawn version {version}: money field не сериализуется")
-    return money_offset, money
+
+    # CSE_ALifeTraderAbstract::STATE_Write from the public X-Ray source:
+    # specific character, trader flags, profile, then community/rank/reputation.
+    if version > 75 and version < 98:
+        reader.s32()  # legacy specific-character index
+    elif version >= 98:
+        reader.zstring()
+    if version > 77:
+        reader.u32()  # trader flags
+    if version > 81 and version < 96:
+        reader.s32()  # legacy character profile index
+    elif version > 95:
+        reader.zstring()
+
+    player_faction_offset: int | None = None
+    player_faction_index: int | None = None
+    if version > 85:
+        player_faction_offset = obj.state_offset + reader.pos
+        player_faction_index = reader.s32()
+    if version > 86:
+        reader.s32()  # rank
+        reader.s32()  # reputation
+    if version > 104:
+        reader.zstring()  # generated/display character name
+    if version > 124:
+        reader.u8()  # deadbody can take
+        reader.u8()  # deadbody closed
+
+    return _ActorStateDetails(
+        money_offset=money_offset,
+        money=money,
+        player_faction_offset=player_faction_offset,
+        player_faction_index=player_faction_index,
+    )
+
+
+def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
+    """Compatibility projection for callers that only need actor money."""
+
+    details = _parse_actor_state_details(raw, obj)
+    return details.money_offset, details.money
 
 
 def _parse_ammo_state_window(
@@ -921,10 +974,7 @@ def parse_xray(
             f"actor spawn version {actor.version} не подтверждён для {spec.id}; "
             f"ожидалось {expected}"
         )
-    try:
-        money_offset, money = _parse_actor_state(container.raw, actor)
-    except XRaySaveError:
-        raise
+    actor_state = _parse_actor_state_details(container.raw, actor)
 
     relation_registry: XRayRelationRegistry | None = None
     relation_error: str | None = None
@@ -975,8 +1025,11 @@ def parse_xray(
         spec=spec,
         actor_version=actor.version,
         actor_id=actor.object_id,
-        money=money,
-        money_offset=money_offset,
+        money=actor_state.money,
+        money_offset=actor_state.money_offset,
+        player_faction_index=actor_state.player_faction_index,
+        player_faction_offset=actor_state.player_faction_offset,
+        player_faction_editable=actor_state.player_faction_offset is not None,
         faction_relations=faction_relations,
         relation_registry=relation_registry,
         game_time=game_time,
@@ -1038,6 +1091,8 @@ def inspect_xray(
         level_name=parsed.level_name,
         faction_relations=parsed.faction_relations,
         faction_relations_editable=parsed.faction_relations_editable,
+        player_faction_index=parsed.player_faction_index,
+        player_faction_editable=parsed.player_faction_editable,
     )
 
 
@@ -1196,6 +1251,49 @@ def _verify_xray_relation_edits(
             raise _fail(
                 f"round-trip goodwill для {key!r} не совпал с {goodwill}"
             )
+
+
+def _apply_xray_player_faction_edit(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> bytes:
+    """Patch the actor community scalar and preserve the rest of actor STATE."""
+
+    if plan.player_faction is None:
+        return bytes(data)
+    catalog = _validated_faction_catalog(spec, faction_catalog)
+    target = _faction_numeric_id(catalog, plan.player_faction)
+    if not -0x80000000 <= target <= 0x7FFFFFFF:
+        raise _fail(
+            f"faction {plan.player_faction!r} numeric community id не помещается в s32"
+        )
+    parsed = parse_xray(data, spec, with_inventory=True)
+    if not parsed.player_faction_editable or parsed.player_faction_offset is None:
+        raise _fail(
+            "actor community offset не подтверждён для этого X-Ray actor STATE; "
+            "принадлежность остаётся read-only"
+        )
+    raw = bytearray(parsed.container.raw)
+    struct.pack_into("<i", raw, parsed.player_faction_offset, target)
+    return parsed.container.build(bytes(raw))
+
+
+def _verify_xray_player_faction_edit(
+    parsed: XRaySave,
+    plan: EditPlan,
+    faction_catalog: FactionCatalog | None,
+) -> None:
+    if plan.player_faction is None:
+        return
+    catalog = _validated_faction_catalog(parsed.spec, faction_catalog)
+    expected = _faction_numeric_id(catalog, plan.player_faction)
+    if parsed.player_faction_index != expected:
+        raise _fail(
+            f"round-trip player community для {plan.player_faction!r} не совпал "
+            f"с {expected}"
+        )
 
 
 def _append_object_record(parsed: XRaySave, record: bytes) -> bytes:
@@ -1522,6 +1620,13 @@ def prepare_xray(
             spec,
             faction_catalog,
         )
+    if plan.player_faction is not None:
+        working_data = _apply_xray_player_faction_edit(
+            working_data,
+            plan,
+            spec,
+            faction_catalog,
+        )
     if plan.detach or plan.adds:
         working_data = _apply_xray_structural_edits(
             working_data,
@@ -1532,8 +1637,15 @@ def prepare_xray(
     if working_data != payload:
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
-    if plan.money is None and not plan.stacks and not plan.durability and not plan.faction_relations:
+    if (
+        plan.money is None
+        and not plan.stacks
+        and not plan.durability
+        and not plan.faction_relations
+        and plan.player_faction is None
+    ):
         _verify_xray_relation_edits(parsed, plan, faction_catalog)
+        _verify_xray_player_faction_edit(parsed, plan, faction_catalog)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1585,6 +1697,7 @@ def prepare_xray(
     rebuilt = parsed.container.build(bytes(raw))
     after = parse_xray(rebuilt, spec, with_inventory=True)
     _verify_xray_relation_edits(after, plan, faction_catalog)
+    _verify_xray_player_faction_edit(after, plan, faction_catalog)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"

@@ -159,6 +159,8 @@ class SaveInfo:
     container_version: int | None = None
     faction_relations: tuple[tuple[int, int], ...] = ()
     faction_relations_editable: bool = False
+    player_faction_index: int | None = None
+    player_faction_editable: bool = False
 
 
 @dataclass(frozen=True)

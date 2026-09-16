@@ -171,6 +171,8 @@ table.grid input.condition-input { width: 82px; }
 
 .muted { color: var(--text-secondary); }
 .faction-warning { color: var(--olive); }
+.player-faction-row { border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; }
+.player-faction-row #player-faction-current { color: var(--olive); }
 .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
 
 ul { margin: 6px 0 0; padding-left: 18px; }

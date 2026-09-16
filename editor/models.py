@@ -49,6 +49,7 @@ class EditPlan:
     adds: tuple[tuple[str, int, str], ...] = ()
     durability: tuple[tuple[int, float], ...] = ()
     faction_relations: tuple[tuple[str, int], ...] = ()
+    player_faction: str | None = None
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -77,6 +78,9 @@ class EditPlan:
             (str(key).strip(), int(goodwill))
             for key, goodwill in self.faction_relations
         )
+        player_faction = (
+            None if self.player_faction is None else str(self.player_faction).strip()
+        )
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -99,6 +103,11 @@ class EditPlan:
                 raise ValueError("faction key must not contain NUL")
             if not -0x80000000 <= goodwill <= 0x7FFFFFFF:
                 raise ValueError("faction goodwill must fit a signed 32-bit value")
+        if player_faction is not None:
+            if not player_faction:
+                raise ValueError("player faction key must be non-empty")
+            if "\x00" in player_faction:
+                raise ValueError("player faction key must not contain NUL")
         for handle, condition in durability:
             if not 1 <= handle <= 0xFFFE:
                 raise ValueError("Durability handle must be in the range 1…65534")
@@ -120,6 +129,7 @@ class EditPlan:
         object.__setattr__(self, "adds", adds)
         object.__setattr__(self, "durability", durability)
         object.__setattr__(self, "faction_relations", faction_relations)
+        object.__setattr__(self, "player_faction", player_faction)
 
 
 @dataclass(frozen=True)

@@ -103,6 +103,7 @@ class ChangesView(QWidget):
         staged_durability: Mapping[int, float] | None = None,
         staged_faction_relations: Mapping[str, int] | None = None,
         faction_catalog: FactionCatalog | None = None,
+        staged_player_faction: str | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
@@ -199,6 +200,41 @@ class ChangesView(QWidget):
                     before,
                     str(goodwill),
                     "С риском: Relation registry; round-trip проверка; backup обязателен",
+                )
+            )
+        if staged_player_faction is not None:
+            selected = (
+                faction_catalog.resolve(staged_player_faction)
+                if faction_catalog is not None
+                else None
+            )
+            current = (
+                faction_catalog.resolve_numeric(info.player_faction_index)
+                if faction_catalog is not None and info.player_faction_index is not None
+                else None
+            )
+
+            def faction_label(faction: object | None, fallback: str) -> str:
+                if faction is None:
+                    return fallback
+                key = str(getattr(faction, "key", fallback))
+                name = getattr(faction, "display_name", None) or key
+                return key if name == key else f"{name} · {key}"
+
+            rows.append(
+                (
+                    "Группировка игрока",
+                    "actor community",
+                    faction_label(
+                        current,
+                        (
+                            "неизвестно"
+                            if info.player_faction_index is None
+                            else f"community id {info.player_faction_index}"
+                        ),
+                    ),
+                    faction_label(selected, staged_player_faction),
+                    "ОПАСНО: actor STATE community; сюжет может перезаписать; backup обязателен",
                 )
             )
 

@@ -236,6 +236,70 @@ def test_web_bridge_exposes_and_prepares_xray_faction_relations() -> None:
             web_bridge._faction_catalogs["stalker-cop"] = old_factions
 
 
+def test_web_bridge_exposes_and_prepares_player_faction() -> None:
+    payload = {
+        "schema_version": 1,
+        "releases": {
+            "stalker-cop": {
+                "items": [
+                    {
+                        "key": "ammo_9x39_pab9",
+                        "category": "ammo",
+                        "max_stack": 30,
+                        "serialization_family": "ammo",
+                    }
+                ],
+                "factions": [
+                    {
+                        "key": "actor",
+                        "display_name": "Actor",
+                        "numeric_id": 0,
+                        "source": "fixture",
+                    },
+                    {
+                        "key": "bandit",
+                        "display_name": "Bandit",
+                        "numeric_id": 1,
+                        "source": "fixture",
+                    },
+                ],
+            }
+        },
+    }
+    old_items = web_bridge._catalogs.get("stalker-cop")
+    old_factions = web_bridge._faction_catalogs.get("stalker-cop")
+    try:
+        web_bridge.install_catalogs(json.dumps(payload))
+        data = _fixture(player_community=0)
+        snapshot = json.loads(web_bridge.analyze(data, "player-faction.scop"))
+
+        assert snapshot["player_faction_index"] == 0
+        assert snapshot["player_faction_editable"] is True
+        assert snapshot["capabilities"]["edit_player_faction"] is True
+
+        result = json.loads(
+            web_bridge.prepare(
+                None,
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                json.dumps("bandit"),
+            )
+        )
+        assert result["player_faction"] == [0, 1]
+    finally:
+        if old_items is None:
+            web_bridge._catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._catalogs["stalker-cop"] = old_items
+        if old_factions is None:
+            web_bridge._faction_catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._faction_catalogs["stalker-cop"] = old_factions
+
+
 def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:
     data = _fixture()
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
