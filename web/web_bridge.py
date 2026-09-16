@@ -15,10 +15,10 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
-from editor.catalog import ItemCatalog, ItemDefinition, catalog_from_items
+from editor.catalog import FactionCatalog, ItemCatalog, UpgradeCatalog
+from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
-from editor.releases import release_by_id
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
 
 
@@ -135,49 +135,53 @@ def _metadata_rows(
     return rows
 
 
+def _catalog_icon_fields(
+    catalog: ItemCatalog | None,
+    item_key: str,
+) -> dict[str, int | str | None]:
+    """Return official atlas metadata without turning an unknown key into a guess."""
+
+    definition = catalog.resolve(item_key) if catalog is not None else None
+    if definition is None:
+        return {"icon_x": None, "icon_y": None, "icon_texture": None}
+    return {
+        "icon_x": definition.icon_x,
+        "icon_y": definition.icon_y,
+        "icon_texture": definition.icon_texture,
+    }
+
+
 _state: dict[str, Any] = {}
 _catalogs: dict[str, ItemCatalog] = {}
+_faction_catalogs: dict[str, FactionCatalog] = {}
+_upgrade_catalogs: dict[str, UpgradeCatalog] = {}
 
 
 def install_catalogs(payload: str) -> None:
     """Install generated official metadata supplied by the browser shell."""
 
-    document = json.loads(payload)
-    if not isinstance(document, dict) or document.get("schema_version") != 1:
-        raise sf.SaveError("Некорректная версия browser catalog")
-    raw_releases = document.get("releases")
-    if not isinstance(raw_releases, dict):
-        raise sf.SaveError("Browser catalog не содержит releases")
-    loaded: dict[str, ItemCatalog] = {}
-    for release_id, raw_release in raw_releases.items():
-        descriptor = release_by_id(str(release_id))
-        if descriptor.edition != "original":
-            raise sf.SaveError(f"Browser catalog: unsupported release {release_id!r}")
-        if not isinstance(raw_release, dict) or not isinstance(raw_release.get("items"), list):
-            raise sf.SaveError(f"Browser catalog: invalid items for {release_id!r}")
-        definitions: list[ItemDefinition] = []
-        for raw_item in raw_release["items"]:
-            if not isinstance(raw_item, dict) or not isinstance(raw_item.get("key"), str):
-                raise sf.SaveError(f"Browser catalog: invalid item for {release_id!r}")
-            definitions.append(
-                ItemDefinition(
-                    key=raw_item["key"],
-                    display_name=None,
-                    category=raw_item.get("category"),
-                    unit_weight=None,
-                    width=None,
-                    height=None,
-                    max_stack=raw_item.get("max_stack"),
-                    slots=(),
-                    prototype=None,
-                    source="generated-official-metadata",
-                    serialization_family=raw_item.get("serialization_family"),
-                )
-            )
-        loaded[str(release_id)] = catalog_from_items(str(release_id), definitions)
+    try:
+        bundles = load_catalog_payload(payload)
+    except CatalogBundleError as exc:
+        raise sf.SaveError(str(exc)) from exc
     _catalogs.clear()
-    _catalogs.update(loaded)
-
+    _catalogs.update({release_id: bundle.items for release_id, bundle in bundles.items()})
+    _faction_catalogs.clear()
+    _faction_catalogs.update(
+        {
+            release_id: bundle.factions
+            for release_id, bundle in bundles.items()
+            if bundle.factions is not None
+        }
+    )
+    _upgrade_catalogs.clear()
+    _upgrade_catalogs.update(
+        {
+            release_id: bundle.upgrades
+            for release_id, bundle in bundles.items()
+            if bundle.upgrades is not None
+        }
+    )
 
 def analyze(data: bytes, name: str) -> str:
     """Parse one save and return a JSON snapshot for the page."""
@@ -226,6 +230,9 @@ def analyze(data: bytes, name: str) -> str:
                     "category": item.category,
                     "max_stack": item.max_stack,
                     "serialization_family": item.serialization_family,
+                    "icon_x": item.icon_x,
+                    "icon_y": item.icon_y,
+                    "icon_texture": item.icon_texture,
                 }
                 for item in (catalog.items if catalog is not None else ())
             ],

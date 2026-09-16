@@ -10,7 +10,7 @@ from typing import Protocol
 from save_format import SaveError, SaveInfo, inspect_save
 
 from .capabilities import FormatCapabilities, gate_mutations_for_release
-from .catalog import ItemCatalog
+from .catalog import GameCatalog, ItemCatalog
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
 from .releases import release_by_id
@@ -48,6 +48,7 @@ class SaveFormat(Protocol):
         *,
         source_name: str | None = None,
         catalog: ItemCatalog | None = None,
+        game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
         """Prepare an immutable edit for bytes in this format."""
 
@@ -72,6 +73,7 @@ class FormatInspection:
     edition: str = ""
     capabilities: FormatCapabilities = field(default_factory=FormatCapabilities)
     catalog: ItemCatalog | None = None
+    game_catalog: GameCatalog | None = None
 
 
 class FormatDetectionError(SaveError):
@@ -152,6 +154,7 @@ class _Stalker2Format:
         *,
         source_name: str | None = None,
         catalog: ItemCatalog | None = None,
+        game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
         return prepare_edit(data, plan)
 
@@ -250,7 +253,34 @@ class _XRayFormat:
             catalog = provider.load(release, root)
             if catalog is not None:
                 return catalog
-        return None
+        # The repository ships a compact snapshot generated from official
+        # resources.  It is a metadata-only fallback for releases whose
+        # installation has no unpacked/verified catalog (notably the local
+        # Linux SoC install); it never supplies prototypes or save bytes.
+        generated = provider.load_generated_bundle(release)
+        return generated.items if generated is not None else None
+
+    def game_catalog_for_source(self, source_name: str | None) -> GameCatalog | None:
+        """Find the full official item/community catalog for a local save."""
+
+        if not source_name:
+            return None
+        source = Path(source_name).expanduser()
+        if not source.is_absolute() and not source.exists():
+            return None
+        try:
+            source = source.resolve()
+        except OSError:
+            return None
+        start = source.parent if source.is_file() else source
+        provider = XRayCatalogProvider()
+        release = release_by_id(self.release_id)
+        for root in (start, *start.parents):
+            catalog = provider.load_bundle(release, root)
+            if catalog is not None:
+                return catalog
+        generated = provider.load_generated_bundle(release)
+        return generated
 
     def prepare(
         self,
@@ -259,6 +289,7 @@ class _XRayFormat:
         *,
         source_name: str | None = None,
         catalog: ItemCatalog | None = None,
+        game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
         selected_catalog = catalog or self.catalog_for_source(source_name)
         return prepare_xray(data, plan, self.spec, catalog=selected_catalog)

@@ -38,19 +38,65 @@ def build_catalogs(roots: Sequence[tuple[str, Path]]) -> dict[str, object]:
     releases: dict[str, object] = {}
     for release_id, root in roots:
         release = release_by_id(release_id)
-        catalog = provider.load(release, root)
-        if catalog is None:
-            raise ValueError(f"official catalog unavailable for {release_id}")
+        bundle = provider.load_bundle(release, root)
+        if bundle is None:
+            raise ValueError(
+                f"official item/faction catalog unavailable for {release_id}"
+            )
+        catalog = bundle.items
         releases[release_id] = {
             "source": "official-resource-metadata",
             "items": [
                 {
                     "key": item.key,
+                    "display_name": item.display_name,
                     "category": item.category,
                     "max_stack": item.max_stack,
                     "serialization_family": item.serialization_family,
+                    "icon_x": item.icon_x,
+                    "icon_y": item.icon_y,
+                    "icon_texture": item.icon_texture,
                 }
                 for item in sorted(catalog.items, key=lambda value: value.key.casefold())
+            ],
+            "factions": [
+                {
+                    "key": faction.key,
+                    "display_name": faction.display_name,
+                    "numeric_id": faction.numeric_id,
+                    "source": faction.source,
+                    "release_id": faction.release_id,
+                }
+                for faction in bundle.factions.factions
+            ],
+            "relation_addresses": [
+                {
+                    "source": source,
+                    "target": target,
+                    "row": row,
+                    "column": column,
+                    "value": value,
+                }
+                for source, target, row, column, value in bundle.factions.relation_addresses
+            ],
+            "goodwill_min": bundle.factions.goodwill_min,
+            "goodwill_max": bundle.factions.goodwill_max,
+            "attitude_neutral_threshold": bundle.factions.attitude_neutral_threshold,
+            "attitude_friend_threshold": bundle.factions.attitude_friend_threshold,
+            "upgrades": [
+                {
+                    "key": upgrade.key,
+                    "display_name": upgrade.display_name,
+                    "category": upgrade.category,
+                    "item_key": upgrade.item_key,
+                    "applicable_item_keys": list(upgrade.applicable_item_keys),
+                    "section": upgrade.section,
+                    "property_name": upgrade.property_name,
+                    "icon": upgrade.icon,
+                    "source": upgrade.source,
+                    "release_id": upgrade.release_id,
+                }
+                for upgrade in (bundle.upgrades.upgrades if bundle.upgrades is not None else ())
             ],
         }
     return {"schema_version": 1, "releases": releases}

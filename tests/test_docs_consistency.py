@@ -91,9 +91,22 @@ def test_browser_catalog_is_compact_official_metadata_only() -> None:
         assert release["source"] == "official-resource-metadata"
         assert release["items"]
         for item in release["items"]:
-            assert set(item) == {"category", "key", "max_stack", "serialization_family"}
+            assert set(item) == {
+                "category",
+                "key",
+                "max_stack",
+                "serialization_family",
+                "display_name",
+                "icon_x",
+                "icon_y",
+                "icon_texture",
+            }
             assert item["key"]
             assert item["serialization_family"] in allowed_families
+            assert item["display_name"] is None or isinstance(item["display_name"], str)
+            assert item["icon_x"] is None or isinstance(item["icon_x"], int)
+            assert item["icon_y"] is None or isinstance(item["icon_y"], int)
+            assert item["icon_texture"] is None or isinstance(item["icon_texture"], str)
             assert all(
                 suffix not in item["key"].casefold()
                 for suffix in (".sav", ".scop", ".scs", ".bak", ".db")
