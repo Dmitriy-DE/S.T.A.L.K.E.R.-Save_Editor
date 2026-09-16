@@ -5,7 +5,14 @@ import struct
 
 import pytest
 
-from editor.catalog import ItemCatalog, ItemDefinition
+from editor.catalog import (
+    FactionCatalog,
+    FactionDefinition,
+    ItemCatalog,
+    ItemDefinition,
+    UpgradeCatalog,
+    UpgradeDefinition,
+)
 from editor.models import EditPlan, SourceRef
 from editor.xray_container import XRayContainer, lzo1x_compress
 from editor.xray_save import (
@@ -24,7 +31,12 @@ def _z(value: str) -> bytes:
     return value.encode("utf-8") + b"\x00"
 
 
-def _state_base(version: int, *, money: int | None = None) -> bytes:
+def _state_base(
+    version: int,
+    *,
+    money: int | None = None,
+    community: int = -1,
+) -> bytes:
     # CSE_ALifeObject + CSE_ALifeDynamicObjectVisual + creature/trader actor
     # inheritance as serialized by the public X-Ray source.  The fixture only
     # needs the prefix through the money field; the remaining actor fields are
@@ -46,7 +58,7 @@ def _state_base(version: int, *, money: int | None = None) -> bytes:
         state += _z("")  # specific character
         state += struct.pack("<I", 0)  # trader flags
         state += _z("default")
-        state += struct.pack("<iii", -1, -1, -1)
+        state += struct.pack("<iii", community, -1, -1)
         state += _z("")  # raw character name
         if version > 124:
             state += b"\x01\x00"  # deadbody flags
@@ -57,7 +69,11 @@ def _state_base(version: int, *, money: int | None = None) -> bytes:
     return bytes(state)
 
 
-def _item_state(version: int, count: int) -> bytes:
+def _item_state(
+    version: int,
+    count: int,
+    upgrades: tuple[str, ...] = (),
+) -> bytes:
     state = bytearray()
     state += struct.pack("<HfIII", 15, 2.0, 0, 56, 0)
     state += _z("[ammo]")
@@ -66,7 +82,9 @@ def _item_state(version: int, count: int) -> bytes:
     state += b"\x00"  # visual flags
     state += struct.pack("<f", 1.0)  # condition
     if version > 123:
-        state += struct.pack("<I", 0)  # empty upgrades
+        state += struct.pack("<I", len(upgrades))
+        for upgrade in upgrades:
+            state += _z(upgrade)
     state += struct.pack("<H", count)
     return bytes(state)
 
@@ -110,9 +128,64 @@ def _chunk(kind: int, payload: bytes) -> bytes:
     return struct.pack("<II", kind, len(payload)) + payload
 
 
-def _fixture(version: int = 128, outer: int = 6) -> bytes:
+def _relation_registry(
+    *,
+    actor_values: tuple[tuple[int, int], ...] = ((0, 100), (1, -100)),
+    other_values: tuple[tuple[int, int], ...] = ((0, 25),),
+) -> bytes:
+    """Minimal synthetic registry map with real X-Ray map framing."""
+
+    def row(character_id: int, communities: tuple[tuple[int, int], ...]) -> bytes:
+        personal = ((0x22, -7),)
+        return (
+            struct.pack("<H", character_id)
+            + struct.pack("<I", len(personal))
+            + b"".join(struct.pack("<Hi", key, value) for key, value in personal)
+            + struct.pack("<I", len(communities))
+            + b"".join(
+                struct.pack("<ii", community, value)
+                for community, value in communities
+            )
+        )
+
+    return (
+        struct.pack("<I", 0)  # InfoPortions registry
+        + struct.pack("<I", 2)
+        + row(0, actor_values)
+        + row(0x99, other_values)
+    )
+
+
+def _faction_catalog() -> FactionCatalog:
+    return FactionCatalog(
+        release_id="stalker-cop",
+        source_root=None,
+        factions=(
+            FactionDefinition("actor", "Actor", "fixture", "stalker-cop", 0),
+            FactionDefinition("bandit", "Bandit", "fixture", "stalker-cop", 1),
+        ),
+        goodwill_min=-3000,
+        goodwill_max=1000,
+        attitude_neutral_threshold=-999,
+        attitude_friend_threshold=999,
+    )
+
+
+def _fixture(
+    version: int = 128,
+    outer: int = 6,
+    upgrades: tuple[str, ...] = (),
+    *,
+    community: int = -1,
+    registry: bytes = b"registry",
+) -> bytes:
     actor = _spawn(
-        "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
+        "actor",
+        0,
+        0xFFFF,
+        version,
+        _state_base(version, money=1234, community=community),
+        struct.pack("<H", 0),
     )
     ammo_update = struct.pack("<H", 0) + b"\x00" + struct.pack("<H", 30)
     ammo = _spawn(
@@ -120,7 +193,7 @@ def _fixture(version: int = 128, outer: int = 6) -> bytes:
         0x1234,
         0,
         version,
-        _item_state(version, 30),
+        _item_state(version, 30, upgrades),
         ammo_update,
     )
     objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(ammo, ammo_update)
@@ -130,7 +203,7 @@ def _fixture(version: int = 128, outer: int = 6) -> bytes:
             _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
             _chunk(1, b"\x00" * 8),
             _chunk(2, objects),
-            _chunk(9, b"registry"),
+            _chunk(9, registry),
         )
     )
     return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
@@ -190,6 +263,19 @@ def test_xray_parser_reads_actor_money_and_confirmed_ammo_stack() -> None:
     assert info.integrity_name == "X-Ray LZO/container"
 
 
+def test_xray_parser_reads_inventory_upgrades_from_cs_and_cop_state() -> None:
+    upgrades = ("up_a_test_item", "up_b_test_item")
+
+    cop = parse_xray(_fixture(upgrades=upgrades), COP_FORMAT)
+    clear_sky = parse_xray(
+        _fixture(version=124, outer=5, upgrades=upgrades),
+        CS_FORMAT,
+    )
+
+    assert cop.object_by_id(0x1234).upgrades == upgrades
+    assert clear_sky.object_by_id(0x1234).upgrades == upgrades
+
+
 def test_xray_metadata_probe_does_not_materialize_the_full_registry() -> None:
     data = _fixture()
 
@@ -232,6 +318,50 @@ def test_xray_prepare_edits_money_and_ammo_in_both_serialized_states() -> None:
     assert after.object_by_id(0x1234).count == 44
     assert after.object_by_id(0x1234).update_count == 44
     assert parse_xray(data, COP_FORMAT).money == 1234
+
+
+def test_xray_prepare_rewrites_only_selected_inventory_upgrades() -> None:
+    data = _fixture(upgrades=("up_a_old",))
+    plan = EditPlan(
+        source=_plan(data).source,
+        upgrades=((0x1234, ("up_a_new", "up_c_new")),),
+    )
+
+    upgrade_catalog = UpgradeCatalog(
+        "stalker-cop",
+        None,
+        (
+            UpgradeDefinition(
+                key="up_a_new",
+                display_name="New A",
+                category="weapon",
+                item_key="ammo_9x39_pab9",
+                source="fixture",
+                release_id="stalker-cop",
+            ),
+            UpgradeDefinition(
+                key="up_c_new",
+                display_name="New C",
+                category="weapon",
+                item_key="ammo_9x39_pab9",
+                source="fixture",
+                release_id="stalker-cop",
+            ),
+        ),
+    )
+
+    prepared = prepare_xray(
+        data,
+        plan,
+        COP_FORMAT,
+        upgrade_catalog=upgrade_catalog,
+    )
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    assert after.object_by_id(0x1234).upgrades == ("up_a_new", "up_c_new")
+    assert after.money == 1234
+    assert after.object_by_id(0x1234).count == 30
+    assert prepared.data != data
 
 
 def test_xray_objects_expose_exact_spawn_state_update_windows() -> None:
@@ -402,3 +532,90 @@ def test_xray_edits_reject_structural_operations_and_oversized_ammo() -> None:
 
     with pytest.raises(XRaySaveError, match="65535|диапазон"):
         prepare_xray(data, _plan(data, stacks=((0x1234, 65536),)), COP_FORMAT)
+
+
+def test_xray_parser_reads_player_community_and_actor_goodwill_registry() -> None:
+    data = _fixture(
+        community=0,
+        registry=_relation_registry(actor_values=((0, 125), (1, -240))),
+    )
+
+    parsed = parse_xray(data, COP_FORMAT)
+    info = inspect_xray(data, COP_FORMAT)
+
+    assert parsed.player_community_index == 0
+    assert info.player_faction_index == 0
+    assert parsed.faction_relations == ((0, 125), (1, -240))
+    assert info.faction_relations == ((0, 125), (1, -240))
+    assert parsed.relation_registry is not None
+    assert parsed.relation_registry.for_character(0).personal == ((0x22, -7),)
+
+
+def test_xray_prepare_patches_one_actor_relation_and_preserves_other_rows() -> None:
+    data = _fixture(
+        community=0,
+        registry=_relation_registry(actor_values=((0, 125), (1, -240))),
+    )
+    before = parse_xray(data, COP_FORMAT)
+    plan = EditPlan(
+        source=_plan(data).source,
+        faction_relations=(("bandit", 375),),
+    )
+
+    prepared = prepare_xray(
+        data,
+        plan,
+        COP_FORMAT,
+        faction_catalog=_faction_catalog(),
+    )
+    after = parse_xray(prepared.data, COP_FORMAT)
+
+    assert after.faction_relations == ((0, 125), (1, 375))
+    assert after.player_community_index == before.player_community_index
+    assert after.relation_registry is not None
+    assert before.relation_registry is not None
+    assert after.relation_registry.for_character(0x99) == before.relation_registry.for_character(0x99)
+    assert after.relation_registry.for_character(0).personal == before.relation_registry.for_character(0).personal
+    assert prepared.data != data
+
+
+def test_xray_prepare_changes_player_community_from_the_same_catalog() -> None:
+    data = _fixture(
+        community=0,
+        registry=_relation_registry(actor_values=((0, 125), (1, -240))),
+    )
+    plan = EditPlan(source=_plan(data).source, player_faction="bandit")
+
+    prepared = prepare_xray(
+        data,
+        plan,
+        COP_FORMAT,
+        faction_catalog=_faction_catalog(),
+    )
+
+    assert parse_xray(prepared.data, COP_FORMAT).player_community_index == 1
+    assert prepared.data != data
+
+
+def test_xray_faction_edits_reject_foreign_keys_and_unconfirmed_limits() -> None:
+    data = _fixture(registry=_relation_registry())
+    foreign_plan = EditPlan(source=_plan(data).source, faction_relations=(("dolg", 100),))
+
+    with pytest.raises(XRaySaveError, match="catalog|отсутствует"):
+        prepare_xray(data, foreign_plan, COP_FORMAT, faction_catalog=_faction_catalog())
+
+    out_of_range = EditPlan(source=_plan(data).source, faction_relations=(("bandit", 1001),))
+    with pytest.raises(XRaySaveError, match="goodwill|диапазон"):
+        prepare_xray(data, out_of_range, COP_FORMAT, faction_catalog=_faction_catalog())
+
+
+def test_edit_plan_validates_faction_staging_keys_and_duplicates() -> None:
+    source = SourceRef(kind="local", locator="fixture.scop", sha256="0" * 64)
+
+    with pytest.raises(ValueError, match="Duplicate faction relation"):
+        EditPlan(
+            source=source,
+            faction_relations=(("actor", 1), ("actor", 2)),
+        )
+    with pytest.raises(ValueError, match="faction key"):
+        EditPlan(source=source, player_faction="")

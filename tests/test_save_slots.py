@@ -116,6 +116,31 @@ def test_discover_save_slots_explains_unavailable_enhanced_parser(
     )
 
 
+def test_discover_save_slots_groups_enhanced_sidecars_with_the_save(
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "enhanced"
+    folder.mkdir()
+    save = folder / "quicksave.sav"
+    thumbnail = folder / "quicksave.dds"
+    metadata = folder / "quicksave.info"
+    orphan = folder / "orphan.dds"
+    save.write_bytes(b"unknown enhanced save")
+    thumbnail.write_bytes(b"dds")
+    metadata.write_bytes(b"info")
+    orphan.write_bytes(b"dds")
+
+    result = discover_save_slots(
+        release_ids=("stalker-soc-ee",),
+        search_paths_fn=lambda _release_id: (folder,),
+    )
+
+    assert len(result.slots) == 1
+    assert result.slots[0].path == save
+    assert result.slots[0].sidecars == (metadata, thumbnail)
+    assert "sidecars: .info, .dds" in result.slots[0].status_text
+
+
 def test_discover_save_slots_records_release_metadata_for_detected_content(
     synthetic_save: bytes, tmp_path: Path
 ) -> None:

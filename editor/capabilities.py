@@ -14,11 +14,29 @@ from dataclasses import dataclass, replace
 _GAMEPLAY_VERIFIED_RELEASES: frozenset[str] = frozenset(
     {"stalker-soc", "stalker-cs", "stalker-cop"}
 )
+_MUTATION_CAPABILITY_FIELDS: frozenset[str] = frozenset(
+    {
+        "edit_money",
+        "edit_stacks",
+        "move_items",
+        "add_items",
+        "remove_items",
+        "edit_durability",
+        "edit_upgrades",
+        "edit_relations",
+        "edit_player_faction",
+    }
+)
 
 
 @dataclass(frozen=True)
 class FormatCapabilities:
-    """Describe edits a format has proved safe to expose to users."""
+    """Describe edits a format may expose to users.
+
+    ``experimental_fields`` keeps source-backed, round-trip-tested edits
+    visibly distinct from fields accepted by a controlled in-game check.  It
+    is metadata only: the actual writer remains guarded by the boolean fields.
+    """
 
     read_inventory: bool = False
     edit_money: bool = False
@@ -29,8 +47,34 @@ class FormatCapabilities:
     edit_durability: bool = False
     edit_upgrades: bool = False
     catalog: bool = False
+    edit_relations: bool = False
+    edit_player_faction: bool = False
+    experimental_fields: frozenset[str] = frozenset()
 
-    def as_dict(self) -> dict[str, bool]:
+    def __post_init__(self) -> None:
+        fields = frozenset(self.experimental_fields)
+        unknown = fields - _MUTATION_CAPABILITY_FIELDS
+        if unknown:
+            names = ", ".join(sorted(str(value) for value in unknown))
+            raise ValueError(f"unknown capability in experimental_fields: {names}")
+        inactive = {
+            field
+            for field in fields
+            if not bool(getattr(self, field))
+        }
+        if inactive:
+            names = ", ".join(sorted(inactive))
+            raise ValueError(
+                f"experimental capability must be enabled first: {names}"
+            )
+        object.__setattr__(self, "experimental_fields", fields)
+
+    def is_experimental(self, field: str) -> bool:
+        """Return whether one enabled edit needs an explicit UI warning."""
+
+        return field in self.experimental_fields
+
+    def as_dict(self) -> dict[str, object]:
         """Return the stable JSON-shaped projection shared by Qt and web."""
 
         return {
@@ -43,6 +87,9 @@ class FormatCapabilities:
             "edit_durability": self.edit_durability,
             "edit_upgrades": self.edit_upgrades,
             "catalog": self.catalog,
+            "edit_relations": self.edit_relations,
+            "edit_player_faction": self.edit_player_faction,
+            "experimental_fields": sorted(self.experimental_fields),
         }
 
 
@@ -74,6 +121,9 @@ def gate_mutations_for_release(
         remove_items=False,
         edit_durability=False,
         edit_upgrades=False,
+        edit_relations=False,
+        edit_player_faction=False,
+        experimental_fields=frozenset(),
     )
 
 

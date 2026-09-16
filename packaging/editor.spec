@@ -6,8 +6,7 @@ import importlib.util
 import os
 from pathlib import Path, PurePath
 
-from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
-
+from PyInstaller.building.build_main import COLLECT, EXE, PYZ, Analysis
 
 _root_from_env = os.environ.get("SAVE_EDITOR_ROOT")
 ROOT = Path(_root_from_env or Path.cwd()).resolve()
@@ -25,6 +24,12 @@ for filename in ("README.md", "STATUS.md"):
 data_dir = ROOT / "data"
 if data_dir.is_dir():
     datas.append((str(data_dir), "data"))
+catalog_path = ROOT / "web" / "catalogs.json"
+if catalog_path.is_file():
+    # The desktop fallback uses the same generated, metadata-only catalog as
+    # the browser build when an installed X-Ray tree has no unpacked resources.
+    # This file contains no game saves or proprietary texture bytes.
+    datas.append((str(catalog_path), "web"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))

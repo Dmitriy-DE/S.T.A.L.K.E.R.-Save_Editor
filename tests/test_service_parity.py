@@ -65,11 +65,20 @@ def test_service_inspect_and_dependencies_are_injectable(
         assert worker == "worker"
         return "cloud-receipt"
 
-    service = EditorService(export_fn=export, upload_fn=upload)
+    replace_calls: list[tuple[Path, Path]] = []
+
+    def replace(source: Path, value, backup: Path):
+        replace_calls.append((source, backup))
+        assert value is prepared
+        return "replace-receipt"
+
+    service = EditorService(export_fn=export, replace_fn=replace, upload_fn=upload)
     assert service.export_local(Path("source.sav"), tmp_path / "out.sav", prepared, tmp_path / "backup") == "export-receipt"
     assert export_calls == [(Path("source.sav"), tmp_path / "out.sav", tmp_path / "backup")]
     assert service.upload_cloud("worker", prepared, tmp_path / "backup", persisted_timeout=9) == "cloud-receipt"
     assert cloud_calls == [(tmp_path / "backup", 9)]
+    assert service.replace_local(Path("source.sav"), prepared, tmp_path / "backup") == "replace-receipt"
+    assert replace_calls == [(Path("source.sav"), tmp_path / "backup")]
 
 
 def test_injected_inspect_and_prepare_do_not_require_registry_detection(

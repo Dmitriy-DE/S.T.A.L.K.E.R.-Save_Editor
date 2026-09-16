@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,10 @@ class EditPlan:
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
     adds: tuple[tuple[str, int, str], ...] = ()
+    upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
+    durability: tuple[tuple[int, float], ...] = ()
+    faction_relations: tuple[tuple[str, int], ...] = ()
+    player_faction: str | None = None
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -67,6 +72,20 @@ class EditPlan:
             (str(item_key), int(quantity), str(destination))
             for item_key, quantity, destination in self.adds
         )
+        upgrades = tuple(
+            (int(handle), tuple(str(upgrade) for upgrade in values))
+            for handle, values in self.upgrades
+        )
+        durability = tuple(
+            (int(handle), float(condition)) for handle, condition in self.durability
+        )
+        faction_relations = tuple(
+            (str(key).strip(), int(goodwill))
+            for key, goodwill in self.faction_relations
+        )
+        player_faction = (
+            None if self.player_faction is None else str(self.player_faction).strip()
+        )
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -78,6 +97,41 @@ class EditPlan:
             raise ValueError("Duplicate attach handle in edit plan")
         if len({(item_key, destination) for item_key, _, destination in adds}) != len(adds):
             raise ValueError("Duplicate add item/destination in edit plan")
+        if len({handle for handle, _ in upgrades}) != len(upgrades):
+            raise ValueError("Duplicate upgrade handle in edit plan")
+        if len({handle for handle, _ in durability}) != len(durability):
+            raise ValueError("Duplicate durability handle in edit plan")
+        if len({key for key, _ in faction_relations}) != len(faction_relations):
+            raise ValueError("Duplicate faction relation in edit plan")
+        for key, goodwill in faction_relations:
+            if not key:
+                raise ValueError("faction key must be non-empty")
+            if "\x00" in key:
+                raise ValueError("faction key must not contain NUL")
+            if not -0x80000000 <= goodwill <= 0x7FFFFFFF:
+                raise ValueError("faction goodwill must fit a signed 32-bit value")
+        if player_faction is not None:
+            if not player_faction:
+                raise ValueError("player faction key must be non-empty")
+            if "\x00" in player_faction:
+                raise ValueError("player faction key must not contain NUL")
+        for handle, condition in durability:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Durability handle must be in the range 1…65534")
+            if not math.isfinite(condition) or not 0.0 <= condition <= 1.0:
+                raise ValueError("Durability value must be finite and in the range 0…1")
+        for handle, values in upgrades:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Upgrade handle must be in the range 1…65534")
+            if len(values) > 1_000_000:
+                raise ValueError("Too many upgrades in edit plan")
+            for upgrade in values:
+                if not upgrade.strip():
+                    raise ValueError("Upgrade id must be non-empty")
+                if "\x00" in upgrade:
+                    raise ValueError("Upgrade id must not contain NUL")
+                if len(upgrade.encode("utf-8")) > 1_000_000:
+                    raise ValueError("Upgrade id is too long")
         for item_key, quantity, destination in adds:
             if not item_key.strip():
                 raise ValueError("Added item key must be non-empty")
@@ -92,6 +146,10 @@ class EditPlan:
         object.__setattr__(self, "attach", attach)
         object.__setattr__(self, "raw", raw)
         object.__setattr__(self, "adds", adds)
+        object.__setattr__(self, "upgrades", upgrades)
+        object.__setattr__(self, "durability", durability)
+        object.__setattr__(self, "faction_relations", faction_relations)
+        object.__setattr__(self, "player_faction", player_faction)
 
 
 @dataclass(frozen=True)

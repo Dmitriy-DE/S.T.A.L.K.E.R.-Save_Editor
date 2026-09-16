@@ -49,12 +49,12 @@
 | [M08](M08.md) | Clear Sky и Shadow of Chernobyl: чтение | M07 | accepted (локальный корпус; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
 | [M09](M09.md) | Редактирование трилогии: деньги и стаки | M08 | accepted (writer есть; M10 игровая проверка открыта) | [PR #53](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/53) |
 | [M10](M10.md) | Протокол проверки в игре | M06 | in_progress (процедура и безопасная подготовка готовы; ждёт ручной game load/re-save) | [PR #57](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/57) |
-| [M11](M11.md) | Каталоги игры: предметы, группировки, идентификаторы | M06 | waiting_dependencies | — |
-| [M12](M12.md) | Ремонт: прочность оружия и брони | M10, M11 | waiting_dependencies | — |
-| [M13](M13.md) | Предметы: добавить, удалить, изменить количество | M10, M11 | waiting_dependencies | — |
-| [M14](M14.md) | Отношения с группировками | M10, M11 | waiting_dependencies | — |
-| [M15](M15.md) | Принадлежность игрока к группировке | M14 | waiting_dependencies | — |
-| [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
+| [M11](M11.md) | Каталоги игры: предметы, группировки, идентификаторы | M06 | in_progress (resource-derived item/faction catalogs and web bundle implemented; local SoC resource image absent) | — |
+| [M12](M12.md) | Ремонт: прочность оружия и брони | M10, M11 | in_progress (STATE/UPDATE condition parser, writer и Qt/web staging реализованы; game evidence pending) | — |
+| [M13](M13.md) | Предметы: добавить, удалить, изменить количество | M10, M11 | in_progress (catalog-backed add/remove/stack writer and Qt/web staging implemented; per-operation game evidence pending) | — |
+| [M14](M14.md) | Отношения с группировками | M10, M11 | in_progress (relation registry parser/writer and Qt/web staging implemented; game evidence pending) | — |
+| [M15](M15.md) | Принадлежность игрока к группировке | M14 | in_progress (actor community parser/writer and Qt/web staging implemented; game evidence pending, M16 backup policy available) | — |
+| [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | in_progress (explicit desktop atomic replacement and one-step in-place restore implemented; Windows/game runtime pending) | — |
 
 <!-- END GENERATED TASK TABLE -->
 

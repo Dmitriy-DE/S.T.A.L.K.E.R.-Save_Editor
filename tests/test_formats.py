@@ -115,3 +115,16 @@ def test_original_xray_format_finds_catalog_from_a_save_path(tmp_path) -> None:
 
     assert catalog is not None
     assert catalog.resolve("ammo_test") is not None
+
+
+def test_original_xray_format_uses_generated_catalog_without_local_resources(tmp_path) -> None:
+    save_path = tmp_path / "_appdata_" / "savedgames" / "slot.sav"
+
+    format_ = by_id("stalker-soc")
+    catalog = format_.catalog_for_source(str(save_path))
+    game_catalog = format_.game_catalog_for_source(str(save_path))
+
+    assert catalog is not None
+    assert catalog.resolve("medkit") is not None
+    assert game_catalog is not None
+    assert game_catalog.factions.resolve("actor").numeric_id == 0

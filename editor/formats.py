@@ -168,6 +168,15 @@ class _XRayFormat:
         self.title = spec.title
         self.release_id = spec.id
         self.edition = "original"
+        experimental_fields = {
+            "add_items",
+            "remove_items",
+            "edit_durability",
+            "edit_relations",
+            "edit_player_faction",
+        }
+        if spec.id in {"stalker-cs", "stalker-cop"}:
+            experimental_fields.add("edit_upgrades")
         self.capabilities = gate_mutations_for_release(
             self.release_id,
             FormatCapabilities(
@@ -176,7 +185,12 @@ class _XRayFormat:
                 edit_stacks=True,
                 add_items=True,
                 remove_items=True,
+                edit_durability=True,
+                edit_upgrades=spec.id in {"stalker-cs", "stalker-cop"},
                 catalog=True,
+                edit_relations=True,
+                edit_player_faction=True,
+                experimental_fields=frozenset(experimental_fields),
             ),
         )
 
@@ -291,8 +305,31 @@ class _XRayFormat:
         catalog: ItemCatalog | None = None,
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
-        selected_catalog = catalog or self.catalog_for_source(source_name)
-        return prepare_xray(data, plan, self.spec, catalog=selected_catalog)
+        selected_game_catalog = game_catalog or self.game_catalog_for_source(source_name)
+        selected_catalog = (
+            catalog
+            or (
+                selected_game_catalog.items
+                if selected_game_catalog is not None
+                else self.catalog_for_source(source_name)
+            )
+        )
+        return prepare_xray(
+            data,
+            plan,
+            self.spec,
+            catalog=selected_catalog,
+            upgrade_catalog=(
+                selected_game_catalog.upgrades
+                if selected_game_catalog is not None
+                else None
+            ),
+            faction_catalog=(
+                selected_game_catalog.factions
+                if selected_game_catalog is not None
+                else None
+            ),
+        )
 
 
 STALKER2_FORMAT: SaveFormat = _Stalker2Format()

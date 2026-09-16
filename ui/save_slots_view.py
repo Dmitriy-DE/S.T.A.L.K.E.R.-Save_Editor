@@ -37,6 +37,8 @@ RELEASE_TITLES: dict[str, str] = {
     release.id: release.title for release in official_releases()
 }
 SAVE_SUFFIXES = frozenset({".sav", ".scop", ".scs"})
+SIDECAR_SUFFIXES = frozenset({".dds", ".info"})
+_SIDECAR_ORDER = {".info": 0, ".dds": 1}
 
 
 def _human_size(size: int) -> str:
@@ -78,6 +80,7 @@ class SaveSlot:
     candidate_release_id: str | None = None
     detected_release_id: str | None = None
     unsupported_reason: UnsupportedSaveReason | None = None
+    sidecars: tuple[Path, ...] = ()
 
     @property
     def game_id(self) -> str | None:
@@ -95,14 +98,20 @@ class SaveSlot:
     def status_text(self) -> str:
         """Return the user-facing format status for the slot table."""
 
+        sidecar_text = (
+            " · sidecars: "
+            + ", ".join(path.suffix.casefold() for path in self.sidecars)
+            if self.sidecars
+            else ""
+        )
         if self.format_id is not None:
             title = self.format_title or self.format_id
-            return f"{title} [{self.format_id}]"
+            return f"{title} [{self.format_id}]{sidecar_text}"
         if self.detection_error:
-            return f"Ошибка чтения: {self.detection_error}"
+            return f"Ошибка чтения: {self.detection_error}{sidecar_text}"
         if self.unsupported_reason is not None:
-            return self.unsupported_reason.message
-        return "Не распознано ни одним форматом"
+            return f"{self.unsupported_reason.message}{sidecar_text}"
+        return f"Не распознано ни одним форматом{sidecar_text}"
 
 
 @dataclass(frozen=True)
@@ -133,6 +142,32 @@ _DetectionCacheValue: TypeAlias = tuple[
 # result, never file bytes, and invalidate it on the ordinary size/mtime pair.
 # Opening a row still performs a fresh full inspection and SHA check.
 _DETECTION_CACHE: dict[tuple[Path, int], _DetectionCacheValue] = {}
+
+
+def _matching_sidecars(path: Path, entries: Sequence[Path]) -> tuple[Path, ...]:
+    """Attach same-stem Enhanced metadata without treating it as a save slot."""
+
+    matches: list[Path] = []
+    stem = path.stem.casefold()
+    for candidate in entries:
+        if candidate == path or candidate.stem.casefold() != stem:
+            continue
+        if candidate.suffix.casefold() not in SIDECAR_SUFFIXES:
+            continue
+        try:
+            if candidate.is_file():
+                matches.append(candidate)
+        except OSError:
+            continue
+    return tuple(
+        sorted(
+            matches,
+            key=lambda candidate: (
+                _SIDECAR_ORDER.get(candidate.suffix.casefold(), 99),
+                candidate.name.casefold(),
+            ),
+        )
+    )
 
 
 def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
@@ -212,6 +247,7 @@ def discover_save_slots(
                 except OSError:
                     continue
                 slot_seen.add(path)
+                sidecars = _matching_sidecars(path, entries)
                 cache_key = (path, detector_key)
                 cached = _DETECTION_CACHE.get(cache_key)
                 if cached is not None and cached[:2] == (stat.st_size, stat.st_mtime_ns):
@@ -239,6 +275,7 @@ def discover_save_slots(
                                     else _unknown_format_reason(candidate_release_id)
                                 )
                             ),
+                            sidecars=sidecars,
                         )
                     )
                     continue
@@ -267,6 +304,7 @@ def discover_save_slots(
                                 code="read_error",
                                 message=f"Ошибка чтения: {type(exc).__name__}: {exc}",
                             ),
+                            sidecars=sidecars,
                         )
                     )
                     continue
@@ -296,6 +334,7 @@ def discover_save_slots(
                                 code="detection_error",
                                 message=f"Ошибка проверки: {type(exc).__name__}: {exc}",
                             ),
+                            sidecars=sidecars,
                         )
                     )
                     continue
@@ -327,6 +366,7 @@ def discover_save_slots(
                             if format_ is not None
                             else _unknown_format_reason(candidate_release_id)
                         ),
+                        sidecars=sidecars,
                     )
                 )
 
@@ -516,6 +556,7 @@ __all__ = [
     "RELEASE_IDS",
     "RELEASE_TITLES",
     "SAVE_SUFFIXES",
+    "SIDECAR_SUFFIXES",
     "SaveDiscovery",
     "SaveSlot",
     "SaveSlotsView",

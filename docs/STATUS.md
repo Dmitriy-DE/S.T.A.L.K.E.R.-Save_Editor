@@ -4,30 +4,37 @@
 
 После merge PR #53 текущая база `main` расширяет старый S2-only редактор одним
 shared registry для официальных PC-профилей. Ветка M10 добавляет протокол
-игровой проверки. Владелец подтвердил загрузку и сохранение подготовленных
-сейвов в локальных оригинальных SoC/CS/CoP, поэтому их mutation capabilities
-открыты; независимый SHA parser read-back второго сохранения не собирался:
+игровой проверки. Локальный parser/writer и UI расширены: source-backed поля
+с round-trip могут быть доступны как experimental, но это не заменяет
+controlled game load/re-save по M10. Личные игровые файлы автоматически не
+перезаписываются:
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
-| S.T.A.L.K.E.R. 2 | зарегистрирован | read и локальный writer; mutation capability ждёт M10 game load/re-save |
-| Original Shadow of Chornobyl | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
-| Original Clear Sky | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
-| Original Call of Pripyat | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
+| S.T.A.L.K.E.R. 2 | зарегистрирован | container/inventory read; upgrades и mutation gate остаются read-only без локального образца и подтверждённой игровой схемы |
+| Original Shadow of Chornobyl | зарегистрирован | X-Ray read; money/stack/catalog работают; condition, relations и player community доступны как source-backed experimental edits; старый STATE без upgrade vector |
+| Original Clear Sky | зарегистрирован | X-Ray read; money/stack/catalog работают; condition, upgrades, relations и player community доступны как source-backed experimental edits |
+| Original Call of Pripyat | зарегистрирован | X-Ray read; money/stack/catalog работают; condition, upgrades, relations и player community доступны как source-backed experimental edits |
 | Shadow of Chornobyl EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Clear Sky EE | descriptor/path discovery only | unavailable; no accepted format sample |
 | Call of Pripyat EE | descriptor/path discovery only | unavailable; no accepted format sample |
 
-Desktop использует release-specific auto/manual save discovery; browser остаётся
-local-file-only и content-detects файл тем же ядром. Capability flags теперь
-управляют Qt/web controls, а M10 gate не позволяет синтетическому round-trip
-выглядеть как доказательство загрузки в игре. Community mods намеренно вне
-scope. X-Ray evidence:
+Desktop использует release-specific auto/manual save discovery; одноимённые
+Enhanced `.dds/.info` sidecars группируются с save-кандидатом и не открываются
+отдельно. Browser остаётся local-file-only и content-detects файл тем же ядром.
+Capability flags управляют Qt/web controls, а `experimental_fields` заставляет
+обе оболочки показать предупреждение и backup policy. Это не доказывает, что
+сюжет не перезапишет community или что игра примет condition/upgrade. Community
+mods намеренно вне scope. X-Ray evidence:
 [container](evidence/XRAY_CONTAINER.md), [inventory](evidence/XRAY_INVENTORY_2026-09-15.md),
-[catalog](evidence/XRAY_CATALOG_2026-09-15.md), [EE boundary](evidence/EE_FORMATS_2026-09-15.md).
+[catalog](evidence/XRAY_CATALOG_2026-09-15.md), [faction catalog](evidence/XRAY_FACTION_CATALOG.md),
+[relations](evidence/XRAY_FACTION_RELATIONS_2026-09-15.md),
+[upgrades](evidence/XRAY_UPGRADES_2026-09-15.md),
+[durability](evidence/XRAY_DURABILITY_2026-09-15.md),
+[EE boundary](evidence/EE_FORMATS_2026-09-15.md).
 
 Локальный Linux gate текущего прохода: `PYTHON=.venv/bin/python make check` exit 0,
-`PYTHON=.venv/bin/python make test` exit 0 (`283 passed`); ruff,
+`PYTHON=.venv/bin/python make test` exit 0 (`330 passed`); ruff,
 mypy, generated web bundle/theme и `node --check web/app.js` проходят. Linux
 `tar.gz`/`.deb` и packaged diagnostic также собраны и проверены; Cloudflare
 Pages revision `4d833b6f` прочитан обратно с HTTP 200 после обновления каталога и
@@ -74,12 +81,13 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Надёжность | Общий parser gate покрывает S.T.A.L.K.E.R. 2 и подтверждённые оригинальные X-Ray containers; полный release gate всё ещё требует Windows/runtime evidence | B02 |
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
-| Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | Официальные metadata-каталоги загружаются desktop/web; часть локализации и SID semantics не доказана | R01–R02 |
-| Прочность | Поле не доказано | R03–R04 |
+| Восстановление | U05 сохраняет verified backup/journal и восстанавливает копию; M16 добавляет явную desktop in-place replacement и одношаговый откат исходного слота с safety backup | M16; cloud restore отсутствует по границе платформы |
+| Названия и каталог | Resource-derived item/faction catalogs загружаются desktop/web; при отсутствии локальных официальных ресурсов desktop использует компактный проверенный metadata snapshot, а локальный atlas остаётся недоступен; SID semantics не доказана | M11, R01–R02 |
+| Прочность | STATE condition читается для actor-owned weapon/outfit; source-backed writer и Qt/web staging доступны как experimental с явным backup warning | M12, R03–R04 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Настоящее удаление | X-Ray deep removal actor-owned registry record; reference-safe/equipped deletion не доказано | R08 |
-| Attachments/upgrades | Нет подтверждённой схемы | R09–R10 |
+| Attachments/upgrades | X-Ray upgrade vector source-backed для ЧН/ЗП; attachments и S2 upgrades read-only | R09–R10 |
+| Отношения и принадлежность | X-Ray relation registry и actor community читаются, Qt/web controls и bounded writer доступны как experimental с сюжетными предупреждениями; game semantics не подтверждены | M14–M15 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.
@@ -91,9 +99,12 @@ Count=1 остаётся read-only в текущем stack editor. Нельзя 
 `web/` запускает то же multi-format ядро в браузере через Pyodide: `ooz-wasm`
 для S.T.A.L.K.E.R. 2 и portable Python LZO для оригинальной трилогии. Веб
 принимает файл локально, распознаёт только зарегистрированный формат и
-отказывает на неизвестном; до M10 game load/re-save mutation controls остаются
-read-only, хотя локальный writer и catalog round-trip продолжают проверяться
-отдельно. Сверка S2
+отказывает на неизвестном. Для оригинальной трилогии condition snapshot и
+staged durability проходят тот же bridge и доступны как experimental с
+предупреждением о ручном backup. Для ЧН/ЗП staged upgrade vectors, relation rows
+и player community проходят через тот же общий `EditPlan`/bridge-контракт;
+production semantics остаются неподтверждёнными отдельным game evidence. S2 и
+Enhanced остаются read-only до отдельного evidence. Сверка S2
 остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
 покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
@@ -198,10 +209,17 @@ Enhanced Editions также не объявлены поддержанными:
 в `EE_FORMATS_2026-09-15.md`.
 
 Локальный корпус подтверждает чтение и no-op SHA-preserving round-trip; game
-load/re-save, Windows runtime и Enhanced остаются внешними gates. Реализация и
-регрессии находятся в текущем проходе ветки `codex/m06-xray-container`, а
-исторические PR #53–#56 остаются открытыми документными карточками до
-переноса соответствующих коммитов.
+load/re-save, Windows runtime и Enhanced остаются внешними gates. Базовая
+реализация M01–M09 принята в `main` через PR #53; PR #54–#56 закрыты как
+устаревшие дубликаты. Текущий проход M10–M16 ведётся отдельными карточками и
+не должен смешиваться с историческим описанием M06–M09.
+
+### Дополнительный read-only corpus probe — 2026-09-16
+
+Повторная проверка установленной оригинальной трилогии прошла без изменения
+файлов: ТЧ 6/6, ЧН 59/59, ЗП 171/171. Все найденные кандидаты распарсились,
+`unresolved` равен нулю. Это расширяет локальную parser-проверку, но не
+подтверждает загрузку или сохранение изменённого результата самой игрой.
 
 ## Текущий проход B02
 

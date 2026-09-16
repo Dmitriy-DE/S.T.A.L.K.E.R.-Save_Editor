@@ -3,8 +3,9 @@
 The original games do not use the S.T.A.L.K.E.R. 2 GVAS/CRC container.  They
 store a versioned chunk stream in a raw LZO1X payload.  This module keeps the
 format-specific part small and explicit: it parses the common object envelope,
-the actor money field, and the ``CSE_ALifeItemAmmo`` count fields documented in
-the public X-Ray source.  Unknown object state remains untouched.
+the actor money field, confirmed inventory condition fields, and the
+``CSE_ALifeItemAmmo`` count fields documented in the public X-Ray source.
+Unknown object state remains untouched.
 
 Structural item edits use an official item catalog plus an existing registry
 record from the same serializer family.  The save still remains the source of
@@ -20,9 +21,27 @@ from dataclasses import dataclass, replace
 
 from save_format import InventoryItem, SaveInfo
 
-from .catalog import ItemCatalog, ItemDefinition, catalog_from_items
+from .catalog import (
+    FactionCatalog,
+    ItemCatalog,
+    ItemDefinition,
+    UpgradeCatalog,
+    catalog_from_items,
+)
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
+from .xray_item_state import (
+    CONDITION_FAMILIES,
+    ConditionCodecError,
+    patch_condition,
+    read_condition_anchor,
+)
+from .xray_relations import (
+    XRayRelationError,
+    XRayRelationRegistry,
+    parse_relation_registry,
+    patch_relation_registry,
+)
 
 _M_SPAWN = 1
 _M_UPDATE = 0
@@ -96,6 +115,14 @@ class XRayItemAdd:
             )
         if self.destination != "inventory":
             raise ValueError("X-Ray item destination must be 'inventory'")
+
+
+@dataclass(frozen=True)
+class _ActorStateDetails:
+    money_offset: int
+    money: int
+    community_offset: int | None
+    community_index: int | None
 
 
 class _Reader:
@@ -174,6 +201,7 @@ class _SpawnRecord:
     spawn_offset: int
     spawn_end: int
     state_size: int
+    state_size_offset: int
     state_start: int
     state_end: int
 
@@ -193,15 +221,23 @@ class XRayObject:
     spawn_offset: int
     spawn_end: int
     state_size: int
+    state_size_offset: int
     state_offset: int
     state_end: int
     update_offset: int
     update_end: int
     update_size: int
+    condition: float | None = None
+    condition_offset: int | None = None
+    update_condition_offset: int | None = None
+    condition_family: str | None = None
     count: int | None = None
     update_count: int | None = None
     ammo_state_offset: int | None = None
     ammo_update_offset: int | None = None
+    upgrades: tuple[str, ...] = ()
+    upgrades_count_offset: int | None = None
+    upgrades_end_offset: int | None = None
     unknown_fields: tuple[str, ...] = (
         "prototype",
         "durability",
@@ -221,6 +257,10 @@ class XRaySave:
     actor_id: int
     money: int
     money_offset: int
+    player_community_index: int | None
+    player_community_offset: int | None
+    faction_relations: tuple[tuple[int, int], ...]
+    relation_registry: XRayRelationRegistry | None
     game_time: int | None
     time_factor: float | None
     normal_time_factor: float | None
@@ -297,7 +337,7 @@ def _read_dynamic_visual_state(reader: _Reader, version: int) -> None:
             reader.u8()
 
 
-def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
+def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetails:
     reader = _Reader(raw[obj.state_offset : obj.state_end], label="actor STATE")
     version = obj.version
 
@@ -327,7 +367,46 @@ def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
         money = reader.u32()
     else:
         raise _fail(f"actor spawn version {version}: money field не сериализуется")
-    return money_offset, money
+
+    # These branches mirror CSE_ALifeTraderAbstract::STATE_Read.  All
+    # currently supported actor versions use the string/profile branches, but
+    # keeping the older gates here prevents a future version from shifting the
+    # community anchor silently.
+    if version > 75 and version < 98:
+        reader.s32()  # legacy specific-character index
+    elif version >= 98:
+        reader.zstring()  # specific character
+    if version > 77:
+        reader.u32()  # trader flags
+    if version > 81 and version < 96:
+        reader.s32()  # legacy character profile index
+    elif version > 95:
+        reader.zstring()  # character profile
+
+    community_offset: int | None = None
+    community_index: int | None = None
+    if version > 85:
+        community_offset = obj.state_offset + reader.pos
+        community_index = reader.s32()
+    if version > 86:
+        reader.s32()  # rank
+        reader.s32()  # reputation
+    if version > 104:
+        reader.zstring()  # raw character name
+
+    return _ActorStateDetails(
+        money_offset=money_offset,
+        money=money,
+        community_offset=community_offset,
+        community_index=community_index,
+    )
+
+
+def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
+    """Compatibility wrapper for callers that only need the money anchor."""
+
+    details = _parse_actor_state_details(raw, obj)
+    return details.money_offset, details.money
 
 
 def _parse_ammo_state_window(
@@ -361,6 +440,32 @@ def _parse_ammo_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
         version=obj.version,
         label=f"{obj.name} STATE",
     )
+
+
+def _parse_inventory_upgrades(
+    raw: bytes,
+    obj: XRayObject,
+) -> tuple[tuple[str, ...], int | None, int | None]:
+    """Read the base inventory item's variable-length upgrade vector.
+
+    X-Ray serializes this vector after the dynamic visual state and condition,
+    before the derived item serializer continues.  The count and end offsets
+    are kept so a writer can replace only this vector while preserving those
+    derived fields byte-for-byte.
+    """
+
+    if obj.version <= 123:
+        return (), None, None
+    reader = _Reader(raw[obj.state_offset : obj.state_end], label=f"{obj.name} STATE")
+    _read_dynamic_visual_state(reader, obj.version)
+    if obj.version > 52:
+        reader.f32()  # condition
+    count_offset = obj.state_offset + reader.pos
+    count = reader.u32()
+    if count > _MAX_VECTOR:
+        raise _fail(f"{obj.name} STATE: upgrades count={count} слишком велик")
+    upgrades = tuple(reader.zstring() for _ in range(count))
+    return upgrades, count_offset, obj.state_offset + reader.pos
 
 
 def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
@@ -399,6 +504,7 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
     if version > 79:
         reader.u16()  # spawn id
 
+    state_size_offset_rel = reader.pos
     state_size = reader.u16()
     if state_size < 2:
         raise _fail(f"объект {name!r}: STATE size={state_size} меньше 2")
@@ -418,6 +524,7 @@ def _parse_spawn(packet: bytes, packet_offset: int) -> _SpawnRecord:
         spawn_offset=packet_offset,
         spawn_end=packet_offset + len(packet),
         state_size=state_size,
+        state_size_offset=packet_offset + state_size_offset_rel,
         state_start=packet_offset + state_start_rel,
         state_end=packet_offset + state_end_rel,
     )
@@ -458,6 +565,7 @@ def _parse_objects(raw: bytes, chunk: XRayChunk) -> tuple[XRayObject, ...]:
             spawn_offset=spawn.spawn_offset,
             spawn_end=spawn.spawn_end,
             state_size=spawn.state_size,
+            state_size_offset=spawn.state_size_offset,
             state_offset=spawn.state_start,
             state_end=spawn.state_end,
             update_offset=update_offset,
@@ -532,6 +640,7 @@ def _parse_actor_probe(
                 spawn_offset=spawn.spawn_offset,
                 spawn_end=spawn.spawn_end,
                 state_size=spawn.state_size,
+                state_size_offset=spawn.state_size_offset,
                 state_offset=spawn.state_start,
                 state_end=spawn.state_end,
                 update_offset=data_offset + update_offset_rel,
@@ -558,7 +667,9 @@ def _category_for_name(name: str) -> tuple[int, str]:
         return 5, "Патроны"
     if lowered.startswith(("wpn_", "weapon_")):
         return 0, "Оружие"
-    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
+    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")) or lowered.endswith(
+        ("_outfit", "_helmet", "_helm", "_armor")
+    ):
         return 1, "Броня/экипировка"
     if lowered.startswith(("af_", "artifact_")):
         return 2, "Артефакт"
@@ -588,7 +699,9 @@ def _inferred_serialization_family(name: str) -> str:
         return "pda"
     if lowered.startswith(("detector_", "device_detector")):
         return "detector"
-    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
+    if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")) or lowered.endswith(
+        ("_outfit", "_helmet", "_helm", "_armor")
+    ):
         return "outfit"
     if lowered.startswith(("wpn_", "weapon_")):
         if lowered.endswith("_knife"):
@@ -681,6 +794,15 @@ def _inventory_items(
                 f"Handle 0x{obj.object_id:04X}: ammo count не разобран, только read-only"
             )
         editable = anchors_ok if ammo else False
+        condition_editable = (
+            obj.condition is not None
+            and obj.condition_offset is not None
+            and obj.condition_family in CONDITION_FAMILIES
+        )
+        if obj.condition_family in CONDITION_FAMILIES and not condition_editable:
+            warnings.append(
+                f"Handle 0x{obj.object_id:04X}: condition не разобран, только read-only"
+            )
         items.append(
             InventoryItem(
                 handle=obj.object_id,
@@ -700,9 +822,14 @@ def _inventory_items(
                 type_key=obj.name,
                 editable_count=editable,
                 display_name=obj.name,
-                position_label="в инвентаре",
+                position_label="инвентарь actor; слот не определён",
                 size_label="неизвестно",
                 count_max=_MAX_AMMO_COUNT,
+                upgrades=obj.upgrades,
+                upgrade_editable=obj.upgrades_count_offset is not None,
+                condition=obj.condition,
+                condition_editable=condition_editable,
+                storage=None,
             )
         )
     items.sort(key=lambda item: item.handle)
@@ -737,6 +864,75 @@ def _annotate_ammo_objects(raw: bytes, objects: tuple[XRayObject, ...], actor_id
                     ammo_update_offset=update_offset,
                 )
             )
+    return tuple(annotated)
+
+
+def _annotate_inventory_objects(
+    raw: bytes,
+    objects: tuple[XRayObject, ...],
+    actor_id: int,
+) -> tuple[XRayObject, ...]:
+    """Attach confirmed upgrade-vector offsets to actor-owned inventory items."""
+
+    annotated: list[XRayObject] = []
+    for obj in objects:
+        if obj.parent_id != actor_id:
+            annotated.append(obj)
+            continue
+        try:
+            upgrades, count_offset, end_offset = _parse_inventory_upgrades(raw, obj)
+        except XRaySaveError:
+            annotated.append(obj)
+        else:
+            known_fields = tuple(
+                field for field in obj.unknown_fields if field != "upgrades"
+            )
+            annotated.append(
+                replace(
+                    obj,
+                    upgrades=upgrades,
+                    upgrades_count_offset=count_offset,
+                    upgrades_end_offset=end_offset,
+                    unknown_fields=known_fields,
+                )
+            )
+    return tuple(annotated)
+
+
+def _annotate_inventory_conditions(
+    raw: bytes,
+    objects: tuple[XRayObject, ...],
+    actor_id: int,
+) -> tuple[XRayObject, ...]:
+    """Attach only source-confirmed STATE/UPDATE condition anchors."""
+
+    annotated: list[XRayObject] = []
+    for obj in objects:
+        if obj.parent_id != actor_id:
+            annotated.append(obj)
+            continue
+        family = _inferred_serialization_family(obj.name)
+        if family not in CONDITION_FAMILIES:
+            annotated.append(obj)
+            continue
+        try:
+            anchor = read_condition_anchor(raw, obj, family)
+        except ConditionCodecError:
+            annotated.append(obj)
+            continue
+        known_fields = tuple(
+            field for field in obj.unknown_fields if field != "durability"
+        )
+        annotated.append(
+            replace(
+                obj,
+                condition=anchor.value,
+                condition_offset=anchor.state_offset,
+                update_condition_offset=anchor.update_offset,
+                condition_family=family,
+                unknown_fields=known_fields,
+            )
+        )
     return tuple(annotated)
 
 
@@ -821,17 +1017,38 @@ def parse_xray(
             f"actor spawn version {actor.version} не подтверждён для {spec.id}; "
             f"ожидалось {expected}"
         )
-    try:
-        money_offset, money = _parse_actor_state(container.raw, actor)
-    except XRaySaveError:
-        raise
+    actor_state = _parse_actor_state_details(container.raw, actor)
+
+    warnings: list[str] = []
+    relation_registry: XRayRelationRegistry | None = None
+    relation_chunk = _chunk_once(chunks, 9, required=False)
+    if relation_chunk is not None and strict_registry:
+        try:
+            relation_registry = parse_relation_registry(
+                relation_chunk.data,
+                spec.id,
+            )
+        except XRayRelationError as exc:
+            warnings.append(f"X-Ray: relation registry read-only: {exc}")
+
     if with_inventory:
+        objects = _annotate_inventory_objects(container.raw, objects, actor.object_id)
+        objects = _annotate_inventory_conditions(container.raw, objects, actor.object_id)
         objects = _annotate_ammo_objects(container.raw, objects, actor.object_id)
 
     inventory: tuple[InventoryItem, ...] = ()
     owned_handles: tuple[int, ...] = ()
     unresolved: tuple[int, ...] = ()
-    warnings: list[str] = []
+    faction_relations: tuple[tuple[int, int], ...] = ()
+    if relation_registry is not None:
+        try:
+            actor_relations = relation_registry.for_character(actor.object_id)
+            faction_relations = tuple(
+                (entry.community_index, entry.value)
+                for entry in actor_relations.communities
+            )
+        except XRayRelationError as exc:
+            warnings.append(f"X-Ray: actor relation row read-only: {exc}")
     if with_inventory:
         inventory, owned_handles, unresolved, item_warnings = _inventory_items(
             container.raw, objects, actor.object_id
@@ -844,8 +1061,12 @@ def parse_xray(
         spec=spec,
         actor_version=actor.version,
         actor_id=actor.object_id,
-        money=money,
-        money_offset=money_offset,
+        money=actor_state.money,
+        money_offset=actor_state.money_offset,
+        player_community_index=actor_state.community_index,
+        player_community_offset=actor_state.community_offset,
+        faction_relations=faction_relations,
+        relation_registry=relation_registry,
         game_time=game_time,
         time_factor=time_factor,
         normal_time_factor=normal_time_factor,
@@ -902,6 +1123,8 @@ def inspect_xray(
         time_factor=parsed.time_factor,
         normal_time_factor=parsed.normal_time_factor,
         level_name=parsed.level_name,
+        player_faction_index=parsed.player_community_index,
+        faction_relations=parsed.faction_relations,
     )
 
 
@@ -932,6 +1155,23 @@ def _rebuild_with_object_chunk(parsed: XRaySave, object_data: bytes) -> bytes:
     return parsed.container.build(raw)
 
 
+def _relation_chunk_data(parsed: XRaySave) -> XRayChunk:
+    chunk = _chunk_once(parsed.container.chunks, 9)
+    assert chunk is not None
+    return chunk
+
+
+def _rebuild_with_relation_chunk(parsed: XRaySave, relation_data: bytes) -> bytes:
+    """Replace only the relation-registry chunk and preserve its tail."""
+
+    relation_chunk = _relation_chunk_data(parsed)
+    chunks: list[bytes] = []
+    for chunk in parsed.container.chunks:
+        payload = relation_data if chunk.offset == relation_chunk.offset else chunk.data
+        chunks.append(struct.pack("<II", chunk.type, len(payload)) + payload)
+    return parsed.container.build(b"".join(chunks))
+
+
 def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
     object_chunk = _object_chunk_data(parsed)
     data_start = object_chunk.offset + 8
@@ -944,6 +1184,282 @@ def _remove_object_record(parsed: XRaySave, obj: XRayObject) -> bytes:
         raise _fail("OBJECT registry нельзя оставить без actor")
     object_data = struct.pack("<I", count - 1) + object_chunk.data[4:start] + object_chunk.data[end:]
     return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _replace_object_record(
+    parsed: XRaySave,
+    obj: XRayObject,
+    record: bytes,
+) -> bytes:
+    """Replace one registry record while preserving the surrounding chunks."""
+
+    object_chunk = _object_chunk_data(parsed)
+    data_start = object_chunk.offset + 8
+    start = obj.record_offset - data_start
+    end = obj.record_end - data_start
+    if start < 4 or end > len(object_chunk.data) or start >= end:
+        raise _fail(f"object 0x{obj.object_id:04X}: record boundary недействителен")
+    if len(record) < 4 or len(record) > 0x1_0000 * 2:
+        raise _fail("новая object record packet имеет недействительный размер")
+    object_data = (
+        object_chunk.data[:start]
+        + record
+        + object_chunk.data[end:]
+    )
+    return _rebuild_with_object_chunk(parsed, object_data)
+
+
+def _rewrite_inventory_upgrades(
+    parsed: XRaySave,
+    obj: XRayObject,
+    upgrades: tuple[str, ...],
+) -> bytes:
+    """Create one record with a replaced base-inventory upgrade vector."""
+
+    if obj.parent_id != parsed.actor_id:
+        raise _fail(f"object 0x{obj.object_id:04X} не принадлежит actor inventory")
+    if obj.version <= 123 or obj.upgrades_count_offset is None or obj.upgrades_end_offset is None:
+        raise _fail(
+            f"object 0x{obj.object_id:04X}: upgrades STATE не подтверждён для записи"
+        )
+    if len(upgrades) > _MAX_VECTOR:
+        raise _fail("upgrades vector слишком велик")
+    encoded_values: list[bytes] = []
+    for upgrade in upgrades:
+        if not upgrade.strip() or "\x00" in upgrade:
+            raise _fail("upgrade id должен быть непустым и не содержать NUL")
+        encoded = upgrade.encode("utf-8")
+        if len(encoded) > _MAX_STRING:
+            raise _fail("upgrade id слишком длинный")
+        encoded_values.append(encoded + b"\x00")
+
+    spawn = parsed.spawn_bytes(obj)
+    old_state_start = obj.state_offset - obj.spawn_offset
+    old_state_end = obj.state_end - obj.spawn_offset
+    count_offset = obj.upgrades_count_offset - obj.spawn_offset
+    upgrades_end = obj.upgrades_end_offset - obj.spawn_offset
+    state_size_offset = obj.state_size_offset - obj.spawn_offset
+    if not (
+        0 <= old_state_start <= count_offset <= upgrades_end <= old_state_end <= len(spawn)
+    ):
+        raise _fail(f"object 0x{obj.object_id:04X}: upgrades STATE offsets недействительны")
+
+    old_state = spawn[old_state_start:old_state_end]
+    count_relative = count_offset - old_state_start
+    end_relative = upgrades_end - old_state_start
+    replacement = struct.pack("<I", len(encoded_values)) + b"".join(encoded_values)
+    new_state = old_state[:count_relative] + replacement + old_state[end_relative:]
+    if len(new_state) + 2 > 0xFFFF:
+        raise _fail(f"object 0x{obj.object_id:04X}: STATE превышает u16 размер")
+
+    spawn_mut = bytearray(
+        spawn[:old_state_start] + new_state + spawn[old_state_end:]
+    )
+    struct.pack_into(
+        "<H",
+        spawn_mut,
+        state_size_offset,
+        len(new_state) + 2,
+    )
+    _parse_spawn(bytes(spawn_mut), 0)
+    update = parsed.update_bytes(obj)
+    if len(spawn_mut) > 0xFFFF or len(update) > 0xFFFF:
+        raise _fail("новая object record packet превышает u16 размер")
+    return (
+        struct.pack("<H", len(spawn_mut))
+        + bytes(spawn_mut)
+        + struct.pack("<H", len(update))
+        + update
+    )
+
+
+def _apply_xray_upgrade_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    upgrade_catalog: UpgradeCatalog | None,
+) -> bytes:
+    """Apply release-gated upgrades one actor-owned registry record at a time."""
+
+    if spec.id not in {"stalker-cs", "stalker-cop"}:
+        raise XRaySaveError(
+            f"X-Ray save: upgrades не подтверждены для release {spec.id!r}"
+        )
+    if upgrade_catalog is not None and upgrade_catalog.release_id != spec.id:
+        raise _fail(
+            f"X-Ray save: upgrade catalog release {upgrade_catalog.release_id!r} "
+            f"не совпадает с save release {spec.id!r}"
+        )
+    working = bytes(data)
+    for handle, upgrades in plan.upgrades:
+        current = parse_xray(working, spec, with_inventory=True)
+        obj = current.object_by_id(handle)
+        if upgrades and upgrade_catalog is None:
+            raise _fail(
+                f"object 0x{handle:04X}: для назначения upgrade id нужен официальный catalog"
+            )
+        for upgrade in upgrades:
+            definition = upgrade_catalog.resolve(upgrade) if upgrade_catalog else None
+            if definition is None:
+                raise _fail(
+                    f"upgrade id {upgrade!r} отсутствует в официальном catalog {spec.id!r}"
+                )
+            if definition.item_key is not None and not definition.applies_to(obj.name):
+                raise _fail(
+                    f"upgrade {upgrade!r} относится к {definition.item_key!r}, "
+                    f"а object 0x{handle:04X} — {obj.name!r}"
+                )
+        record = _rewrite_inventory_upgrades(current, obj, upgrades)
+        working = _replace_object_record(current, obj, record)
+    return working
+
+
+def _verify_xray_upgrade_edits(parsed: XRaySave, plan: EditPlan) -> None:
+    for handle, upgrades in plan.upgrades:
+        checked = parsed.object_by_id(handle)
+        if checked.upgrades != upgrades:
+            raise XRaySaveError(
+                f"X-Ray save: round-trip upgrades 0x{handle:04X} не совпал"
+            )
+
+
+def _validated_faction_catalog(
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> FactionCatalog:
+    if faction_catalog is None:
+        raise _fail(
+            f"для изменений группировок нужен официальный faction catalog {spec.id!r}"
+        )
+    if faction_catalog.release_id != spec.id:
+        raise _fail(
+            f"faction catalog release {faction_catalog.release_id!r} не совпадает "
+            f"с save release {spec.id!r}"
+        )
+    if not faction_catalog.factions:
+        raise _fail(f"faction catalog {spec.id!r} не содержит communities")
+    return faction_catalog
+
+
+def _faction_numeric_id(
+    catalog: FactionCatalog,
+    key: str,
+    *,
+    label: str,
+) -> int:
+    try:
+        faction = catalog.resolve(key)
+    except LookupError as exc:
+        raise _fail(
+            f"{label} {key!r} отсутствует в официальном catalog {catalog.release_id!r}"
+        ) from exc
+    if faction.numeric_id is None:
+        raise _fail(
+            f"{label} {key!r} не имеет подтверждённого numeric community id"
+        )
+    return faction.numeric_id
+
+
+def _apply_xray_relation_edits(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> bytes:
+    """Patch goodwill values in the actor's serialized relation row."""
+
+    if not plan.faction_relations:
+        return bytes(data)
+    catalog = _validated_faction_catalog(spec, faction_catalog)
+    if catalog.goodwill_min is None or catalog.goodwill_max is None:
+        raise _fail(
+            f"для {spec.id!r} не подтверждены community goodwill limits; запись запрещена"
+        )
+
+    requested = tuple(
+        (
+            _faction_numeric_id(catalog, key, label="faction relation"),
+            goodwill,
+        )
+        for key, goodwill in plan.faction_relations
+    )
+    for community_index, goodwill in requested:
+        if not catalog.goodwill_min <= goodwill <= catalog.goodwill_max:
+            raise _fail(
+                f"goodwill для community {community_index} должен быть в диапазоне "
+                f"{catalog.goodwill_min}…{catalog.goodwill_max}"
+            )
+
+    working = bytes(data)
+    for community_index, goodwill in requested:
+        current = parse_xray(working, spec, with_inventory=True)
+        registry = current.relation_registry
+        if registry is None:
+            raise _fail("relation registry не разобран; goodwill остаётся read-only")
+        try:
+            relation_data = patch_relation_registry(
+                _relation_chunk_data(current).data,
+                registry,
+                character_id=current.actor_id,
+                community_index=community_index,
+                goodwill=goodwill,
+            )
+        except XRayRelationError as exc:
+            raise _fail(str(exc)) from exc
+        working = _rebuild_with_relation_chunk(current, relation_data)
+    return working
+
+
+def _apply_xray_player_faction_edit(
+    data: bytes,
+    plan: EditPlan,
+    spec: XRayFormatSpec,
+    faction_catalog: FactionCatalog | None,
+) -> bytes:
+    """Patch the actor STATE community index after catalog validation."""
+
+    if plan.player_faction is None:
+        return bytes(data)
+    catalog = _validated_faction_catalog(spec, faction_catalog)
+    community_index = _faction_numeric_id(
+        catalog,
+        plan.player_faction,
+        label="player faction",
+    )
+    current = parse_xray(data, spec, with_inventory=True)
+    if current.player_community_offset is None:
+        raise _fail("actor community field не сериализуется для этого spawn version")
+    raw = bytearray(current.container.raw)
+    struct.pack_into("<i", raw, current.player_community_offset, community_index)
+    return current.container.build(bytes(raw))
+
+
+def _verify_xray_faction_edits(
+    parsed: XRaySave,
+    plan: EditPlan,
+    faction_catalog: FactionCatalog | None,
+) -> None:
+    if not plan.faction_relations and plan.player_faction is None:
+        return
+    catalog = _validated_faction_catalog(parsed.spec, faction_catalog)
+    if plan.player_faction is not None:
+        expected = _faction_numeric_id(
+            catalog,
+            plan.player_faction,
+            label="player faction",
+        )
+        if parsed.player_community_index != expected:
+            raise _fail(
+                f"round-trip player faction={parsed.player_community_index}, ожидалось {expected}"
+            )
+    actual = dict(parsed.faction_relations)
+    for key, _goodwill in plan.faction_relations:
+        community_index = _faction_numeric_id(catalog, key, label="faction relation")
+        expected = dict(plan.faction_relations)[key]
+        if actual.get(community_index) != expected:
+            raise _fail(
+                f"round-trip goodwill для {key!r} не совпал с {expected}"
+            )
 
 
 def _append_object_record(parsed: XRaySave, record: bytes) -> bytes:
@@ -1245,6 +1761,8 @@ def prepare_xray(
     spec: XRayFormatSpec,
     *,
     catalog: ItemCatalog | None = None,
+    upgrade_catalog: UpgradeCatalog | None = None,
+    faction_catalog: FactionCatalog | None = None,
 ) -> PreparedEdit:
     """Prepare proven X-Ray edits and verify their structural round-trip."""
 
@@ -1256,22 +1774,57 @@ def prepare_xray(
         raise XRaySaveError("X-Ray save: attach требует prototype/registry writer и запрещён")
     if plan.raw:
         raise XRaySaveError("X-Ray save: raw patch запрещён для сохранения неизвестных полей")
+    if plan.upgrades and spec.id not in {"stalker-cs", "stalker-cop"}:
+        raise XRaySaveError(
+            f"X-Ray save: upgrades не подтверждены для release {spec.id!r}"
+        )
     if plan.money is not None and not 0 <= plan.money <= 2_000_000_000:
         raise XRaySaveError("X-Ray save: деньги должны быть в диапазоне 0…2 000 000 000")
 
     parsed = parse_xray(payload, spec, with_inventory=True)
     before_structural = parsed
     working_data = payload
-    if plan.detach or plan.adds:
-        working_data = _apply_xray_structural_edits(
-            payload,
+    if plan.faction_relations:
+        working_data = _apply_xray_relation_edits(
+            working_data,
             plan,
             spec,
-            catalog,
+            faction_catalog,
         )
+    if plan.player_faction is not None:
+        working_data = _apply_xray_player_faction_edit(
+            working_data,
+            plan,
+            spec,
+            faction_catalog,
+        )
+    if plan.detach or plan.adds or plan.upgrades:
+        if plan.detach or plan.adds:
+            working_data = _apply_xray_structural_edits(
+                working_data,
+                plan,
+                spec,
+                catalog,
+            )
+        if plan.upgrades:
+            working_data = _apply_xray_upgrade_edits(
+                working_data,
+                plan,
+                spec,
+                upgrade_catalog,
+            )
+    if working_data != payload:
         parsed = parse_xray(working_data, spec, with_inventory=True)
 
-    if plan.money is None and not plan.stacks:
+    if (
+        plan.money is None
+        and not plan.stacks
+        and not plan.durability
+        and not plan.faction_relations
+        and plan.player_faction is None
+    ):
+        _verify_xray_upgrade_edits(parsed, plan)
+        _verify_xray_faction_edits(parsed, plan, faction_catalog)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -1302,8 +1855,28 @@ def prepare_xray(
         struct.pack_into("<H", raw, obj.ammo_state_offset, count)
         struct.pack_into("<H", raw, obj.ammo_update_offset, count)
 
+    requested_durability = dict(plan.durability)
+    for handle, condition in requested_durability.items():
+        obj = parsed.object_by_id(handle)
+        if (
+            obj.condition is None
+            or obj.condition_family not in CONDITION_FAMILIES
+            or obj.condition_offset is None
+        ):
+            raise XRaySaveError(
+                f"X-Ray save: object 0x{handle:04X} не является подтверждённым item condition"
+            )
+        try:
+            patch_condition(raw, obj, obj.condition_family, condition)
+        except ConditionCodecError as exc:
+            raise XRaySaveError(
+                f"X-Ray save: condition для 0x{handle:04X} не разобран: {exc}"
+            ) from exc
+
     rebuilt = parsed.container.build(bytes(raw))
     after = parse_xray(rebuilt, spec, with_inventory=True)
+    _verify_xray_upgrade_edits(after, plan)
+    _verify_xray_faction_edits(after, plan, faction_catalog)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"
@@ -1314,6 +1887,20 @@ def prepare_xray(
             raise XRaySaveError(
                 f"X-Ray save: round-trip ammo 0x{handle:04X} не совпал с {count}"
             )
+    for handle, condition in requested_durability.items():
+        checked = after.object_by_id(handle)
+        if checked.condition is None or not math.isclose(
+            checked.condition, condition, rel_tol=0.0, abs_tol=1e-6
+        ):
+            raise XRaySaveError(
+                f"X-Ray save: round-trip condition 0x{handle:04X} не совпал с {condition}"
+            )
+        if checked.update_condition_offset is not None:
+            expected = min(255, max(0, math.floor(condition * 255.0 + 0.5)))
+            if after.container.raw[checked.update_condition_offset] != expected:
+                raise XRaySaveError(
+                    f"X-Ray save: round-trip UPDATE condition 0x{handle:04X} не совпал"
+                )
     for handle, _ in plan.detach:
         if any(item.handle == handle for item in after.inventory):
             raise XRaySaveError(

@@ -13,7 +13,10 @@
     <span class="brand-name">S.T.A.L.K.E.R. Save Editor</span>
     <span class="badge badge-version" id="version">web</span>
   </div>
-  <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+  <div class="header-actions">
+    <button class="button support-button" id="support-button" type="button">♡ Support project</button>
+    <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+  </div>
 </header>
 
 <section class="filebar">
@@ -70,6 +73,22 @@
         </div>
       </fieldset>
 
+      <fieldset class="group faction-group" id="faction-group">
+        <legend>Группировка и отношения</legend>
+        <p id="faction-status" class="muted">Открой X-Ray сейв с официальным каталогом.</p>
+        <div class="row">
+          <label for="player-faction-select">Группировка игрока</label>
+          <span id="player-faction-current" class="mono">—</span>
+          <select id="player-faction-select"></select>
+          <button class="button" id="player-faction-stage" disabled>Застейджить</button>
+        </div>
+        <p id="faction-warning" class="faction-warning" hidden></p>
+        <table class="grid compact-grid" id="faction-relations">
+          <thead><tr><th>Группировка</th><th>Текущее goodwill</th><th>Новое</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="muted">Значения появятся после анализа X-Ray сейва.</td></tr></tbody>
+        </table>
+      </fieldset>
+
       <fieldset class="group">
         <legend>Технические метаданные контейнера</legend>
         <table class="grid" id="metadata">
@@ -91,8 +110,8 @@
       </div>
       <table class="grid" id="inventory">
         <thead><tr>
-          <th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
-          <th>Количество</th><th>Вес</th><th>Handle</th><th>Изменить / удалить</th>
+          <th>Знак</th><th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
+          <th>Количество</th><th>Вес</th><th>Прочность</th><th>Handle</th><th>Изменить / удалить</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -106,6 +125,20 @@
           <label for="item-add-quantity">Количество</label>
           <input id="item-add-quantity" type="number" min="1" max="65535" step="1" value="1">
           <button class="button" id="item-add-stage">Застейджить добавление</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="group" id="upgrade-group" disabled>
+        <legend>Апгрейды снаряжения / оружия</legend>
+        <p class="muted" id="upgrade-status">Выбери предмет с подтверждённым upgrade vector.</p>
+        <div class="row">
+          <label for="upgrade-item-select">Предмет</label>
+          <select id="upgrade-item-select"></select>
+        </div>
+        <div class="upgrade-options" id="upgrade-options"></div>
+        <div class="row">
+          <button class="button" id="upgrade-stage">Застейджить апгрейды</button>
+          <button class="button" id="upgrade-clear" disabled>Очистить апгрейды</button>
         </div>
       </fieldset>
     </div>
@@ -130,6 +163,43 @@
     </div>
   </section>
 </main>
+
+<div class="modal-backdrop" id="support-modal" hidden>
+  <section class="support-modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
+    <div class="support-modal-header">
+      <h2 id="support-title">Support project</h2>
+      <button class="modal-close" id="support-close" type="button" aria-label="Close">×</button>
+    </div>
+    <p class="support-intro">If you find the project useful, you can support its development.</p>
+
+    <div class="support-method">
+      <div class="support-method-title">PayPal</div>
+      <div class="support-value-row">
+        <code class="support-value">breygel.dima@gmail.com</code>
+        <button class="button support-copy" type="button" data-copy="breygel.dima@gmail.com">Copy</button>
+      </div>
+    </div>
+
+    <div class="support-method">
+      <div class="support-method-title">Binance Pay</div>
+      <div class="support-detail">Binance ID:</div>
+      <div class="support-value-row">
+        <code class="support-value">434350727</code>
+        <button class="button support-copy" type="button" data-copy="434350727">Copy</button>
+      </div>
+    </div>
+
+    <div class="support-method">
+      <div class="support-method-title">USDT</div>
+      <div class="support-detail">Network: TRON (TRC20)</div>
+      <div class="support-detail">Address:</div>
+      <div class="support-value-row">
+        <code class="support-value">TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds</code>
+        <button class="button support-copy" type="button" data-copy="TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds">Copy</button>
+      </div>
+    </div>
+  </section>
+</div>
 
 <section class="downloads">
   <span class="downloads-title">Десктоп-версия</span>

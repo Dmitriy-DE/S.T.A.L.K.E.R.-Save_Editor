@@ -75,6 +75,21 @@ prototype или полей durability/upgrades. Inventory grid/position,
 reference-safe deletion, attachments и game semantics остаются отдельными
 ограничениями.
 
+## Additional installed-save corpus probe — 2026-09-16
+
+The current installed official original-trilogy save directories were scanned
+read-only. Personal filenames, paths, bytes, and hashes are omitted. All
+detected candidates parsed successfully:
+
+| Release | Candidate saves | Parsed | Inventory count |
+| --- | ---: | ---: | ---: |
+| Original Shadow of Chernobyl | 6 | 6 | 5–88 |
+| Original Clear Sky | 59 | 59 | 7–139 |
+| Original Call of Pripyat | 171 | 171 | 28–229 |
+
+This is a parser-coverage result only. It does not turn the structural writer
+probe into proof of game load/re-save or persistence.
+
 ## Ограничения
 
 - Результаты относятся к обнаруженному на этой машине original-корпусу и не

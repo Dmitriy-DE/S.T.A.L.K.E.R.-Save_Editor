@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "web"))
 
 import web_bridge  # noqa: E402 - web/ must be on sys.path first
-from test_xray_save import _fixture  # noqa: E402
+from test_xray_durability import _condition_fixture  # noqa: E402
+from test_xray_save import _fixture, _relation_registry  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
 from editor.capabilities import FormatCapabilities  # noqa: E402
@@ -138,6 +140,175 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert result["stacks"] == [["0x00001234", 30, 44]]
 
 
+def test_web_bridge_exposes_and_prepares_experimental_faction_edits() -> None:
+    web_bridge.install_catalogs(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "releases": {
+                    "stalker-cop": {
+                        "items": [
+                            {
+                                "key": "ammo_9x39_pab9",
+                                "category": "ammo",
+                                "max_stack": 30,
+                                "serialization_family": "ammo",
+                            }
+                        ],
+                        "factions": [
+                            {
+                                "key": "actor",
+                                "display_name": "Actor",
+                                "numeric_id": 0,
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                            {
+                                "key": "bandit",
+                                "display_name": "Bandit",
+                                "numeric_id": 1,
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                        ],
+                        "goodwill_min": -3000,
+                        "goodwill_max": 1000,
+                        "attitude_neutral_threshold": -999,
+                        "attitude_friend_threshold": 999,
+                    }
+                },
+            }
+        )
+    )
+    data = _fixture(
+        community=0,
+        registry=_relation_registry(actor_values=((0, 125), (1, -240))),
+    )
+
+    snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
+
+    assert snapshot["player_faction_index"] == 0
+    assert snapshot["player_faction_key"] == "actor"
+    assert snapshot["faction_goodwill_min"] == -3000
+    assert snapshot["faction_goodwill_max"] == 1000
+    assert [row["value"] for row in snapshot["faction_relations"]] == [125, -240]
+    assert all(row["stored"] for row in snapshot["faction_relations"])
+    assert snapshot["capabilities"]["edit_relations"] is True
+    assert snapshot["capabilities"]["edit_player_faction"] is True
+    assert "edit_relations" in snapshot["capabilities"]["experimental_fields"]
+    assert "edit_player_faction" in snapshot["capabilities"]["experimental_fields"]
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            json.dumps([["bandit", 375]]),
+            "bandit",
+        )
+    )
+    assert result["faction_relations"] == [["bandit", -240, 375]]
+    assert result["player_faction"] == [0, 1]
+
+
+def test_web_bridge_prepares_faction_edits_when_capability_is_explicitly_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    web_bridge.install_catalogs(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "releases": {
+                    "stalker-cop": {
+                        "items": [
+                            {
+                                "key": "ammo_9x39_pab9",
+                                "category": "ammo",
+                                "max_stack": 30,
+                                "serialization_family": "ammo",
+                            }
+                        ],
+                        "factions": [
+                            {
+                                "key": "actor",
+                                "numeric_id": 0,
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                            {
+                                "key": "bandit",
+                                "numeric_id": 1,
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                        ],
+                        "goodwill_min": -3000,
+                        "goodwill_max": 1000,
+                    }
+                },
+            }
+        )
+    )
+    data = _fixture(
+        community=0,
+        registry=_relation_registry(actor_values=((0, 125), (1, -240))),
+    )
+    web_bridge.analyze(data, "slot.scop")
+    format_ = web_bridge._state["format"]
+    monkeypatch.setattr(
+        format_,
+        "capabilities",
+        replace(
+            format_.capabilities,
+            edit_relations=True,
+            edit_player_faction=True,
+        ),
+    )
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            json.dumps([["bandit", 375]]),
+            "bandit",
+        )
+    )
+
+    assert result["faction_relations"] == [["bandit", -240, 375]]
+    assert result["player_faction"] == [0, 1]
+
+
+def test_web_bridge_exposes_and_prepares_experimental_condition_edit() -> None:
+    data = _condition_fixture(version=128, outer=6)
+    snapshot = json.loads(web_bridge.analyze(data, "condition.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["condition"] == pytest.approx(0.25)
+    assert item["condition_editable"] is True
+    assert item["storage"] is None
+    assert snapshot["capabilities"]["edit_durability"] is True
+    assert "edit_durability" in snapshot["capabilities"]["experimental_fields"]
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            json.dumps([[0x3456, 0.75]]),
+        )
+    )
+    assert result["durability"] == [["0x00003456", pytest.approx(0.25), pytest.approx(0.75)]]
+
+
 def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:
     data = _fixture()
     snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
@@ -194,6 +365,7 @@ def test_web_bridge_accepts_generated_official_catalog_metadata() -> None:
                         "items": [
                             {
                                 "key": "ammo_9x39_pab9",
+                                "display_name": "Патроны 9x39",
                                 "category": "ammo",
                                 "max_stack": 30,
                                 "serialization_family": "ammo",
@@ -208,3 +380,72 @@ def test_web_bridge_accepts_generated_official_catalog_metadata() -> None:
 
     assert snapshot["catalog_source"] == "generated-official"
     assert snapshot["catalog_items"][0]["key"] == "ammo_9x39_pab9"
+    assert snapshot["catalog_items"][0]["name"] == "Патроны 9x39"
+
+
+def test_web_bridge_exposes_and_prepares_release_catalog_upgrades() -> None:
+    web_bridge.install_catalogs(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "releases": {
+                    "stalker-cop": {
+                        "items": [
+                            {
+                                "key": "ammo_9x39_pab9",
+                                "category": "ammo",
+                                "max_stack": 30,
+                                "serialization_family": "ammo",
+                                "icon_x": 2,
+                                "icon_y": 3,
+                                "icon_texture": "ui_icon_equipment",
+                            }
+                        ],
+                        "upgrades": [
+                            {
+                                "key": "up_a_new",
+                                "display_name": "New A",
+                                "category": "weapon",
+                                "item_key": "ammo_9x39_pab9",
+                                "applicable_item_keys": ["ammo_9x39_pab9"],
+                                "property": "fire_wound_immunity",
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                            {
+                                "key": "up_c_new",
+                                "display_name": "New C",
+                                "category": "weapon",
+                                "item_key": "ammo_9x39_pab9",
+                                "applicable_item_keys": ["ammo_9x39_pab9"],
+                                "source": "fixture",
+                                "release_id": "stalker-cop",
+                            },
+                        ],
+                    }
+                },
+            }
+        )
+    )
+    data = _fixture(upgrades=("up_a_old",))
+    snapshot = json.loads(web_bridge.analyze(data, "slot.scop"))
+
+    assert snapshot["upgrade_catalog_available"] is True
+    assert snapshot["catalog_items"][0]["icon_x"] == 2
+    assert snapshot["inventory"][0]["upgrades"] == ["up_a_old"]
+    assert snapshot["inventory"][0]["upgrade_editable"] is True
+    assert snapshot["inventory"][0]["icon_x"] == 2
+    assert snapshot["inventory"][0]["icon_y"] == 3
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            json.dumps([[0x1234, ["up_a_new", "up_c_new"]]]),
+        )
+    )
+    assert result["upgrades"] == [
+        ["0x00001234", ["up_a_old"], ["up_a_new", "up_c_new"]]
+    ]

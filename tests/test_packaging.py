@@ -99,3 +99,10 @@ def test_manifest_does_not_call_its_own_output_a_dirty_source(tmp_path: Path) ->
 
     outside = build._git_state(ROOT, ignore=tmp_path)
     assert isinstance(outside[1], tuple)
+
+
+def test_pyinstaller_spec_bundles_generated_official_catalog() -> None:
+    spec = (ROOT / "packaging" / "editor.spec").read_text(encoding="utf-8")
+
+    assert 'ROOT / "web" / "catalogs.json"' in spec
+    assert 'datas.append((str(catalog_path), "web"))' in spec

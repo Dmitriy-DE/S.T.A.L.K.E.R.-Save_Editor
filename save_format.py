@@ -7,6 +7,7 @@ import zlib
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Literal
 
 from editor.codec import CodecError
 from editor.codec import decompress as codec_decompress
@@ -85,6 +86,11 @@ class InventoryItem:
     position_label: str | None = None
     size_label: str | None = None
     count_max: int = 1_000_000
+    upgrades: tuple[str, ...] = ()
+    upgrade_editable: bool = False
+    condition: float | None = None
+    condition_editable: bool = False
+    storage: Literal["equipped", "inventory"] | None = None
 
     @property
     def handle_hex(self) -> str:
@@ -153,6 +159,8 @@ class SaveInfo:
     normal_time_factor: float | None = None
     level_name: str | None = None
     container_version: int | None = None
+    player_faction_index: int | None = None
+    faction_relations: tuple[tuple[int, int], ...] = ()
 
 
 @dataclass(frozen=True)

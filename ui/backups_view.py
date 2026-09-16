@@ -40,18 +40,26 @@ class RestoreWorker(QThread):
         self,
         service: EditorService,
         record: BackupRecord,
-        destination: Path,
+        destination: Path | None = None,
+        *,
+        in_place: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.service = service
         self.record = record
-        self.destination = Path(destination)
+        self.destination = Path(destination) if destination is not None else None
+        self.in_place = in_place
 
     def run(self) -> None:
         try:
             self.progress.emit("Восстановление: проверка backup…")
-            receipt = self.service.restore_local(self.record, self.destination)
+            if self.in_place:
+                receipt = self.service.restore_in_place(self.record)
+            else:
+                if self.destination is None:
+                    raise ValueError("Для restore copy не задан destination")
+                receipt = self.service.restore_local(self.record, self.destination)
             self.progress.emit("Восстановление: output проверен по SHA256")
             self.completed.emit(receipt)
         except Exception as exc:
@@ -59,9 +67,10 @@ class RestoreWorker(QThread):
 
 
 class BackupView(QWidget):
-    """Display journal/hash status and stage a restore to a new path."""
+    """Display journal/hash status and stage copy or in-place restore."""
 
     restore_requested = Signal(object, object)
+    restore_in_place_requested = Signal(object)
     choose_destination_requested = Signal()
     folder_open_requested = Signal(object)
 
@@ -131,6 +140,13 @@ class BackupView(QWidget):
         self.restore_button.setEnabled(False)
         self.restore_button.clicked.connect(self._request_restore)
         actions.addWidget(self.restore_button)
+        self.restore_in_place_button = QPushButton("Откатить исходный слот")
+        self.restore_in_place_button.setEnabled(False)
+        self.restore_in_place_button.setToolTip(
+            "Явно вернуть backup в исходный слот после проверки текущего SHA"
+        )
+        self.restore_in_place_button.clicked.connect(self._request_restore_in_place)
+        actions.addWidget(self.restore_in_place_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
@@ -179,13 +195,39 @@ class BackupView(QWidget):
     @staticmethod
     def _operation_text(operation: dict[str, object]) -> str:
         parts: list[str] = []
+        mode = operation.get("mode")
+        if mode:
+            parts.append(str(mode))
         if operation.get("money") is not None:
             parts.append(f"money={operation['money']}")
-        for key in ("stack_count", "move_count", "detach_count", "attach_count", "raw_count"):
+        for key in (
+            "stack_count",
+            "move_count",
+            "detach_count",
+            "attach_count",
+            "raw_count",
+            "add_count",
+            "upgrade_count",
+            "durability_count",
+            "relation_count",
+        ):
             value = operation.get(key)
             if value:
                 parts.append(f"{key}={value}")
+        if operation.get("player_faction"):
+            parts.append("player_faction")
         return ", ".join(parts) or "без изменений"
+
+    @staticmethod
+    def _can_restore_in_place(record: BackupRecord) -> bool:
+        if not record.source_path.strip() or not record.output_path:
+            return False
+        try:
+            source = Path(record.source_path).expanduser().resolve(strict=False)
+            output = Path(record.output_path).expanduser().resolve(strict=False)
+        except OSError:
+            return False
+        return source == output
 
     def selected_record(self) -> BackupRecord | None:
         row = self.table.currentRow()
@@ -196,6 +238,7 @@ class BackupView(QWidget):
     def _selection_changed(self) -> None:
         self._preview_record = None
         self.restore_button.setEnabled(False)
+        self.restore_in_place_button.setEnabled(False)
         record = self.selected_record()
         self.preview_button.setEnabled(record is not None)
         if record is None:
@@ -220,8 +263,9 @@ class BackupView(QWidget):
         self.preview_label.setText(
             f"Restore preview готов: backup {checked.backup_path.name}; "
             f"SHA256 {checked.source_sha256}; размер {checked.backup_path.stat().st_size} B. "
-            "Будет создан новый файл, существующий путь не перезаписывается."
+            "Можно создать новую копию или явно откатить исходный слот."
         )
+        self.restore_in_place_button.setEnabled(self._can_restore_in_place(checked))
         self._destination_changed()
 
     def _destination_changed(self) -> None:
@@ -235,6 +279,10 @@ class BackupView(QWidget):
         destination = self.destination_edit.text().strip()
         if destination:
             self.restore_requested.emit(self._preview_record, Path(destination).expanduser())
+
+    def _request_restore_in_place(self) -> None:
+        if self._preview_record is not None:
+            self.restore_in_place_requested.emit(self._preview_record)
 
     def _choose_destination(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
@@ -262,6 +310,7 @@ class BackupView(QWidget):
             self.destination_edit,
             self.preview_button,
             self.restore_button,
+            self.restore_in_place_button,
         ):
             widget.setEnabled(not busy)
         if not busy:
@@ -289,6 +338,23 @@ class BackupView(QWidget):
         self.progress_label.setText("Restore verified; backup и journal сохранены")
         self._preview_record = None
         self.restore_button.setEnabled(False)
+        self.restore_in_place_button.setEnabled(False)
+
+    def mark_in_place_restored(self, receipt: RestoreReceipt) -> None:
+        self.refresh()
+        safety = (
+            f"; safety backup: {receipt.safety_backup_path}"
+            if receipt.safety_backup_path is not None
+            else ""
+        )
+        self.preview_label.setText(
+            f"Исходный слот восстановлен: {receipt.output_path}; "
+            f"SHA256 {receipt.output_sha256}{safety}"
+        )
+        self.progress_label.setText("In-place restore verified; backup и journal сохранены")
+        self._preview_record = None
+        self.restore_button.setEnabled(False)
+        self.restore_in_place_button.setEnabled(False)
 
 
 __all__ = ["BackupView", "RestoreWorker"]
