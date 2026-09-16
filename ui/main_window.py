@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTableWidget,
@@ -603,12 +604,14 @@ class MainWindow(QMainWindow):
         self.changes_view = ChangesView(self)
         self.changes_view.preview_requested.connect(self._start_preview)
         self.changes_view.apply_requested.connect(self._choose_and_start_apply)
+        self.changes_view.replace_requested.connect(self._confirm_and_start_replace)
         self.changes_view.choose_output_requested.connect(self._choose_output)
         return self.changes_view
 
     def _build_backups_tab(self) -> QWidget:
         self.backups_view = BackupView(backup_dirs=backup_dirs(), parent=self)
         self.backups_view.restore_requested.connect(self._start_restore)
+        self.backups_view.restore_in_place_requested.connect(self._start_restore_in_place)
         self.backups_view.folder_open_requested.connect(self._open_backup_folder)
         self.backups_view.refresh()
         return self.backups_view
@@ -1281,11 +1284,17 @@ class MainWindow(QMainWindow):
         has_changes = self.edit_actions_enabled and self._has_staged_changes()
         can_preview = has_changes
         can_apply = self.prepared_edit is not None
+        can_replace = bool(
+            can_apply
+            and self.snapshot is not None
+            and self.snapshot.source_kind == "local"
+        )
         self.preview_button.setEnabled(can_preview and not busy)
         self.save_copy_button.setEnabled(can_apply and not busy)
         self.changes_view.set_actions_enabled(
             preview=can_preview,
             apply=can_apply,
+            replace=can_replace,
             busy=busy,
         )
         self.backups_view.set_busy(busy)
@@ -1481,10 +1490,108 @@ class MainWindow(QMainWindow):
         self._update_action_buttons()
         worker.start()
 
+    def _confirm_and_start_replace(self) -> None:
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
+            return
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Нет текущего snapshot для replace")
+            return
+        if self.snapshot.source_kind != "local":
+            self._show_operation_error(
+                "Замена исходного слота доступна только для desktop local save"
+            )
+            return
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+        if self.prepared_edit.plan != current_plan:
+            self._invalidate_preview("staged форма изменилась после preview")
+            self._show_operation_error("Preview устарел после изменения формы; создай его заново")
+            return
+
+        source_path = Path(self.snapshot.path)
+        answer = QMessageBox.warning(
+            self,
+            "Заменить исходный слот?",
+            (
+                f"Файл будет заменён напрямую:\n{source_path}\n\n"
+                "Перед заменой создаётся проверяемый backup. Закрой игру и Steam "
+                "Cloud, затем подтверди действие."
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            self._start_replace()
+
+    def _start_replace(self, backup_dir: Path | None = None) -> None:
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
+            return
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Нет текущего snapshot для replace")
+            return
+        if self.snapshot.source_kind != "local":
+            self._show_operation_error(
+                "Замена исходного слота доступна только для desktop local save"
+            )
+            return
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+        if self.prepared_edit.plan != current_plan:
+            self._invalidate_preview("staged форма изменилась после preview")
+            self._show_operation_error("Preview устарел после изменения формы; создай его заново")
+            return
+
+        source_path = Path(self.snapshot.path)
+        backup_path = (
+            Path(backup_dir).expanduser() if backup_dir is not None else backup_dirs()[0]
+        )
+        worker = OperationWorker(
+            self.service,
+            mode="replace",
+            data=self.snapshot.data,
+            plan=self.prepared_edit.plan,
+            source_path=source_path,
+            backup_dir=backup_path,
+            catalog=self.snapshot.catalog,
+            game_catalog=self.snapshot.game_catalog,
+            parent=self,
+        )
+        worker.set_prepared(self.prepared_edit)
+        worker.apply_ready.connect(self._on_apply_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "replace"
+        self._operation_thread = worker
+        self.changes_view.set_progress("Запуск замены исходного слота…")
+        self.status_label.setText("Замена исходного слота…")
+        self._update_action_buttons()
+        worker.start()
+
     def _on_apply_ready(self, receipt) -> None:
+        was_replace = self._operation_kind == "replace"
         self.prepared_edit = None
-        self.changes_view.mark_applied(receipt)
-        self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
+        if was_replace:
+            self.changes_view.mark_replaced(receipt)
+            self.status_label.setText(f"Исходный слот заменён: {receipt.output_path}")
+        else:
+            self.changes_view.mark_applied(receipt)
+            self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
         self.apply_ready.emit(receipt)
 
     def _start_restore(self, record, output_path: Path) -> None:
@@ -1509,6 +1616,30 @@ class MainWindow(QMainWindow):
     def _on_restore_ready(self, receipt) -> None:
         self.backups_view.mark_restored(receipt)
         self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
+        self.restore_ready.emit(receipt)
+
+    def _start_restore_in_place(self, record) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            return
+        if getattr(record, "status", None) != "verified":
+            self._show_operation_error("Выбранный backup не прошёл проверку SHA256")
+            return
+        worker = RestoreWorker(self.service, record, in_place=True, parent=self)
+        worker.completed.connect(self._on_restore_in_place_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "restore_in_place"
+        self._operation_thread = worker
+        self.backups_view.set_progress("Запуск отката исходного слота…")
+        self.status_label.setText("Восстановление исходного слота…")
+        self._update_action_buttons()
+        worker.start()
+
+    def _on_restore_in_place_ready(self, receipt) -> None:
+        self.backups_view.mark_in_place_restored(receipt)
+        self.status_label.setText(f"Исходный слот восстановлен: {receipt.output_path}")
         self.restore_ready.emit(receipt)
 
     def _on_cloud_snapshot_ready(self, snapshot: CloudSnapshot) -> None:

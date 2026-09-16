@@ -72,6 +72,19 @@ class OperationWorker(QThread):
                 )
                 self.apply_ready.emit(receipt)
                 return
+            if self.mode == "replace":
+                if self.source_path is None or self.backup_dir is None:
+                    raise ValueError("Для replace нужны source и backup paths")
+                self.progress.emit(
+                    "Создание backup и атомарная замена исходного слота…"
+                )
+                receipt = self.service.replace_local(
+                    self.source_path,
+                    self.plan_prepared,
+                    self.backup_dir,
+                )
+                self.apply_ready.emit(receipt)
+                return
             raise ValueError(f"Неизвестный режим операции: {self.mode}")
         except FormatDetectionError as exc:
             self.failed.emit(str(exc))

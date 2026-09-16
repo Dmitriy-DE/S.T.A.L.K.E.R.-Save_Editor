@@ -171,3 +171,100 @@ def test_export_local_noreplace_race_preserves_racing_output(
         storage.export_local(source, output, prepared, backup_dir)
     assert output.read_bytes() == b"racing writer"
     assert source.read_bytes() == synthetic_save
+
+
+def test_replace_local_writes_source_only_after_backup_and_readback(
+    tmp_path: Path, synthetic_save: bytes
+) -> None:
+    source, prepared = _prepared(tmp_path, synthetic_save)
+    backup_dir = tmp_path / "backups"
+
+    receipt = storage.replace_local(source, prepared, backup_dir)
+
+    assert receipt.output_path == source
+    assert source.read_bytes() == prepared.data
+    assert receipt.output_sha256 == hashlib.sha256(prepared.data).hexdigest()
+    assert receipt.backup_path.read_bytes() == synthetic_save
+    payload = json.loads(receipt.backup_path.with_suffix(".json").read_text("utf-8"))
+    assert payload["status"] == "verified"
+    assert payload["source_path"] == str(source)
+    assert payload["output_path"] == str(source)
+    assert payload["source_sha256"] == hashlib.sha256(synthetic_save).hexdigest()
+    assert payload["output_sha256"] == receipt.output_sha256
+
+
+def test_replace_local_temp_failure_keeps_original_slot_and_backup(
+    tmp_path: Path,
+    synthetic_save: bytes,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, prepared = _prepared(tmp_path, synthetic_save)
+    backup_dir = tmp_path / "backups"
+
+    def fail_temp(path: Path, data: bytes) -> None:
+        path.write_bytes(data[:11])
+        raise OSError("injected in-place temp failure")
+
+    monkeypatch.setattr(storage, "_write_temp_bytes", fail_temp)
+    with pytest.raises(sf.SaveError, match="temp|временн"):
+        storage.replace_local(source, prepared, backup_dir)
+
+    assert source.read_bytes() == synthetic_save
+    assert list(backup_dir.glob("*_ORIGINAL.sav"))
+    assert not list(source.parent.glob(f".{source.name}.*.tmp"))
+
+
+def test_replace_local_rechecks_source_before_atomic_replace(
+    tmp_path: Path,
+    synthetic_save: bytes,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, prepared = _prepared(tmp_path, synthetic_save)
+    backup_dir = tmp_path / "backups"
+    real_write_journal = storage._write_journal
+
+    def change_source(path: Path, payload: dict[str, object]) -> None:
+        real_write_journal(path, payload)
+        source.write_bytes(synthetic_save + b"changed before replace")
+
+    monkeypatch.setattr(storage, "_write_journal", change_source)
+    with pytest.raises(sf.SaveError, match="Источник изменился"):
+        storage.replace_local(source, prepared, backup_dir)
+
+    assert source.read_bytes() == synthetic_save + b"changed before replace"
+    assert list(backup_dir.glob("*_ORIGINAL.sav"))
+    assert not list(source.parent.glob(f".{source.name}.*.tmp"))
+
+
+def test_restore_in_place_replaces_slot_and_preserves_safety_backup(
+    tmp_path: Path, synthetic_save: bytes
+) -> None:
+    source, prepared = _prepared(tmp_path, synthetic_save)
+    backup_dir = tmp_path / "backups"
+    replaced = storage.replace_local(source, prepared, backup_dir)
+    journal = replaced.backup_path.with_suffix(".json")
+
+    restored = storage.restore_in_place(journal)
+
+    assert restored.output_path == source
+    assert restored.backup_path == replaced.backup_path
+    assert restored.safety_backup_path is not None
+    assert restored.safety_backup_path.read_bytes() == prepared.data
+    assert source.read_bytes() == synthetic_save
+    assert storage.inspect_backup(journal).status == "verified"
+    safety_journal = restored.safety_backup_path.with_suffix(".json")
+    assert storage.inspect_backup(safety_journal).status == "verified"
+
+
+def test_restore_in_place_refuses_slot_changed_after_replace(
+    tmp_path: Path, synthetic_save: bytes
+) -> None:
+    source, prepared = _prepared(tmp_path, synthetic_save)
+    backup_dir = tmp_path / "backups"
+    replaced = storage.replace_local(source, prepared, backup_dir)
+    source.write_bytes(b"a newer user save")
+
+    with pytest.raises(sf.SaveError, match="изменился|SHA256"):
+        storage.restore_in_place(replaced.backup_path.with_suffix(".json"))
+
+    assert source.read_bytes() == b"a newer user save"

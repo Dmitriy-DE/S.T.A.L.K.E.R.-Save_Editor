@@ -29,6 +29,7 @@ class ChangesView(QWidget):
 
     preview_requested = Signal()
     apply_requested = Signal()
+    replace_requested = Signal()
     choose_output_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -74,6 +75,13 @@ class ChangesView(QWidget):
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply_requested.emit)
         actions.addWidget(self.apply_button)
+        self.replace_button = QPushButton("Заменить исходный слот…")
+        self.replace_button.setEnabled(False)
+        self.replace_button.setToolTip(
+            "Явно заменить выбранный слот после backup и preview"
+        )
+        self.replace_button.clicked.connect(self.replace_requested.emit)
+        actions.addWidget(self.replace_button)
         self.cloud_button = QPushButton("Загрузить в Steam")
         self.cloud_button.setEnabled(False)
         self.cloud_button.setToolTip("Cloud UI подключается в U06")
@@ -258,26 +266,34 @@ class ChangesView(QWidget):
         )
         self.progress_label.setText("Preview проверен: CRC/round-trip прошли")
         self.apply_button.setEnabled(True)
+        # MainWindow enables in-place replacement only after the worker has
+        # finished and has confirmed that the snapshot is a local save.
+        self.replace_button.setEnabled(False)
         self.error_label.clear()
         self.error_label.setVisible(False)
 
     def invalidate_preview(self, reason: str) -> None:
         self.preview_status_label.setText(f"Preview недействителен: {reason}")
         self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
 
     def set_busy(self, busy: bool) -> None:
         if busy:
             self.preview_button.setEnabled(False)
             self.apply_button.setEnabled(False)
+            self.replace_button.setEnabled(False)
         self.choose_output_button.setEnabled(not busy)
         self.destination_edit.setEnabled(not busy)
         self.cloud_button.setEnabled(False)
 
-    def set_actions_enabled(self, *, preview: bool, apply: bool, busy: bool) -> None:
+    def set_actions_enabled(
+        self, *, preview: bool, apply: bool, replace: bool = False, busy: bool
+    ) -> None:
         """Set action state from MainWindow's single operation gate."""
 
         self.preview_button.setEnabled(bool(preview) and not busy)
         self.apply_button.setEnabled(bool(apply) and not busy)
+        self.replace_button.setEnabled(bool(replace) and not busy)
         self.choose_output_button.setEnabled(not busy)
         self.destination_edit.setEnabled(not busy)
         self.cloud_button.setEnabled(False)
@@ -302,6 +318,18 @@ class ChangesView(QWidget):
         )
         self.progress_label.setText("Local export подтверждён read-back SHA")
         self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
+
+    def mark_replaced(self, receipt) -> None:
+        output = Path(receipt.output_path)
+        backup = Path(receipt.backup_path)
+        self.preview_status_label.setText(
+            f"Исходный слот заменён: {output} • backup: {backup} • "
+            f"SHA {receipt.output_sha256[:12]}…"
+        )
+        self.progress_label.setText("Local replace подтверждён read-back SHA")
+        self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
 
     def choose_output(self) -> Path | None:
         filename, _ = QFileDialog.getSaveFileName(

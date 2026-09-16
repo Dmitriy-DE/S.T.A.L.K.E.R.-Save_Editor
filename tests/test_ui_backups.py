@@ -11,6 +11,9 @@ pytest.importorskip("pytestqt")
 
 from PySide6.QtCore import Qt
 
+import editor.storage as storage
+from editor.models import EditPlan, SourceRef
+from editor.prepare import prepare_edit
 from editor.service import EditorService
 from ui.backups_view import BackupView
 from ui.main_window import MainWindow
@@ -59,6 +62,7 @@ def test_backup_view_renders_statuses_and_requires_preview_before_restore(
     assert "Проверено" in statuses
     assert "Отсутствует" in statuses
     assert not view.restore_button.isEnabled()
+    assert not view.restore_in_place_button.isEnabled()
 
     valid_row = statuses.index("Проверено")
     view.table.selectRow(valid_row)
@@ -66,6 +70,7 @@ def test_backup_view_renders_statuses_and_requires_preview_before_restore(
     qtbot.mouseClick(view.preview_button, Qt.MouseButton.LeftButton)
 
     assert view.restore_button.isEnabled()
+    assert not view.restore_in_place_button.isEnabled()
     assert "SHA256" in view.preview_label.text()
 
 
@@ -92,3 +97,37 @@ def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
     assert destination.read_bytes() == synthetic_save
     assert "Копия восстановлена" in window.backups_view.preview_label.text()
+
+
+def test_main_window_can_restore_verified_backup_to_original_slot(
+    qtbot, tmp_path: Path, synthetic_save: bytes
+) -> None:
+    source = tmp_path / "slot.sav"
+    source.write_bytes(synthetic_save)
+    plan = EditPlan(
+        source=SourceRef(
+            kind="local",
+            locator=str(source),
+            sha256=hashlib.sha256(synthetic_save).hexdigest(),
+        ),
+        money=900,
+    )
+    prepared = prepare_edit(synthetic_save, plan)
+    backup_dir = tmp_path / "backups"
+    replaced = storage.replace_local(source, prepared, backup_dir)
+    record = storage.inspect_backup(replaced.backup_path.with_suffix(".json"))
+
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window.backups_view.backup_dirs = (backup_dir,)
+    window.backups_view.refresh()
+    window.backups_view.table.selectRow(0)
+    qtbot.mouseClick(window.backups_view.preview_button, Qt.MouseButton.LeftButton)
+    assert window.backups_view.restore_in_place_button.isEnabled()
+
+    with qtbot.waitSignal(window.restore_ready, timeout=5_000):
+        window._start_restore_in_place(record)
+
+    qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
+    assert source.read_bytes() == synthetic_save
+    assert "Исходный слот восстановлен" in window.backups_view.preview_label.text()

@@ -47,11 +47,12 @@ class BackupRecord:
 
 @dataclass(frozen=True)
 class RestoreReceipt:
-    """Receipt returned after a verified backup was copied to a new path."""
+    """Receipt returned after a verified backup restore and read-back."""
 
     output_path: Path
     backup_path: Path
     output_sha256: str
+    safety_backup_path: Path | None = None
 
 
 def _sha256(data: bytes) -> str:
@@ -171,6 +172,9 @@ def _operation_summary(plan: EditPlan) -> dict[str, object]:
         "attach_count": len(plan.attach),
         "raw_count": len(plan.raw),
         "add_count": len(plan.adds),
+        "durability_count": len(plan.durability),
+        "relation_count": len(plan.faction_relations),
+        "player_faction": plan.player_faction is not None,
     }
 
 
@@ -462,6 +466,273 @@ def restore_backup(journal_or_record: Path | BackupRecord, output_path: Path) ->
 
 
 restore_local = restore_backup
+
+
+def _publish_replace(temp_path: Path, destination: Path) -> None:
+    """Atomically replace one explicitly selected existing destination."""
+
+    try:
+        os.replace(temp_path, destination)
+    except OSError as exc:
+        raise SaveError(f"Атомарная замена save не удалась: {exc}") from exc
+
+
+def _prepared_output(prepared: PreparedEdit) -> tuple[bytes, str]:
+    output_data = bytes(prepared.data)
+    computed_output_sha = _sha256(output_data)
+    if computed_output_sha != prepared.output_sha256:
+        raise SaveError(
+            "Prepared output SHA256 не совпадает с bytes: "
+            f"expected={prepared.output_sha256} actual={computed_output_sha}"
+        )
+    return output_data, computed_output_sha
+
+
+def _validate_local_source(source_path: Path, prepared: PreparedEdit) -> bytes:
+    plan = prepared.plan
+    if plan.source.kind != "local":
+        raise SaveError("Запись в локальный сейв требует source kind=local")
+    if _canonical(Path(plan.source.locator)) != _canonical(source_path):
+        raise SaveError("Путь записи не совпадает с source locator из edit plan")
+    if source_path.is_symlink():
+        raise SaveError("Запись в symlink-сейв запрещена")
+    if not source_path.is_file():
+        raise SaveError(f"Исходный сейв не найден или не является файлом: {source_path}")
+    try:
+        source_data = source_path.read_bytes()
+    except OSError as exc:
+        raise SaveError(f"Не удалось прочитать source: {exc}") from exc
+    source_sha = _sha256(source_data)
+    if source_sha != plan.source.sha256:
+        raise SaveError(
+            "Источник изменился после анализа: "
+            f"SHA256 expected={plan.source.sha256} actual={source_sha}"
+        )
+    return source_data
+
+
+def replace_local(
+    source_path: Path,
+    prepared: PreparedEdit,
+    backup_dir: Path,
+) -> ExportReceipt:
+    """Replace the selected local save after backup, atomic publish and read-back.
+
+    This is deliberately separate from :func:`export_local`: callers must opt
+    into replacing the exact analyzed source path.  The source SHA is checked
+    before the backup and immediately before replacement; the existing source
+    is never opened for partial writes.
+    """
+
+    source_path = Path(source_path).expanduser()
+    backup_dir = Path(backup_dir).expanduser()
+    output_data, computed_output_sha = _prepared_output(prepared)
+    source_data = _validate_local_source(source_path, prepared)
+
+    try:
+        backup_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise SaveError(f"Не удалось подготовить backup directory: {exc}") from exc
+
+    backup_path = _backup_path(source_path, backup_dir)
+    journal_path = backup_path.with_suffix(".json")
+    temp_path: Path | None = None
+    try:
+        try:
+            _write_backup(backup_path, source_data)
+        except OSError as exc:
+            raise SaveError(f"Не удалось создать backup: {exc}") from exc
+
+        try:
+            temp_path = _make_temp_path(source_path.parent, source_path.name)
+            _write_temp_bytes(temp_path, output_data)
+        except OSError as exc:
+            raise SaveError(f"Не удалось записать временный output: {exc}") from exc
+
+        payload: dict[str, object] = {
+            "version": 1,
+            "status": "prepared",
+            "created_at": dt.datetime.now(dt.UTC).isoformat(),
+            "source_path": str(source_path),
+            "source_sha256": _sha256(source_data),
+            "output_path": str(source_path),
+            "output_sha256": computed_output_sha,
+            "backup_path": str(backup_path),
+            "operation": {**_operation_summary(prepared.plan), "mode": "replace"},
+        }
+        try:
+            _write_journal(journal_path, payload)
+        except OSError as exc:
+            raise SaveError(f"Не удалось записать journal: {exc}") from exc
+
+        try:
+            latest_source_sha = _sha256(source_path.read_bytes())
+        except OSError as exc:
+            raise SaveError(f"Не удалось повторно проверить source: {exc}") from exc
+        if latest_source_sha != prepared.plan.source.sha256:
+            raise SaveError(
+                "Источник изменился перед атомарной заменой: "
+                f"SHA256 expected={prepared.plan.source.sha256} actual={latest_source_sha}"
+            )
+
+        _publish_replace(temp_path, source_path)
+        temp_path = None
+        _fsync_directory(source_path.parent)
+        try:
+            published_sha = _sha256(source_path.read_bytes())
+        except OSError as exc:
+            raise SaveError(f"Не удалось прочитать replaced save: {exc}") from exc
+        if published_sha != computed_output_sha:
+            raise SaveError(
+                "Replaced save read-back SHA256 не совпал: "
+                f"expected={computed_output_sha} actual={published_sha}"
+            )
+
+        payload["status"] = "verified"
+        _rewrite_journal(journal_path, payload)
+        return ExportReceipt(
+            output_path=source_path,
+            backup_path=backup_path,
+            output_sha256=published_sha,
+        )
+    except SaveError:
+        raise
+    except OSError as exc:
+        raise SaveError(f"Замена локального сейва не удалась: {exc}") from exc
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def restore_in_place(journal_or_record: Path | BackupRecord) -> RestoreReceipt:
+    """Restore a verified backup to its recorded source slot in one atomic step.
+
+    The current slot must still match the bytes recorded as the previous
+    output.  Before replacing it, a second recovery backup is created, so an
+    in-place rollback does not discard the state being rolled back.
+    """
+
+    record = (
+        journal_or_record
+        if isinstance(journal_or_record, BackupRecord)
+        else inspect_backup(Path(journal_or_record))
+    )
+    if record.status != "verified":
+        detail = f": {record.error}" if record.error else ""
+        raise SaveError(f"Backup недоступен для восстановления ({record.status}){detail}")
+    source_path = Path(record.source_path).expanduser()
+    if not source_path.is_absolute():
+        source_path = source_path.resolve(strict=False)
+    if source_path.is_symlink():
+        raise SaveError("Восстановление в symlink-сейв запрещено")
+    if not source_path.parent.is_dir():
+        raise SaveError(f"Папка source не существует: {source_path.parent}")
+    if record.output_path is not None and _canonical(Path(record.output_path)) != _canonical(source_path):
+        raise SaveError("Journal не относится к операции замены исходного слота")
+
+    try:
+        data = record.backup_path.read_bytes()
+    except OSError as exc:
+        raise SaveError(f"Не удалось прочитать backup: {exc}") from exc
+    backup_sha = _sha256(data)
+    if backup_sha != record.source_sha256:
+        raise SaveError(
+            "Backup изменился после проверки: "
+            f"expected={record.source_sha256} actual={backup_sha}"
+        )
+
+    try:
+        current_data = source_path.read_bytes()
+    except FileNotFoundError:
+        # A missing slot is safe to recreate with the existing no-replace
+        # restore path; there is no current file to preserve first.
+        return restore_backup(record, source_path)
+    except OSError as exc:
+        raise SaveError(f"Не удалось прочитать текущий слот: {exc}") from exc
+    current_sha = _sha256(current_data)
+    if record.output_sha256 is not None and current_sha != record.output_sha256:
+        raise SaveError(
+            "Текущий слот изменился после записи: "
+            f"SHA256 expected={record.output_sha256} actual={current_sha}"
+        )
+
+    backup_dir = record.journal_path.parent
+    safety_backup_path = _backup_path(source_path, backup_dir)
+    safety_journal_path = safety_backup_path.with_suffix(".json")
+    temp_path: Path | None = None
+    try:
+        try:
+            _write_backup(safety_backup_path, current_data)
+        except OSError as exc:
+            raise SaveError(f"Не удалось создать safety backup: {exc}") from exc
+        try:
+            temp_path = _make_temp_path(source_path.parent, source_path.name)
+            _write_temp_bytes(temp_path, data)
+        except OSError as exc:
+            raise SaveError(f"Не удалось записать временный restore: {exc}") from exc
+
+        payload: dict[str, object] = {
+            "version": 1,
+            "status": "prepared",
+            "created_at": dt.datetime.now(dt.UTC).isoformat(),
+            "source_path": str(source_path),
+            "source_sha256": current_sha,
+            "output_path": str(source_path),
+            "output_sha256": record.source_sha256,
+            "backup_path": str(safety_backup_path),
+            "operation": {
+                "mode": "restore",
+                "restore_from": str(record.backup_path),
+            },
+        }
+        try:
+            _write_journal(safety_journal_path, payload)
+        except OSError as exc:
+            raise SaveError(f"Не удалось записать restore journal: {exc}") from exc
+
+        try:
+            latest_current_sha = _sha256(source_path.read_bytes())
+        except OSError as exc:
+            raise SaveError(f"Не удалось повторно проверить текущий слот: {exc}") from exc
+        if latest_current_sha != current_sha:
+            raise SaveError(
+                "Текущий слот изменился перед восстановлением: "
+                f"SHA256 expected={current_sha} actual={latest_current_sha}"
+            )
+
+        _publish_replace(temp_path, source_path)
+        temp_path = None
+        _fsync_directory(source_path.parent)
+        try:
+            output_sha256 = _sha256(source_path.read_bytes())
+        except OSError as exc:
+            raise SaveError(f"Не удалось прочитать restored slot: {exc}") from exc
+        if output_sha256 != record.source_sha256:
+            raise SaveError(
+                "Restored slot SHA256 не совпал: "
+                f"expected={record.source_sha256} actual={output_sha256}"
+            )
+        payload["status"] = "verified"
+        _rewrite_journal(safety_journal_path, payload)
+        return RestoreReceipt(
+            output_path=source_path,
+            backup_path=record.backup_path,
+            output_sha256=output_sha256,
+            safety_backup_path=safety_backup_path,
+        )
+    except SaveError:
+        raise
+    except OSError as exc:
+        raise SaveError(f"Восстановление исходного слота не удалось: {exc}") from exc
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def export_local(
