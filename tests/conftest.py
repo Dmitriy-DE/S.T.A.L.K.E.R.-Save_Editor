@@ -91,30 +91,34 @@ def synthetic_save() -> bytes:
     return sf.rebuild_uncompressed(bytes(raw))
 
 
-@pytest.fixture(autouse=True)
-def _no_qt_thread_outlives_its_test():
-    """Never let a test end with a Qt worker thread still running.
-
-    Qt aborts the process when a QThread is destroyed while running, and pytest
-    tears widgets down whenever it likes.  The Windows job died exactly that way
-    - exit code -1 partway through a module, no traceback and no failed
-    assertion.  Waiting here makes the teardown order stop mattering.
-    """
-
-    yield
-
+def _wait_for_qt_threads(item: pytest.Item) -> None:
+    """Stop worker threads before pytest-qt destroys their parent widgets."""
     try:
         from PySide6.QtCore import QThread
-        from PySide6.QtWidgets import QApplication
     except ImportError:  # the core environment has no Qt
         return
 
-    app = QApplication.instance()
-    if app is None:
+    widgets = getattr(item, "qt_widgets", None)
+    if not widgets:
         return
-    for widget in list(app.topLevelWidgets()):
+    for widget_ref, _before_close_func in widgets:
+        widget = widget_ref()
+        if widget is None:
+            continue
         for thread in widget.findChildren(QThread):
             if thread.isRunning():
                 thread.quit()
                 thread.wait(10_000)
-    app.processEvents()
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item):
+    """Keep Qt workers alive until they can be stopped safely.
+
+    This hook is the outermost teardown wrapper, so it runs before pytest-qt's
+    own ``trylast`` wrapper closes and deletes the widgets in ``item``.
+    """
+
+    _wait_for_qt_threads(item)
+    result = yield
+    return result
