@@ -1654,7 +1654,7 @@
     "status": "in_review",
     "path": "docs/tasks/M23.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_review (known parent-edge/equipped/unresolved preflight; full reference graph and game load pending)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/71",
+    "status_display": "in_review (PR #71; known parent-edge/equipped/unresolved preflight; full reference graph and game load pending)"
   }
 ]
