@@ -878,7 +878,8 @@
     "status": "in_review",
     "status_display": "in_review (read-only evidence; controlled attach/detach gate blocked)",
     "path": "docs/tasks/R09.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/73"
   },
   {
     "id": "R10",

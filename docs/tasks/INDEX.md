@@ -33,7 +33,7 @@
 | [R06](R06.md) | Клонирование одного подтверждённого типа предмета | R05, U04 | waiting_dependencies | [#23](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/23) |
 | [R07](R07.md) | Добавление предмета по подтверждённому SID | R02, R06 | waiting_dependencies | [#24](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/24) |
 | [R08](R08.md) | Настоящее удаление с анализом ссылок | R05, U04 | waiting_dependencies | [#25](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/25) |
-| [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | in_review (read-only evidence; controlled attach/detach gate blocked) | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26) |
+| [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | in_review (read-only evidence; controlled attach/detach gate blocked) | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26), [PR #73](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/73) |
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
