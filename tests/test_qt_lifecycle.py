@@ -19,5 +19,6 @@ def test_qt_worker_is_stopped_before_pytest_qt_closes_widget(qtbot, request) -> 
 
     def before_close(_widget: QWidget) -> None:
         assert not worker_thread.isRunning()
+        delattr(request.node, "_lifecycle_widget")
 
     qtbot.addWidget(widget, before_close_func=before_close)
