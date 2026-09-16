@@ -1467,5 +1467,41 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/66",
     "status_display": "in_review (PR #66; Qt/web modal and clipboard checks; visual assets not copied)"
+  },
+  {
+    "id": "M19",
+    "title": "Иконки инвентаря и визуальный слой",
+    "depends_on": [
+      "M11",
+      "M18"
+    ],
+    "files": [
+      "docs/tasks/M19.md",
+      "ui/xray_assets.py",
+      "ui/inventory_model.py",
+      "ui/inventory_view.py",
+      "web/web_bridge.py",
+      "web/index.html",
+      "web/app.js",
+      "web/style.css",
+      "tests/test_ui_inventory_icons.py",
+      "tests/test_web_inventory_icons.py"
+    ],
+    "contract": "Qt показывает official X-Ray atlas crop или честный fallback glyph; web показывает доступный категорийный glyph и не получает игровые ассеты. Staged/save bytes не меняются от визуализации.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M19.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_review (Qt official atlas/fallback glyph; web accessible glyph; checks pending final gate)"
   }
 ]

@@ -289,6 +289,40 @@ function visibleItems() {
   });
 }
 
+const ITEM_GLYPH_CATEGORIES = new Set([
+  "weapon",
+  "ammo",
+  "outfit",
+  "artifact",
+  "consumable",
+  "grenade",
+  "item",
+]);
+
+function itemGlyphCategory(category) {
+  const value = String(category ?? "").toLowerCase();
+  if (value.includes("оруж") || value.includes("weapon")) return "weapon";
+  if (value.includes("патрон") || value.includes("ammo")) return "ammo";
+  if (value.includes("брон") || value.includes("экип") || value.includes("outfit")) return "outfit";
+  if (value.includes("артеф") || value.includes("artifact")) return "artifact";
+  if (value.includes("гранат") || value.includes("grenade")) return "grenade";
+  if (value.includes("расход") || value.includes("consum")) return "consumable";
+  return ITEM_GLYPH_CATEGORIES.has(value) ? value : "item";
+}
+
+function itemGlyph(item) {
+  const category = itemGlyphCategory(item.category);
+  const glyph = document.createElement("span");
+  glyph.className = `zone-item-glyph zone-item-glyph-${category}`;
+  const label = `Категория предмета: ${item.category || "неизвестно"}`;
+  glyph.setAttribute("role", "img");
+  glyph.setAttribute("aria-label", label);
+  glyph.title = item.icon_x === null || item.icon_x === undefined
+    ? label
+    : `${label}; официальный atlas ${item.icon_texture ?? "ui_icon_equipment"} [${item.icon_x}, ${item.icon_y}]`;
+  return glyph;
+}
+
 function upgradeDefinitionsFor(item) {
   return (state.snapshot?.catalog_upgrades ?? []).filter((upgrade) =>
     (upgrade.applicable_item_keys ?? []).includes(item.type_key) ||
@@ -367,6 +401,10 @@ function renderInventory() {
       : staged !== undefined || stagedDurability !== undefined || state.upgrades.has(item.handle)
         ? "staged"
         : item.editable ? "" : "readonly";
+    const iconTd = document.createElement("td");
+    iconTd.className = "item-icon-cell";
+    iconTd.append(itemGlyph(item));
+    tr.append(iconTd);
     for (const cell of [
       item.name, item.category, item.position, item.size_text, item.type_key,
       item.count === null ? "неизвестно" : String(item.count),

@@ -340,6 +340,7 @@ def analyze(data: bytes, name: str) -> str:
                     "condition": item.condition,
                     "condition_editable": bool(item.condition_editable),
                     "storage": item.storage,
+                    **_catalog_icon_fields(catalog, item.type_key),
                     "upgrades": None if item.upgrades is None else list(item.upgrades),
                     "upgrade_editable": bool(
                         format_.capabilities.edit_upgrades

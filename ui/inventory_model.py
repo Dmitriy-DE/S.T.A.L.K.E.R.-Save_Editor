@@ -6,11 +6,11 @@ values and a separate staged-count map; it never mutates a save payload.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import TypeAlias
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
-from PySide6.QtGui import QBrush, QColor
+from PySide6.QtGui import QBrush, QColor, QIcon
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
@@ -18,6 +18,7 @@ from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 # QModelIndex alone is a Liskov violation the type checker rejects once the Qt
 # stubs are installed.
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
+IconProvider: TypeAlias = Callable[[InventoryItem], QIcon | None]
 
 
 class InventoryTableModel(QAbstractTableModel):
@@ -62,6 +63,7 @@ class InventoryTableModel(QAbstractTableModel):
         self._changed_handles: frozenset[int] = frozenset()
         self._staged_counts: dict[int, int] = {}
         self._staged_durability: dict[int, float] = {}
+        self._icon_provider: IconProvider | None = None
         self._sort_column = self.POSITION_COLUMN
         self._sort_order = Qt.SortOrder.AscendingOrder
 
@@ -99,6 +101,16 @@ class InventoryTableModel(QAbstractTableModel):
         self._staged_durability = {
             int(handle): float(value) for handle, value in durability.items()
         }
+        self._rebuild()
+
+    def set_icon_provider(self, provider: IconProvider | None) -> None:
+        """Set the presentation-only icon source for the name column.
+
+        The callback may read the selected official installation, but it never
+        receives save bytes and cannot affect filtering or staged edits.
+        """
+
+        self._icon_provider = provider
         self._rebuild()
 
     def set_search(self, text: str) -> None:
@@ -156,6 +168,8 @@ class InventoryTableModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             return self._display_value(item, index.column())
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == self.NAME_COLUMN:
+            return self._icon_provider(item) if self._icon_provider is not None else None
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._tooltip(item, index.column())
         if role == Qt.ItemDataRole.BackgroundRole and (

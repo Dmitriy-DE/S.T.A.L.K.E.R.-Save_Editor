@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
-from PySide6.QtCore import QModelIndex, Qt, Signal
+from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -29,6 +30,7 @@ from editor.catalog import ItemCatalog, UpgradeCatalog
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
 from .inventory_model import InventoryTableModel
+from .xray_assets import XRayIconResolver
 
 
 class InventoryView(QWidget):
@@ -63,6 +65,8 @@ class InventoryView(QWidget):
         self._upgrades_enabled = False
         self._upgrades_reason: str | None = None
         self._staged_upgrades: dict[int, tuple[str, ...]] = {}
+        self._icon_resolver = XRayIconResolver(None)
+        self.model.set_icon_provider(self._icon_for_item)
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -93,6 +97,7 @@ class InventoryView(QWidget):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
+        self.table.setIconSize(QSize(30, 30))
         self.table.setSortingEnabled(True)
         self.table.sortByColumn(
             InventoryTableModel.POSITION_COLUMN,
@@ -297,6 +302,8 @@ class InventoryView(QWidget):
         """Expose only definitions proven for the selected release."""
 
         self._catalog = catalog
+        self._icon_resolver = XRayIconResolver(catalog)
+        self.model.set_icon_provider(self._icon_for_item)
         self._add_enabled = bool(enabled and catalog is not None)
         self._add_reason = reason
         self.add_combo.blockSignals(True)
@@ -306,7 +313,11 @@ class InventoryView(QWidget):
                 label = definition.display_name or definition.key
                 if label != definition.key:
                     label = f"{label} · {definition.key}"
-                self.add_combo.addItem(label, definition.key)
+                self.add_combo.addItem(
+                    self._icon_resolver.icon_for(definition, size=26),
+                    label,
+                    definition.key,
+                )
         self.add_combo.blockSignals(False)
         self.catalog_status_label.setText(
             reason
@@ -317,6 +328,15 @@ class InventoryView(QWidget):
             )
         )
         self._on_add_selection_changed(self.add_combo.currentIndex())
+
+    def _icon_for_item(self, item: InventoryItem) -> QIcon:
+        """Return an official atlas crop or a Zone category glyph."""
+
+        return self._icon_resolver.icon_for_key(
+            item.type_key,
+            item.category,
+            size=30,
+        )
 
     def set_remove_enabled(self, enabled: bool, *, reason: str | None = None) -> None:
         self._remove_enabled = bool(enabled)

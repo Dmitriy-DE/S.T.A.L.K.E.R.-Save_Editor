@@ -225,6 +225,14 @@ web modal с clipboard-only Copy/Copied feedback. Платёжные APIs, backe
 tracking, QR и startup/recurring popups не добавлялись; визуальная адаптация
 X-Ray reference записана в [UI support evidence](evidence/UI_SUPPORT_2026-09-16.md).
 
+В M19 к Qt-инвентарю подключены release-scoped X-Ray icon coordinates и
+официальный `ui_icon_equipment.dds` resolver: atlas читается только из выбранной
+официальной установки и кэшируется в памяти. Web остаётся local-file-only, не
+получает игровые ассеты и показывает доступный категорийный glyph; известные
+координаты official atlas остаются в tooltip. При недоступном atlas обе витрины
+используют честный fallback, без копирования `.dds` или шрифтов в репозиторий.
+Подробности: [M19](tasks/M19.md).
+
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.
 Разбор всех находок: [CI_AND_WINDOWS](evidence/CI_AND_WINDOWS_2026-09-14.md).

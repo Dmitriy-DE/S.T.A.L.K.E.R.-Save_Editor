@@ -133,6 +133,11 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert snapshot["money"] == 1234
     assert snapshot["inventory"][0]["name"] == "ammo_9x39_pab9"
     assert snapshot["inventory"][0]["total_weight"] is None
+    assert {
+        "icon_x",
+        "icon_y",
+        "icon_texture",
+    }.issubset(snapshot["inventory"][0])
     assert all(row[0] != "UE5 GVAS schema" for row in snapshot["metadata"])
 
     result = json.loads(web_bridge.prepare(9876, json.dumps([[0x1234, 44]])))
