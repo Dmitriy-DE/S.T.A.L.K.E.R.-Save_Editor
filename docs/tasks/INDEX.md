@@ -62,7 +62,7 @@
 | [M21](M21.md) | Read-only каталог прототипов S.T.A.L.K.E.R. 2 | M11, M19 | in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending) | [PR #69](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69) |
 | [M22](M22.md) | Воспроизводимый анализ S2 compact key ↔ prototype SID | M21 | in_review (PR #70; read-only S2 key evidence; mapping and game-labelled pair pending) | [PR #70](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/70) |
 | [M23](M23.md) | Безопасный X-Ray detach по известным registry-ссылкам | M20 | in_review (PR #71; known parent-edge/equipped/unresolved preflight; full reference graph and game load pending) | [PR #71](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/71) |
-| [M24](M24.md) | Safety-aware удаление в Qt и web | M23 | in_progress (per-item Qt/web blocker metadata; full reference graph and game load pending) | — |
+| [M24](M24.md) | Safety-aware удаление в Qt и web | M23 | in_review (PR #72; per-item Qt/web blocker metadata; full reference graph and game load pending) | [PR #72](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/72) |
 
 <!-- END GENERATED TASK TABLE -->
 

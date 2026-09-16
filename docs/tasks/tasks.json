@@ -1696,10 +1696,10 @@
     ],
     "gate": "code",
     "priority": "P2",
-    "status": "in_progress",
+    "status": "in_review",
     "path": "docs/tasks/M24.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_progress (per-item Qt/web blocker metadata; full reference graph and game load pending)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/72",
+    "status_display": "in_review (PR #72; per-item Qt/web blocker metadata; full reference graph and game load pending)"
   }
 ]
