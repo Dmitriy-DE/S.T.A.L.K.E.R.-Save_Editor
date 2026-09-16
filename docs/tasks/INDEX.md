@@ -55,7 +55,7 @@
 | [M14](M14.md) | Отношения с группировками | M10, M11 | waiting_dependencies | — |
 | [M15](M15.md) | Принадлежность игрока к группировке | M14 | waiting_dependencies | — |
 | [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
-| [M17](M17.md) | Улучшения оружия и экипировки X-Ray | M10, M11 | in_review (structural round-trip; M10 game load/re-save pending) | — |
+| [M17](M17.md) | Улучшения оружия и экипировки X-Ray | M10, M11 | in_review (PR #65; structural round-trip; M10 game load/re-save pending) | [PR #65](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65) |
 
 <!-- END GENERATED TASK TABLE -->
 

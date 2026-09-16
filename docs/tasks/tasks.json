@@ -1439,7 +1439,7 @@
     "status": "in_review",
     "path": "docs/tasks/M17.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_review (structural round-trip; M10 game load/re-save pending)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65",
+    "status_display": "in_review (PR #65; structural round-trip; M10 game load/re-save pending)"
   }
 ]
