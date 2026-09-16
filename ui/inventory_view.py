@@ -493,6 +493,7 @@ class InventoryView(QWidget):
             self.count_spin.blockSignals(False)
             self.stage_button.setEnabled(False)
             self.clear_selected_button.setEnabled(False)
+            self._restore_remove_blocker(item)
             return
 
         staged = self.model.staged_count(item.handle)
@@ -517,6 +518,7 @@ class InventoryView(QWidget):
             self.count_spin.blockSignals(False)
             self.stage_button.setEnabled(False)
             self.clear_selected_button.setEnabled(staged is not None)
+            self._restore_remove_blocker(item)
             return
 
         self.editability_label.setText(
@@ -529,6 +531,13 @@ class InventoryView(QWidget):
         self.count_spin.blockSignals(False)
         self.stage_button.setEnabled(True)
         self.clear_selected_button.setEnabled(staged is not None)
+        self._restore_remove_blocker(item)
+
+    def _restore_remove_blocker(self, item: InventoryItem) -> None:
+        """Keep a per-item delete reason visible beside count status."""
+
+        if self._remove_enabled and not item.remove_editable:
+            self._update_remove_button(item)
 
     def _update_condition_editor(self, item: InventoryItem | None) -> None:
         self.condition_spin.blockSignals(True)
@@ -803,6 +812,13 @@ class InventoryView(QWidget):
             self.remove_item_button.setText("Удалить из инвентаря")
             if self._remove_reason:
                 self.editability_label.setText(self._remove_reason)
+            return
+        if not item.remove_editable:
+            self.remove_item_button.setEnabled(False)
+            self.remove_item_button.setText("Удалить из инвентаря")
+            self.editability_label.setText(
+                item.remove_reason or "Только чтение: удаление этого объекта заблокировано"
+            )
             return
         removed = item.handle in self._removed_handles
         self.remove_item_button.setEnabled(True)

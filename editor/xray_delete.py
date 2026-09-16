@@ -9,11 +9,12 @@ not infer references from opaque state bytes.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .xray_save import XRaySave
+    from .xray_save import XRayObject, XRaySave
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,53 @@ def analyze_xray_delete(parsed: XRaySave, object_id: int) -> XRayDeleteAnalysis:
             and obj.parent_id == target.object_id
         )
     )
+    return _analysis_for_target(parsed, target, dependent_ids)
+
+
+def analyze_xray_deletes(
+    parsed: XRaySave,
+    object_ids: Iterable[int],
+) -> dict[int, XRayDeleteAnalysis]:
+    """Analyze several targets with one pass over the object registry."""
+
+    requested = tuple(dict.fromkeys(int(object_id) for object_id in object_ids))
+    target_by_id = {
+        obj.object_id: obj
+        for obj in parsed.objects
+        if obj.object_id in requested
+    }
+    dependents: dict[int, list[int]] = {object_id: [] for object_id in requested}
+    for obj in parsed.objects:
+        children = dependents.get(obj.parent_id)
+        if children is not None and obj.object_id != obj.parent_id:
+            children.append(obj.object_id)
+
+    analyses: dict[int, XRayDeleteAnalysis] = {}
+    for object_id in requested:
+        target = target_by_id.get(object_id)
+        if target is None:
+            analyses[object_id] = XRayDeleteAnalysis(
+                object_id=object_id,
+                allowed=False,
+                blockers=("target object is unresolved or missing",),
+                dependent_ids=(),
+            )
+            continue
+        analyses[object_id] = _analysis_for_target(
+            parsed,
+            target,
+            tuple(sorted(dependents[object_id])),
+        )
+    return analyses
+
+
+def _analysis_for_target(
+    parsed: XRaySave,
+    target: XRayObject,
+    dependent_ids: tuple[int, ...],
+) -> XRayDeleteAnalysis:
+    """Build one decision after target/dependent lookup is complete."""
+
     blockers: list[str] = []
     if target.object_id == parsed.actor_id:
         blockers.append("target is actor")
@@ -84,4 +132,4 @@ def analyze_xray_delete(parsed: XRaySave, object_id: int) -> XRayDeleteAnalysis:
     )
 
 
-__all__ = ["XRayDeleteAnalysis", "analyze_xray_delete"]
+__all__ = ["XRayDeleteAnalysis", "analyze_xray_delete", "analyze_xray_deletes"]

@@ -145,6 +145,12 @@ preflight не извлекает ссылки из opaque STATE/UPDATE и не 
 семантику или game load/re-save; отсутствие decoded placement не считается
 доказательством, что предмет экипирован.
 
+`InventoryItem` дополнительно может нести `remove_editable` и `remove_reason`.
+Для X-Ray они строятся тем же preflight в одном проходе по parsed registry;
+Qt и web используют эти поля только для объяснимого staging guard. Это не
+заменяет повторную проверку в writer и не открывает удаление для S2, Enhanced
+или другого формата без capability `remove_items`.
+
 M22 добавляет `editor.s2_mapping.analyze_s2_samples(...)` как read-only
 evidence helper. Он сравнивает handle/type-key observations между явно
 переданными samples, возвращает только hashes/агрегаты и всегда оставляет

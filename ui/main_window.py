@@ -1149,6 +1149,12 @@ class MainWindow(QMainWindow):
                 f"Только чтение: handle 0x{int(handle):04X} не найден"
             )
             return
+        if not item.remove_editable:
+            self.inventory_view.show_editability_message(
+                item.remove_reason
+                or "Только чтение: удаление этого объекта заблокировано"
+            )
+            return
         handle = int(handle)
         if handle in self.staged_detach:
             self.staged_detach.pop(handle, None)

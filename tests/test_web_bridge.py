@@ -181,6 +181,20 @@ def test_web_bridge_exposes_confirmed_xray_storage_place() -> None:
     assert snapshot["capabilities"]["edit_placement"] is True
 
 
+def test_web_bridge_exposes_per_item_delete_safety() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+
+    snapshot = json.loads(web_bridge.analyze(data, "equipped.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["remove_editable"] is False
+    assert "equipped" in item["remove_reason"]
+
+
 def test_web_bridge_prepares_xray_inventory_placement() -> None:
     data = _condition_fixture(
         version=128,

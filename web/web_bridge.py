@@ -344,6 +344,10 @@ def analyze(data: bytes, name: str) -> str:
                     "placement_slot": item.placement_slot,
                     "placement_base_slot": item.placement_base_slot,
                     "placement_editable": bool(item.placement_editable),
+                    "remove_editable": bool(
+                        format_.capabilities.remove_items and item.remove_editable
+                    ),
+                    "remove_reason": item.remove_reason,
                     **_catalog_icon_fields(catalog, item.type_key),
                     "upgrades": None if item.upgrades is None else list(item.upgrades),
                     "upgrade_editable": bool(

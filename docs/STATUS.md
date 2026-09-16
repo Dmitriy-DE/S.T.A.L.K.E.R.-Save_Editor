@@ -79,7 +79,7 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
-| Настоящее удаление | X-Ray deep removal теперь блокирует известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23, R08 |
+| Настоящее удаление | X-Ray deep removal и Qt/web staging блокируют известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23–M24, R08 |
 | Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; SoC/S2/Enhanced и attachments остаются read-only | M17, R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
@@ -260,6 +260,11 @@ mapping evidence](evidence/S2_MAPPING_2026-09-16.md).
 equipped, direct dependent и unresolved target блокируются до записи. Полный
 opaque reference graph и game load/re-save не заявляются. Подробности:
 [M23](tasks/M23.md) и [X-Ray delete evidence](evidence/XRAY_DELETE_2026-09-16.md).
+
+В M24 тот же decision появился per-item в общем snapshot: Qt и web отключают
+удаление до staging и показывают причину blocker, а generated browser bundle
+включает новый модуль. Batch-анализ parent map не делает snapshot квадратичным.
+Подробности: [M24](tasks/M24.md) и [X-Ray delete UI evidence](evidence/XRAY_DELETE_UI_2026-09-16.md).
 
 Actions включены. Матрица `tests` зелёная на Linux и Windows, `standalone-build`
 собирает обе цели, packaged diagnostic проходит на самом Windows-раннере.

@@ -1656,5 +1656,50 @@
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/71",
     "status_display": "in_review (PR #71; known parent-edge/equipped/unresolved preflight; full reference graph and game load pending)"
+  },
+  {
+    "id": "M24",
+    "title": "Safety-aware удаление в Qt и web",
+    "depends_on": [
+      "M23"
+    ],
+    "files": [
+      "docs/tasks/M24.md",
+      "docs/evidence/XRAY_DELETE_UI_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "docs/STATUS.md",
+      "editor/xray_delete.py",
+      "editor/xray_save.py",
+      "save_format.py",
+      "ui/inventory_view.py",
+      "ui/main_window.py",
+      "web/web_bridge.py",
+      "web/app.js",
+      "tools/build_web_bundle.py",
+      "web/pysrc.json",
+      "tests/test_xray_delete.py",
+      "tests/test_ui_delete.py",
+      "tests/test_web_delete.py",
+      "tests/test_web_bridge.py",
+      "tests/test_ui_inventory.py",
+      "tests/test_docs_consistency.py"
+    ],
+    "contract": "Qt and web expose the M23 known-reference delete decision per inventory item; blocked rows cannot be staged and show a reason, while writer validation remains fail-closed.",
+    "steps": [
+      "См. карточку: shared snapshot metadata, one-pass parent map и UI/backend double guard."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "in_progress",
+    "path": "docs/tasks/M24.md",
+    "github_issue": "",
+    "github_pr": "",
+    "status_display": "in_progress (per-item Qt/web blocker metadata; full reference graph and game load pending)"
   }
 ]

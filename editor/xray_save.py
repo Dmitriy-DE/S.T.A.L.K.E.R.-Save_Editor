@@ -31,7 +31,7 @@ from .catalog import (
 )
 from .models import EditPlan, PreparedEdit
 from .xray_container import XRayChunk, XRayContainer, XRayError
-from .xray_delete import analyze_xray_delete
+from .xray_delete import analyze_xray_delete, analyze_xray_deletes
 from .xray_item_state import (
     CONDITION_FAMILIES,
     ConditionCodecError,
@@ -890,6 +890,26 @@ def _inventory_items(
     return tuple(items), tuple(obj.object_id for obj in children), tuple(unresolved), tuple(warnings)
 
 
+def _annotate_inventory_deletion(
+    parsed: XRaySave,
+    inventory: tuple[InventoryItem, ...],
+) -> tuple[InventoryItem, ...]:
+    """Expose the same known-reference delete gate used by the writer."""
+
+    decisions = analyze_xray_deletes(parsed, (item.handle for item in inventory))
+    annotated: list[InventoryItem] = []
+    for item in inventory:
+        decision = decisions[item.handle]
+        annotated.append(
+            replace(
+                item,
+                remove_editable=decision.allowed,
+                remove_reason=None if decision.allowed else decision.message,
+            )
+        )
+    return tuple(annotated)
+
+
 def _annotate_ammo_objects(raw: bytes, objects: tuple[XRayObject, ...], actor_id: int) -> tuple[XRayObject, ...]:
     annotated: list[XRayObject] = []
     for obj in objects:
@@ -1162,7 +1182,7 @@ def parse_xray(
         )
         warnings.extend(item_warnings)
 
-    return XRaySave(
+    parsed = XRaySave(
         data=payload,
         container=container,
         spec=spec,
@@ -1186,6 +1206,12 @@ def parse_xray(
         warnings=tuple(dict.fromkeys(warnings)),
         faction_relations_editable=faction_relations_editable,
     )
+    if with_inventory:
+        parsed = replace(
+            parsed,
+            inventory=_annotate_inventory_deletion(parsed, parsed.inventory),
+        )
+    return parsed
 
 
 def parse_subchunks(raw: bytes) -> tuple[XRayChunk, ...]:

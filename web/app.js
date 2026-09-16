@@ -539,6 +539,10 @@ function renderInventory() {
       remove.className = "button";
       remove.type = "button";
       remove.textContent = state.detach.has(item.handle) ? "Отменить" : "Удалить";
+      remove.disabled = item.remove_editable !== true;
+      if (remove.disabled) {
+        remove.title = item.remove_reason || "Удаление этого объекта заблокировано";
+      }
       remove.addEventListener("click", () => {
         if (state.detach.has(item.handle)) state.detach.delete(item.handle);
         else {

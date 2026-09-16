@@ -95,6 +95,8 @@ class InventoryItem:
     placement_slot: int | None = None
     placement_base_slot: int | None = None
     placement_editable: bool = False
+    remove_editable: bool = False
+    remove_reason: str | None = None
 
     @property
     def handle_hex(self) -> str:

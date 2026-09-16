@@ -80,6 +80,8 @@ def test_delete_analysis_allows_a_leaf_inventory_object() -> None:
     assert decision.allowed is True
     assert decision.blockers == ()
     assert decision.dependent_ids == ()
+    assert parsed.inventory[0].remove_editable is True
+    assert parsed.inventory[0].remove_reason is None
 
 
 def test_delete_analysis_blocks_an_equipped_object_before_registry_write() -> None:
@@ -95,6 +97,9 @@ def test_delete_analysis_blocks_an_equipped_object_before_registry_write() -> No
 
     assert decision.allowed is False
     assert any("equipped" in blocker for blocker in decision.blockers)
+    assert parsed.inventory[0].remove_editable is False
+    assert parsed.inventory[0].remove_reason is not None
+    assert "equipped" in parsed.inventory[0].remove_reason
     with pytest.raises(XRaySaveError, match="equipped|экип"):
         prepare_xray(
             data,
@@ -112,6 +117,9 @@ def test_delete_analysis_blocks_objects_with_registry_dependents() -> None:
     assert decision.allowed is False
     assert decision.dependent_ids == (0x4567,)
     assert any("dependent" in blocker for blocker in decision.blockers)
+    assert parsed.inventory[0].remove_editable is False
+    assert parsed.inventory[0].remove_reason is not None
+    assert "dependent" in parsed.inventory[0].remove_reason
     with pytest.raises(XRaySaveError, match="dependent|ссыл|child"):
         prepare_xray(
             data,
