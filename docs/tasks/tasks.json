@@ -1501,7 +1501,7 @@
     "status": "in_review",
     "path": "docs/tasks/M19.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_review (Qt official atlas/fallback glyph; web accessible glyph; checks pending final gate)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67",
+    "status_display": "in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests)"
   }
 ]
