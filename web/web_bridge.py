@@ -421,9 +421,10 @@ def prepare(
         )
     item_catalog = _state.get("catalog")
     faction_catalog = _state.get("faction_catalog")
+    selected_catalog = item_catalog if isinstance(item_catalog, ItemCatalog) else None
     game_catalog = (
-        GameCatalog(format_.release_id, item_catalog, faction_catalog)
-        if isinstance(item_catalog, ItemCatalog)
+        GameCatalog(format_.release_id, selected_catalog, faction_catalog)
+        if selected_catalog is not None
         and isinstance(faction_catalog, FactionCatalog)
         else None
     )
@@ -431,7 +432,7 @@ def prepare(
         data,
         plan,
         source_name=str(_state.get("name") or "save.sav"),
-        catalog=item_catalog if isinstance(item_catalog, ItemCatalog) else None,
+        catalog=selected_catalog,
         game_catalog=game_catalog,
     )
     _state["output"] = prepared.data
