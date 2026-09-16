@@ -1586,7 +1586,7 @@
     "status": "in_review",
     "path": "docs/tasks/M21.md",
     "github_issue": "",
-    "github_pr": "",
-    "status_display": "in_review (read-only S2 CFG catalog; SID/save mapping and game load pending)"
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69",
+    "status_display": "in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending)"
   }
 ]
