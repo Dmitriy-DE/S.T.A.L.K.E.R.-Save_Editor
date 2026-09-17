@@ -34,4 +34,12 @@ def test_registered_formats_expose_release_and_capability_metadata() -> None:
     assert cop.capabilities.edit_stacks is True
     assert cop.capabilities.add_items is True
     assert cop.capabilities.remove_items is True
+    assert cop.capabilities.edit_upgrades is True
+    assert cop.capabilities.is_experimental("edit_upgrades") is True
+    assert cop.capabilities.edit_placement is True
+    assert cop.capabilities.is_experimental("edit_placement") is True
+
+    soc = by_id("stalker-soc")
+    assert soc.capabilities.edit_upgrades is False
+    assert soc.capabilities.edit_placement is True
     assert cop.capabilities.catalog is True

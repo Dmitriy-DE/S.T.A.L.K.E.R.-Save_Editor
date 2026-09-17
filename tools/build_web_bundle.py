@@ -36,10 +36,14 @@ MODULES = (
     "editor/models.py",
     "editor/prepare.py",
     "editor/releases.py",
+    "editor/s2_catalog.py",
     "editor/xray_container.py",
     "editor/xray_factions.py",
     "editor/xray_catalog.py",
+    "editor/xray_delete.py",
     "editor/xray_save.py",
+    "editor/xray_item_state.py",
+    "editor/xray_relations.py",
 )
 
 

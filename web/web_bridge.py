@@ -15,7 +15,7 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
-from editor.catalog import FactionCatalog, ItemCatalog, UpgradeCatalog
+from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
@@ -210,6 +210,11 @@ def analyze(data: bytes, name: str) -> str:
     else:
         catalog_source = "generated-official" if catalog is not None else None
     _state["catalog"] = catalog
+    faction_catalog = _faction_catalogs.get(format_.id)
+    _state["faction_catalog"] = faction_catalog
+    upgrade_catalog = _upgrade_catalogs.get(format_.id)
+    _state["upgrade_catalog"] = upgrade_catalog
+    relation_values = dict(info.faction_relations)
 
     return json.dumps(
         {
@@ -235,6 +240,63 @@ def analyze(data: bytes, name: str) -> str:
                     "icon_texture": item.icon_texture,
                 }
                 for item in (catalog.items if catalog is not None else ())
+            ],
+            "faction_catalog_available": faction_catalog is not None
+            and bool(faction_catalog.factions),
+            "catalog_factions": [
+                {
+                    "key": faction.key,
+                    "name": faction.display_name or faction.key,
+                    "numeric_id": faction.numeric_id,
+                }
+                for faction in (
+                    faction_catalog.factions if faction_catalog is not None else ()
+                )
+            ],
+            "upgrade_catalog_available": (
+                format_.capabilities.edit_upgrades
+                and upgrade_catalog is not None
+                and bool(upgrade_catalog.upgrades)
+            ),
+            "catalog_upgrades": [
+                {
+                    "key": upgrade.key,
+                    "name": upgrade.display_name or upgrade.key,
+                    "category": upgrade.category,
+                    "item_key": upgrade.item_key,
+                    "applicable_item_keys": list(upgrade.applicable_item_keys),
+                    "section": upgrade.section,
+                    "property_name": upgrade.property_name,
+                    "icon": upgrade.icon,
+                }
+                for upgrade in (
+                    upgrade_catalog.upgrades if upgrade_catalog is not None else ()
+                )
+            ],
+            "faction_goodwill_min": (
+                faction_catalog.goodwill_min if faction_catalog is not None else None
+            ),
+            "faction_goodwill_max": (
+                faction_catalog.goodwill_max if faction_catalog is not None else None
+            ),
+            "faction_relations_editable": info.faction_relations_editable,
+            "player_faction_index": info.player_faction_index,
+            "player_faction_editable": (
+                format_.capabilities.edit_player_faction
+                and info.player_faction_editable
+            ),
+            "faction_relations": [
+                {
+                    "key": faction.key,
+                    "name": faction.display_name or faction.key,
+                    "numeric_id": faction.numeric_id,
+                    "value": relation_values.get(faction.numeric_id, 0),
+                    "stored": faction.numeric_id in relation_values,
+                }
+                for faction in (
+                    faction_catalog.factions if faction_catalog is not None else ()
+                )
+                if faction.numeric_id is not None
             ],
             "sha256": info.sha256,
             "crc_ok": info.crc_ok,
@@ -275,6 +337,24 @@ def analyze(data: bytes, name: str) -> str:
                     "total_weight": None if item.total_weight is None else round(item.total_weight, 3),
                     "weight_known": item.total_weight is not None,
                     "name": item.display_name or "Неизвестный объект",
+                    "condition": item.condition,
+                    "condition_editable": bool(item.condition_editable),
+                    "storage": item.storage,
+                    "placement_type": item.placement_type,
+                    "placement_slot": item.placement_slot,
+                    "placement_base_slot": item.placement_base_slot,
+                    "placement_editable": bool(item.placement_editable),
+                    "remove_editable": bool(
+                        format_.capabilities.remove_items and item.remove_editable
+                    ),
+                    "remove_reason": item.remove_reason,
+                    **_catalog_icon_fields(catalog, item.type_key),
+                    "upgrades": None if item.upgrades is None else list(item.upgrades),
+                    "upgrade_editable": bool(
+                        format_.capabilities.edit_upgrades
+                        and item.upgrades_editable
+                        and upgrade_catalog is not None
+                    ),
                     "editable": bool(
                         format_.capabilities.edit_stacks and item.editable_count
                     ),
@@ -291,6 +371,11 @@ def prepare(
     stacks_json: str,
     adds_json: str = "[]",
     detach_json: str = "[]",
+    durability_json: str = "[]",
+    relations_json: str = "[]",
+    player_faction_json: str = "null",
+    upgrades_json: str = "[]",
+    placements_json: str = "[]",
 ) -> str:
     """Apply staged edits to the analyzed bytes and keep the result in memory."""
 
@@ -310,6 +395,33 @@ def prepare(
         )
         for entry in json.loads(detach_json)
     )
+    durability = tuple(
+        (int(entry[0]), float(entry[1]))
+        for entry in json.loads(durability_json)
+    )
+    faction_relations = tuple(
+        (str(entry[0]), int(entry[1]))
+        for entry in json.loads(relations_json)
+    )
+    player_faction_value = json.loads(player_faction_json)
+    if player_faction_value is None:
+        player_faction: str | None = None
+    elif isinstance(player_faction_value, str):
+        player_faction = player_faction_value
+    else:
+        raise sf.SaveError("player faction должен быть catalog key или null")
+    upgrades = tuple(
+        (int(entry[0]), tuple(str(value) for value in entry[1]))
+        for entry in json.loads(upgrades_json)
+    )
+    placements = tuple(
+        (
+            int(entry[0]),
+            str(entry[1]),
+            None if entry[2] is None else int(entry[2]),
+        )
+        for entry in json.loads(placements_json)
+    )
     normalized_money = _optional_int(money)
     plan = EditPlan(
         source=SourceRef(
@@ -321,6 +433,11 @@ def prepare(
         stacks=stacks,
         adds=adds,
         detach=detach,
+        durability=durability,
+        faction_relations=faction_relations,
+        player_faction=player_faction,
+        upgrades=upgrades,
+        placements=placements,
     )
     format_ = _state.get("format")
     if format_ is None:
@@ -342,11 +459,47 @@ def prepare(
         raise sf.SaveError(
             f"Формат {format_.release_id} не разрешает удаление предметов до игрового evidence"
         )
+    if durability and not format_.capabilities.edit_durability:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку прочности до игрового evidence"
+        )
+    if faction_relations and not format_.capabilities.edit_relations:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку отношений до игрового evidence"
+        )
+    if player_faction is not None and not format_.capabilities.edit_player_faction:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает смену группировки игрока "
+            "до игрового evidence"
+        )
+    if upgrades and not format_.capabilities.edit_upgrades:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку upgrades до игрового evidence"
+        )
+    if placements and not format_.capabilities.edit_placement:
+        raise sf.SaveError(
+            f"Формат {format_.release_id} не разрешает правку позиции до игрового evidence"
+        )
+    item_catalog = _state.get("catalog")
+    faction_catalog = _state.get("faction_catalog")
+    upgrade_catalog = _state.get("upgrade_catalog")
+    if not isinstance(faction_catalog, FactionCatalog):
+        faction_catalog = FactionCatalog(format_.release_id, None, ())
+    game_catalog = (
+        GameCatalog(format_.release_id, item_catalog, faction_catalog, upgrade_catalog)
+        if isinstance(item_catalog, ItemCatalog)
+        and (
+            isinstance(_state.get("faction_catalog"), FactionCatalog)
+            or isinstance(upgrade_catalog, UpgradeCatalog)
+        )
+        else None
+    )
     prepared = format_.prepare(
         data,
         plan,
         source_name=str(_state.get("name") or "save.sav"),
-        catalog=_state.get("catalog"),
+        catalog=item_catalog if isinstance(item_catalog, ItemCatalog) else None,
+        game_catalog=game_catalog,
     )
     _state["output"] = prepared.data
 
@@ -365,6 +518,27 @@ def prepare(
         for handle, _deep in detach
         if handle not in {item.handle for item in after.inventory}
     ]
+    before_conditions = {item.handle: item.condition for item in before.inventory}
+    after_conditions = {item.handle: item.condition for item in after.inventory}
+    before_relations = dict(before.faction_relations)
+    after_relations = dict(after.faction_relations)
+    before_player_faction = before.player_faction_index
+    after_player_faction = after.player_faction_index
+    before_upgrades = {item.handle: item.upgrades for item in before.inventory}
+    after_upgrades = {item.handle: item.upgrades for item in after.inventory}
+    before_placements = {
+        item.handle: (item.placement_type, item.placement_slot)
+        for item in before.inventory
+    }
+    after_placements = {
+        item.handle: (item.placement_type, item.placement_slot)
+        for item in after.inventory
+    }
+    faction_catalog = _state.get("faction_catalog")
+    faction_ids = {
+        faction.key: faction.numeric_id
+        for faction in (faction_catalog.factions if isinstance(faction_catalog, FactionCatalog) else ())
+    }
     return json.dumps(
         {
             "output_sha256": prepared.output_sha256,
@@ -377,6 +551,39 @@ def prepare(
             ],
             "adds": added_items,
             "removed": removed_handles,
+            "durability": [
+                [
+                    f"0x{handle:08X}",
+                    before_conditions.get(handle),
+                    after_conditions.get(handle),
+                ]
+                for handle, _condition in durability
+            ],
+            "faction_relations": [
+                [
+                    key,
+                    before_relations.get(faction_ids.get(key)),
+                    after_relations.get(faction_ids.get(key)),
+                ]
+                for key, _goodwill in faction_relations
+            ],
+            "player_faction": [before_player_faction, after_player_faction],
+            "upgrades": [
+                [
+                    f"0x{handle:08X}",
+                    None if before_upgrades.get(handle) is None else list(before_upgrades[handle] or ()),
+                    None if after_upgrades.get(handle) is None else list(after_upgrades[handle] or ()),
+                ]
+                for handle, _values in upgrades
+            ],
+            "placements": [
+                [
+                    f"0x{handle:08X}",
+                    list(before_placements.get(handle, (None, None))),
+                    list(after_placements.get(handle, (None, None))),
+                ]
+                for handle, _placement_type, _slot_id in placements
+            ],
             "source_unchanged": hashlib.sha256(data).hexdigest() == _state["sha256"],
         },
         ensure_ascii=False,

@@ -17,6 +17,11 @@ const state = {
   snapshot: null,
   money: null,
   stacks: new Map(),
+  durability: new Map(),
+  upgrades: new Map(),
+  placements: new Map(),
+  relations: new Map(),
+  playerFaction: null,
   adds: new Map(),
   detach: new Set(),
   prepared: null,
@@ -79,6 +84,11 @@ async function openFile(file) {
     state.snapshot = snapshot;
     state.money = null;
     state.stacks.clear();
+    state.durability.clear();
+    state.upgrades.clear();
+    state.placements.clear();
+    state.relations.clear();
+    state.playerFaction = null;
     state.adds.clear();
     state.detach.clear();
     state.prepared = null;
@@ -121,6 +131,11 @@ function renderSnapshot(s) {
     caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
+    caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
+    caps.edit_upgrades && s.upgrade_catalog_available ? "улучшения оружия/экипировки (experimental)" : "улучшения read-only",
+    caps.edit_placement ? "размещение предметов (experimental)" : "размещение read-only",
+    caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
+    caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable ? "группировка игрока (experimental)" : "группировка игрока read-only",
   ];
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
@@ -160,8 +175,100 @@ function renderSnapshot(s) {
     ? `Доступно ключей: ${catalogItems.length}. Источник: ${s.catalog_source === "save-observed" ? "текущий сейв" : "официальный каталог"}.`
     : "Официальный каталог для браузера не найден в загруженном файле.";
 
+  renderFaction(s);
   renderInventory();
   renderChanges();
+}
+
+function renderFaction(s) {
+  const group = el("faction-group");
+  const body = el("faction-relations").tBodies[0];
+  const rows = s.faction_relations ?? [];
+  const factions = (s.catalog_factions ?? []).filter((faction) => faction.numeric_id !== null && faction.numeric_id !== undefined);
+  const caps = s.capabilities ?? {};
+  const enabled = Boolean(caps.edit_relations && s.faction_catalog_available && s.faction_relations_editable && rows.length);
+  const playerEnabled = Boolean(caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable && factions.length);
+  group.disabled = !(enabled || playerEnabled);
+  el("faction-status").textContent = enabled || playerEnabled
+    ? `Загружено группировок: ${rows.length}; goodwill ${s.faction_goodwill_min ?? "?"}…${s.faction_goodwill_max ?? "?"}. Изменения staged, исходный сейв не изменён.`
+    : s.faction_catalog_available
+      ? "Relation registry или actor community не подтверждены; только чтение."
+      : "Официальный faction catalog для этого релиза не найден.";
+  const warning = el("faction-warning");
+  warning.hidden = !(enabled || playerEnabled);
+
+  const playerSelect = el("player-faction-select");
+  playerSelect.replaceChildren(...factions.map((faction) => {
+    const option = document.createElement("option");
+    option.value = faction.key;
+    option.textContent = faction.name === faction.key ? faction.key : `${faction.name} · ${faction.key}`;
+    return option;
+  }));
+  const currentFaction = factions.find((faction) => faction.numeric_id === s.player_faction_index);
+  el("player-faction-current").textContent = currentFaction
+    ? (currentFaction.name === currentFaction.key ? currentFaction.key : `${currentFaction.name} · ${currentFaction.key}`)
+    : s.player_faction_index === null || s.player_faction_index === undefined
+      ? "неизвестно"
+      : `community id ${s.player_faction_index} (нет в каталоге)`;
+  const selectedPlayerFaction = state.playerFaction ?? currentFaction?.key ?? factions[0]?.key ?? "";
+  playerSelect.value = selectedPlayerFaction;
+  playerSelect.disabled = !playerEnabled;
+  const playerStage = el("player-faction-stage");
+  playerStage.disabled = !playerEnabled;
+  playerStage.textContent = state.playerFaction === null ? "Застейджить" : "Группировка*";
+  playerStage.onclick = () => {
+    const key = playerSelect.value;
+    if (!key) return;
+    state.playerFaction = key === currentFaction?.key ? null : key;
+    invalidate();
+    renderFaction(state.snapshot);
+    renderChanges();
+    setStatus(`Принадлежность игрока ${key} подготовлена; исходный файл не изменён`);
+  };
+  body.replaceChildren(...rows.map((row) => {
+    const tr = document.createElement("tr");
+    const staged = state.relations.get(row.key);
+    const current = row.stored ? Number(row.value) : 0;
+    const name = document.createElement("td");
+    name.textContent = row.name === row.key ? row.key : `${row.name} · ${row.key}`;
+    name.title = `community id: ${row.numeric_id}`;
+    tr.append(name);
+    const currentCell = document.createElement("td");
+    currentCell.textContent = row.stored ? String(row.value) : "0 (default)";
+    tr.append(currentCell);
+    const inputCell = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = String(s.faction_goodwill_min ?? -2147483648);
+    input.max = String(s.faction_goodwill_max ?? 2147483647);
+    input.step = "1";
+    input.value = String(staged ?? current);
+    inputCell.append(input);
+    tr.append(inputCell);
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+    button.className = "button";
+    button.type = "button";
+    button.textContent = staged === undefined ? "Застейджить" : "Отношение*";
+    button.addEventListener("click", () => {
+      const value = Number(input.value);
+      const min = Number(s.faction_goodwill_min ?? -2147483648);
+      const max = Number(s.faction_goodwill_max ?? 2147483647);
+      if (!Number.isInteger(value) || value < min || value > max) {
+        setStatus(`Goodwill должен быть целым числом ${min}…${max}`, "error");
+        return;
+      }
+      if (value === current) state.relations.delete(row.key);
+      else state.relations.set(row.key, value);
+      invalidate();
+      renderFaction(state.snapshot);
+      renderChanges();
+      setStatus(`Отношение ${row.key} подготовлено; исходный файл не изменён`);
+    });
+    actionCell.append(button);
+    tr.append(actionCell);
+    return tr;
+  }));
 }
 
 function visibleItems() {
@@ -173,6 +280,9 @@ function visibleItems() {
     if (
       filter === "staged" &&
       !state.stacks.has(item.handle) &&
+      !state.durability.has(item.handle) &&
+      !state.upgrades.has(item.handle) &&
+      !state.placements.has(item.handle) &&
       !state.detach.has(item.handle)
     ) return false;
     if (!query) return true;
@@ -183,24 +293,222 @@ function visibleItems() {
   });
 }
 
+const ITEM_GLYPH_CATEGORIES = new Set([
+  "weapon",
+  "ammo",
+  "outfit",
+  "artifact",
+  "consumable",
+  "grenade",
+  "item",
+]);
+
+function itemGlyphCategory(category) {
+  const value = String(category ?? "").toLowerCase();
+  if (value.includes("оруж") || value.includes("weapon")) return "weapon";
+  if (value.includes("патрон") || value.includes("ammo")) return "ammo";
+  if (value.includes("брон") || value.includes("экип") || value.includes("outfit")) return "outfit";
+  if (value.includes("артеф") || value.includes("artifact")) return "artifact";
+  if (value.includes("гранат") || value.includes("grenade")) return "grenade";
+  if (value.includes("расход") || value.includes("consum")) return "consumable";
+  return ITEM_GLYPH_CATEGORIES.has(value) ? value : "item";
+}
+
+function itemGlyph(item) {
+  const category = itemGlyphCategory(item.category);
+  const glyph = document.createElement("span");
+  glyph.className = `zone-item-glyph zone-item-glyph-${category}`;
+  const label = `Категория предмета: ${item.category || "неизвестно"}`;
+  glyph.setAttribute("role", "img");
+  glyph.setAttribute("aria-label", label);
+  glyph.title = item.icon_x === null || item.icon_x === undefined
+    ? label
+    : `${label}; официальный atlas ${item.icon_texture ?? "ui_icon_equipment"} [${item.icon_x}, ${item.icon_y}]`;
+  return glyph;
+}
+
+function upgradeDefinitionsFor(item) {
+  return (state.snapshot?.catalog_upgrades ?? []).filter((upgrade) =>
+    (upgrade.applicable_item_keys ?? []).includes(item.type_key) ||
+    upgrade.item_key === item.type_key,
+  );
+}
+
+function renderUpgradeEditor(item, cell) {
+  if (!Array.isArray(item.upgrades)) {
+    cell.textContent = "только чтение";
+    cell.className = "muted";
+    return;
+  }
+  const caps = state.snapshot?.capabilities ?? {};
+  if (!item.upgrade_editable || !caps.edit_upgrades || !state.snapshot.upgrade_catalog_available) {
+    cell.textContent = item.upgrades.length ? item.upgrades.join(", ") : "нет";
+    cell.className = "muted mono";
+    return;
+  }
+
+  const current = item.upgrades;
+  const effective = state.upgrades.get(item.handle) ?? current;
+  const definitions = upgradeDefinitionsFor(item);
+  const known = new Map(definitions.map((upgrade) => [upgrade.key, upgrade]));
+  const keys = [...current, ...definitions.map((upgrade) => upgrade.key)]
+    .filter((key, index, values) => values.indexOf(key) === index);
+  const details = document.createElement("details");
+  details.className = "upgrade-editor";
+  const summary = document.createElement("summary");
+  summary.textContent = `${effective.length} выбрано · изменить`;
+  details.append(summary);
+  const list = document.createElement("div");
+  list.className = "upgrade-list";
+  for (const key of keys) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = key;
+    checkbox.checked = effective.includes(key);
+    const definition = known.get(key);
+    const text = definition
+      ? (definition.name === key ? key : `${definition.name} · ${key}`)
+      : `Неизвестный ID · ${key}`;
+    label.append(checkbox, document.createTextNode(text));
+    list.append(label);
+  }
+  details.append(list);
+  const action = document.createElement("button");
+  action.className = "button";
+  action.type = "button";
+  action.textContent = "Застейджить";
+  action.addEventListener("click", () => {
+    const desired = [...list.querySelectorAll("input:checked")].map((input) => input.value);
+    if (desired.length === current.length && desired.every((key, index) => key === current[index])) {
+      state.upgrades.delete(item.handle);
+    } else {
+      state.upgrades.set(item.handle, desired);
+    }
+    invalidate();
+    renderInventory();
+    renderChanges();
+    setStatus(`Улучшения ${item.type_key} подготовлены; исходный файл не изменён`);
+  });
+  details.append(action);
+  cell.append(details);
+}
+
+function placementLabel(placementType, slotId) {
+  if (placementType === "slot" && slotId !== null && slotId !== undefined) {
+    return `Слот ${slotId}`;
+  }
+  return { belt: "Пояс", ruck: "Рюкзак" }[placementType] ?? "Неизвестно";
+}
+
+function renderPlacementEditor(item, cell) {
+  const caps = state.snapshot?.capabilities ?? {};
+  if (!item.placement_editable || !caps.edit_placement) {
+    return;
+  }
+  const current = [
+    item.placement_type,
+    item.placement_type === "slot" ? item.placement_slot : null,
+  ];
+  const effective = state.placements.get(item.handle) ?? current;
+  const wrap = document.createElement("div");
+  wrap.className = "placement-editor";
+  const select = document.createElement("select");
+  select.title = "Экспериментально: client-data SInvItemPlace; backup обязателен";
+  const options = [
+    ["ruck", null],
+    ["belt", null],
+    ...Array.from({ length: 13 }, (_, index) => ["slot", index + 1]),
+  ];
+  for (const [placementType, slotId] of options) {
+    const option = document.createElement("option");
+    option.value = slotId === null ? placementType : `${placementType}:${slotId}`;
+    option.textContent = placementLabel(placementType, slotId);
+    option.selected = placementType === effective[0] && slotId === effective[1];
+    select.append(option);
+  }
+  const button = document.createElement("button");
+  button.className = "button";
+  button.type = "button";
+  button.textContent = state.placements.has(item.handle) ? "Позиция*" : "Позиция";
+  button.addEventListener("click", () => {
+    const [placementType, rawSlot] = select.value.split(":");
+    const slotId = rawSlot === undefined ? null : Number(rawSlot);
+    if (placementType === current[0] && slotId === current[1]) {
+      state.placements.delete(item.handle);
+    } else {
+      state.placements.set(item.handle, [placementType, slotId]);
+    }
+    invalidate();
+    renderInventory();
+    renderChanges();
+    setStatus(`Позиция ${item.type_key} подготовлена; исходный файл не изменён`);
+  });
+  wrap.append(select, button);
+  cell.append(wrap);
+}
+
 function renderInventory() {
   const body = el("inventory").tBodies[0];
   body.replaceChildren(...visibleItems().map((item) => {
     const tr = document.createElement("tr");
     const staged = state.stacks.get(item.handle);
+    const stagedDurability = state.durability.get(item.handle);
     tr.className = state.detach.has(item.handle)
       ? "staged"
-      : staged !== undefined ? "staged" : item.editable ? "" : "readonly";
+      : staged !== undefined || stagedDurability !== undefined || state.upgrades.has(item.handle) || state.placements.has(item.handle)
+        ? "staged"
+        : item.editable ? "" : "readonly";
+    const iconTd = document.createElement("td");
+    iconTd.className = "item-icon-cell";
+    iconTd.append(itemGlyph(item));
+    tr.append(iconTd);
     for (const cell of [
       item.name, item.category, item.position, item.size_text, item.type_key,
       item.count === null ? "неизвестно" : String(item.count),
       item.total_weight === null ? "неизвестно" : item.total_weight.toFixed(3),
-      item.handle_hex,
     ]) {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.append(td);
     }
+    const conditionTd = document.createElement("td");
+    if (item.condition === null || item.condition === undefined) {
+      conditionTd.textContent = "неизвестно";
+    } else if (item.condition_editable && state.snapshot.capabilities?.edit_durability) {
+      const input = document.createElement("input");
+      input.className = "condition-input";
+      input.type = "number";
+      input.min = "0";
+      input.max = "100";
+      input.step = "0.1";
+      input.value = String(((stagedDurability ?? item.condition) * 100).toFixed(1));
+      input.title = "Экспериментально: STATE/UPDATE/client-data mirrors; исходный файл не меняется до preview";
+      input.addEventListener("change", () => {
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          input.value = String((item.condition * 100).toFixed(1));
+          return;
+        }
+        const normalized = value / 100;
+        if (Math.abs(normalized - item.condition) <= 0.000001) state.durability.delete(item.handle);
+        else state.durability.set(item.handle, normalized);
+        invalidate();
+        renderInventory();
+        renderChanges();
+      });
+      conditionTd.append(input);
+    } else {
+      conditionTd.textContent = `${(item.condition * 100).toFixed(1)}%`;
+      conditionTd.className = "muted";
+    }
+    tr.append(conditionTd);
+    const upgradesTd = document.createElement("td");
+    renderUpgradeEditor(item, upgradesTd);
+    tr.append(upgradesTd);
+    const handleTd = document.createElement("td");
+    handleTd.textContent = item.handle_hex;
+    tr.append(handleTd);
     const td = document.createElement("td");
     if (item.editable) {
       const input = document.createElement("input");
@@ -231,11 +539,17 @@ function renderInventory() {
       remove.className = "button";
       remove.type = "button";
       remove.textContent = state.detach.has(item.handle) ? "Отменить" : "Удалить";
+      remove.disabled = item.remove_editable !== true;
+      if (remove.disabled) {
+        remove.title = item.remove_reason || "Удаление этого объекта заблокировано";
+      }
       remove.addEventListener("click", () => {
         if (state.detach.has(item.handle)) state.detach.delete(item.handle);
         else {
           state.detach.add(item.handle);
           state.stacks.delete(item.handle);
+          state.durability.delete(item.handle);
+          state.upgrades.delete(item.handle);
         }
         invalidate();
         renderInventory();
@@ -244,6 +558,7 @@ function renderInventory() {
       td.append(document.createTextNode(" "));
       td.append(remove);
     }
+    renderPlacementEditor(item, td);
     tr.append(td);
     return tr;
   }));
@@ -259,12 +574,42 @@ function renderChanges() {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
     items.push(`Стак ${item.handle_hex}: ${item.count} → ${count}`);
   }
+  for (const [handle, condition] of state.durability) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
+  }
+  for (const [handle, values] of state.upgrades) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    items.push(`ОПАСНО: улучшения ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item?.upgrades ?? []).join(", ") || "нет"} → ${values.join(", ") || "нет"}; backup обязателен`);
+  }
+  for (const [handle, [placementType, slotId]] of state.placements) {
+    const item = state.snapshot.inventory.find((i) => i.handle === handle);
+    const before = item?.position ?? "неизвестно";
+    items.push(`ОПАСНО: позиция ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${before} → ${placementLabel(placementType, slotId)}; backup обязателен`);
+  }
+  for (const [key, goodwill] of state.relations) {
+    const row = (state.snapshot.faction_relations ?? []).find((item) => item.key === key);
+    const before = row?.stored ? row.value : 0;
+    items.push(`С риском: отношение ${key}: ${before} → ${goodwill}; backup обязателен`);
+  }
+  if (state.playerFaction !== null) {
+    const current = (state.snapshot.catalog_factions ?? []).find(
+      (faction) => faction.numeric_id === state.snapshot.player_faction_index,
+    );
+    const target = (state.snapshot.catalog_factions ?? []).find(
+      (faction) => faction.key === state.playerFaction,
+    );
+    const label = (faction, fallback) => faction
+      ? (faction.name === faction.key ? faction.key : `${faction.name} · ${faction.key}`)
+      : fallback;
+    items.push(`ОПАСНО: группировка игрока ${label(current, "неизвестно")} → ${label(target, state.playerFaction)}; сюжет может перезаписать; backup обязателен`);
+  }
   for (const [key, quantity] of state.adds) {
-    items.push(`Добавить ${key} × ${quantity}`);
+    items.push(`ОПАСНО: добавить ${key} × ${quantity}; backup обязателен`);
   }
   for (const handle of state.detach) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
-    items.push(`Удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}`);
+    items.push(`ОПАСНО: удалить ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}; backup обязателен`);
   }
   list.replaceChildren(...(items.length
     ? items.map((text) => {
@@ -298,7 +643,12 @@ function preview() {
     const stacks = JSON.stringify([...state.stacks.entries()]);
     const adds = JSON.stringify([...state.adds.entries()]);
     const detach = JSON.stringify([...state.detach].map((handle) => [handle, true]));
-    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach));
+    const durability = JSON.stringify([...state.durability.entries()]);
+    const relations = JSON.stringify([...state.relations.entries()]);
+    const playerFaction = JSON.stringify(state.playerFaction);
+    const upgrades = JSON.stringify([...state.upgrades.entries()]);
+    const placements = JSON.stringify([...state.placements.entries()].map(([handle, [placementType, slotId]]) => [handle, placementType, slotId]));
+    const result = JSON.parse(state.bridge.prepare(state.money, stacks, adds, detach, durability, relations, playerFaction, upgrades, placements));
     state.prepared = result;
 
     const lines = [`Копия готова: ${result.size_text}, SHA ${result.output_sha256.slice(0, 12)}…`];
@@ -313,6 +663,23 @@ function preview() {
     }
     for (const handle of result.removed ?? []) {
       lines.push(`удалён ${handle}`);
+    }
+    for (const [handle, before, after] of result.durability ?? []) {
+      lines.push(`прочность ${handle}: ${before === null ? "?" : `${(before * 100).toFixed(1)}%`} → ${after === null ? "?" : `${(after * 100).toFixed(1)}%`}`);
+    }
+    for (const [handle, before, after] of result.upgrades ?? []) {
+      lines.push(`улучшения ${handle}: ${(before ?? []).join(", ") || "нет"} → ${(after ?? []).join(", ") || "нет"} (experimental)`);
+    }
+    for (const [handle, before, after] of result.placements ?? []) {
+      const beforeLabel = placementLabel(before?.[0], before?.[1]);
+      const afterLabel = placementLabel(after?.[0], after?.[1]);
+      lines.push(`позиция ${handle}: ${beforeLabel} → ${afterLabel} (experimental)`);
+    }
+    for (const [key, before, after] of result.faction_relations ?? []) {
+      lines.push(`отношение ${key}: ${before ?? 0} → ${after ?? "?"} (experimental)`);
+    }
+    if (result.player_faction?.[0] !== result.player_faction?.[1]) {
+      lines.push(`группировка игрока: ${result.player_faction[0] ?? "?"} → ${result.player_faction[1] ?? "?"} (experimental)`);
     }
     if (!result.source_unchanged) lines.push("ВНИМАНИЕ: исходные байты изменились");
     el("preview-status").textContent = lines.join(" · ");
@@ -389,6 +756,56 @@ el("item-add-stage").addEventListener("click", () => {
   renderChanges();
   setStatus(`Добавление ${key} × ${quantity} подготовлено; исходный файл не изменён`);
 });
+
+const supportModal = el("support-modal");
+el("support-button").addEventListener("click", () => {
+  if (typeof supportModal.showModal === "function") {
+    supportModal.showModal();
+  } else {
+    supportModal.hidden = false;
+  }
+});
+el("support-close").addEventListener("click", () => {
+  if (typeof supportModal.close === "function") {
+    supportModal.close();
+  } else {
+    supportModal.hidden = true;
+  }
+});
+supportModal.addEventListener("click", (event) => {
+  if (event.target !== supportModal) return;
+  if (typeof supportModal.close === "function") {
+    supportModal.close();
+  } else {
+    supportModal.hidden = true;
+  }
+});
+for (const button of document.querySelectorAll(".support-copy")) {
+  button.addEventListener("click", async () => {
+    const value = button.dataset.copy ?? "";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const input = Object.assign(document.createElement("textarea"), { value });
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.append(input);
+        input.select();
+        const copied = document.execCommand("copy");
+        input.remove();
+        if (!copied) throw new Error("clipboard unavailable");
+      }
+      const original = button.textContent;
+      button.textContent = "Copied";
+      window.setTimeout(() => { button.textContent = original ?? "Copy"; }, 1200);
+    } catch (error) {
+      fail(`Не удалось скопировать: ${error}`);
+    }
+  });
+}
+
 el("preview").addEventListener("click", preview);
 el("download").addEventListener("click", download);
 

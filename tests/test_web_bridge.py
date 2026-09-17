@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "web"))
 
 import web_bridge  # noqa: E402 - web/ must be on sys.path first
+from test_xray_durability import _condition_fixture  # noqa: E402
+from test_xray_relations import _registry  # noqa: E402
 from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
@@ -131,11 +133,227 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert snapshot["money"] == 1234
     assert snapshot["inventory"][0]["name"] == "ammo_9x39_pab9"
     assert snapshot["inventory"][0]["total_weight"] is None
+    assert {
+        "icon_x",
+        "icon_y",
+        "icon_texture",
+    }.issubset(snapshot["inventory"][0])
     assert all(row[0] != "UE5 GVAS schema" for row in snapshot["metadata"])
 
     result = json.loads(web_bridge.prepare(9876, json.dumps([[0x1234, 44]])))
     assert result["money"] == [1234, 9876]
     assert result["stacks"] == [["0x00001234", 30, 44]]
+
+
+def test_web_bridge_exposes_and_prepares_experimental_condition_edit() -> None:
+    data = _condition_fixture(version=128, outer=6)
+    snapshot = json.loads(web_bridge.analyze(data, "condition.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["condition"] == pytest.approx(0.25)
+    assert item["condition_editable"] is True
+    assert snapshot["capabilities"]["edit_durability"] is True
+    assert "edit_durability" in snapshot["capabilities"]["experimental_fields"]
+
+    result = json.loads(
+        web_bridge.prepare(None, "[]", "[]", "[]", json.dumps([[0x3456, 0.75]]))
+    )
+    assert result["durability"] == [
+        ["0x00003456", pytest.approx(0.25), pytest.approx(0.75)]
+    ]
+
+
+def test_web_bridge_exposes_confirmed_xray_storage_place() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+    snapshot = json.loads(web_bridge.analyze(data, "equipped.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["storage"] == "equipped"
+    assert item["position"] == "экипировано (слот 2)"
+    assert item["placement_type"] == "slot"
+    assert item["placement_slot"] == 2
+    assert item["placement_base_slot"] == 3
+    assert item["placement_editable"] is True
+    assert snapshot["capabilities"]["edit_placement"] is True
+
+
+def test_web_bridge_exposes_per_item_delete_safety() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+
+    snapshot = json.loads(web_bridge.analyze(data, "equipped.scop"))
+    item = snapshot["inventory"][0]
+
+    assert item["remove_editable"] is False
+    assert "equipped" in item["remove_reason"]
+
+
+def test_web_bridge_prepares_xray_inventory_placement() -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+    snapshot = json.loads(web_bridge.analyze(data, "placement.scop"))
+    assert snapshot["capabilities"]["edit_placement"] is True
+
+    result = json.loads(
+        web_bridge.prepare(
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            "null",
+            "[]",
+            json.dumps([[0x3456, "slot", 4]]),
+        )
+    )
+
+    assert result["placements"] == [
+        ["0x00003456", ["slot", 2], ["slot", 4]]
+    ]
+
+
+def test_web_bridge_exposes_and_prepares_xray_faction_relations() -> None:
+    payload = {
+        "schema_version": 1,
+        "releases": {
+            "stalker-cop": {
+                "items": [
+                    {
+                        "key": "ammo_9x39_pab9",
+                        "category": "ammo",
+                        "max_stack": 30,
+                        "serialization_family": "ammo",
+                    }
+                ],
+                "factions": [
+                    {
+                        "key": "actor",
+                        "display_name": "Actor",
+                        "numeric_id": 0,
+                        "source": "fixture",
+                    },
+                    {
+                        "key": "bandit",
+                        "display_name": "Bandit",
+                        "numeric_id": 1,
+                        "source": "fixture",
+                    },
+                ],
+                "goodwill_min": -3000,
+                "goodwill_max": 1000,
+            }
+        },
+    }
+    old_items = web_bridge._catalogs.get("stalker-cop")
+    old_factions = web_bridge._faction_catalogs.get("stalker-cop")
+    try:
+        web_bridge.install_catalogs(json.dumps(payload))
+        data = _fixture(registry=_registry())
+        snapshot = json.loads(web_bridge.analyze(data, "relations.scop"))
+
+        assert snapshot["capabilities"]["edit_relations"] is True
+        assert snapshot["faction_catalog_available"] is True
+        assert snapshot["faction_relations_editable"] is True
+        assert [(row["key"], row["value"]) for row in snapshot["faction_relations"]] == [
+            ("actor", 100),
+            ("bandit", -100),
+        ]
+
+        result = json.loads(
+            web_bridge.prepare(
+                None,
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                json.dumps([["bandit", 375]]),
+            )
+        )
+        assert result["faction_relations"] == [["bandit", -100, 375]]
+    finally:
+        if old_items is None:
+            web_bridge._catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._catalogs["stalker-cop"] = old_items
+        if old_factions is None:
+            web_bridge._faction_catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._faction_catalogs["stalker-cop"] = old_factions
+
+
+def test_web_bridge_exposes_and_prepares_player_faction() -> None:
+    payload = {
+        "schema_version": 1,
+        "releases": {
+            "stalker-cop": {
+                "items": [
+                    {
+                        "key": "ammo_9x39_pab9",
+                        "category": "ammo",
+                        "max_stack": 30,
+                        "serialization_family": "ammo",
+                    }
+                ],
+                "factions": [
+                    {
+                        "key": "actor",
+                        "display_name": "Actor",
+                        "numeric_id": 0,
+                        "source": "fixture",
+                    },
+                    {
+                        "key": "bandit",
+                        "display_name": "Bandit",
+                        "numeric_id": 1,
+                        "source": "fixture",
+                    },
+                ],
+            }
+        },
+    }
+    old_items = web_bridge._catalogs.get("stalker-cop")
+    old_factions = web_bridge._faction_catalogs.get("stalker-cop")
+    try:
+        web_bridge.install_catalogs(json.dumps(payload))
+        data = _fixture(player_community=0)
+        snapshot = json.loads(web_bridge.analyze(data, "player-faction.scop"))
+
+        assert snapshot["player_faction_index"] == 0
+        assert snapshot["player_faction_editable"] is True
+        assert snapshot["capabilities"]["edit_player_faction"] is True
+
+        result = json.loads(
+            web_bridge.prepare(
+                None,
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                json.dumps("bandit"),
+            )
+        )
+        assert result["player_faction"] == [0, 1]
+    finally:
+        if old_items is None:
+            web_bridge._catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._catalogs["stalker-cop"] = old_items
+        if old_factions is None:
+            web_bridge._faction_catalogs.pop("stalker-cop", None)
+        else:
+            web_bridge._faction_catalogs["stalker-cop"] = old_factions
 
 
 def test_web_bridge_prepares_xray_structural_edits_after_owner_acceptance() -> None:

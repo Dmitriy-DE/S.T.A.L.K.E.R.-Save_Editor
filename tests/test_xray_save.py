@@ -24,7 +24,12 @@ def _z(value: str) -> bytes:
     return value.encode("utf-8") + b"\x00"
 
 
-def _state_base(version: int, *, money: int | None = None) -> bytes:
+def _state_base(
+    version: int,
+    *,
+    money: int | None = None,
+    community: int = -1,
+) -> bytes:
     # CSE_ALifeObject + CSE_ALifeDynamicObjectVisual + creature/trader actor
     # inheritance as serialized by the public X-Ray source.  The fixture only
     # needs the prefix through the money field; the remaining actor fields are
@@ -46,7 +51,7 @@ def _state_base(version: int, *, money: int | None = None) -> bytes:
         state += _z("")  # specific character
         state += struct.pack("<I", 0)  # trader flags
         state += _z("default")
-        state += struct.pack("<iii", -1, -1, -1)
+        state += struct.pack("<iii", community, -1, -1)
         state += _z("")  # raw character name
         if version > 124:
             state += b"\x01\x00"  # deadbody flags
@@ -84,6 +89,7 @@ def _spawn(
     version: int,
     state: bytes,
     update: bytes,
+    client_data: bytes = b"",
 ) -> bytes:
     packet = bytearray(struct.pack("<H", 1))
     packet += _z(name) + _z("")
@@ -95,7 +101,7 @@ def _spawn(
     if version > 120:
         packet += struct.pack("<H", 1)  # single-player game type
     packet += struct.pack("<H", 0)  # script version
-    packet += struct.pack("<H", 0)  # client data size
+    packet += struct.pack("<H", len(client_data)) + client_data
     packet += struct.pack("<H", 0)  # spawn id
     packet += struct.pack("<H", len(state) + 2) + state
     assert len(packet) <= 0xFFFF
@@ -110,9 +116,20 @@ def _chunk(kind: int, payload: bytes) -> bytes:
     return struct.pack("<II", kind, len(payload)) + payload
 
 
-def _fixture(version: int = 128, outer: int = 6) -> bytes:
+def _fixture(
+    version: int = 128,
+    outer: int = 6,
+    *,
+    registry: bytes = b"registry",
+    player_community: int = -1,
+) -> bytes:
     actor = _spawn(
-        "actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0)
+        "actor",
+        0,
+        0xFFFF,
+        version,
+        _state_base(version, money=1234, community=player_community),
+        struct.pack("<H", 0),
     )
     ammo_update = struct.pack("<H", 0) + b"\x00" + struct.pack("<H", 30)
     ammo = _spawn(
@@ -130,7 +147,7 @@ def _fixture(version: int = 128, outer: int = 6) -> bytes:
             _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
             _chunk(1, b"\x00" * 8),
             _chunk(2, objects),
-            _chunk(9, b"registry"),
+            _chunk(9, registry),
         )
     )
     return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)

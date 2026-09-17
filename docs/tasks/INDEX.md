@@ -33,7 +33,7 @@
 | [R06](R06.md) | Клонирование одного подтверждённого типа предмета | R05, U04 | waiting_dependencies | [#23](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/23) |
 | [R07](R07.md) | Добавление предмета по подтверждённому SID | R02, R06 | waiting_dependencies | [#24](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/24) |
 | [R08](R08.md) | Настоящее удаление с анализом ссылок | R05, U04 | waiting_dependencies | [#25](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/25) |
-| [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | waiting_dependencies | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26) |
+| [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | in_review (read-only evidence; controlled attach/detach gate blocked) | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26), [PR #73](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/73) |
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
 | [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
@@ -55,6 +55,14 @@
 | [M14](M14.md) | Отношения с группировками | M10, M11 | waiting_dependencies | — |
 | [M15](M15.md) | Принадлежность игрока к группировке | M14 | waiting_dependencies | — |
 | [M16](M16.md) | Запись в папку игры с резервной копией и восстановлением | M10 | waiting_dependencies | — |
+| [M17](M17.md) | Улучшения оружия и экипировки X-Ray | M10, M11 | in_review (PR #65; structural round-trip; M10 game load/re-save pending) | [PR #65](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65) |
+| [M18](M18.md) | Локальный Support project UI | M17 | in_review (PR #66; Qt/web modal and clipboard checks; visual assets not copied) | [PR #66](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/66) |
+| [M19](M19.md) | Иконки инвентаря и визуальный слой | M11, M18 | in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests) | [PR #67](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67) |
+| [M20](M20.md) | Перенос предметов между слотами, поясом и рюкзаком X-Ray | M19 | in_review (PR #68; structural round-trip; M10 game load/re-save pending) | [PR #68](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/68) |
+| [M21](M21.md) | Read-only каталог прототипов S.T.A.L.K.E.R. 2 | M11, M19 | in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending) | [PR #69](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69) |
+| [M22](M22.md) | Воспроизводимый анализ S2 compact key ↔ prototype SID | M21 | in_review (PR #70; read-only S2 key evidence; mapping and game-labelled pair pending) | [PR #70](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/70) |
+| [M23](M23.md) | Безопасный X-Ray detach по известным registry-ссылкам | M20 | in_review (PR #71; known parent-edge/equipped/unresolved preflight; full reference graph and game load pending) | [PR #71](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/71) |
+| [M24](M24.md) | Safety-aware удаление в Qt и web | M23 | in_review (PR #72; per-item Qt/web blocker metadata; full reference graph and game load pending) | [PR #72](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/72) |
 
 <!-- END GENERATED TASK TABLE -->
 

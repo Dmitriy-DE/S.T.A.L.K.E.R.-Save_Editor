@@ -15,20 +15,20 @@ from .storage import (
     ExportReceipt,
     RestoreReceipt,
 )
-from .storage import (
-    export_local as storage_export_local,
-)
-from .storage import (
-    restore_backup as storage_restore_backup,
-)
+from .storage import export_local as storage_export_local
+from .storage import replace_local as storage_replace_local
+from .storage import restore_backup as storage_restore_backup
+from .storage import restore_in_place as storage_restore_in_place
 from .transactions import CloudTransport
 from .transactions import upload_cloud as transactions_upload_cloud
 
 InspectFn = Callable[..., SaveInfo]
 PrepareFn = Callable[[bytes, EditPlan], PreparedEdit]
 ExportFn = Callable[[Path, Path, PreparedEdit, Path], ExportReceipt]
+ReplaceFn = Callable[[Path, PreparedEdit, Path], ExportReceipt]
 UploadFn = Callable[..., CloudReceipt]
 RestoreFn = Callable[[Path | BackupRecord, Path], RestoreReceipt]
+RestoreInPlaceFn = Callable[[Path | BackupRecord], RestoreReceipt]
 
 
 class EditorService:
@@ -45,14 +45,18 @@ class EditorService:
         inspect_fn: InspectFn | None = None,
         prepare_fn: PrepareFn | None = None,
         export_fn: ExportFn | None = None,
+        replace_fn: ReplaceFn | None = None,
         upload_fn: UploadFn | None = None,
         restore_fn: RestoreFn | None = None,
+        restore_in_place_fn: RestoreInPlaceFn | None = None,
     ) -> None:
         self._inspect_fn = inspect_fn
         self._prepare_fn = prepare_fn
         self._export_fn = export_fn or storage_export_local
+        self._replace_fn = replace_fn or storage_replace_local
         self._upload_fn = upload_fn or transactions_upload_cloud
         self._restore_fn = restore_fn or storage_restore_backup
+        self._restore_in_place_fn = restore_in_place_fn or storage_restore_in_place
 
     @staticmethod
     def _format_for(
@@ -147,6 +151,16 @@ class EditorService:
 
         return self._export_fn(source_path, output_path, prepared, backup_dir)
 
+    def replace_local(
+        self,
+        source_path: Path,
+        prepared: PreparedEdit,
+        backup_dir: Path,
+    ) -> ExportReceipt:
+        """Replace the explicitly selected source through the atomic writer."""
+
+        return self._replace_fn(source_path, prepared, backup_dir)
+
     def upload_cloud(
         self,
         worker: CloudTransport,
@@ -174,6 +188,14 @@ class EditorService:
         """Restore a verified local backup through the shared storage boundary."""
 
         return self._restore_fn(journal_or_record, output_path)
+
+    def restore_in_place(
+        self,
+        journal_or_record: Path | BackupRecord,
+    ) -> RestoreReceipt:
+        """Restore a verified backup to its recorded source slot."""
+
+        return self._restore_in_place_fn(journal_or_record)
 
 
 __all__ = ["EditorService"]

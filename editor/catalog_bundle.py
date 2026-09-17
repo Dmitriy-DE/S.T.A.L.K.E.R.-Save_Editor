@@ -9,6 +9,7 @@ same release-scoped data and validation rules.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,6 +74,25 @@ def _optional_int(value: Any, field: str, release_id: str) -> int | None:
     return value
 
 
+def _optional_float(value: Any, field: str, release_id: str) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise CatalogBundleError(f"Browser catalog: invalid {field} for {release_id!r}")
+    result = float(value)
+    if not math.isfinite(result):
+        raise CatalogBundleError(f"Browser catalog: invalid {field} for {release_id!r}")
+    return result
+
+
+def _optional_str_list(value: Any, field: str, release_id: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise CatalogBundleError(f"Browser catalog: invalid {field} for {release_id!r}")
+    return tuple(value)
+
+
 def _document_from_payload(payload: str | bytes | bytearray | Mapping[str, object]) -> Mapping[str, object]:
     if isinstance(payload, Mapping):
         document: Any = payload
@@ -107,7 +127,7 @@ def load_catalog_payload(
             descriptor = release_by_id(release_id)
         except KeyError as exc:
             raise CatalogBundleError(str(exc)) from exc
-        if descriptor.edition != "original":
+        if descriptor.edition not in {"original", "s2"}:
             raise CatalogBundleError(f"Browser catalog: unsupported release {release_id!r}")
         if not isinstance(raw_release, Mapping):
             raise CatalogBundleError(f"Browser catalog: invalid release {release_id!r}")
@@ -130,13 +150,19 @@ def load_catalog_payload(
                         release_id,
                     ),
                     category=_optional_str(raw_item.get("category"), "item category", release_id),
-                    unit_weight=None,
                     width=None,
                     height=None,
                     max_stack=_optional_int(raw_item.get("max_stack"), "item max_stack", release_id),
-                    slots=(),
+                    slots=_optional_str_list(raw_item.get("slots"), "item slots", release_id),
                     prototype=None,
                     source="generated-official-metadata",
+                    # Existing generated catalogs predate S2 resource metadata;
+                    # absent fields deliberately keep their old None/default behavior.
+                    unit_weight=_optional_float(
+                        raw_item.get("unit_weight"),
+                        "item unit_weight",
+                        release_id,
+                    ),
                     serialization_family=_optional_str(
                         raw_item.get("serialization_family"),
                         "item serialization_family",

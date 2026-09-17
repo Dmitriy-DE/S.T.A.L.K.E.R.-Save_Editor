@@ -6,11 +6,11 @@ values and a separate staged-count map; it never mutates a save payload.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import TypeAlias
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
-from PySide6.QtGui import QBrush, QColor
+from PySide6.QtGui import QBrush, QColor, QIcon
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
@@ -18,6 +18,7 @@ from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 # QModelIndex alone is a Liskov violation the type checker rejects once the Qt
 # stubs are installed.
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
+IconProvider: TypeAlias = Callable[[InventoryItem], QIcon | None]
 
 
 class InventoryTableModel(QAbstractTableModel):
@@ -34,8 +35,9 @@ class InventoryTableModel(QAbstractTableModel):
     TYPE_KEY_COLUMN = 4
     COUNT_COLUMN = 5
     WEIGHT_COLUMN = 6
-    SUPPORT_COLUMN = 7
-    HANDLE_COLUMN = 8
+    CONDITION_COLUMN = 7
+    SUPPORT_COLUMN = 8
+    HANDLE_COLUMN = 9
 
     HEADERS = (
         "Имя",
@@ -45,6 +47,7 @@ class InventoryTableModel(QAbstractTableModel):
         "Type-key",
         "Количество",
         "Вес",
+        "Прочность",
         "Поддержка",
         "Handle",
     )
@@ -59,6 +62,9 @@ class InventoryTableModel(QAbstractTableModel):
         self._changed_only = False
         self._changed_handles: frozenset[int] = frozenset()
         self._staged_counts: dict[int, int] = {}
+        self._staged_durability: dict[int, float] = {}
+        self._staged_placements: dict[int, tuple[str, int | None]] = {}
+        self._icon_provider: IconProvider | None = None
         self._sort_column = self.POSITION_COLUMN
         self._sort_order = Qt.SortOrder.AscendingOrder
 
@@ -85,10 +91,38 @@ class InventoryTableModel(QAbstractTableModel):
         self._items = tuple(items)
         # A new save snapshot cannot inherit edits from another source file.
         self._staged_counts = {}
+        self._staged_durability = {}
+        self._staged_placements = {}
         self._rebuild()
 
     def set_staged_counts(self, counts: Mapping[int, int]) -> None:
         self._staged_counts = {int(handle): int(value) for handle, value in counts.items()}
+        self._rebuild()
+
+    def set_staged_durability(self, durability: Mapping[int, float]) -> None:
+        self._staged_durability = {
+            int(handle): float(value) for handle, value in durability.items()
+        }
+        self._rebuild()
+
+    def set_staged_placements(
+        self,
+        placements: Mapping[int, tuple[str, int | None]],
+    ) -> None:
+        self._staged_placements = {
+            int(handle): (str(value[0]), None if value[1] is None else int(value[1]))
+            for handle, value in placements.items()
+        }
+        self._rebuild()
+
+    def set_icon_provider(self, provider: IconProvider | None) -> None:
+        """Set the presentation-only icon source for the name column.
+
+        The callback may read the selected official installation, but it never
+        receives save bytes and cannot affect filtering or staged edits.
+        """
+
+        self._icon_provider = provider
         self._rebuild()
 
     def set_search(self, text: str) -> None:
@@ -146,13 +180,20 @@ class InventoryTableModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             return self._display_value(item, index.column())
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == self.NAME_COLUMN:
+            return self._icon_provider(item) if self._icon_provider is not None else None
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._tooltip(item, index.column())
-        if role == Qt.ItemDataRole.BackgroundRole and item.handle in self._staged_counts:
+        if role == Qt.ItemDataRole.BackgroundRole and (
+            item.handle in self._staged_counts
+            or item.handle in self._staged_durability
+            or item.handle in self._staged_placements
+        ):
             return self._CHANGED_BRUSH
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in {
             self.COUNT_COLUMN,
             self.WEIGHT_COLUMN,
+            self.CONDITION_COLUMN,
         }:
             return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         return None
@@ -187,6 +228,7 @@ class InventoryTableModel(QAbstractTableModel):
                 item.type_key,
                 item.handle_hex,
                 self._support_text(item),
+                self._condition_text(item),
             )
         ).casefold()
         return self._search in haystack
@@ -208,6 +250,10 @@ class InventoryTableModel(QAbstractTableModel):
             if staged is not None and item.unit_weight is not None
             else item.total_weight
         )
+        staged_condition = self._staged_durability.get(item.handle)
+        effective_condition = (
+            staged_condition if staged_condition is not None else item.condition
+        )
         values = {
             self.NAME_COLUMN: (item.display_name or "неизвестный объект").casefold(),
             self.CATEGORY_COLUMN: item.category.casefold(),
@@ -219,10 +265,26 @@ class InventoryTableModel(QAbstractTableModel):
                 effective_weight is None,
                 effective_weight if effective_weight is not None else 0.0,
             ),
+            self.CONDITION_COLUMN: (
+                effective_condition is None,
+                effective_condition if effective_condition is not None else 0.0,
+            ),
             self.SUPPORT_COLUMN: self._support_text(item).casefold(),
             self.HANDLE_COLUMN: item.handle,
         }
         return (values.get(self._sort_column, ""), item.handle)
+
+    def _position_text(self, item: InventoryItem) -> str:
+        staged = self._staged_placements.get(item.handle)
+        if staged is not None:
+            placement_type, slot_id = staged
+            if placement_type == "slot" and slot_id is not None:
+                return f"экипировано (слот {slot_id})"
+            return {"belt": "пояс", "ruck": "рюкзак"}.get(
+                placement_type,
+                item.position,
+            )
+        return item.position
 
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
@@ -231,7 +293,7 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.CATEGORY_COLUMN:
             return item.category
         if column == self.POSITION_COLUMN:
-            return item.position
+            return self._position_text(item)
         if column == self.SIZE_COLUMN:
             return item.size_text
         if column == self.TYPE_KEY_COLUMN:
@@ -246,6 +308,16 @@ class InventoryTableModel(QAbstractTableModel):
             if staged is None or item.unit_weight is None:
                 return f"{item.total_weight:.3f}"
             return f"{item.total_weight:.3f} → {staged * item.unit_weight:.3f}"
+        if column == self.CONDITION_COLUMN:
+            staged_condition = self._staged_durability.get(item.handle)
+            if item.condition is None:
+                return "неизвестно"
+            current = f"{item.condition * 100.0:.1f}%"
+            return (
+                current
+                if staged_condition is None
+                else f"{current} → {staged_condition * 100.0:.1f}%"
+            )
         if column == self.SUPPORT_COLUMN:
             return self._support_text(item)
         if column == self.HANDLE_COLUMN:
@@ -271,6 +343,12 @@ class InventoryTableModel(QAbstractTableModel):
             return f"Стабильный идентификатор: {item.handle_hex}"
         if column == self.SUPPORT_COLUMN:
             return self._support_text(item)
+        if column == self.CONDITION_COLUMN:
+            if item.condition is None:
+                return "Только чтение: condition не извлечён"
+            if item.condition_editable:
+                return "STATE condition f32; UPDATE q8 mirror подтверждён"
+            return "Condition прочитан; writer не подтверждён"
         return self._display_value(item, column)
 
     @staticmethod
@@ -284,6 +362,12 @@ class InventoryTableModel(QAbstractTableModel):
         if item.kind_code not in EDITABLE_STACK_KIND_CODES:
             return f"Только чтение: неизвестный kind={item.kind_code}"
         return "Только чтение: запись не подтверждена"
+
+    @staticmethod
+    def _condition_text(item: InventoryItem) -> str:
+        if item.condition is None:
+            return "неизвестно"
+        return f"{item.condition * 100.0:.1f}%"
 
 
 __all__ = ["InventoryTableModel"]

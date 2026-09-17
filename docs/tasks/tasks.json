@@ -875,9 +875,11 @@
     ],
     "gate": "research",
     "priority": "P2",
-    "status": "waiting_dependencies",
+    "status": "in_review",
+    "status_display": "in_review (read-only evidence; controlled attach/detach gate blocked)",
     "path": "docs/tasks/R09.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/73"
   },
   {
     "id": "R10",
@@ -1262,7 +1264,7 @@
     ],
     "gate": "research",
     "priority": "P1",
-    "status": "in_progress",
+    "status": "in_review",
     "path": "docs/tasks/M10.md",
     "github_issue": "",
     "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/57",
@@ -1414,5 +1416,292 @@
     "path": "docs/tasks/M16.md",
     "github_issue": "",
     "github_pr": ""
+  },
+  {
+    "id": "M17",
+    "title": "Улучшения оружия и экипировки X-Ray",
+    "depends_on": [
+      "M10",
+      "M11"
+    ],
+    "files": [
+      "docs/tasks/M17.md",
+      "docs/evidence/XRAY_UPGRADES_2026-09-16.md"
+    ],
+    "contract": "Для оригинальных ЧН/ЗП редактировать только подтверждённый STATE m_upgrades vector через release- и item-scoped официальный каталог; SoC, S2 и Enhanced остаются read-only.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M17.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/65",
+    "status_display": "in_review (PR #65; structural round-trip; M10 game load/re-save pending)"
+  },
+  {
+    "id": "M18",
+    "title": "Локальный Support project UI",
+    "depends_on": [
+      "M17"
+    ],
+    "files": [
+      "docs/tasks/M18.md",
+      "docs/evidence/UI_SUPPORT_2026-09-16.md"
+    ],
+    "contract": "Небольшая кнопка в правом верхнем углу Qt/web открывает локальный modal/dialog с PayPal, Binance Pay и USDT; Copy/Copied работает без APIs, backend, tracking и QR.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test"
+    ],
+    "gate": "code",
+    "priority": "P3",
+    "status": "in_review",
+    "path": "docs/tasks/M18.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/66",
+    "status_display": "in_review (PR #66; Qt/web modal and clipboard checks; visual assets not copied)"
+  },
+  {
+    "id": "M19",
+    "title": "Иконки инвентаря и визуальный слой",
+    "depends_on": [
+      "M11",
+      "M18"
+    ],
+    "files": [
+      "docs/tasks/M19.md",
+      "ui/xray_assets.py",
+      "ui/inventory_model.py",
+      "ui/inventory_view.py",
+      "web/web_bridge.py",
+      "web/index.html",
+      "web/app.js",
+      "web/style.css",
+      "tests/test_ui_inventory_icons.py",
+      "tests/test_web_inventory_icons.py"
+    ],
+    "contract": "Qt показывает official X-Ray atlas crop или честный fallback glyph; web показывает доступный категорийный glyph и не получает игровые ассеты. Staged/save bytes не меняются от визуализации.",
+    "steps": [
+      "См. карточку: scope, границы и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M19.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/67",
+    "status_display": "in_review (PR #67; Qt official atlas/fallback glyph; web accessible glyph; 353 tests)"
+  },
+  {
+    "id": "M20",
+    "title": "Перенос предметов между слотами, поясом и рюкзаком X-Ray",
+    "depends_on": [
+      "M19"
+    ],
+    "files": [
+      "docs/tasks/M20.md",
+      "docs/evidence/XRAY_PLACEMENT_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/models.py",
+      "editor/capabilities.py",
+      "editor/formats.py",
+      "editor/xray_item_state.py",
+      "editor/xray_save.py",
+      "save_format.py",
+      "ui/changes_view.py",
+      "ui/inventory_model.py",
+      "ui/inventory_view.py",
+      "ui/main_window.py",
+      "web/web_bridge.py",
+      "web/app.js",
+      "tests/test_xray_placement.py",
+      "tests/test_ui_placement.py",
+      "tests/test_web_bridge.py",
+      "tests/test_web_inventory_icons.py",
+      "tests/test_capabilities.py",
+      "tests/test_xray_durability.py"
+    ],
+    "contract": "Для original SoC/CS/CoP EditPlan.placements задаёт source-defined SInvItemPlace; Qt и web staging используют один immutable plan, а S2/Enhanced/unknown anchors остаются read-only.",
+    "steps": [
+      "См. карточку: scope, source-backed boundary, corpus и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M20.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/68",
+    "status_display": "in_review (PR #68; structural round-trip; M10 game load/re-save pending)"
+  },
+  {
+    "id": "M21",
+    "title": "Read-only каталог прототипов S.T.A.L.K.E.R. 2",
+    "depends_on": [
+      "M11",
+      "M19"
+    ],
+    "files": [
+      "docs/tasks/M21.md",
+      "docs/evidence/S2_CATALOG_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/s2_catalog.py",
+      "editor/formats.py",
+      "editor/catalog_bundle.py",
+      "tools/build_web_bundle.py",
+      "tools/build_web_catalogs.py",
+      "web/pysrc.json",
+      "tests/test_s2_catalog.py",
+      "tests/test_catalog_bundle.py"
+    ],
+    "contract": "Official loose S2 ItemPrototypes CFG metadata is read-only; prototype SID is never treated as the compact save type_key, and S2 add/upgrade writers stay disabled.",
+    "steps": [
+      "См. карточку: source boundary, official-only filters и критерий приёмки."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M21.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/69",
+    "status_display": "in_review (PR #69; read-only S2 CFG catalog; SID/save mapping and game load pending)"
+  },
+  {
+    "id": "M22",
+    "title": "Воспроизводимый анализ S2 compact key ↔ prototype SID",
+    "depends_on": [
+      "M21"
+    ],
+    "files": [
+      "docs/tasks/M22.md",
+      "docs/evidence/S2_MAPPING_2026-09-16.md",
+      "docs/STATUS.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "editor/s2_mapping.py",
+      "tools/analyze_s2_mapping.py",
+      "tests/test_s2_mapping.py"
+    ],
+    "contract": "Read-only multi-save S2 analysis reports opaque handle/type_key observations and never confirms a SID mapping or writes save bytes.",
+    "steps": [
+      "См. карточку: controlled corpus, negative evidence and mapping gate."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M22.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/70",
+    "status_display": "in_review (PR #70; read-only S2 key evidence; mapping and game-labelled pair pending)"
+  },
+  {
+    "id": "M23",
+    "title": "Безопасный X-Ray detach по известным registry-ссылкам",
+    "depends_on": [
+      "M20"
+    ],
+    "files": [
+      "docs/tasks/M23.md",
+      "docs/evidence/XRAY_DELETE_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "docs/STATUS.md",
+      "editor/xray_delete.py",
+      "editor/xray_save.py",
+      "tools/build_web_bundle.py",
+      "tests/test_docs_consistency.py",
+      "tests/test_xray_delete.py"
+    ],
+    "contract": "Structural X-Ray detach runs a known-reference preflight: actor-owned leaf only; explicit equipped, direct dependent and unresolved targets are blocked before OBJECT registry write.",
+    "steps": [
+      "См. карточку: source-backed parent edges, conservative blockers и game-evidence boundary."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "research",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M23.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/71",
+    "status_display": "in_review (PR #71; known parent-edge/equipped/unresolved preflight; full reference graph and game load pending)"
+  },
+  {
+    "id": "M24",
+    "title": "Safety-aware удаление в Qt и web",
+    "depends_on": [
+      "M23"
+    ],
+    "files": [
+      "docs/tasks/M24.md",
+      "docs/evidence/XRAY_DELETE_UI_2026-09-16.md",
+      "docs/specs/CROSS_PLATFORM_EDITOR.md",
+      "docs/STATUS.md",
+      "editor/xray_delete.py",
+      "editor/xray_save.py",
+      "save_format.py",
+      "ui/inventory_view.py",
+      "ui/main_window.py",
+      "web/web_bridge.py",
+      "web/app.js",
+      "tools/build_web_bundle.py",
+      "web/pysrc.json",
+      "tests/test_xray_delete.py",
+      "tests/test_ui_delete.py",
+      "tests/test_web_delete.py",
+      "tests/test_web_bridge.py",
+      "tests/test_ui_inventory.py",
+      "tests/test_docs_consistency.py"
+    ],
+    "contract": "Qt and web expose the M23 known-reference delete decision per inventory item; blocked rows cannot be staged and show a reason, while writer validation remains fail-closed.",
+    "steps": [
+      "См. карточку: shared snapshot metadata, one-pass parent map и UI/backend double guard."
+    ],
+    "checks": [
+      "make check",
+      "make test",
+      "node --check web/app.js",
+      "git diff --check"
+    ],
+    "gate": "code",
+    "priority": "P2",
+    "status": "in_review",
+    "path": "docs/tasks/M24.md",
+    "github_issue": "",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/72",
+    "status_display": "in_review (PR #72; per-item Qt/web blocker metadata; full reference graph and game load pending)"
   }
 ]

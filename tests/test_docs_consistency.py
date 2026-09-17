@@ -59,6 +59,7 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
     import tools.export_theme as theme
 
     assert "editor/capabilities.py" in bundle.MODULES
+    assert "editor/xray_delete.py" in bundle.MODULES
     assert bundle.main(["--check"]) == 0, (
         "web/pysrc.json is stale; run python3 tools/build_web_bundle.py"
     )

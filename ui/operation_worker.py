@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
-from editor.catalog import ItemCatalog
+from editor.catalog import GameCatalog, ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
@@ -31,6 +31,7 @@ class OperationWorker(QThread):
         output_path: Path | None = None,
         backup_dir: Path | None = None,
         catalog: ItemCatalog | None = None,
+        game_catalog: GameCatalog | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -42,6 +43,7 @@ class OperationWorker(QThread):
         self.output_path = output_path
         self.backup_dir = backup_dir
         self.catalog = catalog
+        self.game_catalog = game_catalog
 
     def run(self) -> None:
         try:
@@ -52,6 +54,7 @@ class OperationWorker(QThread):
                     self.plan,
                     source_name=self.plan.source.locator,
                     catalog=self.catalog,
+                    game_catalog=self.game_catalog,
                 )
                 if not isinstance(prepared, PreparedEdit):
                     raise TypeError("EditorService.prepare вернул не PreparedEdit")
@@ -64,6 +67,19 @@ class OperationWorker(QThread):
                 receipt = self.service.export_local(
                     self.source_path,
                     self.output_path,
+                    self.plan_prepared,
+                    self.backup_dir,
+                )
+                self.apply_ready.emit(receipt)
+                return
+            if self.mode == "replace":
+                if self.source_path is None or self.backup_dir is None:
+                    raise ValueError("Для replace нужны source и backup paths")
+                self.progress.emit(
+                    "Создание backup и атомарная замена исходного слота…"
+                )
+                receipt = self.service.replace_local(
+                    self.source_path,
                     self.plan_prepared,
                     self.backup_dir,
                 )

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from test_s2_catalog import _write_s2_resources
 from test_xray_factions import _write_resource_tree
 
 from editor.catalog import GameCatalog
@@ -74,6 +75,30 @@ def test_browser_catalog_contains_the_same_release_scoped_factions(tmp_path: Pat
     assert str(tmp_path) not in encoded
 
 
+def test_browser_catalog_builder_can_export_s2_item_and_upgrade_metadata(
+    tmp_path: Path,
+) -> None:
+    _write_s2_resources(tmp_path)
+
+    payload = build_catalogs((("stalker2", tmp_path),))
+
+    release = payload["releases"]["stalker2"]
+    assert release["factions"] == []
+    assert next(item for item in release["items"] if item["key"] == "Bandage")[
+        "max_stack"
+    ] == 10
+    bandage = next(item for item in release["items"] if item["key"] == "Bandage")
+    assert bandage["unit_weight"] == 0.05
+    assert bandage["slots"] == ["QuickUse"]
+    assert [upgrade["key"] for upgrade in release["upgrades"]] == [
+        "Bandage_Upgrade_Standalone",
+        "Bandage_Upgrade_Test",
+        "GunAKU_Upgrade_Attachment",
+        "GunAKU_Upgrade_Muzzle",
+        "GunAKU_Upgrade_Rail",
+    ]
+
+
 def test_generated_catalog_loader_preserves_item_faction_and_upgrade_metadata() -> None:
     payload = {
         "schema_version": 1,
@@ -137,6 +162,54 @@ def test_generated_catalog_loader_preserves_item_faction_and_upgrade_metadata() 
     assert bundle.factions.relation_address("actor", "stalker") == (0, 1)
     assert bundle.upgrades is not None
     assert bundle.upgrades.for_item("wpn_fixture")[0].key == "up_fixture"
+
+
+def test_generated_catalog_loader_accepts_s2_items_and_upgrades_without_factions() -> None:
+    payload = {
+        "schema_version": 1,
+        "releases": {
+            "stalker2": {
+                "items": [
+                    {
+                        "key": "Bandage",
+                        "display_name": None,
+                        "category": "consumable",
+                        "unit_weight": 0.05,
+                        "slots": ["QuickUse"],
+                        "max_stack": 10,
+                        "serialization_family": None,
+                        "icon_x": None,
+                        "icon_y": None,
+                        "icon_texture": None,
+                    }
+                ],
+                "upgrades": [
+                    {
+                        "key": "Bandage_Upgrade_Test",
+                        "display_name": None,
+                        "category": "consumable",
+                        "item_key": "Bandage",
+                        "applicable_item_keys": ["Bandage"],
+                        "section": None,
+                        "property": None,
+                        "icon": None,
+                        "source": "ItemPrototypes/ConsumablePrototypes.cfg#Bandage",
+                        "release_id": "stalker2",
+                    }
+                ],
+            }
+        },
+    }
+
+    loaded = load_catalog_payload(json.dumps(payload, ensure_ascii=False))
+
+    bundle = loaded["stalker2"]
+    assert bundle.factions is None
+    assert bundle.items.resolve("Bandage") is not None
+    assert bundle.items.resolve("Bandage").unit_weight == 0.05  # type: ignore[union-attr]
+    assert bundle.items.resolve("Bandage").slots == ("QuickUse",)  # type: ignore[union-attr]
+    assert bundle.upgrades is not None
+    assert bundle.upgrades.for_item("Bandage")[0].key == "Bandage_Upgrade_Test"
 
 
 def test_original_format_falls_back_to_checked_in_official_catalog() -> None:

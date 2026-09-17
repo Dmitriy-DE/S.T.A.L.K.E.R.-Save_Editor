@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.catalog import FactionCatalog, UpgradeCatalog
 from editor.models import PreparedEdit
 from save_format import SaveInfo
 
@@ -28,6 +29,7 @@ class ChangesView(QWidget):
 
     preview_requested = Signal()
     apply_requested = Signal()
+    replace_requested = Signal()
     choose_output_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -73,6 +75,13 @@ class ChangesView(QWidget):
         self.apply_button.setEnabled(False)
         self.apply_button.clicked.connect(self.apply_requested.emit)
         actions.addWidget(self.apply_button)
+        self.replace_button = QPushButton("Заменить исходный слот…")
+        self.replace_button.setEnabled(False)
+        self.replace_button.setToolTip(
+            "Явно заменить выбранный слот после backup и preview"
+        )
+        self.replace_button.clicked.connect(self.replace_requested.emit)
+        actions.addWidget(self.replace_button)
         self.cloud_button = QPushButton("Загрузить в Steam")
         self.cloud_button.setEnabled(False)
         self.cloud_button.setToolTip("Cloud UI подключается в U06")
@@ -99,9 +108,24 @@ class ChangesView(QWidget):
         staged_counts: Mapping[int, int],
         staged_adds: Mapping[str, int] | None = None,
         staged_detach: Mapping[int, bool] | None = None,
+        staged_durability: Mapping[int, float] | None = None,
+        staged_faction_relations: Mapping[str, int] | None = None,
+        faction_catalog: FactionCatalog | None = None,
+        staged_player_faction: str | None = None,
+        staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
+        upgrade_catalog: UpgradeCatalog | None = None,
+        staged_placements: Mapping[int, tuple[str, int | None]] | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
+        staged_durability = staged_durability or {}
+        staged_faction_relations = staged_faction_relations or {}
+        staged_upgrades = staged_upgrades or {}
+        staged_placements = staged_placements or {}
+
+        def item_risk(text: str) -> str:
+            return f"ОПАСНО: {text}; backup обязателен"
+
         items = {item.handle: item for item in info.inventory}
         rows: list[tuple[str, str, str, str, str]] = []
         if staged_money is not None:
@@ -136,7 +160,7 @@ class ChangesView(QWidget):
                     item_key,
                     "—",
                     f"× {quantity}",
-                    "Официальный serializer family",
+                    item_risk("Официальный serializer family"),
                 )
             )
         for handle, deep in sorted(staged_detach.items()):
@@ -147,7 +171,122 @@ class ChangesView(QWidget):
                     item.handle_hex if item is not None else f"0x{int(handle):08X}",
                     item.type_key if item is not None else "unknown",
                     "удалить",
-                    "registry deep detach" if deep else "только чтение",
+                    item_risk("registry deep detach") if deep else "только чтение",
+                )
+            )
+        for handle, condition in sorted(staged_durability.items()):
+            item = items.get(int(handle))
+            before = (
+                f"{item.condition * 100.0:.1f}%"
+                if item is not None and item.condition is not None
+                else "unknown"
+            )
+            rows.append(
+                (
+                    "Прочность",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    before,
+                    f"{float(condition) * 100.0:.1f}%",
+                    "STATE f32 + UPDATE q8 + client-data mirror"
+                    if item is not None and item.condition_editable
+                    else "Только чтение",
+                )
+            )
+        current_relations = dict(info.faction_relations)
+        for key, goodwill in sorted(staged_faction_relations.items()):
+            faction = faction_catalog.resolve(key) if faction_catalog is not None else None
+            numeric_id = faction.numeric_id if faction is not None else None
+            before = (
+                str(current_relations[numeric_id])
+                if numeric_id is not None and numeric_id in current_relations
+                else "0 (default)"
+            )
+            label = (
+                f"{faction.display_name or faction.key} · {faction.key}"
+                if faction is not None and faction.display_name not in (None, faction.key)
+                else faction.key if faction is not None else key
+            )
+            rows.append(
+                (
+                    "Отношение",
+                    label,
+                    before,
+                    str(goodwill),
+                    "С риском: Relation registry; round-trip проверка; backup обязателен",
+                )
+            )
+        if staged_player_faction is not None:
+            selected = (
+                faction_catalog.resolve(staged_player_faction)
+                if faction_catalog is not None
+                else None
+            )
+            current = (
+                faction_catalog.resolve_numeric(info.player_faction_index)
+                if faction_catalog is not None and info.player_faction_index is not None
+                else None
+            )
+
+            def faction_label(faction: object | None, fallback: str) -> str:
+                if faction is None:
+                    return fallback
+                key = str(getattr(faction, "key", fallback))
+                name = getattr(faction, "display_name", None) or key
+                return key if name == key else f"{name} · {key}"
+
+            rows.append(
+                (
+                    "Группировка игрока",
+                    "actor community",
+                    faction_label(
+                        current,
+                        (
+                            "неизвестно"
+                            if info.player_faction_index is None
+                            else f"community id {info.player_faction_index}"
+                        ),
+                    ),
+                    faction_label(selected, staged_player_faction),
+                    "ОПАСНО: actor STATE community; сюжет может перезаписать; backup обязателен",
+                )
+            )
+        for handle, values in sorted(staged_upgrades.items()):
+            item = items.get(int(handle))
+            before_values = item.upgrades if item is not None else None
+            display_values = tuple(str(value) for value in values)
+            rows.append(
+                (
+                    "Улучшения",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    "unknown"
+                    if before_values is None
+                    else ", ".join(before_values) or "нет",
+                    ", ".join(display_values) or "нет",
+                    item_risk(
+                        "STATE m_upgrades vector; официальный catalog"
+                        if upgrade_catalog is not None
+                        else "STATE m_upgrades vector"
+                    ),
+                )
+            )
+        placement_labels = {"slot": "слот", "belt": "пояс", "ruck": "рюкзак"}
+        for handle, (placement_type, slot_id) in sorted(staged_placements.items()):
+            item = items.get(int(handle))
+            before = item.position if item is not None else "unknown"
+            after = (
+                f"экипировано (слот {slot_id})"
+                if placement_type == "slot" and slot_id is not None
+                else placement_labels.get(placement_type, placement_type)
+            )
+            rows.append(
+                (
+                    "Позиция",
+                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    before,
+                    after,
+                    item_risk("client-data SInvItemPlace")
+                    if item is not None and item.placement_editable
+                    else "Только чтение",
                 )
             )
 
@@ -171,26 +310,34 @@ class ChangesView(QWidget):
         )
         self.progress_label.setText("Preview проверен: CRC/round-trip прошли")
         self.apply_button.setEnabled(True)
+        # MainWindow enables in-place replacement only after the worker has
+        # finished and has confirmed that the snapshot is a local save.
+        self.replace_button.setEnabled(False)
         self.error_label.clear()
         self.error_label.setVisible(False)
 
     def invalidate_preview(self, reason: str) -> None:
         self.preview_status_label.setText(f"Preview недействителен: {reason}")
         self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
 
     def set_busy(self, busy: bool) -> None:
         if busy:
             self.preview_button.setEnabled(False)
             self.apply_button.setEnabled(False)
+            self.replace_button.setEnabled(False)
         self.choose_output_button.setEnabled(not busy)
         self.destination_edit.setEnabled(not busy)
         self.cloud_button.setEnabled(False)
 
-    def set_actions_enabled(self, *, preview: bool, apply: bool, busy: bool) -> None:
+    def set_actions_enabled(
+        self, *, preview: bool, apply: bool, replace: bool = False, busy: bool
+    ) -> None:
         """Set action state from MainWindow's single operation gate."""
 
         self.preview_button.setEnabled(bool(preview) and not busy)
         self.apply_button.setEnabled(bool(apply) and not busy)
+        self.replace_button.setEnabled(bool(replace) and not busy)
         self.choose_output_button.setEnabled(not busy)
         self.destination_edit.setEnabled(not busy)
         self.cloud_button.setEnabled(False)
@@ -215,6 +362,18 @@ class ChangesView(QWidget):
         )
         self.progress_label.setText("Local export подтверждён read-back SHA")
         self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
+
+    def mark_replaced(self, receipt) -> None:
+        output = Path(receipt.output_path)
+        backup = Path(receipt.backup_path)
+        self.preview_status_label.setText(
+            f"Исходный слот заменён: {output} • backup: {backup} • "
+            f"SHA {receipt.output_sha256[:12]}…"
+        )
+        self.progress_label.setText("Local replace подтверждён read-back SHA")
+        self.apply_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
 
     def choose_output(self) -> Path | None:
         filename, _ = QFileDialog.getSaveFileName(

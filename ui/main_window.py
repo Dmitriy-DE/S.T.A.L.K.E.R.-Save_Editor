@@ -7,6 +7,7 @@ snapshot visible when a later file is malformed.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTableWidget,
@@ -33,7 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
-from editor.catalog import ItemCatalog
+from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs
@@ -44,6 +46,7 @@ from save_format import SaveError, SaveInfo
 from .backups_view import BackupView, RestoreWorker
 from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
+from .faction_view import FactionView
 from .inventory_view import InventoryView
 from .operation_worker import OperationWorker
 from .save_slots_view import (
@@ -53,6 +56,7 @@ from .save_slots_view import (
     discover_save_slots,
 )
 from .settings_view import SettingsView
+from .support_dialog import SupportDialog
 from .theme import apply_theme
 
 
@@ -99,6 +103,7 @@ class LocalSnapshot:
     edition: str = ""
     capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
     catalog: ItemCatalog | None = None
+    game_catalog: GameCatalog | None = None
 
 
 class InspectWorker(QThread):
@@ -132,6 +137,7 @@ class InspectWorker(QThread):
                     edition=result.edition,
                     capabilities=result.capabilities,
                     catalog=result.catalog,
+                    game_catalog=result.game_catalog,
                 )
             )
         except FormatDetectionError as exc:
@@ -168,6 +174,11 @@ class MainWindow(QMainWindow):
         self.staged_money: int | None = None
         self.staged_adds: dict[str, int] = {}
         self.staged_detach: dict[int, bool] = {}
+        self.staged_durability: dict[int, float] = {}
+        self.staged_faction_relations: dict[str, int] = {}
+        self.staged_player_faction: str | None = None
+        self.staged_upgrades: dict[int, tuple[str, ...]] = {}
+        self.staged_placements: dict[int, tuple[str, int | None]] = {}
         self.prepared_edit: PreparedEdit | None = None
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -176,6 +187,7 @@ class MainWindow(QMainWindow):
         self._operation_thread: QThread | None = None
         self._operation_kind: str | None = None
         self._cloud_busy = False
+        self._support_dialog: SupportDialog | None = None
 
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
@@ -208,6 +220,11 @@ class MainWindow(QMainWindow):
         ui_hint = QLabel("ZONE / SAVE WORKBENCH")
         ui_hint.setObjectName("sidebarStatus")
         title_layout.addWidget(ui_hint)
+        self.support_button = QPushButton("♡ Support project")
+        self.support_button.setObjectName("supportButton")
+        self.support_button.setToolTip("Поддержать проект")
+        self.support_button.clicked.connect(self._show_support_dialog)
+        title_layout.addWidget(self.support_button)
         layout.addWidget(title_bar)
 
         meta_bar = QFrame()
@@ -348,6 +365,20 @@ class MainWindow(QMainWindow):
         if 0 <= index < self.tabs.count():
             self.tabs.setCurrentIndex(index)
 
+    def _show_support_dialog(self) -> None:
+        if self._support_dialog is not None and self._support_dialog.isVisible():
+            self._support_dialog.raise_()
+            self._support_dialog.activateWindow()
+            return
+        dialog = SupportDialog(self)
+        self._support_dialog = dialog
+        dialog.finished.connect(lambda _result: self._clear_support_dialog(dialog))
+        dialog.open()
+
+    def _clear_support_dialog(self, dialog: SupportDialog) -> None:
+        if self._support_dialog is dialog:
+            self._support_dialog = None
+
     def _sync_nav_state(self, index: int) -> None:
         for button_index, button in enumerate(getattr(self, "nav_buttons", [])):
             button.setChecked(button_index == index)
@@ -368,6 +399,11 @@ class MainWindow(QMainWindow):
             len(self.staged_counts)
             + len(self.staged_adds)
             + len(self.staged_detach)
+            + len(self.staged_durability)
+            + len(self.staged_faction_relations)
+            + len(self.staged_upgrades)
+            + len(self.staged_placements)
+            + (1 if self.staged_player_faction is not None else 0)
             + (1 if self.staged_money is not None else 0)
         )
         counters: dict[int, int | None] = {1: inventory, 2: staged or None}
@@ -453,6 +489,13 @@ class MainWindow(QMainWindow):
         money_row.addWidget(self.money_clear_button)
         money_layout.addLayout(money_row)
         layout.addWidget(money_box)
+
+        self.faction_view = FactionView(self)
+        self.faction_view.relation_stage_requested.connect(self._stage_faction_relation)
+        self.faction_view.player_faction_stage_requested.connect(
+            self._stage_player_faction
+        )
+        layout.addWidget(self.faction_view)
 
         metadata_box = QGroupBox("Технические метаданные контейнера")
         metadata_layout = QVBoxLayout(metadata_box)
@@ -574,6 +617,12 @@ class MainWindow(QMainWindow):
         self.inventory_view.clear_all_requested.connect(self._clear_all_stacks)
         self.inventory_view.add_requested.connect(self._stage_item_add)
         self.inventory_view.remove_selected_requested.connect(self._stage_item_remove)
+        self.inventory_view.durability_stage_requested.connect(self._stage_item_durability)
+        self.inventory_view.durability_clear_requested.connect(self._clear_item_durability)
+        self.inventory_view.upgrades_stage_requested.connect(self._stage_item_upgrades)
+        self.inventory_view.upgrades_clear_requested.connect(self._clear_item_upgrades)
+        self.inventory_view.placement_stage_requested.connect(self._stage_item_placement)
+        self.inventory_view.placement_clear_requested.connect(self._clear_item_placement)
         # Keep the old attribute available to small integrations while the
         # actual view now uses a stable-handle QAbstractTableModel.
         self.inventory_table = self.inventory_view.table
@@ -584,12 +633,14 @@ class MainWindow(QMainWindow):
         self.changes_view = ChangesView(self)
         self.changes_view.preview_requested.connect(self._start_preview)
         self.changes_view.apply_requested.connect(self._choose_and_start_apply)
+        self.changes_view.replace_requested.connect(self._confirm_and_start_replace)
         self.changes_view.choose_output_requested.connect(self._choose_output)
         return self.changes_view
 
     def _build_backups_tab(self) -> QWidget:
         self.backups_view = BackupView(backup_dirs=backup_dirs(), parent=self)
         self.backups_view.restore_requested.connect(self._start_restore)
+        self.backups_view.restore_in_place_requested.connect(self._start_restore_in_place)
         self.backups_view.folder_open_requested.connect(self._open_backup_folder)
         self.backups_view.refresh()
         return self.backups_view
@@ -716,6 +767,11 @@ class MainWindow(QMainWindow):
         self.staged_money = None
         self.staged_adds.clear()
         self.staged_detach.clear()
+        self.staged_durability.clear()
+        self.staged_faction_relations.clear()
+        self.staged_player_faction = None
+        self.staged_upgrades.clear()
+        self.staged_placements.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         crc = "OK" if info.crc_ok else "FAIL"
@@ -765,12 +821,24 @@ class MainWindow(QMainWindow):
         self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
+        self._render_factions(info)
         self.changes_view.set_staged(
             info,
             self.staged_money,
             self.staged_counts,
             self.staged_adds,
             self.staged_detach,
+            self.staged_durability,
+            self.staged_faction_relations,
+            snapshot.game_catalog.factions if snapshot.game_catalog is not None else None,
+            staged_player_faction=self.staged_player_faction,
+            staged_upgrades=self.staged_upgrades,
+            staged_placements=self.staged_placements,
+            upgrade_catalog=(
+                snapshot.game_catalog.upgrades
+                if snapshot.game_catalog is not None
+                else None
+            ),
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -817,7 +885,99 @@ class MainWindow(QMainWindow):
             ),
         )
         self.inventory_view.set_removed_handles(self.staged_detach)
+        can_edit_durability = bool(
+            capabilities is not None and capabilities.edit_durability
+        )
+        self.inventory_view.set_durability_enabled(
+            can_edit_durability,
+            reason=(
+                "Только чтение: правка прочности не подтверждена для этого релиза"
+                if capabilities is not None and not capabilities.edit_durability
+                else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"
+                if capabilities is not None and capabilities.is_experimental("edit_durability")
+                else None
+            ),
+        )
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        game_catalog = self.snapshot.game_catalog if self.snapshot is not None else None
+        can_edit_upgrades = bool(
+            capabilities is not None
+            and capabilities.edit_upgrades
+            and game_catalog is not None
+            and game_catalog.upgrades is not None
+        )
+        self.inventory_view.set_upgrades_enabled(
+            can_edit_upgrades,
+            game_catalog.upgrades if game_catalog is not None else None,
+            reason=(
+                "Добавление/удаление улучшений доступно только для официального каталога ЧС/ЗП"
+                if capabilities is not None
+                and capabilities.edit_upgrades
+                and (game_catalog is None or game_catalog.upgrades is None)
+                else "Только чтение: улучшения не подтверждены для этого релиза"
+                if capabilities is not None and not capabilities.edit_upgrades
+                else "Экспериментально: STATE m_upgrades vector; backup обязателен"
+                if capabilities is not None and capabilities.is_experimental("edit_upgrades")
+                else None
+            ),
+        )
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        can_edit_placement = bool(
+            capabilities is not None and capabilities.edit_placement
+        )
+        self.inventory_view.set_placement_enabled(
+            can_edit_placement,
+            reason=(
+                "Экспериментально: client-data SInvItemPlace; backup обязателен"
+                if capabilities is not None
+                and capabilities.is_experimental("edit_placement")
+                else "Только чтение: правка позиции не подтверждена для этого релиза"
+                if capabilities is not None and not capabilities.edit_placement
+                else None
+            ),
+        )
+        self.inventory_view.set_staged_placements(self.staged_placements)
         self.inventory_card_value.setText(str(len(info.inventory)))
+
+    def _render_factions(self, info: SaveInfo) -> None:
+        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        catalog = (
+            self.snapshot.game_catalog.factions
+            if self.snapshot is not None and self.snapshot.game_catalog is not None
+            else None
+        )
+        self.faction_view.set_catalog(
+            catalog,
+            relation_enabled=bool(
+                capabilities is not None
+                and capabilities.edit_relations
+                and info.faction_relations_editable
+            ),
+            player_enabled=bool(
+                capabilities is not None
+                and capabilities.edit_player_faction
+                and info.player_faction_editable
+            ),
+            reason=(
+                "Экспериментально: Relation registry X-Ray; backup обязателен"
+                if capabilities is not None
+                and capabilities.edit_relations
+                and info.faction_relations_editable
+                and capabilities.is_experimental("edit_relations")
+                else "Только чтение: actor relation row не подтверждён"
+                if capabilities is not None
+                and capabilities.edit_relations
+                and not info.faction_relations_editable
+                else "Только чтение: отношения не подтверждены для этого релиза"
+                if capabilities is not None and not capabilities.edit_relations
+                else None
+            ),
+        )
+        self.faction_view.set_state(
+            info,
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
 
     def _render_money(self, info: SaveInfo) -> None:
         can_edit_money = (
@@ -989,6 +1149,12 @@ class MainWindow(QMainWindow):
                 f"Только чтение: handle 0x{int(handle):04X} не найден"
             )
             return
+        if not item.remove_editable:
+            self.inventory_view.show_editability_message(
+                item.remove_reason
+                or "Только чтение: удаление этого объекта заблокировано"
+            )
+            return
         handle = int(handle)
         if handle in self.staged_detach:
             self.staged_detach.pop(handle, None)
@@ -1002,6 +1168,243 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview("изменился staged список удалений")
         self.status_label.setText(f"{message}; bytes сейва не изменены — нужен preview")
+
+    def _stage_item_durability(self, handle: int, condition: float) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.edit_durability:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает редактирование прочности"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None or not item.condition_editable or item.condition is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):04X} не имеет подтверждённого condition"
+            )
+            return
+        value = float(condition)
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            self.inventory_view.show_editability_message(
+                "Прочность должна быть в диапазоне 0…100%"
+            )
+            return
+        if math.isclose(value, item.condition, rel_tol=0.0, abs_tol=1e-6):
+            self.staged_durability.pop(item.handle, None)
+        else:
+            self.staged_durability[item.handle] = value
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged значение прочности")
+        self.status_label.setText(
+            f"Прочность staged для {item.type_key}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_item_durability(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            return
+        self.staged_durability.pop(item.handle, None)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("staged прочность очищена")
+        self.status_label.setText(
+            f"Прочность очищена для {item.type_key}; bytes сейва не изменены"
+        )
+
+    def _stage_item_upgrades(self, handle: int, values: object) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_upgrades:
+            self.inventory_view.show_editability_message(
+                "Только чтение: правка улучшений не подтверждена для этого релиза"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None or item.upgrades is None or not item.upgrades_editable:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):08X} не имеет подтверждённого upgrades vector"
+            )
+            return
+        if not isinstance(values, (tuple, list)):
+            self.inventory_view.show_editability_message("Список улучшений отклонён")
+            return
+        desired = tuple(str(value) for value in values)
+        if desired == item.upgrades:
+            self.staged_upgrades.pop(item.handle, None)
+        else:
+            self.staged_upgrades[item.handle] = desired
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self._render_changes()
+        self._invalidate_preview("изменился staged список улучшений")
+        self.status_label.setText(
+            f"Улучшения staged для {item.type_key}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _clear_item_upgrades(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            return
+        self.staged_upgrades.pop(item.handle, None)
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self._render_changes()
+        self._invalidate_preview("staged улучшения очищены")
+        self.status_label.setText(
+            f"Улучшения очищены для {item.type_key}; bytes сейва не изменены"
+        )
+
+    def _stage_item_placement(
+        self,
+        handle: int,
+        placement_type: str,
+        slot_id: object,
+    ) -> None:
+        if self.snapshot is None:
+            return
+        if not self.snapshot.capabilities.edit_placement:
+            self.inventory_view.show_editability_message(
+                "Только чтение: формат не разрешает редактирование позиции"
+            )
+            return
+        item = self._find_inventory_item(handle)
+        if item is None or not item.placement_editable or item.placement_type is None:
+            self.inventory_view.show_editability_message(
+                f"Только чтение: handle 0x{int(handle):04X} не имеет подтверждённого client-data place"
+            )
+            return
+        normalized_type = str(placement_type).strip().casefold()
+        if slot_id is None:
+            normalized_slot = None
+        elif isinstance(slot_id, int):
+            normalized_slot = slot_id
+        else:
+            self.inventory_view.show_editability_message(
+                "Только чтение: номер слота имеет неподдержанный тип"
+            )
+            return
+        current = (
+            item.placement_type,
+            item.placement_slot if item.placement_type == "slot" else None,
+        )
+        desired = (normalized_type, normalized_slot)
+        if desired == current:
+            self.staged_placements.pop(item.handle, None)
+            message = f"Позиция очищена для {item.type_key}"
+        else:
+            self.staged_placements[item.handle] = desired
+            message = f"Позиция staged для {item.type_key}: {normalized_type}"
+        self.inventory_view.set_staged_placements(self.staged_placements)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged размещение предмета")
+        self.status_label.setText(f"{message}; bytes сейва не изменены — нужен preview")
+
+    def _clear_item_placement(self, handle: int) -> None:
+        if self.snapshot is None:
+            return
+        item = self._find_inventory_item(handle)
+        if item is None:
+            return
+        self.staged_placements.pop(item.handle, None)
+        self.inventory_view.set_staged_placements(self.staged_placements)
+        self._render_changes()
+        self._invalidate_preview("staged размещение очищено")
+        self.status_label.setText(
+            f"Позиция очищена для {item.type_key}; bytes сейва не изменены"
+        )
+
+    def _stage_faction_relation(self, key: str, goodwill: int) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_relations or not self.snapshot.info.faction_relations_editable:
+            self.faction_view.status_label.setText(
+                "Только чтение: формат не разрешает редактирование отношений"
+            )
+            return
+        game_catalog = self.snapshot.game_catalog
+        if game_catalog is None:
+            self.faction_view.status_label.setText(
+                "Только чтение: официальный faction catalog не найден"
+            )
+            return
+        try:
+            faction = game_catalog.factions.resolve(key)
+        except CatalogLookupError as exc:
+            self.faction_view.status_label.setText(str(exc))
+            return
+        if faction.numeric_id is None:
+            self.faction_view.status_label.setText(
+                f"Только чтение: у {key} нет подтверждённого numeric community id"
+            )
+            return
+        minimum = game_catalog.factions.goodwill_min
+        maximum = game_catalog.factions.goodwill_max
+        if minimum is None or maximum is None or not minimum <= goodwill <= maximum:
+            self.faction_view.status_label.setText(
+                f"Goodwill отклонён: допустим диапазон {minimum}…{maximum}"
+            )
+            return
+        current = dict(self.snapshot.info.faction_relations).get(faction.numeric_id, 0)
+        if int(goodwill) == current:
+            self.staged_faction_relations.pop(key, None)
+        else:
+            self.staged_faction_relations[key] = int(goodwill)
+        self.faction_view.set_state(
+            self.snapshot.info,
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
+        self._render_changes()
+        self._invalidate_preview("изменилось staged отношение группировки")
+        self.status_label.setText(
+            f"Отношение staged: {key} → {goodwill}; bytes сейва не изменены — нужен preview"
+        )
+
+    def _stage_player_faction(self, key: str) -> None:
+        if self.snapshot is None:
+            return
+        capabilities = self.snapshot.capabilities
+        if not capabilities.edit_player_faction or not self.snapshot.info.player_faction_editable:
+            self.faction_view.status_label.setText(
+                "Только чтение: принадлежность игрока не подтверждена для этого сейва"
+            )
+            return
+        game_catalog = self.snapshot.game_catalog
+        if game_catalog is None:
+            self.faction_view.status_label.setText(
+                "Только чтение: официальный faction catalog не найден"
+            )
+            return
+        try:
+            faction = game_catalog.factions.resolve(key)
+        except CatalogLookupError as exc:
+            self.faction_view.status_label.setText(str(exc))
+            return
+        if faction.numeric_id is None:
+            self.faction_view.status_label.setText(
+                f"Только чтение: у {key} нет подтверждённого numeric community id"
+            )
+            return
+        current = self.snapshot.info.player_faction_index
+        if faction.numeric_id == current:
+            self.staged_player_faction = None
+        else:
+            self.staged_player_faction = key
+        self.faction_view.set_state(
+            self.snapshot.info,
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
+        self._render_changes()
+        self._invalidate_preview("изменилось staged принадлежность игрока")
+        self.status_label.setText(
+            f"Принадлежность игрока staged: {key}; bytes сейва не изменены — нужен preview"
+        )
 
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
@@ -1017,9 +1420,18 @@ class MainWindow(QMainWindow):
         self.staged_money = None
         self.staged_adds.clear()
         self.staged_detach.clear()
+        self.staged_durability.clear()
+        self.staged_faction_relations.clear()
+        self.staged_player_faction = None
+        self.staged_upgrades.clear()
+        self.staged_placements.clear()
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
+            self._render_factions(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self.inventory_view.set_staged_placements(self.staged_placements)
         self.inventory_view.set_removed_handles(self.staged_detach)
         self._render_changes()
         self._invalidate_preview("все staged-правки очищены")
@@ -1036,6 +1448,19 @@ class MainWindow(QMainWindow):
             self.staged_counts,
             self.staged_adds,
             self.staged_detach,
+            self.staged_durability,
+            self.staged_faction_relations,
+            self.snapshot.game_catalog.factions
+            if self.snapshot.game_catalog is not None
+            else None,
+            staged_player_faction=self.staged_player_faction,
+            staged_upgrades=self.staged_upgrades,
+            staged_placements=self.staged_placements,
+            upgrade_catalog=(
+                self.snapshot.game_catalog.upgrades
+                if self.snapshot.game_catalog is not None
+                else None
+            ),
         )
 
     def _has_staged_changes(self) -> bool:
@@ -1044,6 +1469,11 @@ class MainWindow(QMainWindow):
             or self.staged_counts
             or self.staged_adds
             or self.staged_detach
+            or self.staged_durability
+            or self.staged_faction_relations
+            or self.staged_upgrades
+            or self.staged_placements
+            or self.staged_player_faction is not None
         )
 
     def _update_action_buttons(self) -> None:
@@ -1052,11 +1482,17 @@ class MainWindow(QMainWindow):
         has_changes = self.edit_actions_enabled and self._has_staged_changes()
         can_preview = has_changes
         can_apply = self.prepared_edit is not None
+        can_replace = bool(
+            can_apply
+            and self.snapshot is not None
+            and self.snapshot.source_kind == "local"
+        )
         self.preview_button.setEnabled(can_preview and not busy)
         self.save_copy_button.setEnabled(can_apply and not busy)
         self.changes_view.set_actions_enabled(
             preview=can_preview,
             apply=can_apply,
+            replace=can_replace,
             busy=busy,
         )
         self.backups_view.set_busy(busy)
@@ -1099,6 +1535,15 @@ class MainWindow(QMainWindow):
                 (item_key, quantity, "inventory")
                 for item_key, quantity in sorted(self.staged_adds.items())
             ),
+            durability=tuple(sorted(self.staged_durability.items())),
+            faction_relations=tuple(sorted(self.staged_faction_relations.items())),
+            player_faction=self.staged_player_faction,
+            upgrades=tuple(sorted(self.staged_upgrades.items())),
+            placements=tuple(
+                (handle, placement_type, slot_id)
+                for handle, (placement_type, slot_id)
+                in sorted(self.staged_placements.items())
+            ),
         )
 
     def _busy_now(self) -> bool:
@@ -1130,6 +1575,7 @@ class MainWindow(QMainWindow):
             data=self.snapshot.data if self.snapshot is not None else b"",
             plan=plan,
             catalog=self.snapshot.catalog if self.snapshot is not None else None,
+            game_catalog=self.snapshot.game_catalog if self.snapshot is not None else None,
             parent=self,
         )
         worker.preview_ready.connect(self._on_preview_ready)
@@ -1230,6 +1676,7 @@ class MainWindow(QMainWindow):
             output_path=output_path,
             backup_dir=backup_path,
             catalog=self.snapshot.catalog,
+            game_catalog=self.snapshot.game_catalog,
             parent=self,
         )
         worker.set_prepared(self.prepared_edit)
@@ -1247,10 +1694,108 @@ class MainWindow(QMainWindow):
         self._update_action_buttons()
         worker.start()
 
+    def _confirm_and_start_replace(self) -> None:
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
+            return
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Нет текущего snapshot для replace")
+            return
+        if self.snapshot.source_kind != "local":
+            self._show_operation_error(
+                "Замена исходного слота доступна только для desktop local save"
+            )
+            return
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+        if self.prepared_edit.plan != current_plan:
+            self._invalidate_preview("staged форма изменилась после preview")
+            self._show_operation_error("Preview устарел после изменения формы; создай его заново")
+            return
+
+        source_path = Path(self.snapshot.path)
+        answer = QMessageBox.warning(
+            self,
+            "Заменить исходный слот?",
+            (
+                f"Файл будет заменён напрямую:\n{source_path}\n\n"
+                "Перед заменой создаётся проверяемый backup. Закрой игру и Steam "
+                "Cloud, затем подтверди действие."
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            self._start_replace()
+
+    def _start_replace(self, backup_dir: Path | None = None) -> None:
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
+            return
+        if self.prepared_edit is None:
+            self._show_operation_error("Сначала создай preview; запись без него запрещена")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Нет текущего snapshot для replace")
+            return
+        if self.snapshot.source_kind != "local":
+            self._show_operation_error(
+                "Замена исходного слота доступна только для desktop local save"
+            )
+            return
+        try:
+            current_plan = self._build_edit_plan()
+        except SaveError as exc:
+            self._show_operation_error(str(exc))
+            return
+        if self.prepared_edit.plan != current_plan:
+            self._invalidate_preview("staged форма изменилась после preview")
+            self._show_operation_error("Preview устарел после изменения формы; создай его заново")
+            return
+
+        source_path = Path(self.snapshot.path)
+        backup_path = (
+            Path(backup_dir).expanduser() if backup_dir is not None else backup_dirs()[0]
+        )
+        worker = OperationWorker(
+            self.service,
+            mode="replace",
+            data=self.snapshot.data,
+            plan=self.prepared_edit.plan,
+            source_path=source_path,
+            backup_dir=backup_path,
+            catalog=self.snapshot.catalog,
+            game_catalog=self.snapshot.game_catalog,
+            parent=self,
+        )
+        worker.set_prepared(self.prepared_edit)
+        worker.apply_ready.connect(self._on_apply_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "replace"
+        self._operation_thread = worker
+        self.changes_view.set_progress("Запуск замены исходного слота…")
+        self.status_label.setText("Замена исходного слота…")
+        self._update_action_buttons()
+        worker.start()
+
     def _on_apply_ready(self, receipt) -> None:
+        was_replace = self._operation_kind == "replace"
         self.prepared_edit = None
-        self.changes_view.mark_applied(receipt)
-        self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
+        if was_replace:
+            self.changes_view.mark_replaced(receipt)
+            self.status_label.setText(f"Исходный слот заменён: {receipt.output_path}")
+        else:
+            self.changes_view.mark_applied(receipt)
+            self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
         self.apply_ready.emit(receipt)
 
     def _start_restore(self, record, output_path: Path) -> None:
@@ -1275,6 +1820,30 @@ class MainWindow(QMainWindow):
     def _on_restore_ready(self, receipt) -> None:
         self.backups_view.mark_restored(receipt)
         self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
+        self.restore_ready.emit(receipt)
+
+    def _start_restore_in_place(self, record) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            return
+        if getattr(record, "status", None) != "verified":
+            self._show_operation_error("Выбранный backup не прошёл проверку SHA256")
+            return
+        worker = RestoreWorker(self.service, record, in_place=True, parent=self)
+        worker.completed.connect(self._on_restore_in_place_ready)
+        worker.failed.connect(self._on_operation_failed)
+        worker.progress.connect(self._on_operation_progress)
+        worker.finished.connect(self._on_operation_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._operation_kind = "restore_in_place"
+        self._operation_thread = worker
+        self.backups_view.set_progress("Запуск отката исходного слота…")
+        self.status_label.setText("Восстановление исходного слота…")
+        self._update_action_buttons()
+        worker.start()
+
+    def _on_restore_in_place_ready(self, receipt) -> None:
+        self.backups_view.mark_in_place_restored(receipt)
+        self.status_label.setText(f"Исходный слот восстановлен: {receipt.output_path}")
         self.restore_ready.emit(receipt)
 
     def _on_cloud_snapshot_ready(self, snapshot: CloudSnapshot) -> None:

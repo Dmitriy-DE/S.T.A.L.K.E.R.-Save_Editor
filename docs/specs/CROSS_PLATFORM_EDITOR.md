@@ -63,6 +63,8 @@ class EditPlan:
     detach: tuple[tuple[int, bool], ...] = ()
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
+    upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
+    placements: tuple[tuple[int, str, int | None], ...] = ()
 
 @dataclass(frozen=True)
 class PreparedEdit:
@@ -108,6 +110,54 @@ class CloudReceipt:
 
 S02: `prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit` verifies source hash and rejects raw with attach/detach before calling existing patch_save. S03: `export_local(source_path: Path, output_path: Path, prepared: PreparedEdit, backup_dir: Path) -> ExportReceipt` rejects stale source and same-path exports by default. S06: `upload_cloud(worker: CloudTransport, prepared: PreparedEdit, backup_dir: Path) -> CloudReceipt`; remote path comes only from plan.source, failures before write raise an error, ambiguous outcomes after write return uncertain without automatic retry. CloudTransport provides read_file, write_file, sync, wait_persisted, list_files with existing worker meanings.
 
+Для оригинального X-Ray `EditPlan.upgrades` содержит уникальные пары
+`(handle, tuple[serialized_upgrade_id, ...])`. Writer открывает эту операцию
+только для release-scoped каталога официальных ресурсов и только для
+подтверждённого `m_upgrades` vector; уже записанный неизвестный ID можно
+сохранить или удалить, но новый ID без exact catalog/applicability не
+принимается. Браузер только staging/preview/download, desktop replacement
+проходит обычный M16 backup/read-back pipeline.
+
+Для оригинального X-Ray `EditPlan.placements` содержит уникальные тройки
+`(handle, placement_type, slot_id)`, где `placement_type` равен `slot`, `belt`
+или `ruck`; `slot` требует номер 1…13, а `belt`/`ruck` используют `None`.
+Writer меняет только подтверждённое `SInvItemPlace` в actor-owned client-data
+по release-specific offset. Поле доступно как experimental capability только
+для original SoC/CS/CoP с точным client-data anchor; неизвестный или
+неподтверждённый place остаётся read-only. Qt и web используют один этот
+immutable plan, показывают before → after, а preview/backup/read-back guards
+остаются обязательными.
+
+Для S.T.A.L.K.E.R. 2 официальный loose resource tree может дать отдельный
+read-only metadata catalog: prototype SID, category, weight, max stack, slot и
+upgrade SID. Desktop and an explicitly generated browser bundle carry these
+metadata fields. Prototype SID не равен compact `type_key` из `.sav` без отдельного
+mapping evidence; поэтому такой каталог не включает `serialization_family`,
+prototype bytes или право add/clone/upgrade. Browser принимает этот
+release-scoped metadata bundle только когда он явно сгенерирован из official
+resource root; сайт не получает доступ к локальной папке игры автоматически.
+
+Для original X-Ray `EditPlan.detach` остаётся явно structural операцией. Перед
+удалением writer запускает `editor.xray_delete.analyze_xray_delete(...)` и
+отказывает для отсутствующего/unresolved target, explicit equipped placement,
+не-actor-owned record и любого parsed registry child по `parent_id`. Этот
+preflight не извлекает ссылки из opaque STATE/UPDATE и не доказывает quest
+семантику или game load/re-save; отсутствие decoded placement не считается
+доказательством, что предмет экипирован.
+
+`InventoryItem` дополнительно может нести `remove_editable` и `remove_reason`.
+Для X-Ray они строятся тем же preflight в одном проходе по parsed registry;
+Qt и web используют эти поля только для объяснимого staging guard. Это не
+заменяет повторную проверку в writer и не открывает удаление для S2, Enhanced
+или другого формата без capability `remove_items`.
+
+M22 добавляет `editor.s2_mapping.analyze_s2_samples(...)` как read-only
+evidence helper. Он сравнивает handle/type-key observations между явно
+переданными samples, возвращает только hashes/агрегаты и всегда оставляет
+mapping status `unconfirmed`; public SID не присваивается по совпадению ключа.
+CLI-анализатор не пишет сейвы и не входит в browser runtime. Confirmed mapping
+по-прежнему требует SID-labelled controlled save pair и game load/re-save.
+
 U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, plan: EditPlan) -> PreparedEdit`, `.export_local(...) -> ExportReceipt` and `.upload_cloud(...) -> CloudReceipt` forward to these common implementations. U05 adds `inspect_backup`, `list_backups` and `.restore_local(...) -> RestoreReceipt`; only `verified` records can be restored. Dependencies must be injectable for tests; service imports no UI.
 
 ## Запись и отмена
@@ -140,6 +190,10 @@ schema пока не подтверждена и не отображается �
 [Поиск предметов] [Категория] [Только изменённые]
 Предмет / категория | Количество | Вес | Статус поддержки
 Выбранный предмет: текущее → новое; причина read-only
+
+Для ЧС/ЗП при подтверждённом векторе: текущие улучшения → каталоговые
+варианты; неизвестные уже записанные ID явно отмечены и не предлагаются для
+добавления.
 
 [Сбросить изменения]       [Предпросмотр] [Сохранить копию]
 ```

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,11 @@ class EditPlan:
     attach: tuple[tuple[int, int, int, int, int], ...] = ()
     raw: tuple[RawPatch, ...] = ()
     adds: tuple[tuple[str, int, str], ...] = ()
+    durability: tuple[tuple[int, float], ...] = ()
+    faction_relations: tuple[tuple[str, int], ...] = ()
+    player_faction: str | None = None
+    upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
+    placements: tuple[tuple[int, str, int | None], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -67,6 +73,45 @@ class EditPlan:
             (str(item_key), int(quantity), str(destination))
             for item_key, quantity, destination in self.adds
         )
+        durability = tuple(
+            (int(handle), float(condition)) for handle, condition in self.durability
+        )
+        faction_relations = tuple(
+            (str(key).strip(), int(goodwill))
+            for key, goodwill in self.faction_relations
+        )
+        player_faction = (
+            None if self.player_faction is None else str(self.player_faction).strip()
+        )
+        normalized_upgrades: list[tuple[int, tuple[str, ...]]] = []
+        for handle, values in self.upgrades:
+            if isinstance(values, (str, bytes, bytearray)):
+                raise TypeError("upgrade values must be a sequence of exact keys")
+            keys = tuple(str(value) for value in values)
+            if len(set(keys)) != len(keys):
+                raise ValueError("Duplicate upgrade key in one upgrade vector")
+            for key in keys:
+                if not key:
+                    raise ValueError("upgrade key must be non-empty")
+                if "\x00" in key:
+                    raise ValueError("upgrade key must not contain NUL")
+            normalized_upgrades.append((int(handle), keys))
+        upgrades = tuple(normalized_upgrades)
+        normalized_placements: list[tuple[int, str, int | None]] = []
+        for handle, placement_type, slot_id in self.placements:
+            normalized_type = str(placement_type).strip().casefold()
+            normalized_slot = None if slot_id is None else int(slot_id)
+            if normalized_type not in {"slot", "belt", "ruck"}:
+                raise ValueError("placement type must be slot, belt, or ruck")
+            if normalized_type == "slot":
+                if normalized_slot is None:
+                    raise ValueError("slot placement requires a slot id")
+                if not 1 <= normalized_slot <= 13:
+                    raise ValueError("placement slot must be in the range 1…13")
+            elif normalized_slot is not None:
+                raise ValueError("belt/ruck placement must not include a slot id")
+            normalized_placements.append((int(handle), normalized_type, normalized_slot))
+        placements = tuple(normalized_placements)
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -78,6 +123,37 @@ class EditPlan:
             raise ValueError("Duplicate attach handle in edit plan")
         if len({(item_key, destination) for item_key, _, destination in adds}) != len(adds):
             raise ValueError("Duplicate add item/destination in edit plan")
+        if len({handle for handle, _ in durability}) != len(durability):
+            raise ValueError("Duplicate durability handle in edit plan")
+        if len({key for key, _ in faction_relations}) != len(faction_relations):
+            raise ValueError("Duplicate faction relation in edit plan")
+        if len({handle for handle, _ in upgrades}) != len(upgrades):
+            raise ValueError("Duplicate upgrade handle in edit plan")
+        if len({handle for handle, *_ in placements}) != len(placements):
+            raise ValueError("Duplicate placement handle in edit plan")
+        for handle, _keys in upgrades:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Upgrade handle must be in the range 1…65534")
+        for handle, _placement_type, _slot_id in placements:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Placement handle must be in the range 1…65534")
+        for key, goodwill in faction_relations:
+            if not key:
+                raise ValueError("faction key must be non-empty")
+            if "\x00" in key:
+                raise ValueError("faction key must not contain NUL")
+            if not -0x80000000 <= goodwill <= 0x7FFFFFFF:
+                raise ValueError("faction goodwill must fit a signed 32-bit value")
+        if player_faction is not None:
+            if not player_faction:
+                raise ValueError("player faction key must be non-empty")
+            if "\x00" in player_faction:
+                raise ValueError("player faction key must not contain NUL")
+        for handle, condition in durability:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Durability handle must be in the range 1…65534")
+            if not math.isfinite(condition) or not 0.0 <= condition <= 1.0:
+                raise ValueError("Durability value must be finite and in the range 0…1")
         for item_key, quantity, destination in adds:
             if not item_key.strip():
                 raise ValueError("Added item key must be non-empty")
@@ -92,6 +168,11 @@ class EditPlan:
         object.__setattr__(self, "attach", attach)
         object.__setattr__(self, "raw", raw)
         object.__setattr__(self, "adds", adds)
+        object.__setattr__(self, "durability", durability)
+        object.__setattr__(self, "faction_relations", faction_relations)
+        object.__setattr__(self, "player_faction", player_faction)
+        object.__setattr__(self, "upgrades", upgrades)
+        object.__setattr__(self, "placements", placements)
 
 
 @dataclass(frozen=True)

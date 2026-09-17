@@ -13,7 +13,10 @@
     <span class="brand-name">S.T.A.L.K.E.R. Save Editor</span>
     <span class="badge badge-version" id="version">web</span>
   </div>
-  <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+  <div class="topbar-actions">
+    <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+    <button class="button support-button" id="support-button" type="button">♡ Support project</button>
+  </div>
 </header>
 
 <section class="filebar">
@@ -70,6 +73,25 @@
         </div>
       </fieldset>
 
+      <fieldset class="group" id="faction-group" disabled>
+        <legend>Отношения с группировками</legend>
+        <p id="faction-status" class="muted">Открой X-Ray сейв с официальным каталогом.</p>
+        <p id="faction-warning" class="muted faction-warning" hidden>
+          Сюжет и AI могут пересчитать goodwill после загрузки. Перед записью
+          сделай backup исходного сейва.
+        </p>
+        <div class="row player-faction-row">
+          <label for="player-faction-select">Группировка игрока</label>
+          <span id="player-faction-current" class="mono">неизвестно</span>
+          <select id="player-faction-select"></select>
+          <button class="button" id="player-faction-stage" type="button">Застейджить</button>
+        </div>
+        <table class="grid" id="faction-relations">
+          <thead><tr><th>Группировка</th><th>Текущее goodwill</th><th>Новое</th><th>Действие</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </fieldset>
+
       <fieldset class="group">
         <legend>Технические метаданные контейнера</legend>
         <table class="grid" id="metadata">
@@ -91,12 +113,12 @@
       </div>
       <table class="grid" id="inventory">
         <thead><tr>
-          <th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
-          <th>Количество</th><th>Вес</th><th>Handle</th><th>Изменить / удалить</th>
+          <th>Иконка</th><th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
+          <th>Количество</th><th>Вес</th><th>Прочность</th><th>Улучшения</th><th>Handle</th><th>Изменить / удалить</th>
         </tr></thead>
         <tbody></tbody>
       </table>
-      <p class="muted">Количество можно менять только у подтверждённых стаков. Остальное — только чтение.</p>
+      <p class="muted">Количество можно менять только у подтверждённых стаков. Прочность доступна для source-backed weapon/outfit condition. Улучшения доступны для подтверждённых ЧС/ЗП `m_upgrades`; остальные поля — только чтение.</p>
       <fieldset class="group" id="item-add-group" disabled>
         <legend>Добавить предмет</legend>
         <p class="muted" id="item-add-status">Каталог не загружен.</p>
@@ -137,6 +159,29 @@
   <a class="button" id="dl-linux" href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/releases/latest" rel="noopener">Linux x86_64 (.tar.gz / .deb)</a>
   <span class="muted">Нужна для Steam Cloud и журнала резервных копий; браузер работает только с локальной копией.</span>
 </section>
+
+<dialog class="support-modal" id="support-modal" aria-labelledby="support-title">
+  <div class="support-modal-card">
+    <button class="support-close" id="support-close" type="button" aria-label="Закрыть">×</button>
+    <h2 id="support-title">Support project</h2>
+    <p class="muted">If you find the project useful, you can support its development.</p>
+    <section class="support-entry">
+      <h3>PayPal</h3>
+      <div class="support-value-row"><code>breygel.dima@gmail.com</code><button class="button support-copy" type="button" data-copy="breygel.dima@gmail.com">Copy</button></div>
+    </section>
+    <section class="support-entry">
+      <h3>Binance Pay</h3>
+      <div class="support-label">Binance ID: 434350727</div>
+      <div class="support-value-row"><code>434350727</code><button class="button support-copy" type="button" data-copy="434350727">Copy</button></div>
+    </section>
+    <section class="support-entry">
+      <h3>USDT</h3>
+      <div class="support-label">Network: TRON (TRC20)</div>
+      <div class="support-label">Address:</div>
+      <div class="support-value-row"><code>TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds</code><button class="button support-copy" type="button" data-copy="TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds">Copy</button></div>
+    </section>
+  </div>
+</dialog>
 
 <footer class="footer">
   <span id="footer-build">Сборка: —</span>

@@ -181,6 +181,60 @@ def stylesheet() -> str:
     QPushButton:hover {{ background: {c['bg_hover']}; border-color: {c['border_focus']}; }}
     QPushButton:pressed {{ background: {c['olive_dim']}; color: {c['bg_base']}; }}
     QPushButton:disabled {{ background: {c['bg_panel']}; color: {c['text_disabled']}; border-color: {c['border_subtle']}; }}
+    QPushButton#supportButton {{
+        background: {c['bg_elevated']};
+        border: 1px solid {c['rust']};
+        color: #D8BA8C;
+        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-size: 12px;
+        padding: 5px 10px;
+    }}
+    QPushButton#supportButton:hover {{
+        background: {c['bg_hover']};
+        border-color: #FFD23F;
+        color: #FFD23F;
+    }}
+    QDialog#supportDialog {{
+        background: {c['bg_panel']};
+        border: 1px solid {c['rust']};
+    }}
+    QLabel#supportTitle {{
+        background: transparent;
+        color: #FFD23F;
+        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }}
+    QLabel#supportIntro {{ color: {c['text_secondary']}; }}
+    QLabel#supportMethod {{
+        background: transparent;
+        color: #D4A64B;
+        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+    }}
+    QLabel#supportDetail {{
+        background: transparent;
+        color: {c['text_secondary']};
+        font-size: 12px;
+    }}
+    QLineEdit#supportValue {{
+        background: {c['bg_base']};
+        border: 1px solid {c['rust']};
+        color: #D8BA8C;
+        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
+        padding: 6px 8px;
+    }}
+    QPushButton#supportCopyButton, QPushButton#supportCloseButton {{
+        border-color: {c['rust']};
+        color: #E3C7B2;
+        padding: 6px 10px;
+    }}
+    QPushButton#supportCopyButton:hover, QPushButton#supportCloseButton:hover {{
+        border-color: #FFD23F;
+        color: #FFD23F;
+    }}
     QLineEdit, QSpinBox, QComboBox {{
         background: {c['bg_base']};
         border: 1px solid {c['border']};
