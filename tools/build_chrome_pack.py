@@ -36,6 +36,12 @@ _BUTTONS = {
     "button_hover": "ui_button_ordinary_h",
     "button_press": "ui_button_ordinary_t",
     "button_disabled": "ui_button_ordinary_d",
+    # Scrollbar arrow buttons.
+    "scroll_up": "ui_scroll_btn_up",
+    "scroll_down": "ui_scroll_btn_down",
+    # PDA-style checkbox states.
+    "check_off": "ui_cb_button_e",
+    "check_on": "ui_cb_button_h",
 }
 
 
