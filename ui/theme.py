@@ -12,22 +12,26 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 COLORS = {
-    "bg_base": "#111516",
-    "bg_panel": "#1B2220",
-    "bg_elevated": "#252D29",
-    "bg_hover": "#2D3732",
-    "border_subtle": "#2A3530",
-    "border": "#39443D",
-    "border_focus": "#A5B56B",
-    "olive": "#A5B56B",
-    "olive_dim": "#798647",
-    "rust": "#B86442",
-    "warning": "#D4A64B",
-    "error": "#B95246",
-    "success": "#6CA369",
-    "text": "#E4E8DC",
-    "text_secondary": "#929D94",
-    "text_disabled": "#546058",
+    # Deep "bunker" grounds with a warm brass accent and an olive PDA green,
+    # matching the trilogy's menu palette rather than a cool grey-green shell.
+    "bg_base": "#0C0D0A",
+    "bg_panel": "#15170F",
+    "bg_elevated": "#1E2016",
+    "bg_hover": "#2A2C1D",
+    "border_subtle": "#2A2E20",
+    "border": "#3B3D30",
+    "border_focus": "#C69A3E",
+    # ``olive`` is the primary accent token; it now carries the brass/amber
+    # highlight used on active nav, headings and focus.
+    "olive": "#C69A3E",
+    "olive_dim": "#7D6127",
+    "rust": "#A9532F",
+    "warning": "#C89A3E",
+    "error": "#B8492B",
+    "success": "#7E8F3E",
+    "text": "#D8D2BE",
+    "text_secondary": "#8E8974",
+    "text_disabled": "#5C5A4C",
 }
 
 
