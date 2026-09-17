@@ -27,7 +27,7 @@ web-serve: web
 	@echo "http://localhost:8765"
 	$(PYTHON) -m http.server 8765 --directory web
 
-# Publish web/ to Cloudflare Pages (stalker2-save-editor.pages.dev).  Requires
+# Publish web/ to Cloudflare Pages (stalker-save-editor.pages.dev).  Requires
 # `npx wrangler login` once.  The guards exist because this directory doubles as
 # the local test server root: neither a save nor Python bytecode may ship.
 web-deploy: web
@@ -35,7 +35,7 @@ web-deploy: web
 		(echo "web/ contains a save file; remove it before deploying" && exit 2)
 	@rm -rf web/__pycache__
 	npx --yes wrangler@4 pages deploy web \
-		--project-name=stalker2-save-editor --branch=main --commit-dirty=true
+		--project-name=stalker-save-editor --branch=main --commit-dirty=true
 
 # Publish web/ to the gh-pages branch, which GitHub Pages serves at its root.
 # Pages can only deploy a branch's root or /docs, never an arbitrary folder,

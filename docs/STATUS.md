@@ -98,7 +98,7 @@ read-only, хотя локальный writer и catalog round-trip продол
 остаётся в [evidence](evidence/WEB_EDITION_2026-09-14.md), X-Ray bridge
 покрыт `tests/test_web_bridge.py`.
 Steam Cloud в вебе невозможен по устройству Steam, а не по нашей лени:
-[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker2-save-editor.pages.dev>,
+[разбор вариантов](evidence/STEAM_CLOUD_OPTIONS.md). Сайт опубликован: <https://stalker-save-editor.pages.dev>,
 обновление — `make web-deploy` (Cloudflare Pages). Проверено
 живьём: страница, стили, ядро, мост и metadata catalog отдаются с HTTP 200.
 

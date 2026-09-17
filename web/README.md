@@ -30,7 +30,7 @@ make web-serve   # http://localhost:8765
 | GitHub Pages | репозиторий должен быть **публичным** (на бесплатном тарифе Pages приватные репозитории не обслуживает) | `make web-publish`, затем Settings → Pages → `gh-pages` → `/ (root)` |
 | Cloudflare | репозиторий может остаться приватным; нужен один вход | `npx wrangler login`, затем `make web-deploy` |
 
-Сейчас сайт живёт на Cloudflare: <https://stalker2-save-editor.pages.dev>.
+Сейчас сайт живёт на Cloudflare: <https://stalker-save-editor.pages.dev>.
 Кода на сервере нет: отдаётся
 только эта папка, весь редактор работает в браузере посетителя.
 
