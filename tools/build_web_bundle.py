@@ -33,6 +33,7 @@ MODULES = (
     "editor/catalog_bundle.py",
     "editor/codec.py",
     "editor/formats.py",
+    "editor/kraken_blocks.py",
     "editor/models.py",
     "editor/prepare.py",
     "editor/releases.py",

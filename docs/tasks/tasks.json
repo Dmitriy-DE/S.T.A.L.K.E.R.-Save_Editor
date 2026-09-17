@@ -922,7 +922,9 @@
       "editor/kraken_blocks.py",
       "save_format.py",
       "tests/test_compact_rebuild.py",
-      "docs/research/COMPACT_REBUILD.md"
+      "docs/research/COMPACT_REBUILD.md",
+      "tools/build_web_bundle.py",
+      "web/pysrc.json"
     ],
     "contract": "Новый optional rebuild mode сохраняет исходные compressed blocks только при доказанных block boundaries/dependencies. Всегда доступен текущий deterministic full rebuild.",
     "steps": [
@@ -937,9 +939,10 @@
     ],
     "gate": "research",
     "priority": "P3",
-    "status": "waiting_dependencies",
+    "status": "in_review",
     "path": "docs/tasks/R11.md",
-    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28"
+    "github_issue": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28",
+    "github_pr": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/74"
   },
   {
     "id": "W01",

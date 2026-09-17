@@ -35,7 +35,7 @@
 | [R08](R08.md) | Настоящее удаление с анализом ссылок | R05, U04 | waiting_dependencies | [#25](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/25) |
 | [R09](R09.md) | Исследование attachments и upgrades | R01, R05 | in_review (read-only evidence; controlled attach/detach gate blocked) | [#26](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/26), [PR #73](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/73) |
 | [R10](R10.md) | Редактирование доказанных attachments/upgrades | R09, U04 | waiting_dependencies | [#27](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/27) |
-| [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | waiting_dependencies | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28) |
+| [R11](R11.md) | Компактная пересборка Kraken с безопасным fallback | S01, P01 | in_review | [#28](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/issues/28), [PR #74](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-2-HoC---Save_Editor/pull/74) |
 | [W01](W01.md) | Спайк: доказать, что ядро работает в браузере | — | accepted (ooz-wasm, сверка байт в байт) | — |
 | [W02](W02.md) | Веб-интерфейс поверх общего ядра | W01 | accepted (локальные файлы, без сервера) | — |
 | [W03](W03.md) | Публикация веб-версии | W02 | accepted (Cloudflare, живой URL) | — |

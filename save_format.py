@@ -11,6 +11,12 @@ from typing import Literal
 
 from editor.codec import CodecError
 from editor.codec import decompress as codec_decompress
+from editor.kraken_blocks import (
+    CompactRebuildResult,
+    KrakenBlocksError,
+    RebuildMode,
+    compact_rebuild_stream,
+)
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -181,6 +187,10 @@ class PatchResult:
     detached_items: tuple[tuple[int, bool], ...]  # h, deep-remove-owned-handle
     attached_items: tuple[tuple[int, int, int, int, int], ...]  # h,x,y,w,h
     raw_patches: tuple[RawPatch, ...]
+    rebuild_mode: RebuildMode = "full-fallback"
+    preserved_blocks: int = 0
+    rebuilt_blocks: int = 0
+    rebuild_reason: str = ""
 
 
 def validate_crc(data: bytes) -> tuple[int, int, bool]:
@@ -590,6 +600,44 @@ def rebuild_uncompressed(raw: bytes) -> bytes:
     return bytes(out)
 
 
+def rebuild_compact(
+    source_data: bytes,
+    raw: bytes,
+    *,
+    original_raw: bytes | None = None,
+) -> tuple[bytes, CompactRebuildResult]:
+    """Rebuild a save while preserving only proven source Kraken blocks.
+
+    This function never encodes Kraken.  It copies safe original blocks and
+    emits changed/dependent blocks in the known stored ``CC06`` form; a
+    changed raw length or unsupported framing produces a valid full stored
+    rebuild instead.
+    """
+
+    stored, computed, ok = validate_crc(source_data)
+    if not ok:
+        raise SaveError(
+            f"Отказ от пересборки: CRC32 исходника плохой ({stored:08x} != {computed:08x})"
+        )
+    unpacked_size = struct.unpack_from("<I", source_data, 0)[0]
+    before = decompress_save(source_data) if original_raw is None else bytes(original_raw)
+    if len(before) != unpacked_size:
+        raise SaveError(
+            f"Исходный raw имеет размер {len(before)} вместо заголовка {unpacked_size}"
+        )
+    after = bytes(raw)
+    try:
+        decision = compact_rebuild_stream(
+            source_data[4:-4], original_raw=before, new_raw=after
+        )
+    except KrakenBlocksError as exc:
+        raise SaveError(f"Kraken compact rebuild не удался: {exc}") from exc
+
+    body = struct.pack("<I", len(after)) + decision.stream
+    rebuilt = body + struct.pack("<I", zlib.crc32(body) & 0xFFFFFFFF)
+    return rebuilt, decision
+
+
 def _patch_stack_in_raw(raw: bytearray, handle: int, new_count: int) -> tuple[int, int]:
     if not (1 <= new_count <= 1_000_000):
         raise SaveError("Количество предмета должно быть от 1 до 1 000 000")
@@ -858,6 +906,7 @@ def patch_save(
         )
 
     raw_b = bytearray(decompress_save(data))
+    original_raw = bytes(raw_b)
     old_money: int | None = None
     verified_money: int | None = None
     if new_money is not None:
@@ -893,7 +942,9 @@ def patch_save(
         _apply_raw_patch(raw_b, p)
 
     expected_raw = bytes(raw_b)
-    rebuilt = rebuild_uncompressed(expected_raw)
+    rebuilt, rebuild_decision = rebuild_compact(
+        data, expected_raw, original_raw=original_raw
+    )
 
     stored2, computed2, ok2 = validate_crc(rebuilt)
     if not ok2:
@@ -946,6 +997,10 @@ def patch_save(
         detached_items=tuple(detached),
         attached_items=tuple(attached),
         raw_patches=raw_patches,
+        rebuild_mode=rebuild_decision.mode,
+        preserved_blocks=rebuild_decision.preserved_blocks,
+        rebuilt_blocks=rebuild_decision.rebuilt_blocks,
+        rebuild_reason=rebuild_decision.reason,
     )
 
 
