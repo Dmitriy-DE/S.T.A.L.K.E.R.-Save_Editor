@@ -910,10 +910,19 @@ class XRayCatalogProvider:
         self,
         release: ReleaseDescriptor,
         game_root: Path | None = None,
+        *,
+        allowed_editions: frozenset[str] = frozenset({"original"}),
     ) -> ItemCatalog | None:
         self._catalog = None
         self._game_catalog = None
-        if release.family not in {"soc", "clear_sky", "cop"} or release.edition != "original":
+        # ``allowed_editions`` stays original-only for every runtime caller, so
+        # save editing is unaffected.  The icon-pack builder opts Enhanced
+        # Editions in to harvest their HD atlases; EE ships the same item keys
+        # and inventory grid, so the crops line up with the classic layout.
+        if (
+            release.family not in {"soc", "clear_sky", "cop"}
+            or release.edition not in allowed_editions
+        ):
             return None
         if game_root is None:
             return None
@@ -925,6 +934,7 @@ class XRayCatalogProvider:
         section_sources: dict[str, _Section] = {}
         localization: dict[str, str] = {}
         use_unpacked = data_root.is_dir() and not _has_obvious_mod_overlay(data_root)
+        source_root = data_root if use_unpacked else root
         if use_unpacked:
             for path in sorted(data_root.rglob("*.ltx"), key=lambda value: value.as_posix().casefold()):
                 try:
@@ -933,9 +943,12 @@ class XRayCatalogProvider:
                     continue
                 section_sources.update(parsed)
             localization = _localization(data_root)
-            source_root = data_root
-        else:
-            if data_root.is_dir():
+
+        items = _items_from_sections(section_sources, localization)
+        if not items:
+            # No unpacked catalog (or a textures-only gamedata tree, as the
+            # Enhanced Editions ship): read the packed official archives.
+            if not use_unpacked and data_root.is_dir():
                 LOGGER.info(
                     "Ignoring an obvious community mod overlay in %s; "
                     "trying packed official resources",
@@ -949,13 +962,13 @@ class XRayCatalogProvider:
                     LOGGER.info("Skipping X-Ray archive %s: %s", archive.name, exc)
             if not files:
                 return None
+            section_sources = {}
             for name, raw in files.items():
                 if name.casefold().endswith(".ltx"):
                     section_sources.update(_parse_ltx(_decode(raw), name))
             localization = _localization(root, files)
             source_root = root
-
-        items = _items_from_sections(section_sources, localization)
+            items = _items_from_sections(section_sources, localization)
         if not items:
             return None
         self._catalog = ItemCatalog(release.id, source_root, items)

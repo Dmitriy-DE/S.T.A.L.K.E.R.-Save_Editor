@@ -37,9 +37,14 @@ if TYPE_CHECKING:
     from PySide6.QtGui import QImage
 
 
+_EDITIONS = frozenset({"original", "enhanced"})
+
+
 def _catalogs(sources: list[Path]):
+    """Yield trilogy catalogs, Enhanced Editions first for their HD atlases."""
+
     from editor.platforms import installed_releases
-    from editor.releases import release_by_id
+    from editor.releases import _OFFICIAL_RELEASES, release_by_id
     from editor.xray_catalog import XRayCatalogProvider
 
     roots: list[Path] = list(sources)
@@ -48,24 +53,25 @@ def _catalogs(sources: list[Path]):
         for game in installed_releases():
             roots.append(Path(game.install_dir))
             release_ids.append(game.release_id)
+
+    catalogs = []
     for root, release_id in zip(roots, release_ids, strict=True):
         try:
             release = release_by_id(release_id) if release_id else None
         except KeyError:
             release = None
-        if release is None:
-            # Try every trilogy release descriptor against this root.
-            from editor.releases import _OFFICIAL_RELEASES
+        candidates = [release] if release is not None else list(_OFFICIAL_RELEASES)
+        for candidate in candidates:
+            catalog = XRayCatalogProvider().load(
+                candidate, root, allowed_editions=_EDITIONS
+            )
+            if catalog is not None and catalog.source_root is not None:
+                catalogs.append(catalog)
+                break
 
-            for candidate in _OFFICIAL_RELEASES:
-                catalog = XRayCatalogProvider().load(candidate, root)
-                if catalog is not None and catalog.source_root is not None:
-                    yield catalog
-                    break
-            continue
-        catalog = XRayCatalogProvider().load(release, root)
-        if catalog is not None and catalog.source_root is not None:
-            yield catalog
+    # Enhanced Editions redraw every icon in HD, so let them win each key.
+    catalogs.sort(key=lambda cat: 0 if cat.release_id.endswith("-ee") else 1)
+    yield from catalogs
 
 
 def build(sources: list[Path], *, mirror_web: bool) -> int:
