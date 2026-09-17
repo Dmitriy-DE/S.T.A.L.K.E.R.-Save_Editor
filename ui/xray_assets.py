@@ -237,8 +237,17 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
 class XRayIconResolver:
     """Resolve item atlas crops without changing the selected game install."""
 
-    def __init__(self, catalog: ItemCatalog | None) -> None:
+    def __init__(
+        self,
+        catalog: ItemCatalog | None,
+        *,
+        donor: XRayIconResolver | None = None,
+    ) -> None:
         self.catalog = catalog
+        # Optional resolver for another installed trilogy game.  When the
+        # opened save's own game files are missing, shared items borrow real
+        # art from the donor's atlas, keyed by item id.  See editor.icon_donor.
+        self._donor = donor
         self._atlas_cache: dict[Path, QImage | None] = {}
         self._packed_atlas_cache: dict[tuple[Path, str], QImage | None] = {}
         self._icon_cache: dict[tuple[object, ...], QIcon] = {}
@@ -256,6 +265,8 @@ class XRayIconResolver:
         if cache_key in self._icon_cache:
             return self._icon_cache[cache_key]
         icon = self._atlas_icon(definition, size=size)
+        if icon is None and self._donor is not None:
+            icon = self._donor.atlas_icon_for_key(definition.key, size=size)
         if icon is None:
             icon = category_icon(definition.category, size=size)
         self._icon_cache[cache_key] = icon
@@ -265,7 +276,26 @@ class XRayIconResolver:
         definition = self.catalog.resolve(key) if self.catalog is not None else None
         if definition is not None:
             return self.icon_for(definition, size=size)
+        if self._donor is not None:
+            donated = self._donor.atlas_icon_for_key(key, size=size)
+            if donated is not None:
+                return donated
         return category_icon(category, size=size)
+
+    def atlas_icon_for_key(self, key: str, *, size: int = 30) -> QIcon | None:
+        """Return this catalog's real atlas crop for ``key``, or ``None``.
+
+        Unlike :meth:`icon_for_key` this never falls back to a drawn glyph, so
+        another resolver can use it as an icon donor and keep its own glyph as
+        the final fallback.
+        """
+
+        if self.catalog is None:
+            return None
+        definition = self.catalog.resolve(key)
+        if definition is None:
+            return None
+        return self._atlas_icon(definition, size=size)
 
     def _atlas_icon(self, definition: ItemDefinition, *, size: int) -> QIcon | None:
         if (

@@ -27,10 +27,34 @@ from PySide6.QtWidgets import (
 )
 
 from editor.catalog import ItemCatalog, UpgradeCatalog
+from editor.icon_donor import discover_icon_donor_catalog
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
 from .inventory_model import InventoryTableModel
 from .xray_assets import XRayIconResolver
+
+# Cache the cross-game icon donor once per process: discovery scans the local
+# Steam libraries, and the installed games do not change mid-session.
+_donor_cache: dict[str | None, XRayIconResolver | None] = {}
+
+
+def _donor_resolver_for(catalog: ItemCatalog | None) -> XRayIconResolver | None:
+    """Return an icon donor when the opened save's own game is not installed.
+
+    A save whose catalog already resolves to a local install (``source_root``
+    set) reads its own atlas and needs no donor.  Only metadata-only catalogs
+    borrow icons from another installed trilogy game.
+    """
+
+    if catalog is None or catalog.source_root is not None:
+        return None
+    release_id = catalog.release_id
+    if release_id in _donor_cache:
+        return _donor_cache[release_id]
+    donor_catalog = discover_icon_donor_catalog(prefer_not=release_id)
+    resolver = XRayIconResolver(donor_catalog) if donor_catalog is not None else None
+    _donor_cache[release_id] = resolver
+    return resolver
 
 
 class InventoryView(QWidget):
@@ -359,7 +383,9 @@ class InventoryView(QWidget):
         """Expose only definitions proven for the selected release."""
 
         self._catalog = catalog
-        self._icon_resolver = XRayIconResolver(catalog)
+        self._icon_resolver = XRayIconResolver(
+            catalog, donor=_donor_resolver_for(catalog)
+        )
         self.model.set_icon_provider(self._icon_for_item)
         self._add_enabled = bool(enabled and catalog is not None)
         self._add_reason = reason
