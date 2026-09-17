@@ -304,3 +304,42 @@ li { margin: 3px 0; }
   .sidebar { width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
   .sidebar-foot { margin: 0; width: 100%; }
 }
+
+/* Real X-Ray UI chrome cropped from the game's ui_common atlas (bundled in
+   web/chrome/), so panels and buttons are the same elements as the game. */
+.sidebar, .content {
+  border-image: url("chrome/frame.png") 32 32 32 32 stretch stretch;
+  border-width: 14px;
+  border-radius: 0;
+}
+.button, button {
+  border-image: url("chrome/button.png") 0 8 0 8 stretch stretch;
+  border-width: 0 8px;
+  border-radius: 0;
+  background: transparent;
+  color: #ECDFC2;
+  padding: 7px 14px;
+}
+.button:hover, button:hover:not(:disabled) {
+  border-image: url("chrome/button_hover.png") 0 8 0 8 stretch stretch;
+  background: transparent;
+  color: #FFE7A6;
+}
+.button:active, button:active:not(:disabled) {
+  border-image: url("chrome/button_press.png") 0 8 0 8 stretch stretch;
+  color: #FFFFFF;
+}
+.button[disabled], button:disabled {
+  border-image: url("chrome/button_disabled.png") 0 8 0 8 stretch stretch;
+  color: var(--text-disabled);
+}
+.nav {
+  border-image: none;
+  border: 1px solid transparent;
+  background: transparent;
+}
+.nav[aria-current="true"] {
+  border-image: none;
+  border-color: var(--olive-dim);
+  background: var(--bg-elevated);
+}
