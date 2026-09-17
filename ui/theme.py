@@ -8,8 +8,30 @@ assets are required at runtime.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
+
+
+def _chrome_dir() -> Path:
+    """Locate the bundled X-Ray UI chrome pack (in-repo and PyInstaller)."""
+
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidate = Path(meipass) / "assets" / "chrome" / "xray"
+        if candidate.is_dir():
+            return candidate
+    return Path(__file__).resolve().parent.parent / "assets" / "chrome" / "xray"
+
+
+def _chrome_url(name: str) -> str | None:
+    """Return a Qt ``url()`` path for a chrome texture, or ``None`` if absent."""
+
+    path = _chrome_dir() / name
+    return path.as_posix() if path.is_file() else None
+
 
 COLORS = {
     # Deep "bunker" grounds with a warm brass accent and an olive PDA green,
@@ -39,6 +61,10 @@ def stylesheet() -> str:
     """Return the complete application stylesheet."""
 
     c = COLORS
+    return _base_stylesheet(c) + _chrome_stylesheet(c)
+
+
+def _base_stylesheet(c: dict[str, str]) -> str:
     return f"""
     QWidget {{
         background: {c['bg_base']};
@@ -278,6 +304,62 @@ def stylesheet() -> str:
     }}
     QProgressBar::chunk {{ background: {c['olive_dim']}; border-radius: 3px; }}
     QToolTip {{ background: {c['bg_elevated']}; border: 1px solid {c['border_focus']}; color: {c['text']}; }}
+    """
+
+
+def _chrome_stylesheet(c: dict[str, str]) -> str:
+    """Overlay the real X-Ray UI textures (panels, buttons) when bundled.
+
+    These crops come from the game's own ``ui_common`` atlas, so the panels
+    and buttons are drawn from the same elements as the game.  When the pack
+    is absent (e.g. a minimal checkout) the flat token styling above stands.
+    """
+
+    frame = _chrome_url("frame.png")
+    button = _chrome_url("button.png")
+    button_hover = _chrome_url("button_hover.png")
+    button_press = _chrome_url("button_press.png")
+    button_disabled = _chrome_url("button_disabled.png")
+    if not (frame and button and button_hover and button_press and button_disabled):
+        return ""
+    return f"""
+    QFrame#sidebar, QFrame#contentPanel {{
+        border-image: url("{frame}") 32 32 32 32 stretch stretch;
+        border-width: 14px;
+        border-radius: 0;
+        background: {c['bg_panel']};
+    }}
+    QPushButton {{
+        border-image: url("{button}") 0 8 0 8 stretch stretch;
+        border-width: 0px 8px;
+        border-radius: 0;
+        background: transparent;
+        color: #ECDFC2;
+        padding: 6px 14px;
+        min-height: 21px;
+    }}
+    QPushButton:hover {{
+        border-image: url("{button_hover}") 0 8 0 8 stretch stretch;
+        color: #FFE7A6;
+    }}
+    QPushButton:pressed {{
+        border-image: url("{button_press}") 0 8 0 8 stretch stretch;
+        color: #FFFFFF;
+    }}
+    QPushButton:disabled {{
+        border-image: url("{button_disabled}") 0 8 0 8 stretch stretch;
+        color: {c['text_disabled']};
+    }}
+    QPushButton#navButton {{
+        border-image: none;
+        border: 1px solid transparent;
+        background: transparent;
+    }}
+    QPushButton#navButton:checked {{
+        border-image: none;
+        border: 1px solid {c['olive_dim']};
+        background: {c['bg_elevated']};
+    }}
     """
 
 

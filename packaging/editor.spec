@@ -29,6 +29,10 @@ if data_dir.is_dir():
 icon_pack = ROOT / "assets" / "icons" / "xray"
 if icon_pack.is_dir():
     datas.append((str(icon_pack), "assets/icons/xray"))
+# Bundled X-Ray UI chrome (frames, buttons) for the game-skinned shell.
+chrome_pack = ROOT / "assets" / "chrome" / "xray"
+if chrome_pack.is_dir():
+    datas.append((str(chrome_pack), "assets/chrome/xray"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))
