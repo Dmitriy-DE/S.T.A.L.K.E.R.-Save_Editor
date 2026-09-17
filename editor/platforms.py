@@ -440,12 +440,16 @@ def discover_helper(
 
 def _dedupe_paths(paths: Sequence[Path]) -> tuple[Path, ...]:
     result: list[Path] = []
-    seen: set[Path] = set()
+    seen: set[str] = set()
     for path in paths:
         value = Path(path)
-        if value in seen:
+        # Collapse the same directory reached through different symlinked
+        # prefixes (e.g. ~/.steam/steam vs ~/.local/share/Steam), so a save
+        # folder is never searched — and its files never listed — twice.
+        key = os.path.realpath(value)
+        if key in seen:
             continue
-        seen.add(value)
+        seen.add(key)
         result.append(value)
     return tuple(result)
 
@@ -1408,6 +1412,33 @@ def _save_directory_candidates(
             _add_proton_candidates(candidates, game)
             if game.edition == "original":
                 candidates.append(game.install_dir / "_appdata_" / "savedgames")
+
+    # Orphaned installs: Steam can drop a game's manifest while keeping its
+    # ``_appdata_/savedgames`` folder (the classic X-Ray save location), e.g.
+    # when the original game is uninstalled but its saves are kept.  Probe
+    # every Steam library for the release's known install-dir names directly,
+    # so those saves are still found without a manifest.
+    if key != "stalker2":
+        libraries = steam_libraries(
+            system=name,
+            environ=env,
+            home=home_path,
+            filesystem_root=filesystem_root,
+            registry_reader=registry_reader,
+            steam_library_roots=steam_library_roots,
+        )
+        for release in _RELEASES:
+            if release.game_id != key or release.edition != "original":
+                continue
+            if (
+                selected_release_id is not None
+                and _RELEASE_ID_BY_APP_ID.get(release.app_id) != selected_release_id
+            ):
+                continue
+            for library in libraries:
+                common = library / "steamapps" / "common"
+                for folder in release.install_dirs:
+                    candidates.append(common / folder / "_appdata_" / "savedgames")
 
     return _dedupe_paths(candidates)
 
