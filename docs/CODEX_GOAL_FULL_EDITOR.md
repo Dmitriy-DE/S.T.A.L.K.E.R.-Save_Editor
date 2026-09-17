@@ -95,7 +95,7 @@ make check
 make test
 make run
 make web-serve
-make web-deploy — обновить https://stalker2-save-editor.pages.dev
+make web-deploy — обновить https://stalker-save-editor.pages.dev
 
 ## Когда останавливаться
 

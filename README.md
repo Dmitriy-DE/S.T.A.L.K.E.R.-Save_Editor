@@ -116,7 +116,7 @@ make web-serve      # http://localhost:8765
 WebAssembly. Сервера у приложения нет.
 
 Онлайн-версия работает здесь:
-**<https://stalker2-save-editor.pages.dev>**
+**<https://stalker-save-editor.pages.dev>**
 
 Обновляется одной командой `make web-deploy` (Cloudflare Pages). Сервера у приложения нет — отдаётся только статика, а
 редактор целиком исполняется в браузере посетителя.
