@@ -343,3 +343,22 @@ li { margin: 3px 0; }
   border-color: var(--olive-dim);
   background: var(--bg-elevated);
 }
+
+/* Finish the game skin: inputs, selects, scrollbars, checkboxes. */
+input[type="search"], input[type="text"], input[type="number"], select {
+  border-image: url("chrome/frame_thin.png") 10 10 10 10 stretch stretch;
+  border-width: 8px;
+  border-radius: 0;
+  background: var(--bg-base);
+  color: var(--text);
+  padding: 4px 8px;
+}
+input[type="checkbox"] { accent-color: var(--olive); width: 15px; height: 15px; }
+* { scrollbar-color: var(--olive-dim) var(--bg-base); scrollbar-width: thin; }
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: var(--bg-base); border: 1px solid var(--border-subtle); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--border), var(--olive-dim), var(--border));
+  border: 1px solid var(--border);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--olive-dim); }

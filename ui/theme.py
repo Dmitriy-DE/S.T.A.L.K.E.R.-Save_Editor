@@ -316,12 +316,28 @@ def _chrome_stylesheet(c: dict[str, str]) -> str:
     """
 
     frame = _chrome_url("frame.png")
+    field = _chrome_url("frame_thin.png")
     button = _chrome_url("button.png")
     button_hover = _chrome_url("button_hover.png")
     button_press = _chrome_url("button_press.png")
     button_disabled = _chrome_url("button_disabled.png")
-    if not (frame and button and button_hover and button_press and button_disabled):
+    check_off = _chrome_url("check_off.png")
+    check_on = _chrome_url("check_on.png")
+    if not (frame and field and button and button_hover and button_press and button_disabled):
         return ""
+    check_css = ""
+    if check_off and check_on:
+        check_css = f"""
+    QCheckBox::indicator {{
+        width: 18px; height: 18px;
+        border-image: url("{check_off}") 6 6 6 6 stretch stretch;
+        border-width: 6px;
+    }}
+    QCheckBox::indicator:checked {{
+        border-image: url("{check_on}") 6 6 6 6 stretch stretch;
+        border-width: 6px;
+    }}
+    """
     return f"""
     QFrame#sidebar, QFrame#contentPanel {{
         border-image: url("{frame}") 32 32 32 32 stretch stretch;
@@ -335,8 +351,8 @@ def _chrome_stylesheet(c: dict[str, str]) -> str:
         border-radius: 0;
         background: transparent;
         color: #ECDFC2;
-        padding: 6px 14px;
-        min-height: 21px;
+        padding: 7px 16px;
+        min-height: 24px;
     }}
     QPushButton:hover {{
         border-image: url("{button_hover}") 0 8 0 8 stretch stretch;
@@ -354,12 +370,48 @@ def _chrome_stylesheet(c: dict[str, str]) -> str:
         border-image: none;
         border: 1px solid transparent;
         background: transparent;
+        min-height: 0;
     }}
     QPushButton#navButton:checked {{
         border-image: none;
         border: 1px solid {c['olive_dim']};
         background: {c['bg_elevated']};
     }}
+    QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
+        border-image: url("{field}") 10 10 10 10 stretch stretch;
+        border-width: 8px;
+        border-radius: 0;
+        background: {c['bg_base']};
+        color: {c['text']};
+        padding: 3px 8px;
+        selection-background-color: {c['olive_dim']};
+    }}
+    QComboBox QAbstractItemView {{
+        background: {c['bg_elevated']};
+        border: 1px solid {c['border']};
+        selection-background-color: {c['olive_dim']};
+        selection-color: {c['bg_base']};
+    }}
+    QScrollBar:vertical {{
+        background: {c['bg_base']}; width: 14px; margin: 0; border: 1px solid {c['border_subtle']};
+    }}
+    QScrollBar::handle:vertical {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+            stop:0 {c['border']}, stop:0.5 {c['olive_dim']}, stop:1 {c['border']});
+        min-height: 24px; border: 1px solid {c['border']};
+    }}
+    QScrollBar::handle:vertical:hover {{ background: {c['olive_dim']}; }}
+    QScrollBar:horizontal {{
+        background: {c['bg_base']}; height: 14px; margin: 0; border: 1px solid {c['border_subtle']};
+    }}
+    QScrollBar::handle:horizontal {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 {c['border']}, stop:0.5 {c['olive_dim']}, stop:1 {c['border']});
+        min-width: 24px; border: 1px solid {c['border']};
+    }}
+    QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
+    QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
+    {check_css}
     """
 
 
