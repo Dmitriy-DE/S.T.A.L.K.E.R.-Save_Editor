@@ -112,6 +112,32 @@ def test_atlas_icon_for_key_never_returns_glyph() -> None:
     assert resolver.atlas_icon_for_key("unknown", size=24) is None
 
 
+def test_bundled_pack_resolves_icons_without_any_install(qtbot) -> None:
+    """The shipped pack must render real icons with no catalog and no game."""
+
+    from ui.xray_assets import _BUNDLED_ICON_DIR
+
+    if not (_BUNDLED_ICON_DIR / "wpn_vintorez.png").is_file():
+        pytest.skip("icon pack not built in this checkout")
+
+    resolver = XRayIconResolver(None)  # no catalog, no install
+    glyph = category_icon("item", size=30).pixmap(30, 30).toImage()
+    for key in ("wpn_vintorez", "medkit", "bandage", "af_medusa"):
+        icon = resolver.icon_for_key(key, "item", size=30)
+        assert icon.pixmap(30, 30).toImage() != glyph
+
+
+def test_bundled_pack_beats_glyph_for_unpacked_key(qtbot) -> None:
+    from ui.xray_assets import _BUNDLED_ICON_DIR
+
+    resolver = XRayIconResolver(None)
+    # A key that is not in the pack stays a glyph, never a crash.
+    missing = resolver.icon_for_key("totally_unknown_key", "ammo", size=30)
+    glyph = category_icon("ammo", size=30).pixmap(30, 30).toImage()
+    assert missing.pixmap(30, 30).toImage() == glyph
+    assert _BUNDLED_ICON_DIR.name == "xray"
+
+
 def test_donor_only_discovered_when_own_game_missing(tmp_path: Path, monkeypatch) -> None:
     import ui.inventory_view as view
 

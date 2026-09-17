@@ -314,7 +314,7 @@ function itemGlyphCategory(category) {
   return ITEM_GLYPH_CATEGORIES.has(value) ? value : "item";
 }
 
-function itemGlyph(item) {
+function itemCategoryGlyph(item) {
   const category = itemGlyphCategory(item.category);
   const glyph = document.createElement("span");
   glyph.className = `zone-item-glyph zone-item-glyph-${category}`;
@@ -325,6 +325,27 @@ function itemGlyph(item) {
     ? label
     : `${label}; официальный atlas ${item.icon_texture ?? "ui_icon_equipment"} [${item.icon_x}, ${item.icon_y}]`;
   return glyph;
+}
+
+function itemGlyph(item) {
+  // Prefer the shipped icon pack (icons/<item-key>.png); fall back to the
+  // drawn category glyph when the key has no packed art. The pack travels
+  // with the site, so icons are present without any game install.
+  const key = item.type_key;
+  if (!key) {
+    return itemCategoryGlyph(item);
+  }
+  const img = document.createElement("img");
+  img.className = "zone-item-icon";
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.alt = `Иконка: ${key}`;
+  img.title = key;
+  img.src = `icons/${encodeURIComponent(key)}.png`;
+  img.addEventListener("error", () => {
+    img.replaceWith(itemCategoryGlyph(item));
+  });
+  return img;
 }
 
 function upgradeDefinitionsFor(item) {
