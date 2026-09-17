@@ -486,3 +486,37 @@ def test_manual_steam_root_uses_its_installed_game_and_proton_save(tmp_path: Pat
         environ={},
         home=home,
     )
+
+
+def test_orphaned_install_saves_found_without_manifest(tmp_path: Path) -> None:
+    """A kept ``_appdata_/savedgames`` is searched even with no Steam manifest.
+
+    Steam can uninstall the original game (dropping its ``appmanifest``) while
+    the player keeps the save folder.  Discovery must still probe the known
+    install-dir names directly, or those saves become invisible.
+    """
+
+    steam = tmp_path / "home" / ".local" / "share" / "Steam"
+    saves = steam / "steamapps" / "common" / "Stalker Call of Pripyat" / "_appdata_" / "savedgames"
+    saves.mkdir(parents=True)
+    (saves / "autosave.scop").write_bytes(b"\x00")
+
+    paths = save_search_paths(
+        "stalker-cop",
+        system="Linux",
+        environ={},
+        home=tmp_path / "home",
+        filesystem_root=tmp_path,
+        steam_library_roots=(steam,),
+    )
+    assert saves in {Path(p) for p in paths}
+    assert saves in set(
+        save_directories(
+            "stalker-cop",
+            system="Linux",
+            environ={},
+            home=tmp_path / "home",
+            filesystem_root=tmp_path,
+            steam_library_roots=(steam,),
+        )
+    )
