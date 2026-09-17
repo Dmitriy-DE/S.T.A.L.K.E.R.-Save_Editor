@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from editor.service import EditorService
 from save_format import inspect_save
 from ui.main_window import LocalSnapshot, MainWindow
+from ui.theme import COLORS
 
 
 def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None:
@@ -35,7 +36,7 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
         "Найденные сейвы",
         "Настройки",
     ]
-    assert "#111516" in QApplication.instance().styleSheet()
+    assert COLORS["bg_base"] in QApplication.instance().styleSheet()
 
     qtbot.mouseClick(window.nav_buttons[1], Qt.MouseButton.LeftButton)
     assert window.tabs.currentIndex() == 1
