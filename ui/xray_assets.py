@@ -10,6 +10,7 @@ an icon was found.
 from __future__ import annotations
 
 import struct
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import QRect, Qt
@@ -20,6 +21,20 @@ from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
 _ICON_CELL_SIZE = 50
+
+
+def _bundled_icon_dir() -> Path:
+    """Locate the shipped icon pack in-repo and inside a PyInstaller bundle."""
+
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidate = Path(meipass) / "assets" / "icons" / "xray"
+        if candidate.is_dir():
+            return candidate
+    return Path(__file__).resolve().parent.parent / "assets" / "icons" / "xray"
+
+
+_BUNDLED_ICON_DIR = _bundled_icon_dir()
 _RGBA_FORMAT = QImage.Format.Format_RGBA8888
 _CATEGORY_COLORS = {
     "ammo": QColor("#e5c36a"),
@@ -251,6 +266,36 @@ class XRayIconResolver:
         self._atlas_cache: dict[Path, QImage | None] = {}
         self._packed_atlas_cache: dict[tuple[Path, str], QImage | None] = {}
         self._icon_cache: dict[tuple[object, ...], QIcon] = {}
+        self._bundled_cache: dict[tuple[str, int], QIcon | None] = {}
+
+    def _bundled_icon(self, key: str, *, size: int) -> QIcon | None:
+        """Return the shipped icon for ``key``, or ``None`` if not packed.
+
+        The pack is extracted from the official atlas by
+        :mod:`tools.build_icon_pack` and travels with the app, so icons are
+        present with no game install at runtime.
+        """
+
+        cache_key = (key, size)
+        if cache_key in self._bundled_cache:
+            return self._bundled_cache[cache_key]
+        icon: QIcon | None = None
+        path = _BUNDLED_ICON_DIR / f"{key}.png"
+        if path.is_file():
+            image = QImage(str(path))
+            if not image.isNull():
+                icon = QIcon(
+                    QPixmap.fromImage(
+                        image.scaled(
+                            size,
+                            size,
+                            Qt.AspectRatioMode.KeepAspectRatio,
+                            Qt.TransformationMode.SmoothTransformation,
+                        )
+                    )
+                )
+        self._bundled_cache[cache_key] = icon
+        return icon
 
     def icon_for(self, definition: ItemDefinition, *, size: int = 30) -> QIcon:
         cache_key = (
@@ -264,7 +309,9 @@ class XRayIconResolver:
         )
         if cache_key in self._icon_cache:
             return self._icon_cache[cache_key]
-        icon = self._atlas_icon(definition, size=size)
+        icon = self._bundled_icon(definition.key, size=size)
+        if icon is None:
+            icon = self._atlas_icon(definition, size=size)
         if icon is None and self._donor is not None:
             icon = self._donor.atlas_icon_for_key(definition.key, size=size)
         if icon is None:
@@ -273,6 +320,9 @@ class XRayIconResolver:
         return icon
 
     def icon_for_key(self, key: str, category: str | None = None, size: int = 30) -> QIcon:
+        bundled = self._bundled_icon(key, size=size)
+        if bundled is not None:
+            return bundled
         definition = self.catalog.resolve(key) if self.catalog is not None else None
         if definition is not None:
             return self.icon_for(definition, size=size)

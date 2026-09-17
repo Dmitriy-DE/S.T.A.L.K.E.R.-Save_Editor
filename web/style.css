@@ -186,6 +186,16 @@ table.grid td:nth-child(10) { min-width: 190px; }
 .upgrade-editor button { padding: 4px 7px; font-size: 12px; }
 
 .item-icon-cell { color: var(--text); }
+.zone-item-icon {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  vertical-align: middle;
+  image-rendering: auto;
+  background: linear-gradient(145deg, #30342f, #151918);
+  border: 1px solid #4a4536;
+}
 .zone-item-glyph {
   display: inline-block;
   position: relative;

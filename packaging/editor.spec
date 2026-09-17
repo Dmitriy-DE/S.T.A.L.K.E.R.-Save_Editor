@@ -25,6 +25,10 @@ for filename in ("README.md", "STATUS.md"):
 data_dir = ROOT / "data"
 if data_dir.is_dir():
     datas.append((str(data_dir), "data"))
+# Bundled inventory icon pack, so icons are present without a game install.
+icon_pack = ROOT / "assets" / "icons" / "xray"
+if icon_pack.is_dir():
+    datas.append((str(icon_pack), "assets/icons/xray"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))
