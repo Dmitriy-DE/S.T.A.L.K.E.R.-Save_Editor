@@ -73,6 +73,98 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         font-size: 13px;
     }}
     QMainWindow, QWidget#appRoot {{ background: {c['bg_base']}; }}
+    QWidget#launcher {{
+        background: #090A08;
+    }}
+    QFrame#launcherHeader {{
+        background: {c['bg_panel']};
+        border: 1px solid {c['border']};
+    }}
+    QLabel#launcherBrand {{
+        background: transparent;
+        color: {c['olive']};
+        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }}
+    QLabel#launcherTitle {{
+        background: transparent;
+        color: {c['text']};
+        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+    }}
+    QLabel#launcherSubtitle, QLabel#launcherPanelHint {{
+        background: transparent;
+        color: {c['text_secondary']};
+        font-size: 11px;
+    }}
+    QFrame#launcherGamesPanel, QFrame#launcherSavesPanel {{
+        background: {c['bg_panel']};
+        border: 1px solid {c['border']};
+    }}
+    QLabel#launcherPanelHeading {{
+        background: transparent;
+        color: {c['olive']};
+        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+    }}
+    QListWidget#launcherGameList {{
+        background: {c['bg_base']};
+        border: 1px solid {c['border_subtle']};
+        outline: none;
+    }}
+    QListWidget#launcherGameList::item {{
+        border-bottom: 1px solid {c['border_subtle']};
+        color: {c['text_secondary']};
+        padding: 13px 10px;
+    }}
+    QListWidget#launcherGameList::item:hover {{
+        background: {c['bg_hover']};
+        color: {c['text']};
+    }}
+    QListWidget#launcherGameList::item:selected {{
+        background: {c['bg_elevated']};
+        border-left: 3px solid {c['olive']};
+        color: {c['olive']};
+    }}
+    QTableWidget#launcherSaveTable {{
+        background: {c['bg_base']};
+        border: 1px solid {c['border_subtle']};
+        gridline-color: {c['border_subtle']};
+        outline: none;
+    }}
+    QLabel#launcherStatus {{
+        background: transparent;
+        color: {c['text_secondary']};
+        padding: 3px 0;
+    }}
+    QLabel#launcherPathCount {{
+        background: transparent;
+        color: {c['olive_dim']};
+        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
+        font-size: 10px;
+    }}
+    QPushButton#launcherPrimaryButton {{
+        color: #1A180F;
+        background: {c['olive']};
+        border-color: {c['olive']};
+        font-weight: 700;
+    }}
+    QPushButton#launcherPrimaryButton:hover {{
+        background: #E0B457;
+        border-color: #E0B457;
+    }}
+    QPushButton#launcherSecondaryButton, QPushButton#launcherOpenButton,
+    QPushButton#launcherBackButton {{
+        color: {c['olive']};
+        border-color: {c['olive_dim']};
+    }}
+    QPushButton#launcherBackButton {{ padding: 5px 10px; }}
     QFrame#titleBar {{
         background: {c['bg_panel']};
         border-bottom: 1px solid {c['border']};
@@ -339,7 +431,8 @@ def _chrome_stylesheet(c: dict[str, str]) -> str:
     }}
     """
     return f"""
-    QFrame#sidebar, QFrame#contentPanel {{
+    QFrame#sidebar, QFrame#contentPanel,
+    QFrame#launcherHeader, QFrame#launcherGamesPanel, QFrame#launcherSavesPanel {{
         border-image: url("{frame}") 32 32 32 32 stretch stretch;
         border-width: 14px;
         border-radius: 0;
