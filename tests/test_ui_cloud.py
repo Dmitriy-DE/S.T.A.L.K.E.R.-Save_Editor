@@ -134,6 +134,23 @@ def test_cloud_view_does_not_start_helper_on_open(qtbot, synthetic_save: bytes, 
     assert "не подключ" in view.status_label.text().lower()
 
 
+def test_cloud_view_prefills_the_discovered_helper_without_starting_it(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    helper = tmp_path / "steam-cloud-file-manager"
+    created: list[FakeCloudTransport] = []
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: created.append(FakeCloudTransport(synthetic_save))
+        or created[-1],
+        helper_finder=lambda: helper,
+    )
+    qtbot.addWidget(view)
+
+    assert view.helper_edit.text() == str(helper)
+    assert created == []
+
+
 def test_cloud_view_missing_helper_is_explicit_and_has_no_transport_write(
     qtbot, synthetic_save: bytes
 ) -> None:

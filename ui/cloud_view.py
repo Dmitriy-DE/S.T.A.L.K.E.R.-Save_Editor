@@ -67,6 +67,7 @@ class CloudSnapshot:
             read_inventory=True,
             edit_money=True,
             edit_stacks=True,
+            experimental_fields=frozenset({"edit_money"}),
         )
     )
 
@@ -206,7 +207,13 @@ class CloudView(QWidget):
         self.service = service
         self.worker_factory = worker_factory
         self.helper_finder = helper_finder
-        self.helper_path = Path(helper_path).expanduser() if helper_path is not None else None
+        self.helper_path = (
+            Path(helper_path).expanduser()
+            if helper_path is not None
+            else self.helper_finder()
+        )
+        if self.helper_path is not None:
+            self.helper_path = self.helper_path.expanduser()
         self.backup_dir = (
             Path(backup_dir).expanduser()
             if backup_dir is not None

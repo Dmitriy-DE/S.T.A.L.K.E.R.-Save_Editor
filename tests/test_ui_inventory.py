@@ -159,6 +159,7 @@ def test_read_only_capabilities_disable_money_and_stack_staging(
 
     assert not window.money_spin.isEnabled()
     assert not window.money_stage_button.isEnabled()
+    assert window.money_card_value.text() == "100"
     window._stage_stack_change(0x30000001, 3)
     assert window.staged_counts == {}
 
@@ -174,6 +175,26 @@ def test_unknown_display_name_is_honest_and_handle_is_visible(
     handle = model.data(model.index(0, model.HANDLE_COLUMN), Qt.ItemDataRole.DisplayRole)
     assert name == "Неизвестный объект"
     assert handle.startswith("0x300000")
+
+
+def test_inventory_layout_keeps_names_and_editor_fields_readable(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    info = inspect_save(synthetic_save, with_inventory=True)
+    window._render_snapshot(
+        LocalSnapshot(path=tmp_path / "fixture.sav", data=synthetic_save, info=info)
+    )
+
+    view = window.inventory_view
+    header = view.table.horizontalHeader()
+    assert view.scroll_area.widgetResizable() is True
+    assert header.sectionResizeMode(view.model.NAME_COLUMN).name == "Interactive"
+    assert view.table.minimumWidth() >= 1100
+    assert view.table.minimumHeight() >= 220
+    assert view.count_spin.minimumWidth() >= 180
+    assert view.condition_spin.minimumWidth() >= 180
 
 
 def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(
@@ -200,7 +221,7 @@ def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(
     assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == item.display_name
     assert model.data(model.index(0, model.WEIGHT_COLUMN), Qt.ItemDataRole.DisplayRole) == "неизвестно"
     assert window.format_badge.text() == f"ФОРМАТ: {COP_FORMAT.title}"
-    assert window.location_card_value.text() == "неизвестно"
+    assert window.location_card_value.text() == "не разобрано"
     assert window.inventory_view.count_spin.maximum() == 65535
 
 

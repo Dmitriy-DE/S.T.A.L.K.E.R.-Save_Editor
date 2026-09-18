@@ -434,7 +434,41 @@ def discover_helper(
                     continue
                 seen.add(resolved)
                 candidates.append(resolved)
-    candidates.sort(key=lambda path: (path.stat().st_mtime_ns, str(path)), reverse=True)
+
+        if not windows:
+            # Linux release archives are commonly extracted into a directory
+            # under Downloads. Inspect only the known executable names one
+            # level below that directory; do not recurse through user data.
+            for directory_pattern in (
+                "SteamCloudFileManager*",
+                "*steam*cloud*file*manager*",
+            ):
+                for directory in root.glob(directory_pattern):
+                    if not directory.is_dir():
+                        continue
+                    for filename in ("steam-cloud-file-manager", "SteamCloudFileManager"):
+                        resolved = (directory / filename).expanduser()
+                        if resolved in seen or not _is_helper_file(resolved, windows=False):
+                            continue
+                        seen.add(resolved)
+                        candidates.append(resolved)
+
+    def _has_adjacent_steam_api(path: Path) -> bool:
+        if windows:
+            return any(
+                (path.parent / name).is_file()
+                for name in ("steam_api64.dll", "steam_api.dll")
+            )
+        return (path.parent / "libsteam_api.so").is_file()
+
+    candidates.sort(
+        key=lambda path: (
+            _has_adjacent_steam_api(path),
+            path.stat().st_mtime_ns,
+            str(path),
+        ),
+        reverse=True,
+    )
     return candidates[0] if candidates else None
 
 

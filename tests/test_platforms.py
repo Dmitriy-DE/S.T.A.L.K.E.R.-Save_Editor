@@ -86,6 +86,27 @@ def test_discover_helper_uses_explicit_unicode_path_first(tmp_path: Path) -> Non
     assert found == helper
 
 
+@pytest.mark.skipif(os.name == "nt", reason="the case covers POSIX helper layout")
+def test_discover_helper_prefers_extracted_binary_with_neighbor_library(
+    tmp_path: Path,
+) -> None:
+    downloads = tmp_path / "Downloads"
+    downloads.mkdir()
+    appimage = downloads / "SteamCloudFileManager-1.3.5.AppImage"
+    appimage.write_bytes(b"appimage")
+    appimage.chmod(0o755)
+    extracted = downloads / "SteamCloudFileManager-1.3.5-linux-x86_64"
+    extracted.mkdir()
+    helper = extracted / "steam-cloud-file-manager"
+    helper.write_bytes(b"helper")
+    helper.chmod(0o755)
+    (extracted / "libsteam_api.so").write_bytes(b"library")
+
+    found = discover_helper(system="Linux", environ={}, home=tmp_path)
+
+    assert found == helper
+
+
 def test_discover_helper_returns_none_when_missing(tmp_path: Path) -> None:
     assert discover_helper(system="Linux", environ={}, home=tmp_path) is None
 
