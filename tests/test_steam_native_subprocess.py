@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
+import threading
+from pathlib import Path
 
 import pytest
 
@@ -11,18 +14,50 @@ import editor.steam_native as steam_native
 from steam_cloud import APP_ID, CloudFile, SteamCloudError
 
 
+class _FakeProcess:
+    def __init__(self, args, *, stdout: str = "", stderr: str = "") -> None:
+        self.args = args
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode: int | None = None
+        self.killed = False
+        self.communicate_timeouts: list[float | None] = []
+
+    def communicate(self, timeout=None):
+        self.communicate_timeouts.append(timeout)
+        self.returncode = 0
+        return self.stdout, self.stderr
+
+    def poll(self):
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+        self.returncode = -9
+
+
 def test_native_list_timeout_becomes_a_bounded_cloud_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A hung Steam API child must not hang the caller forever."""
 
-    calls: list[dict[str, object]] = []
+    calls: list[_FakeProcess] = []
 
-    def fake_run(*args, **kwargs):
-        calls.append({"args": args, "kwargs": kwargs})
-        raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
+    def fake_popen(command, **_kwargs):
+        process = _FakeProcess(command)
+        calls.append(process)
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
+        def timeout_communicate(timeout=None):
+            process.communicate_timeouts.append(timeout)
+            if timeout is not None:
+                raise subprocess.TimeoutExpired(command, timeout)
+            process.returncode = -9
+            return "", ""
+
+        process.communicate = timeout_communicate
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
@@ -34,7 +69,8 @@ def test_native_list_timeout_becomes_a_bounded_cloud_error(
         worker.list_files()
 
     assert len(calls) == 1
-    assert calls[0]["kwargs"]["timeout"] == 7.5
+    assert calls[0].communicate_timeouts == [7.5, None]
+    assert calls[0].killed is True
 
 
 def test_native_list_decodes_child_file_records(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -51,12 +87,10 @@ def test_native_list_decodes_child_file_records(monkeypatch: pytest.MonkeyPatch)
         ],
     }
 
-    def fake_run(*args, **kwargs):
-        return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout=json.dumps(response) + "\n", stderr=""
-        )
+    def fake_popen(command, **_kwargs):
+        return _FakeProcess(command, stdout=json.dumps(response) + "\n")
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
@@ -76,10 +110,19 @@ def test_initial_native_list_timeout_selects_helper_once(
 ) -> None:
     calls = 0
 
-    def fake_run(*args, **kwargs):
+    def fake_popen(command, **_kwargs):
         nonlocal calls
         calls += 1
-        raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
+        process = _FakeProcess(command)
+
+        def timeout_communicate(timeout=None):
+            if timeout is not None:
+                raise subprocess.TimeoutExpired(command, timeout)
+            process.returncode = -9
+            return "", ""
+
+        process.communicate = timeout_communicate
+        return process
 
     class FakeHelper:
         def __init__(self, path, *, log=None):
@@ -108,7 +151,7 @@ def test_initial_native_list_timeout_selects_helper_once(
         helper_instances.append(helper)
         return helper
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
@@ -132,7 +175,7 @@ def test_native_read_and_write_use_isolated_payload_files(
 ) -> None:
     seen: list[bytes] = []
 
-    def fake_run(command, **kwargs):
+    def fake_popen(command, **_kwargs):
         if "read" in command:
             output = command[command.index("--out") + 1]
             with open(output, "wb") as handle:
@@ -142,9 +185,9 @@ def test_native_read_and_write_use_isolated_payload_files(
             with open(command[command.index("--in") + 1], "rb") as handle:
                 seen.append(handle.read())
             response = {"type": "Ok"}
-        return subprocess.CompletedProcess(command, 0, json.dumps(response) + "\n", "")
+        return _FakeProcess(command, stdout=json.dumps(response) + "\n")
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
     worker = worker_type(helper_path=None)
@@ -155,3 +198,81 @@ def test_native_read_and_write_use_isolated_payload_files(
     worker.write_file("slot.sav", b"edited")
 
     assert seen == [b"edited"]
+
+
+def test_close_kills_an_active_native_child(monkeypatch: pytest.MonkeyPatch) -> None:
+    started = threading.Event()
+    released = threading.Event()
+    processes: list[_FakeProcess] = []
+
+    class BlockingProcess(_FakeProcess):
+        def communicate(self, timeout=None):
+            self.communicate_timeouts.append(timeout)
+            started.set()
+            released.wait(2)
+            return self.stdout, self.stderr
+
+        def kill(self):
+            super().kill()
+            released.set()
+
+    def fake_popen(command, **_kwargs):
+        process = BlockingProcess(command)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    worker = steam_native.SteamNativeSubprocessWorker(timeout=10)
+    worker.start()
+    worker.app_id = APP_ID
+    errors: list[Exception] = []
+
+    def run_list() -> None:
+        try:
+            worker.list_files()
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=run_list)
+    thread.start()
+
+    assert started.wait(1)
+    worker.close()
+    thread.join(1)
+
+    assert not thread.is_alive()
+    assert processes[0].killed is True
+    assert errors and isinstance(errors[0], SteamCloudError)
+
+
+def test_frozen_worker_uses_console_native_entrypoint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    gui = tmp_path / ("SaveEditor.exe" if sys.platform == "win32" else "SaveEditor")
+    native = gui.with_name("SaveEditor-native" + gui.suffix)
+    native.touch()
+    monkeypatch.setattr(sys, "executable", str(gui))
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+
+    worker = steam_native.SteamNativeSubprocessWorker()
+    worker.app_id = APP_ID
+
+    assert worker._command("list")[0] == str(native)
+
+
+def test_wait_persisted_caps_each_native_list_to_remaining_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worker = steam_native.SteamNativeSubprocessWorker(timeout=15)
+    worker.app_id = APP_ID
+    timeouts: list[float | None] = []
+
+    def fake_native_list(*, timeout=None):
+        timeouts.append(timeout)
+        return []
+
+    monkeypatch.setattr(worker, "_native_list", fake_native_list)
+
+    assert worker.wait_persisted("slot.sav", 4, timeout=0.02) is False
+    assert timeouts
+    assert all(timeout is not None and timeout <= 0.02 for timeout in timeouts)

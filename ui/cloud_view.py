@@ -116,7 +116,10 @@ class CloudOperationWorker(QThread):
                 # for its fallback, so pass it through even when absent.
                 self.progress.emit("Steam Cloud: подключение…")
                 transport = self.worker_factory(self.helper_path)
+                self.transport = transport
                 created_transport = True
+                if self.isInterruptionRequested():
+                    raise SaveError("Steam Cloud operation отменена")
                 transport.start()
                 transport.connect(self.app_id)
                 files = transport.list_files()
@@ -177,6 +180,17 @@ class CloudOperationWorker(QThread):
                 except Exception:
                     pass
             self.failed.emit(f"{type(exc).__name__}: {exc}")
+
+    def cancel(self) -> None:
+        """Request cancellation and kill an active native child if present."""
+
+        self.requestInterruption()
+        transport = self.transport
+        if transport is not None:
+            try:
+                transport.close()
+            except Exception:
+                pass
 
 
 class CloudView(QWidget):
@@ -569,12 +583,25 @@ class CloudView(QWidget):
         down - used to risk exactly that.
         """
 
+        if not self.stop_worker(30_000):
+            self.status_label.setText("Cloud operation ещё выполняется; окно закрыто не будет")
+            event.ignore()
+            return
+        super().closeEvent(event)
+
+    def stop_worker(self, timeout_ms: int) -> bool:
+        """Cancel the cloud thread and prove it stopped before widget teardown."""
+
         thread = self._thread
         if thread is not None and thread.isRunning():
-            thread.quit()
-            thread.wait(10_000)
+            thread.cancel()
+            if not thread.wait(timeout_ms):
+                return False
+        if self._thread is thread:
+            self._thread = None
+        self.set_busy(False)
         self._close_transport()
-        super().closeEvent(event)
+        return True
 
     def _close_transport(self) -> None:
         transport, self.transport = self.transport, None

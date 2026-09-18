@@ -1,6 +1,6 @@
 # Состояние и пробелы — 2026-09-16
 
-## 2026-09-19 — v0.5.5: bounded native cloud transport
+## 2026-09-19 — v0.5.6: bounded native cloud transport
 
 Пользовательский `v0.5.4` зависал на вкладке Steam Cloud после загрузки
 `steamclient.so`: старый UI worker вызывал `ctypes`-native backend напрямую, а
@@ -10,11 +10,13 @@
 может выбрать bounded helper fallback, повторные cloud-операции backend не
 переключают.
 
-Локальные проверки: `431 passed`, `make check`, source Qt smoke и standalone
-`SaveEditor --steam-native-op list` прошли; оба smoke вернули `0 Data/*.sav`.
-До публикации v0.5.5 это было dirty-worktree исправление. После публикации
-обязательными внешними ограничениями всё равно остаются live read/write
-пользовательского сейва, игровая загрузка и повторное сохранение в игре.
+В corrective pass добавлены отдельный console `SaveEditor-native` для frozen
+Windows/Linux child protocol, реальный killable `Popen` handle, cancel перед
+закрытием Qt и hard deadline для `wait_persisted`; CI packaged smoke запускает
+этот child на обеих ОС. Локальные проверки: `435 passed`, `make check`, source
+Qt smoke и standalone child smoke прошли; live read/write пользовательского
+сейва, игровая загрузка и повторное сохранение в игре остаются отдельными
+внешними ограничениями.
 
 ## 2026-09-18 — v0.5.1: UX по фидбеку
 

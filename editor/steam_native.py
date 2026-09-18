@@ -29,6 +29,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -309,6 +310,8 @@ class SteamNativeSubprocessWorker:
         self.app_id: int | None = None
         self._helper: SteamWorker | None = None
         self._closed = False
+        self._process_lock = threading.Lock()
+        self._active_process: subprocess.Popen[str] | None = None
 
     def start(self) -> None:
         if self._closed:
@@ -326,7 +329,20 @@ class SteamNativeSubprocessWorker:
 
     def _command(self, op: str) -> list[str]:
         if getattr(sys, "frozen", False):
-            return [sys.executable, "--steam-native-op", op, "--app-id", str(self.app_id or APP_ID)]
+            native_executable = Path(sys.executable).with_name(
+                "SaveEditor-native" + Path(sys.executable).suffix
+            )
+            if not native_executable.is_file():
+                raise SteamCloudError(
+                    f"Упакованный Steam native child не найден: {native_executable}"
+                )
+            return [
+                str(native_executable),
+                "--steam-native-op",
+                op,
+                "--app-id",
+                str(self.app_id or APP_ID),
+            ]
         return [
             sys.executable,
             "-m",
@@ -368,6 +384,26 @@ class SteamNativeSubprocessWorker:
         suffix = f" stderr={detail}" if detail else ""
         raise SteamCloudError(f"Steam native child не вернул JSON{suffix}")
 
+    def _set_active_process(self, process: subprocess.Popen[str]) -> bool:
+        with self._process_lock:
+            if self._closed:
+                return False
+            self._active_process = process
+            return True
+
+    def _clear_active_process(self, process: subprocess.Popen[str]) -> None:
+        with self._process_lock:
+            if self._active_process is process:
+                self._active_process = None
+
+    @staticmethod
+    def _kill_process(process: subprocess.Popen[str]) -> None:
+        try:
+            if process.poll() is None:
+                process.kill()
+        except OSError:
+            pass
+
     def _run_native(
         self,
         op: str,
@@ -375,8 +411,16 @@ class SteamNativeSubprocessWorker:
         name: str | None = None,
         payload: bytes | None = None,
         read_output: bool = False,
+        timeout: float | None = None,
     ) -> tuple[dict[str, Any], bytes | None]:
+        if self._closed:
+            raise SteamCloudError("Steam Cloud worker уже закрыт")
         command = self._command(op)
+        operation_timeout = (
+            self.timeout
+            if timeout is None
+            else min(self.timeout, max(0.001, timeout))
+        )
         output_path: Path | None = None
         with tempfile.TemporaryDirectory(prefix="stalker2-native-cloud-") as directory:
             root = Path(directory)
@@ -390,31 +434,44 @@ class SteamNativeSubprocessWorker:
                 output_path = root / "output.bin"
                 command.extend(("--out", str(output_path)))
             try:
-                completed = subprocess.run(
+                process = subprocess.Popen(
                     command,
                     cwd=str(root),
                     env=self._child_environment(),
                     stdin=subprocess.DEVNULL,
-                    capture_output=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     text=True,
                     encoding="utf-8",
                     errors="replace",
-                    check=False,
-                    timeout=self.timeout,
                 )
-            except subprocess.TimeoutExpired as exc:
-                raise SteamCloudError(
-                    f"Steam Cloud native operation {op} превысила таймаут {self.timeout:g} с"
-                ) from exc
             except OSError as exc:
                 raise SteamCloudError(f"Не удалось запустить Steam native child: {exc}") from exc
-            if completed.returncode != 0:
-                detail = completed.stderr.strip()[-1000:]
+            if not self._set_active_process(process):
+                self._kill_process(process)
+                raise SteamCloudError("Steam native child остановлен: worker закрыт")
+            try:
+                try:
+                    stdout, stderr = process.communicate(timeout=operation_timeout)
+                except subprocess.TimeoutExpired as exc:
+                    self._kill_process(process)
+                    try:
+                        process.communicate()
+                    except OSError:
+                        pass
+                    raise SteamCloudError(
+                        f"Steam Cloud native operation {op} превысила таймаут "
+                        f"{operation_timeout:g} с"
+                    ) from exc
+            finally:
+                self._clear_active_process(process)
+            if process.returncode != 0:
+                detail = stderr.strip()[-1000:]
                 suffix = f" stderr={detail}" if detail else ""
                 raise SteamCloudError(
-                    f"Steam native child завершился с кодом {completed.returncode}{suffix}"
+                    f"Steam native child завершился с кодом {process.returncode}{suffix}"
                 )
-            response = self._decode_child_response(completed.stdout, completed.stderr)
+            response = self._decode_child_response(stdout, stderr)
             data = None
             if read_output:
                 assert output_path is not None
@@ -424,8 +481,8 @@ class SteamNativeSubprocessWorker:
                     raise SteamCloudError(f"Steam native child не создал read output: {exc}") from exc
             return response, data
 
-    def _native_list(self) -> list[CloudFile]:
-        response, _ = self._run_native("list")
+    def _native_list(self, *, timeout: float | None = None) -> list[CloudFile]:
+        response, _ = self._run_native("list", timeout=timeout)
         if response.get("type") != "Files" or not isinstance(response.get("files"), list):
             raise SteamCloudError(f"Steam native child вернул неожиданный list response: {response}")
         files: list[CloudFile] = []
@@ -507,19 +564,28 @@ class SteamNativeSubprocessWorker:
         if self._helper is not None:
             return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
         deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
             if any(
                 item.name == filename
                 and item.size == expected_size
                 and item.is_persisted
-                for item in self.list_files()
+                for item in self._native_list(timeout=remaining)
             ):
                 return True
-            time.sleep(min(2.0, max(0.0, deadline - time.monotonic())))
-        return False
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            time.sleep(min(2.0, remaining))
 
     def close(self) -> None:
         self._closed = True
+        with self._process_lock:
+            process = self._active_process
+        if process is not None:
+            self._kill_process(process)
         if self._helper is not None:
             try:
                 self._helper.close()
@@ -557,12 +623,11 @@ def run_cli_op(args: list[str]) -> int:
         sys.stdout.write(json.dumps(obj) + "\n")
         sys.stdout.flush()
 
-    # steam_appid.txt in the cwd helps SteamAPI_Init resolve the app without a
-    # Steam-launched process; harmless if the client ignores it.
-    try:
-        Path("steam_appid.txt").write_text(str(parsed.app_id), encoding="utf-8")
-    except OSError:
-        pass
+    # Set the app identity in the short-lived child instead of writing a
+    # steam_appid.txt beside whatever directory the caller happens to use.
+    os.environ.update(
+        {"SteamAppId": str(parsed.app_id), "SteamGameId": str(parsed.app_id)}
+    )
 
     try:
         worker = SteamNativeWorker()

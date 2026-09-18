@@ -1,13 +1,18 @@
 # Проверка и выпуск
 
-## Выпуск v0.5.5
+## Выпуск v0.5.6
 
-v0.5.5 закрывает зависание Steam Cloud, при котором `v0.5.4` останавливался
+v0.5.6 закрывает зависание Steam Cloud, при котором `v0.5.4` останавливался
 после загрузки `steamclient.so` и не возвращал управление Qt. Нативные
 `init/connect/list/read/write` теперь выполняются в отдельном one-shot child
-процессе; parent transport убивает его по hard timeout и показывает ошибку или
-выбирает bounded helper fallback только при первичном `list`. После выбора
-транспорта автоматического переключения во время upload нет.
+процессе; frozen bundle запускает отдельный console `SaveEditor-native`, parent
+transport держит `Popen` handle и может убить child по hard timeout или при
+закрытии окна. Bounded helper fallback выбирается только при первичном `list`.
+После выбора транспорта автоматического переключения во время upload нет.
+
+Tag `v0.5.5` был остановлен до GitHub Release после pre-release review: в нём
+не было отдельного console child entrypoint для Windows и packaged smoke этого
+пути. Пользовательский релиз — только v0.5.6 после corrective CI.
 
 Перед публикацией обязательны: полный pytest, `make check`, tag-triggered
 Linux/Windows standalone workflow, packaged diagnostic и smoke именно из

@@ -49,7 +49,11 @@ if TARGET == "linux" and (ROOT / "vendor").is_dir():
 hiddenimports = ["ooz"] if importlib.util.find_spec("ooz") is not None else []
 
 a = Analysis(
-    [str(ROOT / "packaging" / "gui_entry.py"), str(ROOT / "packaging" / "diagnostic.py")],
+    [
+        str(ROOT / "packaging" / "gui_entry.py"),
+        str(ROOT / "packaging" / "diagnostic.py"),
+        str(ROOT / "packaging" / "native_entry.py"),
+    ],
     pathex=[str(ROOT)],
     binaries=[],
     datas=datas,
@@ -78,6 +82,7 @@ def _entry(script_name):
 
 gui_entry = _entry("gui_entry.py")
 diagnostic_entry = _entry("diagnostic.py")
+native_entry = _entry("native_entry.py")
 gui = EXE(
     pyz,
     [*runtime_scripts, gui_entry],
@@ -100,9 +105,21 @@ diagnostic = EXE(
     upx=False,
     console=True,
 )
+native = EXE(
+    pyz,
+    [*runtime_scripts, native_entry],
+    exclude_binaries=True,
+    name="SaveEditor-native",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    console=True,
+)
 COLLECT(
     gui,
     diagnostic,
+    native,
     a.binaries,
     a.datas,
     strip=False,
