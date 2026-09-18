@@ -25,6 +25,11 @@ for filename in ("README.md", "STATUS.md"):
 data_dir = ROOT / "data"
 if data_dir.is_dir():
     datas.append((str(data_dir), "data"))
+# Application icon (original artwork) for the window/taskbar.
+for _icon in ("app_icon.svg", "app_icon_256.png", "app_icon_128.png", "app_icon_64.png"):
+    _icon_path = ROOT / "assets" / _icon
+    if _icon_path.is_file():
+        datas.append((str(_icon_path), "assets"))
 # Bundled inventory icon pack, so icons are present without a game install.
 icon_pack = ROOT / "assets" / "icons" / "xray"
 if icon_pack.is_dir():

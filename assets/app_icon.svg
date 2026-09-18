@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#2a2f26"/>
+      <stop offset="60%" stop-color="#191c16"/>
+      <stop offset="100%" stop-color="#0c0e0a"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e0a13a"/>
+      <stop offset="55%" stop-color="#c07d1e"/>
+      <stop offset="100%" stop-color="#8a5410"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="44" fill="url(#bg)" stroke="#3d4534" stroke-width="4"/>
+  <!-- original hazard-ring emblem: outer ring -->
+  <circle cx="128" cy="128" r="78" fill="none" stroke="url(#metal)" stroke-width="10" opacity="0.9"/>
+  <!-- three original wedge marks (not the trademarked trefoil proportions) -->
+  <g fill="url(#metal)">
+    <path d="M128 128 L150 58 A74 74 0 0 0 106 58 Z"/>
+    <path d="M128 128 L190 168 A74 74 0 0 0 212 128 A74 74 0 0 0 190 168 Z" opacity="0"/>
+    <path d="M128 128 L196 150 A74 74 0 0 1 160 196 Z"/>
+    <path d="M128 128 L96 196 A74 74 0 0 1 60 150 Z"/>
+  </g>
+  <circle cx="128" cy="128" r="20" fill="#0c0e0a" stroke="url(#metal)" stroke-width="6"/>
+  <circle cx="128" cy="128" r="7" fill="#e0a13a"/>
+  <text x="128" y="236" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#c07d1e" letter-spacing="6">ZONE</text>
+</svg>

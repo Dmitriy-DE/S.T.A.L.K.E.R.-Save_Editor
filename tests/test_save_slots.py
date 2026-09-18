@@ -204,8 +204,10 @@ def test_save_slots_view_empty_result_is_informational(qtbot, tmp_path: Path) ->
 
     assert view.table.rowCount() == 0
     assert "не ошибка" in view.empty_label.text().casefold()
+    # The scanned directories now live in the tooltip, keeping the visible
+    # summary to a single line so the slot table stays the focus.
     for path in searched:
-        assert str(path) in view.search_paths_label.text()
+        assert str(path) in view.search_paths_label.toolTip()
 
 
 def test_save_slots_view_close_waits_for_discovery_worker(
