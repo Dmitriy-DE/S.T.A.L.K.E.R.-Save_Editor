@@ -8,12 +8,10 @@ from pathlib import Path
 from typing import Protocol
 
 from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
-    QFileDialog,
-    QFormLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -227,6 +225,7 @@ class CloudView(QWidget):
         self._snapshot: CloudSnapshot | None = None
         self._prepared: PreparedEdit | None = None
         self._thread: CloudOperationWorker | None = None
+        self._auto_connected = False
         self._build_ui()
 
     @property
@@ -246,33 +245,29 @@ class CloudView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        helper_form = QFormLayout()
-        helper_row = QHBoxLayout()
-        self.helper_edit = QLineEdit(str(self.helper_path) if self.helper_path else "")
-        self.helper_edit.setPlaceholderText("Путь к SteamCloudFileManager")
-        helper_row.addWidget(self.helper_edit, 1)
-        self.choose_helper_button = QPushButton("Выбрать…")
-        self.choose_helper_button.clicked.connect(self._choose_helper)
-        helper_row.addWidget(self.choose_helper_button)
-        helper_form.addRow("Steam helper", helper_row)
-        layout.addLayout(helper_form)
+        intro = QLabel(
+            "Облако Steam подключается само в фоне. Выбери сейв в списке, "
+            "отредактируй во вкладках и нажми «Загрузить в облако»."
+        )
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
 
         actions = QHBoxLayout()
-        self.connect_button = QPushButton("Подключить и обновить")
-        self.connect_button.clicked.connect(self.start_connect)
-        actions.addWidget(self.connect_button)
-        self.analyze_button = QPushButton("Скачать и анализировать")
+        self.analyze_button = QPushButton("Скачать выбранный сейв")
         self.analyze_button.setEnabled(False)
         self.analyze_button.clicked.connect(self.analyze_selected)
         actions.addWidget(self.analyze_button)
-        self.upload_button = QPushButton("Загрузить выбранный preview")
+        self.upload_button = QPushButton("Загрузить в облако")
         self.upload_button.setEnabled(False)
         self.upload_button.clicked.connect(self.start_upload)
         actions.addWidget(self.upload_button)
+        self.connect_button = QPushButton("Обновить список")
+        self.connect_button.clicked.connect(self.start_connect)
+        actions.addWidget(self.connect_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
-        self.status_label = QLabel("Steam Cloud: не подключён")
+        self.status_label = QLabel("Steam Cloud: подключаюсь…")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
@@ -286,7 +281,7 @@ class CloudView(QWidget):
         self.table.itemSelectionChanged.connect(self._on_selection_changed)
         layout.addWidget(self.table, 1)
 
-        self.result_label = QLabel("Cloud write не запускался")
+        self.result_label = QLabel("")
         self.result_label.setWordWrap(True)
         self.result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.result_label)
@@ -299,26 +294,22 @@ class CloudView(QWidget):
         self.error_label.setVisible(False)
         layout.addWidget(self.error_label)
 
-    def _choose_helper(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(
-            self,
-            "Выбрать SteamCloudFileManager",
-            str(self.helper_path.parent if self.helper_path else ""),
-            "Steam helper (*.exe *.AppImage *);;Все файлы (*)",
-        )
-        if filename:
-            self.helper_path = Path(filename).expanduser()
-            self.helper_edit.setText(str(self.helper_path))
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        # Connect once, automatically, the first time the tab is shown. The
+        # native worker needs no helper and no manual step; the user just sees
+        # the list appear.
+        if not self._auto_connected:
+            self._auto_connected = True
+            if not self.is_busy and self.transport is None:
+                self.start_connect()
 
     def _resolve_helper(self) -> Path | None:
-        value = self.helper_edit.text().strip()
-        if value:
-            self.helper_path = Path(value).expanduser()
-            return self.helper_path
+        # The native worker needs no helper; the discovered AppImage is only a
+        # fallback. Resolve it silently, never surfacing a path to the user.
         found = self.helper_finder()
         if found is not None:
             self.helper_path = Path(found).expanduser()
-            self.helper_edit.setText(str(self.helper_path))
         return self.helper_path
 
     def _refuse_while_busy(self) -> bool:
@@ -349,10 +340,10 @@ class CloudView(QWidget):
     def start_connect(self) -> None:
         if self._refuse_while_busy():
             return
+        # A helper is optional — the native worker connects without one. Pass
+        # whatever discovery found (possibly None) so the factory can use it
+        # only if it needs the fallback.
         helper = self._resolve_helper()
-        if helper is None:
-            self._on_failed("SteamCloudFileManager не найден; укажи helper явно")
-            return
         self._close_transport()
         self.clear_error()
         self.status_label.setText("Steam Cloud: подключение…")
@@ -524,8 +515,6 @@ class CloudView(QWidget):
     def set_busy(self, busy: bool) -> None:
         for widget in (
             self.connect_button,
-            self.choose_helper_button,
-            self.helper_edit,
             self.table,
             self.analyze_button,
             self.upload_button,
@@ -542,8 +531,6 @@ class CloudView(QWidget):
         if self.is_busy:
             return
         self.connect_button.setEnabled(not busy)
-        self.choose_helper_button.setEnabled(not busy)
-        self.helper_edit.setEnabled(not busy)
         self.table.setEnabled(not busy)
         self.analyze_button.setEnabled(not busy and self.selected_file() is not None and self.transport is not None)
         self.upload_button.setEnabled(not busy and self._prepared is not None and self.transport is not None)
