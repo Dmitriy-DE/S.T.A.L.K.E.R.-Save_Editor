@@ -1,8 +1,8 @@
 # Проверка и выпуск
 
-## Кандидат выпуска v0.4.2
+## Кандидат corrective-выпуска v0.4.3
 
-Выпуск v0.4.2 содержит Zone-библиотеку сохранений для всех четырёх
+Выпуск v0.4.3 содержит Zone-библиотеку сохранений для всех четырёх
 зарегистрированных игр, импорт внешнего файла без установленной игры и явный
 вход в S.T.A.L.K.E.R. 2 Steam Cloud flow с helper. Локальный редактор и web
 ядро используют прежние fail-closed backup, CRC/SHA и read-back проверки.
@@ -15,6 +15,11 @@ money staging с явным предупреждением о границе и�
 helper остаётся внешней зависимостью; локальный helper smoke дал `Ping=PONG`,
 `Connect=OK`, `GetFiles=0`, без записи.
 
+Тег `v0.4.2` не был опубликован как GitHub Release: Linux standalone job
+прошёл, а Windows source-test job завершился с `0xC0000409` во время закрытия
+Qt worker. В `v0.4.3` добавлено ожидание worker перед закрытием окна и отдельный
+регрессионный тест для этого жизненного цикла.
+
 Release assets собираются tag-triggered workflow `standalone-build` на
 `ubuntu-24.04` и `windows-2025`; к GitHub Release прикрепляются portable Linux
 `.tar.gz`, Debian `.deb`, Windows `.zip` и `SHA256SUMS`. Packaged diagnostic
@@ -25,8 +30,8 @@ Release assets собираются tag-triggered workflow `standalone-build` н
 ## Состояние публикации
 
 В Git хранятся только исходники; исторические архивы удалены из дерева и
-остаются в истории. Этот текст описывает исходный кандидат; GitHub Release
-создаётся только после нового tag-triggered CI с Linux и Windows assets.
+остаются в истории. GitHub Release `v0.4.3` создаётся только после
+tag-triggered CI с успешными Linux и Windows jobs и прикреплёнными assets.
 
 ## Текущая CI pipeline (P03)
 

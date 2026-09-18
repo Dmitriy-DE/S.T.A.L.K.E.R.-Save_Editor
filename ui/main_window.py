@@ -1982,6 +1982,12 @@ class MainWindow(QMainWindow):
             )
             event.ignore()
             return
+        if not self.save_slots_view.wait_for_worker():
+            self.status_label.setText(
+                "Поиск сохранений ещё выполняется; закрой окно после завершения"
+            )
+            event.ignore()
+            return
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             self._inspect_thread.quit()
             self._inspect_thread.wait(10_000)

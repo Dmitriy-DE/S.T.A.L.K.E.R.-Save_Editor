@@ -468,6 +468,26 @@ class SaveSlotsView(QWidget):
             self._refresh_pending = False
             QTimer.singleShot(0, self.refresh)
 
+    def wait_for_worker(self, timeout_ms: int = 10_000) -> bool:
+        """Wait for an in-flight discovery before the widget is destroyed."""
+
+        worker = self._worker
+        if worker is None:
+            return True
+        if worker.isRunning():
+            worker.quit()
+            if not worker.wait(timeout_ms):
+                return False
+        self._worker = None
+        self._refresh_pending = False
+        return True
+
+    def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        if not self.wait_for_worker():
+            event.ignore()
+            return
+        event.accept()
+
     def _set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)
         self._searched_paths = tuple(Path(path) for path in discovery.searched_paths)
