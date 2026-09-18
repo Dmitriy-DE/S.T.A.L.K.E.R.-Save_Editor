@@ -589,21 +589,16 @@ def locate_libsteam_api(
                 return candidate
         return None
 
-    # Prefer the copy adjacent to (or extracted from) the known helper.
+    # Cheap lookups first: a copy sitting next to the helper, then any
+    # installed Steamworks game that ships the redistributable.  Extracting an
+    # AppImage is a heavy side effect, so it is the last resort — never done
+    # merely to answer "where is the library".
     helper = discover_helper(system=system, environ=environ, home=home)
     if helper is not None:
-        try:
-            _exe, lib_dir = resolve_helper_command(helper)
-            found = _first_lib(lib_dir)
-            if found is not None:
-                return found
-        except (OSError, RuntimeError):
-            pass
         found = _first_lib(helper.parent)
         if found is not None:
             return found
 
-    # Fall back to any installed Steamworks game that ships the redistributable.
     for game in installed_games(system=name, environ=environ, home=home):
         found = _first_lib(game.install_dir)
         if found is not None:
@@ -612,6 +607,15 @@ def locate_libsteam_api(
             found = _first_lib(game.install_dir / sub)
             if found is not None:
                 return found
+
+    # Last resort: the helper is an AppImage that bundles its own copy; extract
+    # it (no FUSE) and look inside the payload.
+    if helper is not None and helper.suffix.lower() == ".appimage":
+        try:
+            _exe, lib_dir = resolve_helper_command(helper)
+        except (OSError, RuntimeError):
+            return None
+        return _first_lib(lib_dir)
     return None
 
 

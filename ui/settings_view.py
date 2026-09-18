@@ -188,10 +188,15 @@ class SettingsView(QWidget):
             label.setText("Автопоиск: ничего не найдено — задай путь вручную")
 
     def _refresh_hints(self) -> None:
-        game_id = self.selected_game_id
-        self._set_hint(self.steam_hint, self._discover_steam_root())
-        self._set_hint(self.game_hint, self._discover_game_root(game_id))
-        self._set_hint(self.save_hint, self._discover_save_root(game_id))
+        try:
+            game_id = self.selected_game_id
+            self._set_hint(self.steam_hint, self._discover_steam_root())
+            self._set_hint(self.game_hint, self._discover_game_root(game_id))
+            self._set_hint(self.save_hint, self._discover_save_root(game_id))
+        except RuntimeError:
+            # The deferred timer can fire after the view (and its Qt labels)
+            # were torn down; a deleted C++ object is not an error worth raising.
+            return
 
     def _choose_directory(self, edit: QLineEdit) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Выбрать каталог")
