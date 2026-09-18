@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -204,6 +206,26 @@ def test_save_slots_view_empty_result_is_informational(qtbot, tmp_path: Path) ->
     assert "не ошибка" in view.empty_label.text().casefold()
     for path in searched:
         assert str(path) in view.search_paths_label.text()
+
+
+def test_save_slots_view_close_waits_for_discovery_worker(
+    qtbot, tmp_path: Path
+) -> None:
+    started = threading.Event()
+
+    def slow_discovery() -> SaveDiscovery:
+        started.set()
+        time.sleep(0.1)
+        return SaveDiscovery((), (tmp_path,))
+
+    view = SaveSlotsView(discovery_fn=slow_discovery)
+    qtbot.addWidget(view)
+    view.refresh()
+    assert started.wait(2.0)
+
+    view.close()
+
+    assert view._worker is None or not view._worker.isRunning()
 
 
 def test_main_window_reports_missing_slot_as_open_error(qtbot, tmp_path: Path) -> None:
