@@ -1,0 +1,10 @@
+name = "save-editor-downloads"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "save-editor-downloads"
+
+[observability]
+enabled = false
