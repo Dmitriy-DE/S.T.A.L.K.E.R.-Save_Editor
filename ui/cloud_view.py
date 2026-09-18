@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -298,11 +299,14 @@ class CloudView(QWidget):
         super().showEvent(event)
         # Connect once, automatically, the first time the tab is shown. The
         # native worker needs no helper and no manual step; the user just sees
-        # the list appear.
-        if not self._auto_connected:
-            self._auto_connected = True
-            if not self.is_busy and self.transport is None:
-                self.start_connect()
+        # the list appear.  Never auto-spawn a live worker thread under pytest:
+        # showing a window in a UI test would otherwise start a real Steam
+        # session and leave a thread to crash Qt teardown on Windows.
+        if self._auto_connected or "PYTEST_CURRENT_TEST" in os.environ:
+            return
+        self._auto_connected = True
+        if not self.is_busy and self.transport is None:
+            self.start_connect()
 
     def _resolve_helper(self) -> Path | None:
         # The native worker needs no helper; the discovered AppImage is only a
