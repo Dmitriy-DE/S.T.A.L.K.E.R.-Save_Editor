@@ -16,6 +16,7 @@ from PySide6.QtCore import Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -50,10 +51,12 @@ from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .faction_view import FactionView
 from .inventory_view import InventoryView
-from .launcher_view import LauncherView
+from .launcher_view import LauncherView, _slot_family
 from .operation_worker import OperationWorker
 from .save_slots_view import (
+    GAME_TITLES,
     RELEASE_IDS,
+    SaveSlot,
     SaveSlotsView,
     SlotDiscoveryFn,
     discover_save_slots,
@@ -474,6 +477,8 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(10)
 
+        layout.addWidget(self._build_quick_switcher())
+
         cards = QFrame()
         cards_layout = QGridLayout(cards)
         cards_layout.setContentsMargins(0, 0, 0, 0)
@@ -687,6 +692,60 @@ class MainWindow(QMainWindow):
         table.setMinimumHeight(height)
         table.setMaximumHeight(height)
 
+    def _build_quick_switcher(self) -> QWidget:
+        """Compact game+save picker inside the workbench for on-the-fly switching."""
+
+        self._switcher_slots: tuple[SaveSlot, ...] = ()
+        frame = QFrame()
+        frame.setObjectName("metricCard")
+        row = QHBoxLayout(frame)
+        row.setContentsMargins(12, 8, 12, 8)
+        row.setSpacing(8)
+        row.addWidget(QLabel("Игра"))
+        self.switcher_game_combo = QComboBox()
+        self.switcher_game_combo.setMinimumWidth(200)
+        self.switcher_game_combo.currentIndexChanged.connect(self._on_switcher_game_changed)
+        row.addWidget(self.switcher_game_combo)
+        row.addWidget(QLabel("Сейв"))
+        self.switcher_save_combo = QComboBox()
+        self.switcher_save_combo.setMinimumWidth(260)
+        row.addWidget(self.switcher_save_combo, 1)
+        self.switcher_open_button = QPushButton("Открыть")
+        self.switcher_open_button.setEnabled(False)
+        self.switcher_open_button.clicked.connect(self._open_switcher_selection)
+        row.addWidget(self.switcher_open_button)
+        return frame
+
+    def _populate_switcher(self, discovery: object) -> None:
+        slots = tuple(getattr(discovery, "slots", ()) or ())
+        self._switcher_slots = slots
+        families: list[str] = []
+        for slot in slots:
+            family = _slot_family(slot)
+            if family and family not in families:
+                families.append(family)
+        self.switcher_game_combo.blockSignals(True)
+        self.switcher_game_combo.clear()
+        for family in families:
+            self.switcher_game_combo.addItem(GAME_TITLES.get(family, family), family)
+        self.switcher_game_combo.blockSignals(False)
+        if families:
+            self.switcher_game_combo.setCurrentIndex(0)
+        self._on_switcher_game_changed()
+
+    def _on_switcher_game_changed(self, _index: int = -1) -> None:
+        family = self.switcher_game_combo.currentData()
+        self.switcher_save_combo.clear()
+        for slot in self._switcher_slots:
+            if _slot_family(slot) == family:
+                self.switcher_save_combo.addItem(Path(slot.path).name, str(slot.path))
+        self.switcher_open_button.setEnabled(self.switcher_save_combo.count() > 0)
+
+    def _open_switcher_selection(self) -> None:
+        path = self.switcher_save_combo.currentData()
+        if path:
+            self._start_inspect(Path(path))
+
     def _build_inventory_tab(self) -> QWidget:
         self.inventory_view = InventoryView(self)
         self.inventory_view.stage_requested.connect(self._stage_stack_change)
@@ -736,6 +795,7 @@ class MainWindow(QMainWindow):
         self.save_slots_view.open_requested.connect(self._start_inspect)
         self.save_slots_view.discovery_failed.connect(self._on_slot_discovery_failed)
         self.save_slots_view.discovery_ready.connect(self.launcher_view.set_discovery)
+        self.save_slots_view.discovery_ready.connect(self._populate_switcher)
         self.save_slots_view.discovery_failed.connect(self.launcher_view.set_error)
         # Discovery is asynchronous and read-only.  No path is opened as a
         # side effect; the user still has to double-click a row or use the

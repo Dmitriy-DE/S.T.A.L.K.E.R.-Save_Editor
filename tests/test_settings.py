@@ -131,23 +131,13 @@ def test_settings_view_explains_missing_path_and_can_persist_selection(
     qtbot.addWidget(view)
 
     assert str(missing) in view.warning_label.text()
-    view.save_root_edit.setText(str(selected))
+    # Game selection was removed from Settings; the Steam root override is the
+    # only manual field now, and it persists.
+    view.steam_root_edit.setText(str(selected))
     with qtbot.waitSignal(view.settings_changed, timeout=1_000):
         view.save()
 
-    assert load_settings(path=settings_path).settings.save_root("stalker2") == selected
-
-
-def test_settings_view_lists_original_and_enhanced_release_choices(
-    qtbot, tmp_path: Path
-) -> None:
-    view = SettingsView(PathSettings(), settings_path=tmp_path / "settings.json")
-    qtbot.addWidget(view)
-
-    ids = [view.game_combo.itemData(index) for index in range(view.game_combo.count())]
-
-    assert "stalker-soc" in ids
-    assert "stalker-soc-ee" in ids
+    assert load_settings(path=settings_path).settings.steam_root == selected
 
 
 def test_main_window_discovers_from_loaded_manual_save_root(

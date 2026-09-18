@@ -7,7 +7,6 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
-    QComboBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -42,7 +41,7 @@ class SettingsView(QWidget):
         self.settings_path = Path(settings_path).expanduser()
         self.load_error = load_error
         self._build_ui()
-        self._load_game_fields()
+        self._load_fields()
         self._refresh_warning()
 
     def _build_ui(self) -> None:
@@ -64,31 +63,12 @@ class SettingsView(QWidget):
         self.steam_root_edit.setPlaceholderText("Не задано — использовать автопоиск")
         self.steam_hint = self._hint_label()
         form.addRow("Корень Steam", self._path_row(self.steam_root_edit, self.steam_hint))
-
-        self.game_combo = QComboBox()
-        for release in official_releases():
-            self.game_combo.addItem(release.title, release.id)
-        self.game_combo.currentIndexChanged.connect(self._load_game_fields)
-        form.addRow("Игра", self.game_combo)
-
-        self.game_root_edit = QLineEdit()
-        self.game_root_edit.setPlaceholderText("Папка установленной игры")
-        self.game_hint = self._hint_label()
-        form.addRow("Папка игры", self._path_row(self.game_root_edit, self.game_hint))
-
-        self.save_root_edit = QLineEdit()
-        self.save_root_edit.setPlaceholderText("Папка с сохранениями")
-        self.save_hint = self._hint_label()
-        form.addRow("Папка сохранений", self._path_row(self.save_root_edit, self.save_hint))
         layout.addLayout(form)
 
         actions = QHBoxLayout()
         self.save_button = QPushButton("Сохранить настройки")
         self.save_button.clicked.connect(self.save)
         actions.addWidget(self.save_button)
-        self.clear_button = QPushButton("Очистить пути выбранной игры")
-        self.clear_button.clicked.connect(self.clear_current_game)
-        actions.addWidget(self.clear_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
@@ -142,20 +122,10 @@ class SettingsView(QWidget):
             outer.addWidget(hint)
         return container
 
-    @property
-    def selected_game_id(self) -> str:
-        value = self.game_combo.currentData()
-        return str(value)
-
-    def _load_game_fields(self, _index: int = -1) -> None:
-        game_id = self.selected_game_id
-        game_root = self.settings.game_root(game_id)
-        save_root = self.settings.save_root(game_id)
+    def _load_fields(self) -> None:
         self.steam_root_edit.setText(
             str(self.settings.steam_root) if self.settings.steam_root is not None else ""
         )
-        self.game_root_edit.setText(str(game_root) if game_root is not None else "")
-        self.save_root_edit.setText(str(save_root) if save_root is not None else "")
         # Autodiscovery scans Steam libraries on disk; keep it off the
         # construction/critical path so the shell stays responsive.
         QTimer.singleShot(0, self._refresh_hints)
@@ -198,10 +168,7 @@ class SettingsView(QWidget):
 
     def _refresh_hints(self) -> None:
         try:
-            game_id = self.selected_game_id
             self._set_hint(self.steam_hint, self._discover_steam_root())
-            self._set_hint(self.game_hint, self._discover_game_root(game_id))
-            self._set_hint(self.save_hint, self._discover_save_root(game_id))
             self._refresh_found_all()
         except RuntimeError:
             # The deferred timer can fire after the view (and its Qt labels)
@@ -242,22 +209,9 @@ class SettingsView(QWidget):
         return path
 
     def _collect_settings(self) -> PathSettings:
-        game_id = self.selected_game_id
-        settings = self.settings.with_steam_root(
+        return self.settings.with_steam_root(
             self._path_from_text(self.steam_root_edit.text(), "Корень Steam")
         )
-        settings = settings.with_game_root(
-            game_id,
-            self._path_from_text(self.game_root_edit.text(), "Папка игры"),
-        )
-        return settings.with_save_root(
-            game_id,
-            self._path_from_text(self.save_root_edit.text(), "Папка сохранений"),
-        )
-
-    def clear_current_game(self) -> None:
-        self.game_root_edit.clear()
-        self.save_root_edit.clear()
 
     def _refresh_warning(self) -> None:
         messages: list[str] = []
