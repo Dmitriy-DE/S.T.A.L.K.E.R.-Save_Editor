@@ -1,5 +1,19 @@
 # Проверка и выпуск
 
+## Выпуск v0.5.5
+
+v0.5.5 закрывает зависание Steam Cloud, при котором `v0.5.4` останавливался
+после загрузки `steamclient.so` и не возвращал управление Qt. Нативные
+`init/connect/list/read/write` теперь выполняются в отдельном one-shot child
+процессе; parent transport убивает его по hard timeout и показывает ошибку или
+выбирает bounded helper fallback только при первичном `list`. После выбора
+транспорта автоматического переключения во время upload нет.
+
+Перед публикацией обязательны: полный pytest, `make check`, tag-triggered
+Linux/Windows standalone workflow, packaged diagnostic и smoke именно из
+собранного Linux bundle. Реальный download/edit/upload пользовательского
+сейва и game load/re-save в эти gates не входят.
+
 ## Выпуск v0.4.3
 
 Выпуск v0.4.3 содержит Zone-библиотеку сохранений для всех четырёх

@@ -62,6 +62,14 @@ def main(argv: list[str] | None = None) -> int:
     arguments = sys.argv[1:] if argv is None else argv
     if "--diagnostic" in arguments:
         return diagnostic_main(arguments)
+    if "--steam-native-op" in arguments:
+        # Isolated one-shot native cloud op (spawned by the subprocess worker).
+        # Runs without creating a Qt window, so a hung SteamAPI call stays in
+        # this short-lived child that the parent can kill on timeout.
+        from editor.steam_native import run_cli_op
+
+        index = arguments.index("--steam-native-op")
+        return run_cli_op(arguments[index + 1 :])
     if "--help" in arguments or "-h" in arguments:
         print("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений.")
         return 0

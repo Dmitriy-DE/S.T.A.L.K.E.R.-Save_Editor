@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from editor.steam_backend import make_cloud_worker
+from editor.steam_native import SteamNativeSubprocessWorker
 from steam_cloud import SteamCloudError
 
 
@@ -45,3 +46,10 @@ def test_fallback_to_helper_when_native_unavailable():
 def test_no_helper_and_no_native_raises():
     with pytest.raises(SteamCloudError):
         make_cloud_worker(None, native_factory=_FailNative, helper_factory=_Helper)
+
+
+def test_default_backend_uses_killable_native_transport():
+    worker = make_cloud_worker(None, native_factory=None)
+
+    assert isinstance(worker, SteamNativeSubprocessWorker)
+    worker.close()
