@@ -1,11 +1,13 @@
 # Состояние и пробелы — 2026-09-16
 
-## 2026-09-18 — текущий corrective-кандидат v0.4.3
+## 2026-09-18 — опубликован v0.4.3
 
 Тег `v0.4.2` оставлен неизменяемым, но GitHub Release для него не создавался:
 Linux standalone job прошёл, а Windows source-test job завершился с
-`0xC0000409` при завершении Qt worker. В текущий кандидат добавлено ожидание
-save-discovery worker при закрытии окна и регрессионный тест на этот сценарий.
+`0xC0000409` при завершении Qt worker. В `v0.4.3` добавлено ожидание
+save-discovery worker при закрытии окна и регрессионный тест на этот сценарий;
+standalone workflow #35350988272 прошёл на Linux и Windows, assets опубликованы
+в [GitHub Release v0.4.3](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.4.3).
 
 На ветке release-кандидата исправлены проблемы, видимые в старом бинарнике
 `v0.4.0`:
