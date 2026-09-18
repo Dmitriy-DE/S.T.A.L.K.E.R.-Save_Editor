@@ -30,9 +30,16 @@ evidence. Их нельзя выдавать за совместимые с ор
 
 Плюс остаются browser резервных копий с восстановлением и Desktop-вкладка Steam
 Cloud с явным connect/list/analyze/upload. Cloud transport сейчас привязан к
-S.T.A.L.K.E.R. 2 (`app_id=1643320`) и отдельному `SteamCloudFileManager`;
-универсальная обратная загрузка Cloud для оригинальной трилогии и Enhanced
-Edition не заявляется.
+S.T.A.L.K.E.R. 2 (`app_id=1643320`). С v0.5.0 облако работает через
+**встроенный нативный worker** (`editor/steam_native.py`, ctypes поверх
+`libsteam_api`) — без стороннего процесса и без FUSE. Если нативный worker не
+поднимается, редактор автоматически откатывается на прежний
+`SteamCloudFileManager`, распаковывая его AppImage **без FUSE**
+(`--appimage-extract`), что убирает прежний краш `libfuse.so.2`. Библиотека
+Valve `libsteam_api` — единственная неустранимая зависимость (её нельзя
+заменить чистым Python); она берётся из установленной игры/Steam или из
+payload helper'а. Универсальная обратная загрузка Cloud для оригинальной
+трилогии и Enhanced Edition не заявляется.
 PyInstaller собирает Linux `tar.gz`/`.deb` и Windows `zip`; обе цели проходят
 CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
 wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`.
@@ -103,13 +110,15 @@ actor-owned record, нажать preview и сохранить новую коп
 вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
 `WriteFile` автоматического повтора нет.
 
-Steam нужен только для cloud-режима, helper устанавливается отдельно. Локальная
-папка установленной игры редактору для remote snapshot не нужна, но реальный
-Steam/helper сценарий без установленной игры в текущем проходе не подтверждён;
-это внешний runtime-gate, а не результат Linux synthetic tests.
-Cloud-upload из автоматических тестов блокируется в коде: `SteamWorker`
-отказывает в `Connect`/`WriteFile` для app_id игры под pytest, пока не
-выставлен `STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.
+Steam (запущенный клиент) нужен только для cloud-режима. Нативный worker
+инициализируется прямо в процессе редактора; отдельный helper больше не
+обязателен и служит лишь fallback. В build-сессии подтверждён живой
+`init + connect + list` облака S.T.A.L.K.E.R. 2; реальный
+`download → edit → upload` реальных сейвов проверяет пользователь, когда сейвы
+есть в облаке (в сессии их не было). Cloud-upload из автоматических тестов
+блокируется в коде: и `SteamWorker`, и `SteamNativeWorker` отказывают в
+`Connect`/`WriteFile` для app_id игры под pytest, пока не выставлен
+`STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.
 
 ## Веб-версия
 
