@@ -110,19 +110,27 @@ def gate_mutations_for_release(
 
     if release_id in _GAMEPLAY_VERIFIED_RELEASES:
         return capabilities
+    # An unverified release may still expose a narrowly scoped, explicitly
+    # experimental mutation.  Keep every other mutation read-only, and retain
+    # the marker so each UI can show the evidence boundary next to the control.
+    experimental = capabilities.experimental_fields
     return replace(
         capabilities,
-        edit_money=False,
-        edit_stacks=False,
-        move_items=False,
-        add_items=False,
-        remove_items=False,
-        edit_durability=False,
-        edit_upgrades=False,
-        edit_relations=False,
-        edit_player_faction=False,
-        edit_placement=False,
-        experimental_fields=frozenset(),
+        edit_money=capabilities.edit_money and "edit_money" in experimental,
+        edit_stacks=capabilities.edit_stacks and "edit_stacks" in experimental,
+        move_items=capabilities.move_items and "move_items" in experimental,
+        add_items=capabilities.add_items and "add_items" in experimental,
+        remove_items=capabilities.remove_items and "remove_items" in experimental,
+        edit_durability=capabilities.edit_durability
+        and "edit_durability" in experimental,
+        edit_upgrades=capabilities.edit_upgrades and "edit_upgrades" in experimental,
+        edit_relations=capabilities.edit_relations
+        and "edit_relations" in experimental,
+        edit_player_faction=capabilities.edit_player_faction
+        and "edit_player_faction" in experimental,
+        edit_placement=capabilities.edit_placement
+        and "edit_placement" in experimental,
+        experimental_fields=experimental,
     )
 
 

@@ -449,7 +449,7 @@ def prepare(
         )
     if stacks and not format_.capabilities.edit_stacks:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает правку стаков до игрового evidence"
+            f"Формат {format_.release_id}: правка стаков остаётся read-only до игрового evidence"
         )
     if adds and not format_.capabilities.add_items:
         raise sf.SaveError(

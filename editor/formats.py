@@ -118,6 +118,7 @@ class _Stalker2Format:
             edit_money=True,
             edit_stacks=True,
             catalog=True,
+            experimental_fields=frozenset({"edit_money"}),
         ),
     )
 

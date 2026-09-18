@@ -63,6 +63,9 @@ def test_stalker_shell_metadata_tracks_real_snapshot(
     assert window.format_badge.text() == "UE5 GVAS: НЕ ПОДТВЕРЖДЁН"
     assert window.money_card_value.text() == "100"
     assert window.inventory_card_value.text() == "2"
+    assert window.location_card_value.text() == "не разобрано"
+    assert window.time_card_value.text() == "не разобрано"
+    assert "экспериментальное" in window.support_label.text()
 
 
 def test_apply_theme_does_not_reconfigure_the_application_twice() -> None:

@@ -53,7 +53,7 @@ COLORS = {
     "success": "#7E8F3E",
     "text": "#D8D2BE",
     "text_secondary": "#8E8974",
-    "text_disabled": "#5C5A4C",
+    "text_disabled": "#BEB397",
 }
 
 
