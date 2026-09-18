@@ -23,9 +23,19 @@ def _slot(path: Path, family: str) -> SaveSlot:
     )
 
 
+def _settle(win: MainWindow) -> None:
+    # MainWindow starts a background save-discovery worker; let it finish so it
+    # never outlives the widget and crashes Qt teardown on Windows.
+    try:
+        win.save_slots_view.wait_for_worker()
+    except Exception:
+        pass
+
+
 def test_switcher_populates_and_opens(qtbot, tmp_path, monkeypatch):
     win = MainWindow(EditorService())
     qtbot.addWidget(win)
+    _settle(win)
     a = tmp_path / "cs1.sav"
     a.write_bytes(b"x")
     win._populate_switcher(SaveDiscovery((_slot(a, "clear_sky"),), ()))
@@ -43,6 +53,7 @@ def test_switcher_populates_and_opens(qtbot, tmp_path, monkeypatch):
 def test_switcher_empty_discovery_disables_open(qtbot):
     win = MainWindow(EditorService())
     qtbot.addWidget(win)
+    _settle(win)
     win._populate_switcher(SaveDiscovery((), ()))
     assert win.switcher_game_combo.count() == 0
     assert not win.switcher_open_button.isEnabled()
