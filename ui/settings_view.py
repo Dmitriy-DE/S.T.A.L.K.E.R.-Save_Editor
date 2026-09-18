@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -147,7 +147,9 @@ class SettingsView(QWidget):
         )
         self.game_root_edit.setText(str(game_root) if game_root is not None else "")
         self.save_root_edit.setText(str(save_root) if save_root is not None else "")
-        self._refresh_hints()
+        # Autodiscovery scans Steam libraries on disk; keep it off the
+        # construction/critical path so the shell stays responsive.
+        QTimer.singleShot(0, self._refresh_hints)
 
     @staticmethod
     def _first_existing(paths: Iterable[Path]) -> Path | None:
