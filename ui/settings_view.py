@@ -92,6 +92,15 @@ class SettingsView(QWidget):
         actions.addStretch(1)
         layout.addLayout(actions)
 
+        found_caption = QLabel("Автопоиск нашёл (все игры сразу — выбирать не нужно):")
+        found_caption.setWordWrap(True)
+        layout.addWidget(found_caption)
+        self.found_all_label = QLabel("Сканирую…")
+        self.found_all_label.setWordWrap(True)
+        self.found_all_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.found_all_label.setStyleSheet("color: palette(mid);")
+        layout.addWidget(self.found_all_label)
+
         self.status_label = QLabel("")
         self.status_label.setWordWrap(True)
         self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -193,10 +202,29 @@ class SettingsView(QWidget):
             self._set_hint(self.steam_hint, self._discover_steam_root())
             self._set_hint(self.game_hint, self._discover_game_root(game_id))
             self._set_hint(self.save_hint, self._discover_save_root(game_id))
+            self._refresh_found_all()
         except RuntimeError:
             # The deferred timer can fire after the view (and its Qt labels)
             # were torn down; a deleted C++ object is not an error worth raising.
             return
+
+    def _refresh_found_all(self) -> None:
+        steam = self._discover_steam_root()
+        lines = [f"Корень Steam: {steam}" if steam else "Корень Steam: не найден"]
+        for release in official_releases():
+            game = self._discover_game_root(release.id)
+            save = self._discover_save_root(release.id)
+            if game is None and save is None:
+                continue
+            parts = [release.title]
+            if save is not None:
+                parts.append(f"сейвы: {save}")
+            elif game is not None:
+                parts.append(f"игра: {game}")
+            lines.append(" — ".join(parts))
+        if len(lines) == 1:
+            lines.append("Установленных игр не найдено.")
+        self.found_all_label.setText("\n".join(lines))
 
     def _choose_directory(self, edit: QLineEdit) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Выбрать каталог")
