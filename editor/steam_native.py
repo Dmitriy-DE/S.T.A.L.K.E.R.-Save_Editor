@@ -1,17 +1,20 @@
-"""In-process Steam Cloud worker via ctypes over Valve's ``libsteam_api``.
+"""Steam Cloud workers over Valve's ``libsteam_api``.
 
-This replaces the third-party ``SteamCloudFileManager`` helper as the primary
-cloud backend: no subprocess, no JSON-RPC, no AppImage/FUSE.  It still depends
-on Valve's proprietary ``libsteam_api`` — the only door into Steam Cloud — but
-that library ships with every Steamworks game and with the helper payload, so
-nothing external to the machine is required.
+``SteamNativeWorker`` is the small ctypes implementation executed by the
+short-lived child mode. The UI uses ``SteamNativeSubprocessWorker`` so a native
+call that stops responding can be killed without freezing the editor. This
+replaces the third-party ``SteamCloudFileManager`` helper as the primary cloud
+backend: no FUSE or helper process is needed when Valve's library is available;
+the helper remains a bounded fallback for an initial list failure. It still
+depends on Valve's proprietary ``libsteam_api`` — the only door into Steam
+Cloud — but that library ships with every Steamworks game and with the helper
+payload.
 
-The public surface mirrors :class:`steam_cloud.SteamWorker` (``start``,
+Both public workers mirror :class:`steam_cloud.SteamWorker` (``start``,
 ``connect``, ``close``, ``list_files``, ``read_file``, ``write_file``,
-``sync``, ``wait_persisted``) so it is a drop-in for the Cloud tab's
-``worker_factory``.  When ``libsteam_api`` is missing or ``SteamAPI_Init``
-fails (no running Steam client, app not owned), construction/``start`` raises
-and :mod:`editor.steam_backend` silently falls back to the helper worker.
+``sync``, ``wait_persisted``) so they are drop-ins for the Cloud tab's
+``worker_factory``. The child mode reports missing libraries, failed init, and
+timeouts as data; the parent can then show an error or select the helper.
 
 NOTE: the live download/upload round-trip cannot be verified without an
 installed game and a running Steam session; it is exercised only against a
@@ -21,7 +24,11 @@ ctypes fake.  Treat live behaviour as user-verified.
 from __future__ import annotations
 
 import ctypes
+import json
 import os
+import subprocess
+import sys
+import tempfile
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -33,6 +40,7 @@ from steam_cloud import (
     SAVE_PREFIX,
     CloudFile,
     SteamCloudError,
+    SteamWorker,
     _refuse_automated_live_session,
 )
 
@@ -273,4 +281,343 @@ class SteamNativeWorker:
         return False
 
 
-__all__ = ["SteamNativeUnavailableError", "SteamNativeWorker"]
+class SteamNativeSubprocessWorker:
+    """Killable parent-side transport for the native Steam API.
+
+    ``ctypes`` cannot interrupt a native call that stops responding.  The Qt
+    worker therefore must never call :class:`SteamNativeWorker` directly.  Each
+    native operation runs in a short-lived child process and is bounded by a
+    hard timeout.  A failed initial ``list`` can select the existing helper
+    fallback; failures after that selection are returned to the transaction and
+    are never retried through another backend.
+    """
+
+    def __init__(
+        self,
+        *,
+        helper_path: str | Path | None = None,
+        helper_factory: Callable[..., Any] = SteamWorker,
+        log: Callable[[str], None] | None = None,
+        timeout: float = 15.0,
+    ) -> None:
+        if timeout <= 0:
+            raise ValueError("native cloud timeout must be positive")
+        self.helper_path = Path(helper_path).expanduser() if helper_path is not None else None
+        self.helper_factory = helper_factory
+        self.log = log or (lambda _s: None)
+        self.timeout = timeout
+        self.app_id: int | None = None
+        self._helper: SteamWorker | None = None
+        self._closed = False
+
+    def start(self) -> None:
+        if self._closed:
+            raise SteamCloudError("Steam Cloud worker уже закрыт")
+
+    def connect(self, app_id: int = APP_ID) -> None:
+        _refuse_automated_live_session(app_id, "Connect")
+        if app_id != APP_ID:
+            raise SteamCloudError(
+                f"Нативный worker поддерживает только app_id={APP_ID}, запрошен {app_id}"
+            )
+        if self._closed:
+            raise SteamCloudError("Steam Cloud worker уже закрыт")
+        self.app_id = app_id
+
+    def _command(self, op: str) -> list[str]:
+        if getattr(sys, "frozen", False):
+            return [sys.executable, "--steam-native-op", op, "--app-id", str(self.app_id or APP_ID)]
+        return [
+            sys.executable,
+            "-m",
+            "ui",
+            "--steam-native-op",
+            op,
+            "--app-id",
+            str(self.app_id or APP_ID),
+        ]
+
+    def _child_environment(self) -> dict[str, str]:
+        environment = os.environ.copy()
+        if not getattr(sys, "frozen", False):
+            project_root = Path(__file__).resolve().parents[1]
+            current = environment.get("PYTHONPATH")
+            environment["PYTHONPATH"] = os.pathsep.join(
+                value for value in (str(project_root), current) if value
+            )
+        return environment
+
+    @staticmethod
+    def _decode_child_response(stdout: str, stderr: str) -> dict[str, Any]:
+        for line in reversed(stdout.splitlines()):
+            text = line.strip()
+            if not text:
+                continue
+            try:
+                response = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(response, dict):
+                raise SteamCloudError("Steam native child вернул JSON не-объект")
+            kind = response.get("type")
+            if kind in ("Error", "Unavailable"):
+                message = str(response.get("message") or "неизвестная ошибка")
+                raise SteamCloudError(f"Steam native child: {message}")
+            return response
+        detail = stderr.strip()[-1000:]
+        suffix = f" stderr={detail}" if detail else ""
+        raise SteamCloudError(f"Steam native child не вернул JSON{suffix}")
+
+    def _run_native(
+        self,
+        op: str,
+        *,
+        name: str | None = None,
+        payload: bytes | None = None,
+        read_output: bool = False,
+    ) -> tuple[dict[str, Any], bytes | None]:
+        command = self._command(op)
+        output_path: Path | None = None
+        with tempfile.TemporaryDirectory(prefix="stalker2-native-cloud-") as directory:
+            root = Path(directory)
+            if name is not None:
+                command.extend(("--name", name))
+            if payload is not None:
+                input_path = root / "input.bin"
+                input_path.write_bytes(payload)
+                command.extend(("--in", str(input_path)))
+            if read_output:
+                output_path = root / "output.bin"
+                command.extend(("--out", str(output_path)))
+            try:
+                completed = subprocess.run(
+                    command,
+                    cwd=str(root),
+                    env=self._child_environment(),
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    check=False,
+                    timeout=self.timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise SteamCloudError(
+                    f"Steam Cloud native operation {op} превысила таймаут {self.timeout:g} с"
+                ) from exc
+            except OSError as exc:
+                raise SteamCloudError(f"Не удалось запустить Steam native child: {exc}") from exc
+            if completed.returncode != 0:
+                detail = completed.stderr.strip()[-1000:]
+                suffix = f" stderr={detail}" if detail else ""
+                raise SteamCloudError(
+                    f"Steam native child завершился с кодом {completed.returncode}{suffix}"
+                )
+            response = self._decode_child_response(completed.stdout, completed.stderr)
+            data = None
+            if read_output:
+                assert output_path is not None
+                try:
+                    data = output_path.read_bytes()
+                except OSError as exc:
+                    raise SteamCloudError(f"Steam native child не создал read output: {exc}") from exc
+            return response, data
+
+    def _native_list(self) -> list[CloudFile]:
+        response, _ = self._run_native("list")
+        if response.get("type") != "Files" or not isinstance(response.get("files"), list):
+            raise SteamCloudError(f"Steam native child вернул неожиданный list response: {response}")
+        files: list[CloudFile] = []
+        for item in response["files"]:
+            if not isinstance(item, dict):
+                raise SteamCloudError("Steam native child вернул некорректную запись файла")
+            try:
+                files.append(
+                    CloudFile(
+                        name=str(item["name"]),
+                        size=int(item["size"]),
+                        timestamp=int(item["timestamp"]),
+                        is_persisted=bool(item["is_persisted"]),
+                        exists=bool(item["exists"]),
+                    )
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                raise SteamCloudError(
+                    f"Steam native child вернул некорректные поля файла: {item}"
+                ) from exc
+        return files
+
+    def list_files(self) -> list[CloudFile]:
+        if self._closed:
+            raise SteamCloudError("Steam Cloud worker уже закрыт")
+        if self._helper is not None:
+            return self._helper.list_files()
+        try:
+            return self._native_list()
+        except SteamCloudError as native_error:
+            if self.helper_path is None:
+                raise
+            helper = self.helper_factory(self.helper_path, log=self.log)
+            try:
+                helper.start()
+                helper.connect(self.app_id or APP_ID)
+                files = helper.list_files()
+            except Exception as helper_error:
+                try:
+                    helper.close()
+                except Exception:
+                    pass
+                raise SteamCloudError(
+                    f"Нативный Steam Cloud недоступен ({native_error}); helper тоже не ответил: "
+                    f"{helper_error}"
+                ) from helper_error
+            self._helper = helper
+            self.log(f"Steam Cloud: native child недоступен ({native_error}); использую helper")
+            return files
+
+    def read_file(self, filename: str) -> bytes:
+        if self._helper is not None:
+            return self._helper.read_file(filename)
+        response, data = self._run_native("read", name=filename, read_output=True)
+        if response.get("type") != "Ok" or data is None:
+            raise SteamCloudError(f"Steam native child вернул неожиданный read response: {response}")
+        expected_size = response.get("size")
+        if expected_size is not None and int(expected_size) != len(data):
+            raise SteamCloudError(
+                f"Steam native child read size mismatch: {len(data)} != {expected_size}"
+            )
+        return data
+
+    def write_file(self, filename: str, data: bytes) -> None:
+        _refuse_automated_live_session(self.app_id or 0, "WriteFile")
+        if self._helper is not None:
+            self._helper.write_file(filename, data)
+            return
+        response, _ = self._run_native("write", name=filename, payload=bytes(data))
+        if response.get("type") != "Ok":
+            raise SteamCloudError(f"Steam native child вернул неожиданный write response: {response}")
+
+    def sync(self) -> None:
+        if self._helper is not None:
+            self._helper.sync()
+        # The child pumps callbacks after FileWrite and shuts down immediately.
+
+    def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
+        if self._helper is not None:
+            return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if any(
+                item.name == filename
+                and item.size == expected_size
+                and item.is_persisted
+                for item in self.list_files()
+            ):
+                return True
+            time.sleep(min(2.0, max(0.0, deadline - time.monotonic())))
+        return False
+
+    def close(self) -> None:
+        self._closed = True
+        if self._helper is not None:
+            try:
+                self._helper.close()
+            finally:
+                self._helper = None
+
+
+def run_cli_op(args: list[str]) -> int:
+    """One-shot native cloud op for the isolated subprocess worker.
+
+    Runs init+connect and a single operation, prints a JSON line, exits. Kept
+    tiny and window-free so the parent can spawn it with a hard timeout — a
+    hung ``SteamAPI_Init``/``GetFileCount`` (e.g. when the game is not
+    installed) then never freezes the app: the parent kills this process.
+
+    Protocol (stdout, one JSON object):
+      list                      -> {"type":"Files","files":[...]}
+      read --name N --out PATH  -> {"type":"Ok","size":n}
+      write --name N --in PATH  -> {"type":"Ok"}
+    Errors: {"type":"Error"|"Unavailable","message":str}
+    """
+
+    import argparse
+    import base64  # noqa: F401 - kept for future binary framing if needed
+
+    parser = argparse.ArgumentParser(prog="SaveEditor --steam-native-op", add_help=False)
+    parser.add_argument("op", choices=("list", "read", "write"))
+    parser.add_argument("--name")
+    parser.add_argument("--out")
+    parser.add_argument("--in", dest="in_path")
+    parser.add_argument("--app-id", type=int, default=APP_ID)
+    parsed = parser.parse_args(args)
+
+    def emit(obj: dict[str, Any]) -> None:
+        sys.stdout.write(json.dumps(obj) + "\n")
+        sys.stdout.flush()
+
+    # steam_appid.txt in the cwd helps SteamAPI_Init resolve the app without a
+    # Steam-launched process; harmless if the client ignores it.
+    try:
+        Path("steam_appid.txt").write_text(str(parsed.app_id), encoding="utf-8")
+    except OSError:
+        pass
+
+    try:
+        worker = SteamNativeWorker()
+    except SteamNativeUnavailableError as exc:
+        emit({"type": "Unavailable", "message": str(exc)})
+        return 0
+    try:
+        worker.start()
+        worker.connect(parsed.app_id)
+        if parsed.op == "list":
+            files = worker.list_files()
+            emit(
+                {
+                    "type": "Files",
+                    "files": [
+                        {
+                            "name": f.name,
+                            "size": f.size,
+                            "timestamp": f.timestamp,
+                            "is_persisted": f.is_persisted,
+                            "exists": f.exists,
+                        }
+                        for f in files
+                    ],
+                }
+            )
+        elif parsed.op == "read":
+            if not parsed.name or not parsed.out:
+                emit({"type": "Error", "message": "read требует --name и --out"})
+                return 0
+            data = worker.read_file(parsed.name)
+            Path(parsed.out).write_bytes(data)
+            emit({"type": "Ok", "size": len(data)})
+        elif parsed.op == "write":
+            if not parsed.name or not parsed.in_path:
+                emit({"type": "Error", "message": "write требует --name и --in"})
+                return 0
+            payload = Path(parsed.in_path).read_bytes()
+            worker.write_file(parsed.name, payload)
+            emit({"type": "Ok"})
+    except SteamCloudError as exc:
+        emit({"type": "Error", "message": str(exc)})
+    except Exception as exc:
+        emit({"type": "Error", "message": f"{type(exc).__name__}: {exc}"})
+    finally:
+        try:
+            worker.close()
+        except Exception:
+            pass
+    return 0
+
+
+__all__ = [
+    "SteamNativeSubprocessWorker",
+    "SteamNativeUnavailableError",
+    "SteamNativeWorker",
+    "run_cli_op",
+]

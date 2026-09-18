@@ -1,5 +1,21 @@
 # Состояние и пробелы — 2026-09-16
 
+## 2026-09-19 — v0.5.5: bounded native cloud transport
+
+Пользовательский `v0.5.4` зависал на вкладке Steam Cloud после загрузки
+`steamclient.so`: старый UI worker вызывал `ctypes`-native backend напрямую, а
+30-секундный watchdog только менял текст и не мог прервать зависший native
+вызов. Добавлен `SteamNativeSubprocessWorker`: каждая native операция живёт в
+отдельном дочернем процессе с hard timeout; только ошибка первичного `list`
+может выбрать bounded helper fallback, повторные cloud-операции backend не
+переключают.
+
+Локальные проверки: `431 passed`, `make check`, source Qt smoke и standalone
+`SaveEditor --steam-native-op list` прошли; оба smoke вернули `0 Data/*.sav`.
+До публикации v0.5.5 это было dirty-worktree исправление. После публикации
+обязательными внешними ограничениями всё равно остаются live read/write
+пользовательского сейва, игровая загрузка и повторное сохранение в игре.
+
 ## 2026-09-18 — v0.5.1: UX по фидбеку
 
 - **Облако само подключается в фоне.** Поле «Steam helper» убрано целиком
@@ -23,13 +39,14 @@
 
 ## 2026-09-18 — v0.5.0: встроенное облако, автопоиск-подсказки, вёрстка
 
-- **Steam Cloud внутри проекта.** Добавлен `editor/steam_native.py` —
-  in-process worker на `ctypes` поверх `libsteam_api` (ISteamRemoteStorage):
-  init/list/read/write/sync. `editor/steam_backend.py` выбирает native, а при
-  неудаче молча откатывается на helper. Сторонний Rust-проект больше не
-  обязателен. Живьём подтверждён `SteamAPI_Init + connect + list` для S2
-  (app_id 1643320); `GetFiles` вернул 0 (сейвов в облаке не было), поэтому
-  реальный read/write остаётся на пользовательской проверке.
+- **Steam Cloud внутри проекта.** Добавлен `editor/steam_native.py` — native
+  worker на `ctypes` поверх `libsteam_api` (ISteamRemoteStorage), запускаемый
+  через killable child transport: init/list/read/write/sync.
+  `editor/steam_backend.py` выбирает bounded native transport, а при ошибке
+  первичного списка может откатиться на helper. Сторонний Rust-проект больше
+  не обязателен. Live `init + connect + list` подтверждён только локальными
+  smoke-прогонами с пустым списком; реальный read/write остаётся на
+  пользовательской проверке.
 - **Краш `libfuse.so.2` устранён.** Helper-fallback распаковывает AppImage
   через `--appimage-extract` (без FUSE) и запускает внутренний ELF; проверено
   локально (`Ping/Pong`).
