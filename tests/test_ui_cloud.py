@@ -113,7 +113,7 @@ def _prepared(data: bytes, name: str) -> PreparedEdit:
     return EditorService().prepare(data, plan)
 
 
-def test_cloud_view_does_not_start_helper_on_open(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
+def test_cloud_view_does_not_connect_on_construction(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     created: list[FakeCloudTransport] = []
 
     def factory(_path: Path) -> FakeCloudTransport:
@@ -129,44 +129,45 @@ def test_cloud_view_does_not_start_helper_on_open(qtbot, synthetic_save: bytes, 
     )
     qtbot.addWidget(view)
 
+    # Mere construction never connects; the auto-connect fires on showEvent.
     assert created == []
     assert not view.upload_button.isEnabled()
-    assert "не подключ" in view.status_label.text().lower()
 
 
-def test_cloud_view_prefills_the_discovered_helper_without_starting_it(
-    qtbot, synthetic_save: bytes, tmp_path: Path
-) -> None:
-    helper = tmp_path / "steam-cloud-file-manager"
-    created: list[FakeCloudTransport] = []
+def test_cloud_view_connects_without_a_helper(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
+    # The native worker needs no AppImage, so an absent helper must not block a
+    # connect — this is what lets the tab auto-connect in the background.
+    transport = FakeCloudTransport(synthetic_save)
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: created.append(FakeCloudTransport(synthetic_save))
-        or created[-1],
-        helper_finder=lambda: helper,
+        worker_factory=lambda _path: transport,
+        helper_finder=lambda: None,
+        backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
 
-    assert view.helper_edit.text() == str(helper)
-    assert created == []
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+
+    assert view.transport is transport
 
 
-def test_cloud_view_missing_helper_is_explicit_and_has_no_transport_write(
-    qtbot, synthetic_save: bytes
-) -> None:
-    created: list[FakeCloudTransport] = []
+def test_cloud_view_surfaces_a_connect_failure(qtbot, tmp_path: Path) -> None:
+    def failing_factory(_path: Path) -> FakeCloudTransport:
+        raise RuntimeError("no cloud backend")
+
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: created.append(FakeCloudTransport(synthetic_save)) or created[-1],
+        worker_factory=failing_factory,
         helper_finder=lambda: None,
+        backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
 
     with qtbot.waitSignal(view.operation_failed, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
-    assert created == []
-    assert "helper" in view.error_label.text().lower()
+    assert view.transport is None
 
 
 def test_cloud_view_empty_list_has_explicit_state(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
@@ -303,7 +304,6 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     window.cloud_view.service = _ApprovedCloudService()
     window.cloud_view.worker_factory = lambda _path: transport
     window.cloud_view.helper_path = tmp_path / "helper"
-    window.cloud_view.helper_edit.setText(str(tmp_path / "helper"))
     window.cloud_view.backup_dir = tmp_path / "backups"
 
     with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
