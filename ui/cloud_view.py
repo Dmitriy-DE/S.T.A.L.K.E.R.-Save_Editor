@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -361,6 +362,18 @@ class CloudView(QWidget):
         )
         worker.completed.connect(self._on_files_ready)
         self._start_worker(worker)
+        # Watchdog: if the connect is still running after a while, tell the user
+        # what to check instead of leaving a silent "подключение…" forever.
+        self._connect_deadline = time.monotonic()
+        QTimer.singleShot(30_000, self._warn_if_still_connecting)
+
+    def _warn_if_still_connecting(self) -> None:
+        if self.is_busy and self.transport is None:
+            self.status_label.setText(
+                "Steam Cloud: всё ещё подключаюсь… Проверь, что клиент Steam "
+                "запущен и вошёл в аккаунт. Список появится, как только Steam "
+                "ответит; можно закрыть вкладку и вернуться позже."
+            )
 
     def selected_file(self) -> CloudFile | None:
         row = self.table.currentRow()

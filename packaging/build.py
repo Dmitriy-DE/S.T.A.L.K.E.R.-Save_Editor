@@ -354,9 +354,10 @@ def _make_zip(runtime: Path, destination: Path) -> None:
 def _desktop_entry() -> str:
     return """[Desktop Entry]
 Type=Application
-Name=S.T.A.L.K.E.R. 2 Save Editor
-Comment=Inspect and edit local S.T.A.L.K.E.R. 2 saves
+Name=S.T.A.L.K.E.R. Save Editor
+Comment=Inspect and edit local S.T.A.L.K.E.R. saves
 Exec=stalker2-save-editor
+Icon=stalker2-save-editor
 Terminal=false
 Categories=Utility;Game;
 """
@@ -390,6 +391,15 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
     desktop = stage / "usr" / "share" / "applications" / "stalker2-save-editor.desktop"
     desktop.parent.mkdir(parents=True, exist_ok=True)
     desktop.write_text(_desktop_entry(), encoding="utf-8")
+    for size in (256, 128, 64):
+        icon_src = repository_root() / "assets" / f"app_icon_{size}.png"
+        if icon_src.is_file():
+            icon_dst = (
+                stage / "usr" / "share" / "icons" / "hicolor"
+                / f"{size}x{size}" / "apps" / "stalker2-save-editor.png"
+            )
+            icon_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(icon_src, icon_dst)
     control_dir = stage / "DEBIAN"
     control_dir.mkdir(parents=True, exist_ok=True)
     (control_dir / "control").write_text(

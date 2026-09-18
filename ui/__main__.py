@@ -80,6 +80,22 @@ def main(argv: list[str] | None = None) -> int:
     from .main_window import MainWindow
 
     app = QApplication([sys.argv[0], *arguments])
+    app.setApplicationName("S.T.A.L.K.E.R. Save Editor")
+    from PySide6.QtGui import QIcon
+
+    icon_roots = [Path(__file__).resolve().parents[1]]
+    bundle = getattr(sys, "_MEIPASS", None)
+    if bundle:
+        icon_roots.insert(0, Path(bundle))
+    for root in icon_roots:
+        for name in ("app_icon.svg", "app_icon_256.png"):
+            candidate = root / "assets" / name
+            if candidate.is_file():
+                app.setWindowIcon(QIcon(str(candidate)))
+                break
+        else:
+            continue
+        break
     window = MainWindow(EditorService())
     window.show()
     return app.exec()

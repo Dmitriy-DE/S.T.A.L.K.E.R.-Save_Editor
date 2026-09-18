@@ -397,8 +397,10 @@ class SaveSlotsView(QWidget):
         toolbar.addWidget(self.status_label, 1)
         layout.addLayout(toolbar)
 
-        self.search_paths_label = QLabel("Искали в: список появится после обновления")
+        self.search_paths_label = QLabel("Каталоги поиска появятся после обновления")
         self.search_paths_label.setWordWrap(True)
+        self.search_paths_label.setObjectName("discoveryHint")
+        self.search_paths_label.setStyleSheet("color: palette(mid);")
         self.search_paths_label.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
@@ -505,11 +507,17 @@ class SaveSlotsView(QWidget):
                 self.table.setItem(row, column, item)
         self.table.clearSelection()
 
+        # A one-line summary keeps the slot table the focus; the full list of
+        # scanned directories lives in the tooltip instead of a huge wall.
+        count = len(self._searched_paths)
         paths = "\n".join(f"• {path}" for path in self._searched_paths)
         self.search_paths_label.setText(
-            "Искали в (каталоги не создавались и не изменялись):\n"
-            + (paths or "• пути не определены")
+            f"Искали в {count} стандартных каталогах (наведи, чтобы увидеть список; "
+            "ничего не создавалось и не изменялось)."
+            if count
+            else "Каталоги поиска не определены."
         )
+        self.search_paths_label.setToolTip(paths or "пути не определены")
         if self._slots:
             self.empty_label.setText(
                 f"Найдено сохранений: {len(self._slots)}. "
