@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import threading
 from dataclasses import replace
 from pathlib import Path
 
@@ -95,6 +96,22 @@ class FakeCloudTransport:
 
     def close(self) -> None:
         self.closed = True
+
+
+class BlockingCloudTransport(FakeCloudTransport):
+    def __init__(self, source: bytes) -> None:
+        super().__init__(source)
+        self.started = threading.Event()
+        self.released = threading.Event()
+
+    def list_files(self) -> list[CloudFile]:
+        self.started.set()
+        self.released.wait(5)
+        return list(self.files)
+
+    def close(self) -> None:
+        super().close()
+        self.released.set()
 
 
 def _cloud_file(name: str) -> CloudFile:
@@ -366,3 +383,24 @@ def test_closing_the_view_waits_for_its_worker(qtbot, synthetic_save: bytes, tmp
 
     assert view._thread is None or not view._thread.isRunning()
     assert view.transport is None
+
+
+def test_closing_the_view_cancels_a_blocking_cloud_worker(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    transport = BlockingCloudTransport(synthetic_save)
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_finder=lambda: None,
+        backup_dir=tmp_path / "backups",
+    )
+    qtbot.addWidget(view)
+    view.start_connect()
+
+    assert transport.started.wait(1)
+    view.close()
+    qtbot.waitUntil(lambda: not view.is_busy, timeout=2_000)
+
+    assert transport.closed is True
+    assert view._thread is None or not view._thread.isRunning()

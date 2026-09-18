@@ -18,8 +18,8 @@ docs/evidence/                                    reproducible result reports
 docs/history/                                     historical project docs
 .local/                                           ignored originals, saves and work logs
 packaging/build.py                                stdlib-only standalone builder
-packaging/editor.spec                             PyInstaller onedir spec (GUI + diagnostic)
-packaging/gui_entry.py / diagnostic.py            packaged entry points
+packaging/editor.spec                             PyInstaller onedir spec (GUI + diagnostic + native child)
+packaging/gui_entry.py / diagnostic.py / native_entry.py  packaged entry points
 ```
 
 `packaging/` теперь содержит builder и spec B01. Локально на Linux x86_64

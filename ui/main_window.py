@@ -2145,9 +2145,9 @@ class MainWindow(QMainWindow):
             )
             event.ignore()
             return
-        if self.cloud_view.is_busy:
+        if self.cloud_view.is_busy and not self.cloud_view.stop_worker(30_000):
             self.status_label.setText(
-                "Cloud operation ещё выполняется; закрой окно после завершения"
+                "Cloud operation ещё выполняется; окно закрыто не будет"
             )
             event.ignore()
             return
