@@ -67,6 +67,7 @@ def _default_s2_capabilities() -> FormatCapabilities:
         read_inventory=True,
         edit_money=True,
         edit_stacks=True,
+        experimental_fields=frozenset({"edit_money"}),
     )
 
 
@@ -851,8 +852,10 @@ class MainWindow(QMainWindow):
             if info.crc_present
             else f"ФОРМАТ: {snapshot.format_title}"
         )
-        self.location_card_value.setText(info.level_name or "неизвестно")
-        self.time_card_value.setText("—" if info.game_time is None else str(info.game_time))
+        self.location_card_value.setText(info.level_name or "не разобрано")
+        self.time_card_value.setText(
+            "не разобрано" if info.game_time is None else str(info.game_time)
+        )
         self.money_card_value.setText(money)
         self.inventory_card_value.setText(str(len(info.inventory)))
         integrity = f"CRC: {crc}" if info.crc_present else f"{info.integrity_name}: OK"
@@ -861,15 +864,19 @@ class MainWindow(QMainWindow):
             f"Grid cells: {info.grid_cell_count}    Orphans: {len(info.orphans)}"
         )
         warnings = " ".join(info.warnings)
-        self.support_label.setText(
-            (
-                "Поддержанные данные: CRC, money, inventory snapshot. "
-                if info.crc_present
-                else "Поддержанные данные: X-Ray container, money, actor inventory snapshot. "
+        support = (
+            "Поддержанные данные: CRC, money, inventory snapshot. "
+            if info.crc_present
+            else "Поддержанные данные: X-Ray container, money, actor inventory snapshot. "
+        ) + "Неизвестные handles остаются read-only."
+        if snapshot.capabilities.is_experimental("edit_money"):
+            support += (
+                " Изменение денег экспериментальное: round-trip редактора проверен, "
+                "загрузка и пересохранение игрой ещё не подтверждены."
             )
-            + "Неизвестные handles остаются read-only."
-            + (f" Предупреждения: {warnings}" if warnings else "")
-        )
+        if warnings:
+            support += f" Предупреждения: {warnings}"
+        self.support_label.setText(support)
         self._render_metadata_rows(snapshot)
         self._sync_nav_counters()
         self._render_money(info)
@@ -892,6 +899,7 @@ class MainWindow(QMainWindow):
                 if snapshot.game_catalog is not None
                 else None
             ),
+            capabilities=snapshot.capabilities,
         )
         self.changes_view.invalidate_preview("изменений ещё нет")
         self.status_label.setText("Анализ завершён; snapshot готов")
@@ -1041,7 +1049,9 @@ class MainWindow(QMainWindow):
             and info.money_anchor_count == 1
         )
         if not can_edit_money:
-            self.money_card_value.setText("—")
+            self.money_card_value.setText(
+                "неизвестно" if info.money is None else str(info.money)
+            )
             reason = (
                 "формат не разрешает редактирование денег"
                 if self.snapshot is not None and not self.snapshot.capabilities.edit_money
@@ -1055,7 +1065,8 @@ class MainWindow(QMainWindow):
         assert info.money is not None
         effective = self.staged_money if self.staged_money is not None else info.money
         self.money_card_value.setText(str(effective))
-        self.money_status_label.setText(f"{info.money} → {effective}")
+        suffix = " • экспериментально" if self.snapshot and self.snapshot.capabilities.is_experimental("edit_money") else ""
+        self.money_status_label.setText(f"{info.money} → {effective}{suffix}")
         self.money_spin.blockSignals(True)
         self.money_spin.setEnabled(True)
         self.money_spin.setValue(effective)
@@ -1066,8 +1077,13 @@ class MainWindow(QMainWindow):
     def _on_money_value_changed(self, _value: int) -> None:
         if self.snapshot is None or self.snapshot.info.money is None:
             return
+        suffix = (
+            " • экспериментально"
+            if self.snapshot.capabilities.is_experimental("edit_money")
+            else ""
+        )
         self.money_status_label.setText(
-            f"{self.snapshot.info.money} → {self.money_spin.value()}"
+            f"{self.snapshot.info.money} → {self.money_spin.value()}{suffix}"
         )
 
     def _stage_money(self) -> None:
@@ -1515,6 +1531,7 @@ class MainWindow(QMainWindow):
                 if self.snapshot.game_catalog is not None
                 else None
             ),
+            capabilities=self.snapshot.capabilities,
         )
 
     def _has_staged_changes(self) -> bool:

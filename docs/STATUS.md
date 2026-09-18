@@ -1,5 +1,29 @@
 # Состояние и пробелы — 2026-09-16
 
+## 2026-09-18 — текущий кандидат v0.4.2
+
+На ветке release-кандидата исправлены проблемы, видимые в старом бинарнике
+`v0.4.0`:
+
+- карточка денег больше не затирает найденное значение в `—`; S2 money можно
+  застейджить и подготовить к preview как отдельное экспериментальное поле;
+  stacks, неизвестные handles и остальные неподтверждённые мутации остаются
+  read-only;
+- S2 embedded save-local name table подключена к inventory presentation;
+  неизвестное имя по-прежнему показывается честно вместе с type-key/handle;
+- inventory получил приоритет широкой колонке имени, минимумы для технических
+  колонок, горизонтальный скролл и двухстрочные action-группы вместо сжатой
+  строки из четырёх кнопок;
+- отсутствующие в текущем S2 parser location/time показываются как `не
+  разобрано`, а не как пустая/выдуманная метрика;
+- SteamCloudFileManager уже используется как внешний JSON worker adapter.
+  Discovery находит распакованный Linux asset с соседней библиотекой,
+  `Ping`/`Connect` прошли локально; `GetFiles` вернул 0, upload не выполнялся.
+
+Парсер S2 money и его decompression/CRC/SHA/round-trip guards не являются
+доказательством принятия изменённого файла игрой. Для этого нужен отдельный
+load/re-save evidence row на конкретной версии S.T.A.L.K.E.R. 2.
+
 ## 2026-09-18 — Zone launcher и вход в Steam Cloud
 
 Desktop теперь стартует с единой read-only библиотекой: все четыре семейства
@@ -31,7 +55,7 @@ shared registry для официальных PC-профилей. Ветка M1
 
 | Profile | Registry status | Proven capability |
 |---|---|---|
-| S.T.A.L.K.E.R. 2 | зарегистрирован | read, локальный money/stack parser и optional official CFG catalog; mutation capability и SID mapping ждут evidence |
+| S.T.A.L.K.E.R. 2 | зарегистрирован | read, save-local inventory names, локальный money/stack parser и optional official CFG catalog; mutation capability и SID-based constructor ждут evidence |
 | Original Shadow of Chornobyl | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
 | Original Clear Sky | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
 | Original Call of Pripyat | зарегистрирован | X-Ray read и локальный money/stack/catalog writer; UI/web mutation ждёт M10 |
@@ -96,7 +120,7 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
-| Названия и каталог | Оригинальные metadata-каталоги загружаются desktop/web; S2 loose official CFG catalog читается read-only, но compact save-key ↔ prototype SID и локализация не доказаны | R01–R02, M21 |
+| Названия и каталог | Оригинальные metadata-каталоги загружаются desktop/web; S2 embedded save-local name table разрешает текущие inventory keys, loose official CFG catalog читается read-only; переносимый prototype SID/локализация не доказаны | R01–R02, M21, M25 |
 | Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
@@ -271,10 +295,13 @@ evidence](evidence/S2_CATALOG_2026-09-16.md).
 
 В M22 появился воспроизводимый read-only анализ нескольких S2 сейвов. На
 доступном corpus есть 34 общих handle; у 13 меняется compact `type_key`, а
-`052000` встречается у двух разных handle. Это не подтверждает SID mapping и
-не открывает S2 Add/clone/upgrade writer, но теперь граница проверяется общей
-командой без записи личных файлов. Подробности: [M22](tasks/M22.md) и [S2
-mapping evidence](evidence/S2_MAPPING_2026-09-16.md).
+`052000` встречается у двух разных handle. В M25 добавлено чтение embedded
+save-local name table: все parsed inventory rows доступных четырёх S2 samples
+получили наблюдаемое имя (`25/25`, `36/36`, `34/34`, `34/34`). Это не
+подтверждает переносимый SID-based constructor и не открывает S2 Add/clone/
+upgrade writer, но UI больше не скрывает уже сериализованные имена за
+`Неизвестный объект`. Подробности: [M22](tasks/M22.md) и [S2 mapping
+evidence](evidence/S2_MAPPING_2026-09-16.md).
 
 В M23 structural X-Ray `deep detach` получил read-only preflight по известным
 `object_id`/`parent_id` edges: actor-owned leaf можно удалить, а explicit

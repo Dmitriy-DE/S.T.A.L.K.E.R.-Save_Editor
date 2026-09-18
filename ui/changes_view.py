@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.capabilities import FormatCapabilities
 from editor.catalog import FactionCatalog, UpgradeCatalog
 from editor.models import PreparedEdit
 from save_format import SaveInfo
@@ -115,6 +116,7 @@ class ChangesView(QWidget):
         staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
         upgrade_catalog: UpgradeCatalog | None = None,
         staged_placements: Mapping[int, tuple[str, int | None]] | None = None,
+        capabilities: FormatCapabilities | None = None,
     ) -> None:
         staged_adds = staged_adds or {}
         staged_detach = staged_detach or {}
@@ -130,7 +132,12 @@ class ChangesView(QWidget):
         rows: list[tuple[str, str, str, str, str]] = []
         if staged_money is not None:
             before = "unknown" if info.money is None else str(info.money)
-            rows.append(("Баланс", "money", before, str(staged_money), "Подтверждено"))
+            money_status = (
+                "Экспериментально: игровая загрузка не подтверждена"
+                if capabilities is not None and capabilities.is_experimental("edit_money")
+                else "Подтверждено"
+            )
+            rows.append(("Баланс", "money", before, str(staged_money), money_status))
         for handle, new_count in sorted(staged_counts.items()):
             item = items.get(int(handle))
             if item is None:

@@ -117,9 +117,9 @@ function renderSnapshot(s) {
   el("preview-status").textContent = "Предпросмотр ещё не выполнен";
   el("preview-status").className = "muted";
 
-  el("card-location").textContent = s.level_name ?? "неизвестно";
-  el("card-time").textContent = s.game_time === null ? "—" : String(s.game_time);
-  el("card-money").textContent = s.money === null ? "—" : String(s.money);
+  el("card-location").textContent = s.level_name ?? "не разобрано";
+  el("card-time").textContent = s.game_time === null ? "не разобрано" : String(s.game_time);
+  el("card-money").textContent = s.money === null ? "неизвестно" : String(s.money);
   el("card-items").textContent = String(s.inventory_count);
   el("summary").textContent =
     `${s.crc_present ? `CRC: ${s.crc_ok ? "OK" : "FAIL"}` : `${s.integrity_name}: OK`} · ` +
@@ -127,7 +127,11 @@ function renderSnapshot(s) {
     `Предметов: ${s.inventory_count}`;
   const caps = s.capabilities ?? {};
   const supportedEdits = [
-    caps.edit_money ? "деньги" : "деньги read-only",
+    caps.edit_money
+      ? (caps.experimental_fields?.includes("edit_money")
+        ? "деньги (experimental)"
+        : "деньги")
+      : "деньги read-only",
     caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
@@ -140,7 +144,10 @@ function renderSnapshot(s) {
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
     `Доступно: ${supportedEdits.join(", ")}; неизвестные поля остаются read-only.` +
-    (s.warnings.length ? ` Предупреждения: ${s.warnings.join(" ")}` : "");
+    (s.warnings.length ? ` Предупреждения: ${s.warnings.join(" ")}` : "") +
+    (caps.experimental_fields?.includes("edit_money")
+      ? " Изменение денег экспериментальное: загрузка и пересохранение игрой не подтверждены."
+      : "");
 
   const body = el("metadata").tBodies[0];
   body.replaceChildren(...s.metadata.map((row) => {
@@ -157,7 +164,7 @@ function renderSnapshot(s) {
   const group = el("money-group");
   group.disabled = !s.money_editable;
   el("money-status").textContent = s.money_editable
-    ? `${s.money} → ${s.money}`
+    ? `${s.money} → ${s.money}${caps.experimental_fields?.includes("edit_money") ? " • экспериментально" : ""}`
     : "Только чтение: сигнатура кошелька не однозначна";
   if (s.money_editable) el("money-input").value = String(s.money);
 

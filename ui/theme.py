@@ -53,7 +53,7 @@ COLORS = {
     "success": "#7E8F3E",
     "text": "#D8D2BE",
     "text_secondary": "#8E8974",
-    "text_disabled": "#5C5A4C",
+    "text_disabled": "#BEB397",
 }
 
 
@@ -513,6 +513,8 @@ def apply_theme(app: QApplication | None) -> None:
 
     if app is None:
         return
+    if bool(app.property("_save_editor_zone_theme_applied")):
+        return
     app.setStyle("Fusion")
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Window, QColor(COLORS["bg_base"]))
@@ -526,6 +528,7 @@ def apply_theme(app: QApplication | None) -> None:
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor(COLORS["text"]))
     app.setPalette(palette)
     app.setStyleSheet(stylesheet())
+    app.setProperty("_save_editor_zone_theme_applied", True)
 
 
 __all__ = ["COLORS", "apply_theme", "stylesheet"]

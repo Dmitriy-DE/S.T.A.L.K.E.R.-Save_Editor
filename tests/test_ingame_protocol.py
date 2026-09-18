@@ -73,7 +73,8 @@ def test_owner_accepted_original_releases_are_gameplay_verified() -> None:
     assert gameplay_verified_release_ids() == frozenset(
         {"stalker-soc", "stalker-cs", "stalker-cop"}
     )
-    assert by_id("stalker2").capabilities.edit_money is False
+    assert by_id("stalker2").capabilities.edit_money is True
+    assert by_id("stalker2").capabilities.is_experimental("edit_money") is True
     assert by_id("stalker-soc").capabilities.edit_money is True
     assert by_id("stalker-cs").capabilities.edit_money is True
     assert by_id("stalker-cop").capabilities.edit_money is True

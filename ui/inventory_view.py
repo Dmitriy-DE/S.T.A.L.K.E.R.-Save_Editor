@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -20,6 +21,8 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QTableView,
     QVBoxLayout,
@@ -99,7 +102,18 @@ class InventoryView(QWidget):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        content = QWidget()
+        self.scroll_area.setWidget(content)
+        outer_layout.addWidget(self.scroll_area)
+
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
@@ -132,8 +146,27 @@ class InventoryView(QWidget):
             InventoryTableModel.POSITION_COLUMN,
             Qt.SortOrder.AscendingOrder,
         )
+        self.table.setMinimumWidth(1100)
+        self.table.setMinimumHeight(220)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.table.setTextElideMode(Qt.TextElideMode.ElideRight)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(72)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        for column, width in {
+            InventoryTableModel.CATEGORY_COLUMN: 115,
+            InventoryTableModel.POSITION_COLUMN: 125,
+            InventoryTableModel.SIZE_COLUMN: 72,
+            InventoryTableModel.TYPE_KEY_COLUMN: 120,
+            InventoryTableModel.COUNT_COLUMN: 105,
+            InventoryTableModel.WEIGHT_COLUMN: 95,
+            InventoryTableModel.CONDITION_COLUMN: 105,
+            InventoryTableModel.SUPPORT_COLUMN: 210,
+            InventoryTableModel.HANDLE_COLUMN: 125,
+        }.items():
+            header.resizeSection(column, width)
+        header.resizeSection(InventoryTableModel.NAME_COLUMN, 300)
         self.table.selectionModel().currentRowChanged.connect(self._on_current_row_changed)
         layout.addWidget(self.table, 1)
 
@@ -148,48 +181,72 @@ class InventoryView(QWidget):
         self.editability_label.setWordWrap(True)
         form.addRow("Статус", self.editability_label)
 
-        count_row = QHBoxLayout()
         self.count_spin = QSpinBox()
         self.count_spin.setRange(1, 1_000_000)
+        self.count_spin.setMinimumWidth(180)
+        self.count_spin.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         self.count_spin.setEnabled(False)
         self.count_spin.valueChanged.connect(self._on_count_changed)
-        count_row.addWidget(self.count_spin)
+        count_controls = QVBoxLayout()
+        count_controls.setSpacing(6)
+        count_controls.addWidget(self.count_spin)
+        count_actions = QGridLayout()
+        count_actions.setHorizontalSpacing(6)
+        count_actions.setVerticalSpacing(6)
         self.stage_button = QPushButton("Застейджить количество")
         self.stage_button.setEnabled(False)
         self.stage_button.clicked.connect(self._stage_selected)
-        count_row.addWidget(self.stage_button)
         self.clear_selected_button = QPushButton("Очистить выбранное")
         self.clear_selected_button.setEnabled(False)
         self.clear_selected_button.clicked.connect(self._clear_selected)
-        count_row.addWidget(self.clear_selected_button)
         self.clear_all_button = QPushButton("Очистить всё")
         self.clear_all_button.setEnabled(False)
         self.clear_all_button.clicked.connect(self.clear_all_requested.emit)
-        count_row.addWidget(self.clear_all_button)
         self.remove_item_button = QPushButton("Удалить из инвентаря")
         self.remove_item_button.setEnabled(False)
         self.remove_item_button.clicked.connect(self._remove_selected)
-        count_row.addWidget(self.remove_item_button)
-        form.addRow("Новое количество", count_row)
+        for index, button in enumerate(
+            (
+                self.stage_button,
+                self.clear_selected_button,
+                self.clear_all_button,
+                self.remove_item_button,
+            )
+        ):
+            count_actions.addWidget(button, index // 2, index % 2)
+        count_actions.setColumnStretch(0, 1)
+        count_actions.setColumnStretch(1, 1)
+        count_controls.addLayout(count_actions)
+        form.addRow("Новое количество", count_controls)
 
-        condition_row = QHBoxLayout()
+        condition_controls = QVBoxLayout()
+        condition_controls.setSpacing(6)
         self.condition_spin = QDoubleSpinBox()
         self.condition_spin.setRange(0.0, 100.0)
         self.condition_spin.setDecimals(1)
         self.condition_spin.setSingleStep(1.0)
         self.condition_spin.setSuffix(" %")
+        self.condition_spin.setMinimumWidth(180)
+        self.condition_spin.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         self.condition_spin.setEnabled(False)
         self.condition_spin.valueChanged.connect(self._on_condition_changed)
-        condition_row.addWidget(self.condition_spin)
+        condition_controls.addWidget(self.condition_spin)
+        condition_actions = QHBoxLayout()
+        condition_actions.setSpacing(6)
         self.condition_stage_button = QPushButton("Застейджить прочность")
         self.condition_stage_button.setEnabled(False)
         self.condition_stage_button.clicked.connect(self._stage_condition)
-        condition_row.addWidget(self.condition_stage_button)
+        condition_actions.addWidget(self.condition_stage_button, 1)
         self.condition_clear_button = QPushButton("Очистить прочность")
         self.condition_clear_button.setEnabled(False)
         self.condition_clear_button.clicked.connect(self._clear_condition)
-        condition_row.addWidget(self.condition_clear_button)
-        form.addRow("Прочность", condition_row)
+        condition_actions.addWidget(self.condition_clear_button, 1)
+        condition_controls.addLayout(condition_actions)
+        form.addRow("Прочность", condition_controls)
         self.condition_status_label = QLabel(
             "Для оружия и экипировки с подтверждённым condition доступно изменение 0…100%."
         )

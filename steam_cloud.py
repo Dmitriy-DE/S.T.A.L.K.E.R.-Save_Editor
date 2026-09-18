@@ -59,6 +59,19 @@ MAX_RESPONSE_BYTES = 256 * 1024 * 1024
 MAX_FILE_BYTES = 64 * 1024 * 1024
 
 
+def _helper_environment(path: Path) -> dict[str, str]:
+    """Give extracted POSIX helpers access to their adjacent Steamworks ABI."""
+
+    environment = os.environ.copy()
+    if os.name != "nt":
+        library_dir = str(path.parent)
+        current = environment.get("LD_LIBRARY_PATH")
+        environment["LD_LIBRARY_PATH"] = (
+            f"{library_dir}{os.pathsep}{current}" if current else library_dir
+        )
+    return environment
+
+
 class SteamCloudError(RuntimeError):
     pass
 
@@ -145,6 +158,7 @@ class SteamWorker:
                 text=True,
                 encoding="utf-8",
                 bufsize=1,
+                env=_helper_environment(p),
             )
         except Exception as exc:
             raise SteamCloudError(f"Не удалось запустить helper: {exc}") from exc

@@ -97,7 +97,8 @@ def test_service_inspection_projects_common_release_capabilities(
 
     assert result.release_id == "stalker2"
     assert result.edition == "s2"
-    assert result.capabilities.edit_money is False
+    assert result.capabilities.edit_money is True
+    assert result.capabilities.is_experimental("edit_money") is True
     assert result.capabilities.edit_stacks is False
     assert result.capabilities.add_items is False
 

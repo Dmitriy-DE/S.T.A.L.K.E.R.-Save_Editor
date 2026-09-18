@@ -33,6 +33,18 @@ def helper_path(tmp_path: Path) -> str:
     return str(FAKE_HELPER)
 
 
+def test_posix_helper_gets_its_adjacent_library_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if os.name == "nt":
+        pytest.skip("LD_LIBRARY_PATH is POSIX-only")
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/existing/lib")
+
+    environment = sc._helper_environment(tmp_path / "steam-cloud-file-manager")
+
+    assert environment["LD_LIBRARY_PATH"] == f"{tmp_path}:/existing/lib"
+
+
 def test_normal_worker_round_trip_and_close_has_no_child(
     helper_path: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:

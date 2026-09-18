@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -12,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 from editor.service import EditorService
 from save_format import inspect_save
 from ui.main_window import LocalSnapshot, MainWindow
-from ui.theme import COLORS
+from ui.theme import COLORS, apply_theme
 
 
 def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None:
@@ -62,3 +63,39 @@ def test_stalker_shell_metadata_tracks_real_snapshot(
     assert window.format_badge.text() == "UE5 GVAS: НЕ ПОДТВЕРЖДЁН"
     assert window.money_card_value.text() == "100"
     assert window.inventory_card_value.text() == "2"
+    assert window.location_card_value.text() == "не разобрано"
+    assert window.time_card_value.text() == "не разобрано"
+    assert "экспериментальное" in window.support_label.text()
+
+
+def test_apply_theme_does_not_reconfigure_the_application_twice() -> None:
+    class ThemeProbe:
+        def __init__(self) -> None:
+            self.properties: dict[str, object] = {}
+            self.styles: list[str] = []
+            self.palettes: list[object] = []
+            self.stylesheets: list[str] = []
+
+        def property(self, name: str) -> object:
+            return self.properties.get(name)
+
+        def setProperty(self, name: str, value: object) -> None:  # noqa: N802
+            self.properties[name] = value
+
+        def setStyle(self, style: str) -> None:  # noqa: N802
+            self.styles.append(style)
+
+        def setPalette(self, palette: object) -> None:  # noqa: N802
+            self.palettes.append(palette)
+
+        def setStyleSheet(self, stylesheet: str) -> None:  # noqa: N802
+            self.stylesheets.append(stylesheet)
+
+    app = cast(QApplication, ThemeProbe())
+
+    apply_theme(app)
+    apply_theme(app)
+
+    assert app.styles == ["Fusion"]
+    assert len(app.palettes) == 1
+    assert len(app.stylesheets) == 1

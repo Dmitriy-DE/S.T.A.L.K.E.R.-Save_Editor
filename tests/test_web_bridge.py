@@ -48,7 +48,9 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["release_id"] == "stalker2"
     assert snapshot["edition"] == "s2"
     assert snapshot["capabilities"]["read_inventory"] is True
-    assert snapshot["capabilities"]["edit_money"] is False
+    assert snapshot["capabilities"]["edit_money"] is True
+    assert snapshot["capabilities"]["experimental_fields"] == ["edit_money"]
+    assert snapshot["capabilities"]["edit_stacks"] is False
     assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["catalog_available"] is False
 
@@ -83,13 +85,17 @@ def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
     assert snapshot["metadata"][-1][:2] == ["UE5 GVAS schema", "не разобрана"]
 
 
-def test_web_edit_is_refused_until_gameplay_is_verified(synthetic_save: bytes) -> None:
+def test_web_money_edit_is_experimental_but_stack_edit_is_refused(
+    synthetic_save: bytes,
+) -> None:
     from save_format import SaveError
 
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
+    result = json.loads(web_bridge.prepare(900_000, "[]"))
+    assert result["money"] == [100, 900_000]
     with pytest.raises(SaveError, match="read-only"):
-        web_bridge.prepare(900_000, json.dumps([[0x30000001, 3]]))
-    assert snapshot["money_editable"] is False
+        web_bridge.prepare(None, json.dumps([[0x30000001, 3]]))
+    assert snapshot["money_editable"] is True
 
 
 def test_prepare_without_an_open_save_is_refused() -> None:
