@@ -13,12 +13,27 @@ License: GNU GPL v3 or later.
 
 The source for pyooz/ooz is available from the project above. This application is distributed under GPL-3.0 to keep redistribution compatible.
 
-## SteamCloudFileManager
+## Steam Cloud access (Valve `libsteam_api`)
+
+Since v0.5.0 the primary Steam Cloud backend is in-process
+(`editor/steam_native.py`), calling Valve's `libsteam_api` through `ctypes`.
+This library is part of the **Steamworks SDK** and is proprietary to Valve; it
+is the only interface to Steam Cloud and cannot be reimplemented in pure
+Python. It is **not bundled**: the application loads the copy that already
+ships with the user's installed Steamworks game / Steam runtime (or, as a last
+resort, the copy inside a user-provided SteamCloudFileManager payload). Steam's
+own subscriber agreement and the Steamworks SDK license govern its use.
+
+## SteamCloudFileManager (optional fallback)
 
 Project: https://github.com/Fldicoahkiin/SteamCloudFileManager
 License: GPL-3.0.
 
-SteamCloudFileManager is **not bundled**. The application invokes a separately installed/downloaded copy as a local helper using its `--steam-worker` IPC mode.
+SteamCloudFileManager is **not bundled** and is no longer required. It now
+serves only as an automatic fallback when the in-process native worker cannot
+initialise. When present, its AppImage is extracted without FUSE
+(`--appimage-extract`) and its inner `--steam-worker` IPC binary is run
+directly.
 
 ## PySide6 / Qt
 

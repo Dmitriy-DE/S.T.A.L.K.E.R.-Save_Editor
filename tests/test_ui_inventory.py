@@ -219,9 +219,9 @@ def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(
     item = info.inventory[0]
     model = window.inventory_view.model
     assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == item.display_name
-    assert model.data(model.index(0, model.WEIGHT_COLUMN), Qt.ItemDataRole.DisplayRole) == "неизвестно"
+    assert model.data(model.index(0, model.WEIGHT_COLUMN), Qt.ItemDataRole.DisplayRole) == "—"
     assert window.format_badge.text() == f"ФОРМАТ: {COP_FORMAT.title}"
-    assert window.location_card_value.text() == "не разобрано"
+    assert window.location_card_value.text() == "—"
     assert window.inventory_view.count_spin.maximum() == 65535
 
 

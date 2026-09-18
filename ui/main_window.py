@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QStackedWidget,
     QTableWidget,
@@ -324,13 +325,17 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("contentTabs")
-        self.tabs.addTab(self._build_overview_tab(), "Обзор")
+        # Stack-style tabs (a vertical column of cards) get one predictable
+        # scroll each so their content never squashes or overlaps on a short
+        # window.  Table-centric tabs manage their own scrolling and are added
+        # directly to avoid a nested scroll area.
+        self.tabs.addTab(self._scrollable(self._build_overview_tab()), "Обзор")
         self.tabs.addTab(self._build_inventory_tab(), "Инвентарь")
         self.tabs.addTab(self._build_changes_tab(), "Изменения")
         self.tabs.addTab(self._build_backups_tab(), "Резервные копии")
-        self.tabs.addTab(self._build_cloud_tab(), "Steam Cloud")
+        self.tabs.addTab(self._scrollable(self._build_cloud_tab()), "Steam Cloud")
         self.tabs.addTab(self._build_slots_tab(), "Найденные сейвы")
-        self.tabs.addTab(self._build_settings_tab(), "Настройки")
+        self.tabs.addTab(self._scrollable(self._build_settings_tab()), "Настройки")
         self.tabs.tabBar().setVisible(False)
         content_layout.addWidget(self.tabs, 1)
 
@@ -482,7 +487,10 @@ class MainWindow(QMainWindow):
             card_layout.addWidget(caption_label)
             value_label = QLabel(initial)
             value_label.setObjectName("metricValue")
+            value_label.setWordWrap(True)
+            value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             card_layout.addWidget(value_label)
+            cards_layout.setColumnStretch(column, 1)
             cards_layout.addWidget(card, 0, column)
             return value_label
 
@@ -560,8 +568,16 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        header.setStretchLastSection(False)
+        # The page already scrolls (the tab is wrapped in a QScrollArea), so the
+        # table shows every row without a competing inner scrollbar.
+        self.metadata_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.metadata_table.setSizeAdjustPolicy(
+            QTableWidget.SizeAdjustPolicy.AdjustToContents
+        )
         metadata_layout.addWidget(self.metadata_table)
-        layout.addWidget(metadata_box, 1)
+        layout.addWidget(metadata_box)
+        layout.addStretch(1)
         self._render_metadata_rows(None)
         return tab
 
@@ -656,6 +672,16 @@ class MainWindow(QMainWindow):
                 item = QTableWidgetItem(text)
                 item.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 self.metadata_table.setItem(index, column, item)
+        self._fit_table_height(self.metadata_table)
+
+    @staticmethod
+    def _fit_table_height(table: QTableWidget) -> None:
+        table.resizeRowsToContents()
+        height = table.horizontalHeader().height() + 2 * table.frameWidth()
+        for row in range(table.rowCount()):
+            height += table.rowHeight(row)
+        table.setMinimumHeight(height)
+        table.setMaximumHeight(height)
 
     def _build_inventory_tab(self) -> QWidget:
         self.inventory_view = InventoryView(self)
@@ -738,6 +764,15 @@ class MainWindow(QMainWindow):
 
     def _on_slot_discovery_failed(self, message: str) -> None:
         self.status_label.setText(f"Поиск слотов не выполнен: {message}")
+
+    @staticmethod
+    def _scrollable(content: QWidget) -> QScrollArea:
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.Shape.NoFrame)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        area.setWidget(content)
+        return area
 
     @staticmethod
     def _placeholder(text: str) -> QWidget:
@@ -852,10 +887,22 @@ class MainWindow(QMainWindow):
             if info.crc_present
             else f"ФОРМАТ: {snapshot.format_title}"
         )
-        self.location_card_value.setText(info.level_name or "не разобрано")
-        self.time_card_value.setText(
-            "не разобрано" if info.game_time is None else str(info.game_time)
+        gvas_hint = (
+            "UE5 GVAS-схема S.T.A.L.K.E.R. 2 в этом релизе не разбирается — "
+            "поле недоступно (не потеряно)."
         )
+        if info.level_name:
+            self.location_card_value.setText(info.level_name)
+            self.location_card_value.setToolTip("Уровень прочитан из сейва")
+        else:
+            self.location_card_value.setText("—")
+            self.location_card_value.setToolTip(gvas_hint)
+        if info.game_time is None:
+            self.time_card_value.setText("—")
+            self.time_card_value.setToolTip(gvas_hint)
+        else:
+            self.time_card_value.setText(str(info.game_time))
+            self.time_card_value.setToolTip("Игровое время прочитано из сейва")
         self.money_card_value.setText(money)
         self.inventory_card_value.setText(str(len(info.inventory)))
         integrity = f"CRC: {crc}" if info.crc_present else f"{info.integrity_name}: OK"

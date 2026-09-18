@@ -286,6 +286,10 @@ class InventoryTableModel(QAbstractTableModel):
             )
         return item.position
 
+    @staticmethod
+    def _normalise_absent(text: str) -> str:
+        return "—" if text == "неизвестно" else text
+
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
         if column == self.NAME_COLUMN:
@@ -293,25 +297,25 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.CATEGORY_COLUMN:
             return item.category
         if column == self.POSITION_COLUMN:
-            return self._position_text(item)
+            return self._normalise_absent(self._position_text(item))
         if column == self.SIZE_COLUMN:
-            return item.size_text
+            return self._normalise_absent(item.size_text)
         if column == self.TYPE_KEY_COLUMN:
             return item.type_key if item.display_name is not None else f"0x{item.type_key}"
         if column == self.COUNT_COLUMN:
             if item.count is None:
-                return "неизвестно"
+                return "—"
             return str(item.count) if staged is None else f"{item.count} → {staged}"
         if column == self.WEIGHT_COLUMN:
             if item.total_weight is None:
-                return "неизвестно"
+                return "—"
             if staged is None or item.unit_weight is None:
                 return f"{item.total_weight:.3f}"
             return f"{item.total_weight:.3f} → {staged * item.unit_weight:.3f}"
         if column == self.CONDITION_COLUMN:
             staged_condition = self._staged_durability.get(item.handle)
             if item.condition is None:
-                return "неизвестно"
+                return "—"
             current = f"{item.condition * 100.0:.1f}%"
             return (
                 current
@@ -345,10 +349,16 @@ class InventoryTableModel(QAbstractTableModel):
             return self._support_text(item)
         if column == self.CONDITION_COLUMN:
             if item.condition is None:
-                return "Только чтение: condition не извлечён"
+                return "— : формат сейва не хранит прочность для этого предмета"
             if item.condition_editable:
                 return "STATE condition f32; UPDATE q8 mirror подтверждён"
             return "Condition прочитан; writer не подтверждён"
+        if column == self.COUNT_COLUMN and item.count is None:
+            return "— : это не стек, количество в сейве не хранится"
+        if column == self.WEIGHT_COLUMN and item.total_weight is None:
+            return "— : вес не хранится в этом формате сейва (только в конфигах игры)"
+        if column == self.SIZE_COLUMN and self._display_value(item, column) in {"—", "неизвестно"}:
+            return "— : размер в ячейках не хранится в этом формате сейва"
         return self._display_value(item, column)
 
     @staticmethod

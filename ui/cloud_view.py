@@ -26,9 +26,10 @@ from editor.formats import FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
 from editor.service import EditorService
+from editor.steam_backend import make_cloud_worker
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
-from steam_cloud import APP_ID, SAVE_PREFIX, CloudFile, SteamWorker, discover_helper
+from steam_cloud import APP_ID, SAVE_PREFIX, CloudFile, discover_helper
 
 
 class CloudSession(CloudTransport, Protocol):
@@ -46,7 +47,7 @@ class CloudSession(CloudTransport, Protocol):
     def close(self) -> None: ...
 
 
-WorkerFactory = Callable[[Path], CloudSession]
+WorkerFactory = Callable[[Path | None], CloudSession]
 HelperFinder = Callable[[], Path | None]
 
 
@@ -87,7 +88,7 @@ class CloudOperationWorker(QThread):
         mode: str,
         helper_path: Path | None = None,
         transport: CloudSession | None = None,
-        worker_factory: WorkerFactory = SteamWorker,
+        worker_factory: WorkerFactory = make_cloud_worker,
         cloud_file: CloudFile | None = None,
         prepared: PreparedEdit | None = None,
         backup_dir: Path | None = None,
@@ -110,9 +111,10 @@ class CloudOperationWorker(QThread):
         transport = self.transport
         try:
             if self.mode == "list":
-                if self.helper_path is None:
-                    raise SaveError("Не выбран SteamCloudFileManager")
-                self.progress.emit("Steam Cloud: запуск helper…")
+                # A helper is optional: the native worker needs no AppImage.
+                # The factory tries native first and only needs the helper path
+                # for its fallback, so pass it through even when absent.
+                self.progress.emit("Steam Cloud: подключение…")
                 transport = self.worker_factory(self.helper_path)
                 created_transport = True
                 transport.start()
@@ -196,7 +198,7 @@ class CloudView(QWidget):
         self,
         service: EditorService,
         *,
-        worker_factory: WorkerFactory = SteamWorker,
+        worker_factory: WorkerFactory = make_cloud_worker,
         helper_finder: HelperFinder = discover_helper,
         helper_path: Path | None = None,
         backup_dir: Path | None = None,

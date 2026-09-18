@@ -40,7 +40,7 @@ def test_posix_helper_gets_its_adjacent_library_directory(
         pytest.skip("LD_LIBRARY_PATH is POSIX-only")
     monkeypatch.setenv("LD_LIBRARY_PATH", "/existing/lib")
 
-    environment = sc._helper_environment(tmp_path / "steam-cloud-file-manager")
+    environment = sc._helper_environment(tmp_path)
 
     assert environment["LD_LIBRARY_PATH"] == f"{tmp_path}:/existing/lib"
 
