@@ -1,13 +1,27 @@
 # Проверка и выпуск
 
+## Выпуск v0.4.1
+
+Выпуск v0.4.1 содержит Zone-библиотеку сохранений для всех четырёх
+зарегистрированных игр, импорт внешнего файла без установленной игры и явный
+вход в S.T.A.L.K.E.R. 2 Steam Cloud flow с helper. Локальный редактор и web
+ядро используют прежние fail-closed backup, CRC/SHA и read-back проверки.
+
+Release assets собираются tag-triggered workflow `standalone-build` на
+`ubuntu-24.04` и `windows-2025`; к GitHub Release прикрепляются portable Linux
+`.tar.gz`, Debian `.deb`, Windows `.zip` и `SHA256SUMS`. Packaged diagnostic
+запускается на каждом runner до публикации артефакта. Реальный Steam upload,
+игровая загрузка/re-save и runtime cloud без установленной игры остаются
+отдельными внешними gates.
+
 ## Что опубликовано сейчас
 
-В Git хранятся только исходники; исторические архивы удалены из дерева и остаются в истории. Standalone-сборки под Linux и Windows собираются в CI и проходят packaged diagnostic на раннерах. Версия runtime — 0.4.0; изменение документации само по себе не повышает версию.
+В Git хранятся только исходники; исторические архивы удалены из дерева и остаются в истории. Standalone-сборки под Linux и Windows собираются в CI и проходят packaged diagnostic на раннерах. Версия runtime — 0.4.1; изменение документации само по себе не повышает версию.
 
 ## Текущая CI pipeline (P03)
 
 `.github/workflows/test.yml` уже описывает обязательную matrix
-`ubuntu-22.04/windows-2022 × Python 3.11/3.12`. В каждой job включены только
+`ubuntu-24.04/windows-2025 × Python 3.11/3.12`. В каждой job включены только
 `contents: read`, устанавливаются версии из `requirements.txt` и
 `requirements-dev.txt`, проверяется чистый checkout без `.local`/сейвов,
 запускаются compile и полный pytest suite. При сбое публикуются JUnit и
