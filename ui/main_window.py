@@ -184,6 +184,8 @@ class MainWindow(QMainWindow):
         self.staged_upgrades: dict[int, tuple[str, ...]] = {}
         self.staged_placements: dict[int, tuple[str, int | None]] = {}
         self.prepared_edit: PreparedEdit | None = None
+        self._pending_apply_path: Path | None = None
+        self._pending_cloud_upload = False
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
         self._inspect_worker: InspectWorker | None = None
@@ -375,10 +377,12 @@ class MainWindow(QMainWindow):
         self.preview_button.setToolTip("Подготовить immutable preview из staged edits")
         self.preview_button.clicked.connect(self._start_preview)
         actions.addWidget(self.preview_button)
-        self.save_copy_button = QPushButton("Сохранить копию")
+        self.save_copy_button = QPushButton("Сохранить")
         self.save_copy_button.setEnabled(False)
-        self.save_copy_button.setToolTip("Записать только ранее проверенный preview")
-        self.save_copy_button.clicked.connect(self._choose_and_start_apply)
+        self.save_copy_button.setToolTip(
+            "Проверяет и сохраняет одним нажатием; бэкап исходного файла делается сам"
+        )
+        self.save_copy_button.clicked.connect(self._save_one_click)
         actions.addWidget(self.save_copy_button)
         layout.addLayout(actions)
 
@@ -1606,7 +1610,10 @@ class MainWindow(QMainWindow):
             and self.snapshot.source_kind == "local"
         )
         self.preview_button.setEnabled(can_preview and not busy)
-        self.save_copy_button.setEnabled(can_apply and not busy)
+        # One-click save: enabled as soon as there are staged changes. The
+        # click runs preview+apply internally, so it no longer waits for a
+        # separate preview step.
+        self.save_copy_button.setEnabled((can_preview or can_apply) and not busy)
         self.changes_view.set_actions_enabled(
             preview=can_preview,
             apply=can_apply,
@@ -1717,8 +1724,16 @@ class MainWindow(QMainWindow):
         self.prepared_edit = prepared
         self.changes_view.set_preview(prepared)
         self.cloud_view.set_prepared(prepared)
-        self.status_label.setText("Preview готов; можно выбрать путь и сохранить копию")
         self.preview_ready.emit(prepared)
+        # One-click save chains straight into the write once the internal
+        # preview is ready, so the user never sees a separate preview step.
+        if getattr(self, "_pending_cloud_upload", False):
+            self._pending_cloud_upload = False
+            self._start_cloud_upload()
+        elif self._pending_apply_path is not None:
+            self._continue_pending_apply()
+        else:
+            self.status_label.setText("Проверено; можно сохранить")
 
     def _on_operation_progress(self, message: str) -> None:
         self.status_label.setText(message)
@@ -1726,6 +1741,9 @@ class MainWindow(QMainWindow):
         self.backups_view.set_progress(message)
 
     def _on_operation_failed(self, message: str) -> None:
+        # A failed step must not leave a queued one-click apply behind.
+        self._pending_apply_path = None
+        self._pending_cloud_upload = False
         if "SHA256" in message or "Источник изменился" in message:
             self.prepared_edit = None
             self.changes_view.invalidate_preview("source SHA изменился")
@@ -1742,6 +1760,48 @@ class MainWindow(QMainWindow):
         path = self.changes_view.choose_output()
         if path is not None:
             self.changes_view.set_destination(path)
+
+    def _save_one_click(self) -> None:
+        """Preview and write in a single click, with an automatic backup.
+
+        The integrity checks (immutable preview, source-SHA, CRC) still run —
+        they are just no longer a manual step the user has to perform first.
+        """
+
+        if self._busy_now():
+            self.status_label.setText("Дождись завершения текущей операции")
+            return
+        if self.snapshot is None:
+            self._show_operation_error("Сначала открой сейв")
+            return
+        if self.snapshot.source_kind == "cloud":
+            # Cloud has its own fail-closed upload path; keep using it.
+            if self.prepared_edit is None:
+                self._pending_apply_path = None
+                self._start_preview()
+                self._pending_cloud_upload = True
+                return
+            self._start_cloud_upload()
+            return
+        value = self.changes_view.destination_edit.text().strip()
+        if value:
+            path = Path(value).expanduser()
+        else:
+            source = Path(self.snapshot.path)
+            path = source.with_name(f"{source.stem}-edited{source.suffix or '.sav'}")
+            self.changes_view.set_destination(path)
+        self._pending_apply_path = path
+        self.status_label.setText("Сохраняю…")
+        if self.prepared_edit is not None:
+            self._continue_pending_apply()
+        else:
+            self._start_preview()
+
+    def _continue_pending_apply(self) -> None:
+        path = self._pending_apply_path
+        self._pending_apply_path = None
+        if path is not None:
+            self._start_apply(path)
 
     def _choose_and_start_apply(self) -> None:
         if self.prepared_edit is None:
@@ -1913,7 +1973,9 @@ class MainWindow(QMainWindow):
             self.status_label.setText(f"Исходный слот заменён: {receipt.output_path}")
         else:
             self.changes_view.mark_applied(receipt)
-            self.status_label.setText(f"Копия сохранена: {receipt.output_path}")
+            self.status_label.setText(
+                f"Сохранено: {receipt.output_path} · бэкап исходного сделан"
+            )
         self.apply_ready.emit(receipt)
 
     def _start_restore(self, record, output_path: Path) -> None:

@@ -48,7 +48,9 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
 
     window._stage_stack_change(0x30000001, 4)
     assert window.prepared_edit is None
-    assert not window.save_copy_button.isEnabled()
+    # One-click save stays available while there are staged changes — it will
+    # re-run the internal preview on click; only the cached preview is invalid.
+    assert window.save_copy_button.isEnabled()
     assert window.changes_view.preview_status_label.text().startswith("Preview недействителен")
     assert prepared is not None
 
@@ -147,3 +149,35 @@ def test_worker_error_is_reported_and_close_does_not_abort_running_operation(
     with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
         window._start_preview()
     assert "injected preview failure" in window.error_label.text()
+
+
+def test_one_click_save_writes_without_manual_preview(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    source = tmp_path / "fixture.sav"
+    source.write_bytes(synthetic_save)
+    exported: list[Path] = []
+
+    def prepare(data: bytes, plan: EditPlan) -> PreparedEdit:
+        return PreparedEdit(plan=plan, data=data, output_sha256=hashlib.sha256(data).hexdigest())
+
+    def export(source_path: Path, output_path: Path, prepared: PreparedEdit, backup: Path):
+        exported.append(output_path)
+        return type(
+            "Receipt",
+            (),
+            {"output_path": output_path, "backup_path": backup / "orig.sav",
+             "output_sha256": prepared.output_sha256},
+        )()
+
+    window = MainWindow(EditorService(prepare_fn=prepare, export_fn=export))
+    qtbot.addWidget(window)
+    _show_snapshot(window, source, synthetic_save)
+    window._stage_stack_change(0x30000001, 3)
+
+    # One click: no manual _start_preview() call.
+    window._save_one_click()
+    qtbot.waitSignal(window.apply_ready, timeout=UI_TIMEOUT_MS)
+    qtbot.waitUntil(lambda: window._operation_thread is None, timeout=UI_TIMEOUT_MS)
+
+    assert len(exported) == 1
