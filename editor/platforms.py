@@ -12,6 +12,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -470,6 +471,148 @@ def discover_helper(
         reverse=True,
     )
     return candidates[0] if candidates else None
+
+
+def _helper_cache_root(
+    *,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+) -> Path:
+    """Return the directory where extracted AppImage payloads are cached."""
+
+    return user_data_dir(system=system, environ=environ, home=home) / "helper-cache"
+
+
+def extract_appimage(appimage: Path, *, cache_root: Path | None = None) -> Path:
+    """Extract an AppImage without FUSE and return its ``squashfs-root``.
+
+    Type-2 AppImages self-mount through ``libfuse.so.2``; on systems that only
+    ship libfuse3 the helper crashes at ``dlopen()``.  ``--appimage-extract`` is
+    handled by the AppImage runtime itself and needs no FUSE, so we unpack once
+    into a cache keyed by the AppImage's size and mtime and run the inner ELF
+    directly.  Re-extraction happens only when the AppImage changes.
+    """
+
+    appimage = Path(appimage).expanduser()
+    if not appimage.is_file():
+        raise FileNotFoundError(f"AppImage не найден: {appimage}")
+    stat = appimage.stat()
+    key = f"{appimage.stem}-{stat.st_size}-{stat.st_mtime_ns}"
+    root = (cache_root or _helper_cache_root()) / key
+    squashfs = root / "squashfs-root"
+    inner = squashfs / "usr" / "bin" / appimage.stem
+    if squashfs.is_dir() and (inner.is_file() or (squashfs / appimage.stem).is_file()):
+        return squashfs
+
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        mode = appimage.stat().st_mode
+        appimage.chmod(mode | 0o111)
+    except OSError:
+        pass
+    # Remove a partial extraction from a previous failed run so the cache never
+    # serves half an archive.
+    if squashfs.exists():
+        shutil.rmtree(squashfs, ignore_errors=True)
+    try:
+        subprocess.run(
+            [str(appimage), "--appimage-extract"],
+            cwd=str(root),
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f"Не удалось распаковать AppImage: {exc}") from exc
+    if not squashfs.is_dir():
+        raise RuntimeError("AppImage распакован, но squashfs-root не появился")
+    return squashfs
+
+
+def resolve_helper_command(
+    helper: Path, *, cache_root: Path | None = None
+) -> tuple[Path, Path]:
+    """Return ``(executable, library_dir)`` for a discovered helper.
+
+    A plain binary runs in place.  An AppImage is transparently extracted (no
+    FUSE) and its inner ELF is returned instead, with the payload directory as
+    the library dir so the adjacent ``libsteam_api.so`` resolves.
+    """
+
+    helper = Path(helper).expanduser()
+    if helper.suffix.lower() != ".appimage":
+        return helper, helper.parent
+    squashfs = extract_appimage(helper, cache_root=cache_root)
+    inner = squashfs / "usr" / "bin" / helper.stem
+    if not inner.is_file():
+        alt = squashfs / helper.stem
+        if alt.is_file():
+            inner = alt
+        else:
+            raise RuntimeError(
+                f"Внутренний бинарник не найден в распакованном AppImage: {inner}"
+            )
+    try:
+        inner.chmod(inner.stat().st_mode | 0o111)
+    except OSError:
+        pass
+    return inner, squashfs
+
+
+def locate_libsteam_api(
+    *,
+    system: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+) -> Path | None:
+    """Find Valve's ``libsteam_api`` for the in-process native cloud worker.
+
+    Search order: an extracted helper AppImage payload (which ships its own
+    copy), then the directory next to a discovered helper, then Steam library
+    game installs.  Returns ``None`` when nothing is available; the caller then
+    falls back to the subprocess helper.
+    """
+
+    name = _system_name(system)
+    lib_names = (
+        ("steam_api64.dll", "steam_api.dll")
+        if name == "windows"
+        else ("libsteam_api.so",)
+    )
+
+    def _first_lib(directory: Path) -> Path | None:
+        for lib in lib_names:
+            candidate = directory / lib
+            if candidate.is_file():
+                return candidate
+        return None
+
+    # Prefer the copy adjacent to (or extracted from) the known helper.
+    helper = discover_helper(system=system, environ=environ, home=home)
+    if helper is not None:
+        try:
+            _exe, lib_dir = resolve_helper_command(helper)
+            found = _first_lib(lib_dir)
+            if found is not None:
+                return found
+        except (OSError, RuntimeError):
+            pass
+        found = _first_lib(helper.parent)
+        if found is not None:
+            return found
+
+    # Fall back to any installed Steamworks game that ships the redistributable.
+    for game in installed_games(system=name, environ=environ, home=home):
+        found = _first_lib(game.install_dir)
+        if found is not None:
+            return found
+        for sub in ("bin", "Binaries", "_CommonRedist"):
+            found = _first_lib(game.install_dir / sub)
+            if found is not None:
+                return found
+    return None
 
 
 def _dedupe_paths(paths: Sequence[Path]) -> tuple[Path, ...]:

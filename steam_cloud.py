@@ -15,7 +15,7 @@ from typing import Any
 # Re-exported for ui/cloud_view.py, which imports the helper lookup
 # from this module.  Keep it in __all__: an "unused import" cleanup that drops
 # it breaks the Cloud tab at import time.
-from editor.platforms import discover_helper
+from editor.platforms import discover_helper, resolve_helper_command
 
 __all__ = [
     "APP_ID",
@@ -59,15 +59,15 @@ MAX_RESPONSE_BYTES = 256 * 1024 * 1024
 MAX_FILE_BYTES = 64 * 1024 * 1024
 
 
-def _helper_environment(path: Path) -> dict[str, str]:
+def _helper_environment(library_dir: Path) -> dict[str, str]:
     """Give extracted POSIX helpers access to their adjacent Steamworks ABI."""
 
     environment = os.environ.copy()
     if os.name != "nt":
-        library_dir = str(path.parent)
         current = environment.get("LD_LIBRARY_PATH")
+        library = str(library_dir)
         environment["LD_LIBRARY_PATH"] = (
-            f"{library_dir}{os.pathsep}{current}" if current else library_dir
+            f"{library}{os.pathsep}{current}" if current else library
         )
     return environment
 
@@ -142,15 +142,21 @@ class SteamWorker:
         p = Path(self.helper_path)
         if not p.exists():
             raise SteamCloudError(f"SteamCloudFileManager не найден: {p}")
-        if os.name != "nt" and p.suffix.lower() != ".exe":
+        # An AppImage is transparently extracted (no FUSE) and its inner ELF is
+        # run instead; a plain binary runs in place.
+        try:
+            executable, library_dir = resolve_helper_command(p)
+        except (OSError, RuntimeError) as exc:
+            raise SteamCloudError(f"Не удалось подготовить helper: {exc}") from exc
+        if os.name != "nt" and executable.suffix.lower() != ".exe":
             try:
-                mode = p.stat().st_mode
-                p.chmod(mode | 0o111)
+                mode = executable.stat().st_mode
+                executable.chmod(mode | 0o111)
             except OSError:
                 pass
         try:
             proc = subprocess.Popen(
-                [str(p), "--steam-worker"],
+                [str(executable), "--steam-worker"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -158,7 +164,7 @@ class SteamWorker:
                 text=True,
                 encoding="utf-8",
                 bufsize=1,
-                env=_helper_environment(p),
+                env=_helper_environment(library_dir),
             )
         except Exception as exc:
             raise SteamCloudError(f"Не удалось запустить helper: {exc}") from exc
