@@ -1,6 +1,6 @@
 # Проверка и выпуск
 
-## Выпуск v0.4.2
+## Кандидат выпуска v0.4.2
 
 Выпуск v0.4.2 содержит Zone-библиотеку сохранений для всех четырёх
 зарегистрированных игр, импорт внешнего файла без установленной игры и явный
@@ -9,6 +9,12 @@
 Повторная инициализация Qt-темы идемпотентна: приложение не выполняет второй
 глобальный `Fusion`/stylesheet setup при создании окон.
 
+Дополнительно в этом кандидате: S2 embedded inventory names, экспериментальный
+money staging с явным предупреждением о границе игровой проверки, исправленные
+карточки money/location/time и не сжимаемая раскладка inventory. Steam Cloud
+helper остаётся внешней зависимостью; локальный helper smoke дал `Ping=PONG`,
+`Connect=OK`, `GetFiles=0`, без записи.
+
 Release assets собираются tag-triggered workflow `standalone-build` на
 `ubuntu-24.04` и `windows-2025`; к GitHub Release прикрепляются portable Linux
 `.tar.gz`, Debian `.deb`, Windows `.zip` и `SHA256SUMS`. Packaged diagnostic
@@ -16,9 +22,11 @@ Release assets собираются tag-triggered workflow `standalone-build` н
 игровая загрузка/re-save и runtime cloud без установленной игры остаются
 отдельными внешними gates.
 
-## Что опубликовано сейчас
+## Состояние публикации
 
-В Git хранятся только исходники; исторические архивы удалены из дерева и остаются в истории. Standalone-сборки под Linux и Windows собираются в CI и проходят packaged diagnostic на раннерах. Версия runtime — 0.4.2; изменение документации само по себе не повышает версию.
+В Git хранятся только исходники; исторические архивы удалены из дерева и
+остаются в истории. Этот текст описывает исходный кандидат; GitHub Release
+создаётся только после нового tag-triggered CI с Linux и Windows assets.
 
 ## Текущая CI pipeline (P03)
 

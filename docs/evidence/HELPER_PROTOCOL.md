@@ -1,5 +1,11 @@
 # SteamCloudFileManager worker protocol — S06
 
+## Current local smoke — 2026-09-18
+
+The extracted Linux helper answered `Ping` with `Pong` and accepted
+`Connect { app_id: 1643320 }`. `GetFiles` returned an empty list. No
+`WriteFile`, `SyncCloudFiles`, or live upload was run.
+
 Reference проверен 2026-09-13 по tag `v1.3.5`, peeled commit
 `1388e292ec502257545bc0e12927a50d2141d8bf`:
 

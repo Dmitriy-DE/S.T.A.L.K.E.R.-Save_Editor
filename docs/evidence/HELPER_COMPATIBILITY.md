@@ -1,5 +1,27 @@
 # SteamCloudFileManager helper compatibility — P02
 
+## Local runtime check — 2026-09-18
+
+The project adapter was exercised with the extracted Linux `v1.3.5` helper and
+the adjacent `libsteam_api.so`:
+
+```text
+SteamWorker.start()                    -> PONG
+SteamWorker.connect(app_id=1643320)   -> OK
+SteamWorker.list_files()               -> 0 files
+WriteFile / SyncCloudFiles             -> not called
+```
+
+The AppImage copy could not start on this host because `libfuse.so.2` is not
+installed. Discovery now prefers an extracted helper with its adjacent
+Steamworks library and the worker adds that directory to `LD_LIBRARY_PATH` on
+POSIX. This is a runtime convenience, not a bundled binary: the helper remains
+an external dependency and its license/redistribution boundary is unchanged.
+
+`Connect=OK` proves the local helper/Steamworks session handshake only. The
+empty `GetFiles` result means no cloud save slot was visible in that session;
+it does not prove that the account has no saves, and no upload was attempted.
+
 Проверка зафиксирована 2026-09-13. В качестве reference взят upstream tag
 `v1.3.5`, peeled commit `1388e292ec502257545bc0e12927a50d2141d8bf`.
 
