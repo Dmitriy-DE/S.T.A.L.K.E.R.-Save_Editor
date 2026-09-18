@@ -1,6 +1,6 @@
 # Проверка и выпуск
 
-## Кандидат corrective-выпуска v0.4.3
+## Выпуск v0.4.3
 
 Выпуск v0.4.3 содержит Zone-библиотеку сохранений для всех четырёх
 зарегистрированных игр, импорт внешнего файла без установленной игры и явный
@@ -9,7 +9,7 @@
 Повторная инициализация Qt-темы идемпотентна: приложение не выполняет второй
 глобальный `Fusion`/stylesheet setup при создании окон.
 
-Дополнительно в этом кандидате: S2 embedded inventory names, экспериментальный
+Дополнительно в этом выпуске: S2 embedded inventory names, экспериментальный
 money staging с явным предупреждением о границе игровой проверки, исправленные
 карточки money/location/time и не сжимаемая раскладка inventory. Steam Cloud
 helper остаётся внешней зависимостью; локальный helper smoke дал `Ping=PONG`,
@@ -20,18 +20,19 @@ helper остаётся внешней зависимостью; локальн�
 Qt worker. В `v0.4.3` добавлено ожидание worker перед закрытием окна и отдельный
 регрессионный тест для этого жизненного цикла.
 
-Release assets собираются tag-triggered workflow `standalone-build` на
+Release assets собраны tag-triggered workflow `standalone-build` на
 `ubuntu-24.04` и `windows-2025`; к GitHub Release прикрепляются portable Linux
-`.tar.gz`, Debian `.deb`, Windows `.zip` и `SHA256SUMS`. Packaged diagnostic
-запускается на каждом runner до публикации артефакта. Реальный Steam upload,
+`.tar.gz`, Debian `.deb`, Windows `.zip` и platform-specific checksums.
+Packaged diagnostic запущен на каждом runner до публикации артефакта. Реальный Steam upload,
 игровая загрузка/re-save и runtime cloud без установленной игры остаются
 отдельными внешними gates.
 
 ## Состояние публикации
 
 В Git хранятся только исходники; исторические архивы удалены из дерева и
-остаются в истории. GitHub Release `v0.4.3` создаётся только после
-tag-triggered CI с успешными Linux и Windows jobs и прикреплёнными assets.
+остаются в истории. GitHub Release `v0.4.3` опубликован после успешных Linux и
+Windows jobs standalone workflow #35350988272 и содержит пять assets. Тег
+указывает на merge `b4e789fe2a55a1779829483a2e95018f7ba19039`.
 
 ## Текущая CI pipeline (P03)
 
