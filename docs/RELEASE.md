@@ -19,6 +19,26 @@ Linux/Windows standalone workflow, packaged diagnostic и smoke именно и�
 собранного Linux bundle. Реальный download/edit/upload пользовательского
 сейва и game load/re-save в эти gates не входят.
 
+### Фактическая публикация
+
+Релиз опубликован 2026-09-19 из тега `v0.5.6`, указывающего на merge
+`797884d9dcd372bc45e5b9a78ddd6f47590cc124`:
+[GitHub Release v0.5.6](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.6).
+Tag-triggered workflow
+[35406902752](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35406902752)
+завершил обе jobs со статусом PASS после повторного запуска Windows job:
+Linux/Windows source tests, standalone build и packaged `SaveEditor-native`
+smoke.
+
+В релиз прикреплены portable Linux `tar.gz`, Debian `amd64`, Windows `zip`
+и отдельные SHA256SUMS. Стабильные копии для страницы опубликованы в
+Cloudflare R2 и проверены через worker:
+[`Linux`](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-linux-x86_64.tar.gz),
+[`Windows`](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-windows-x86_64.zip),
+[`Debian`](https://save-editor-downloads.save-editor.workers.dev/stalker2-save-editor_amd64.deb).
+`web/` не менялся, поэтому Pages повторно не деплоился; обновлялись только
+release-артефакты, которые использует текущая страница загрузок.
+
 ## Выпуск v0.4.3
 
 Выпуск v0.4.3 содержит Zone-библиотеку сохранений для всех четырёх

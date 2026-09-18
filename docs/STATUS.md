@@ -1,6 +1,6 @@
 # Состояние и пробелы — 2026-09-16
 
-## 2026-09-19 — v0.5.6: bounded native cloud transport
+## 2026-09-19 — v0.5.6 опубликован: bounded native cloud transport
 
 Пользовательский `v0.5.4` зависал на вкладке Steam Cloud после загрузки
 `steamclient.so`: старый UI worker вызывал `ctypes`-native backend напрямую, а
@@ -16,7 +16,15 @@ Windows/Linux child protocol, реальный killable `Popen` handle, cancel �
 этот child на обеих ОС. Локальные проверки: `435 passed`, `make check`, source
 Qt smoke и standalone child smoke прошли; live read/write пользовательского
 сейва, игровая загрузка и повторное сохранение в игре остаются отдельными
-внешними ограничениями.
+внешними ограничениями. Тег `v0.5.6` указывает на
+`797884d9dcd372bc45e5b9a78ddd6f47590cc124`; tag-build
+[35406902752](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35406902752)
+прошёл на Linux и Windows, а GitHub Release опубликован
+[здесь](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.6).
+Стабильные Linux/Windows/Debian ссылки страницы загрузок отвечают `200 OK` и
+ведут на артефакты этого же CI build. Реальный пользовательский Steam Cloud
+read/write, game load/re-save и установка системного `.deb` с правами root не
+входили в удалённые gates.
 
 ## 2026-09-18 — v0.5.1: UX по фидбеку
 
