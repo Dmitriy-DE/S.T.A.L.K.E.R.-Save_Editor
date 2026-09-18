@@ -47,7 +47,7 @@ class CloudSession(CloudTransport, Protocol):
     def close(self) -> None: ...
 
 
-WorkerFactory = Callable[[Path], CloudSession]
+WorkerFactory = Callable[[Path | None], CloudSession]
 HelperFinder = Callable[[], Path | None]
 
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from steam_cloud import SteamWorker
 
@@ -25,16 +26,16 @@ LOGGER = logging.getLogger(__name__)
 def make_cloud_worker(
     helper_path: Path | None,
     *,
-    native_factory: Callable[..., object] = SteamNativeWorker,
-    helper_factory: Callable[..., object] = SteamWorker,
+    native_factory: Callable[..., Any] = SteamNativeWorker,
+    helper_factory: Callable[..., Any] = SteamWorker,
     log: Callable[[str], None] | None = None,
-) -> object:
+) -> Any:
     """Return a started native worker, or a helper worker as fallback."""
 
     emit = log or (lambda _s: None)
     try:
         worker = native_factory(log=log)
-        worker.start()  # type: ignore[attr-defined]
+        worker.start()
         emit("Steam Cloud: нативный worker (libsteam_api) запущен")
         return worker
     except Exception as exc:

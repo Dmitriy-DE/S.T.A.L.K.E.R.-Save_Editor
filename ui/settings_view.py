@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.platforms import installed_games, save_directories, steam_roots
 from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
 
@@ -57,9 +59,11 @@ class SettingsView(QWidget):
         layout.addWidget(intro)
 
         form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.steam_root_edit = QLineEdit()
         self.steam_root_edit.setPlaceholderText("Не задано — использовать автопоиск")
-        form.addRow("Корень Steam", self._path_row(self.steam_root_edit))
+        self.steam_hint = self._hint_label()
+        form.addRow("Корень Steam", self._path_row(self.steam_root_edit, self.steam_hint))
 
         self.game_combo = QComboBox()
         for release in official_releases():
@@ -69,11 +73,13 @@ class SettingsView(QWidget):
 
         self.game_root_edit = QLineEdit()
         self.game_root_edit.setPlaceholderText("Папка установленной игры")
-        form.addRow("Папка игры", self._path_row(self.game_root_edit))
+        self.game_hint = self._hint_label()
+        form.addRow("Папка игры", self._path_row(self.game_root_edit, self.game_hint))
 
         self.save_root_edit = QLineEdit()
         self.save_root_edit.setPlaceholderText("Папка с сохранениями")
-        form.addRow("Папка сохранений", self._path_row(self.save_root_edit))
+        self.save_hint = self._hint_label()
+        form.addRow("Папка сохранений", self._path_row(self.save_root_edit, self.save_hint))
         layout.addLayout(form)
 
         actions = QHBoxLayout()
@@ -96,7 +102,22 @@ class SettingsView(QWidget):
         layout.addWidget(self.warning_label)
         layout.addStretch(1)
 
-    def _path_row(self, edit: QLineEdit) -> QWidget:
+    def _hint_label(self) -> QLabel:
+        label = QLabel("")
+        label.setWordWrap(True)
+        label.setObjectName("discoveryHint")
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        font = label.font()
+        font.setPointSizeF(max(7.0, font.pointSizeF() - 1.0))
+        label.setFont(font)
+        label.setStyleSheet("color: palette(mid);")
+        return label
+
+    def _path_row(self, edit: QLineEdit, hint: QLabel | None = None) -> QWidget:
+        container = QWidget()
+        outer = QVBoxLayout(container)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(2)
         row = QWidget()
         layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -107,7 +128,10 @@ class SettingsView(QWidget):
         clear = QPushButton("Очистить")
         clear.clicked.connect(edit.clear)
         layout.addWidget(clear)
-        return row
+        outer.addWidget(row)
+        if hint is not None:
+            outer.addWidget(hint)
+        return container
 
     @property
     def selected_game_id(self) -> str:
@@ -123,6 +147,49 @@ class SettingsView(QWidget):
         )
         self.game_root_edit.setText(str(game_root) if game_root is not None else "")
         self.save_root_edit.setText(str(save_root) if save_root is not None else "")
+        self._refresh_hints()
+
+    @staticmethod
+    def _first_existing(paths: Iterable[Path]) -> Path | None:
+        for path in paths:
+            candidate = Path(path)
+            if candidate.is_dir():
+                return candidate
+        return None
+
+    def _discover_steam_root(self) -> Path | None:
+        try:
+            return self._first_existing(steam_roots())
+        except Exception:
+            return None
+
+    def _discover_game_root(self, game_id: str) -> Path | None:
+        try:
+            for game in installed_games():
+                if game.game_id == game_id and Path(game.install_dir).is_dir():
+                    return Path(game.install_dir)
+        except Exception:
+            return None
+        return None
+
+    def _discover_save_root(self, game_id: str) -> Path | None:
+        try:
+            dirs = save_directories(game_id)
+        except Exception:
+            return None
+        return Path(dirs[0]) if dirs else None
+
+    def _set_hint(self, label: QLabel, discovered: Path | None) -> None:
+        if discovered is not None:
+            label.setText(f"Автопоиск: {discovered}")
+        else:
+            label.setText("Автопоиск: ничего не найдено — задай путь вручную")
+
+    def _refresh_hints(self) -> None:
+        game_id = self.selected_game_id
+        self._set_hint(self.steam_hint, self._discover_steam_root())
+        self._set_hint(self.game_hint, self._discover_game_root(game_id))
+        self._set_hint(self.save_hint, self._discover_save_root(game_id))
 
     def _choose_directory(self, edit: QLineEdit) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Выбрать каталог")
