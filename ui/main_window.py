@@ -387,6 +387,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(self.mode_stack, 1)
         self.launcher_view.import_requested.connect(self.open_local)
         self.launcher_view.open_requested.connect(self._start_inspect)
+        self.launcher_view.cloud_requested.connect(self._show_cloud)
         self.launcher_view.refresh_requested.connect(self.save_slots_view.refresh)
         self.mode_stack.setCurrentWidget(self.launcher_view)
 
@@ -399,6 +400,12 @@ class MainWindow(QMainWindow):
     def _show_workbench(self) -> None:
         if hasattr(self, "mode_stack"):
             self.mode_stack.setCurrentWidget(self.workbench)
+
+    def _show_cloud(self) -> None:
+        """Enter the remote-save flow without requiring a local game save."""
+
+        self._show_workbench()
+        self.tabs.setCurrentIndex(self.nav_labels.index("Steam Cloud"))
 
     def _select_tab(self, index: int) -> None:
         if 0 <= index < self.tabs.count():

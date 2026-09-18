@@ -38,7 +38,11 @@ def test_launcher_starts_with_all_games_and_import_path(qtbot) -> None:
     assert view.game_list.item(0).text() == "ВСЕ ИГРЫ"
     assert view.game_list.item(1).text().startswith("S.T.A.L.K.E.R. 2")
     assert view.import_button.isEnabled()
+    assert view.cloud_button.isEnabled()
     assert "импорт" in view.status_label.text().casefold()
+
+    with qtbot.waitSignal(view.cloud_requested, timeout=1_000):
+        view.cloud_button.click()
 
 
 def test_launcher_filters_save_library_and_opens_selected_slot(qtbot, tmp_path: Path) -> None:
@@ -98,6 +102,10 @@ def test_main_window_uses_launcher_until_a_save_is_opened(
 
     assert window.mode_stack.currentWidget() is window.launcher_view
     assert window.launcher_view.game_list.count() == 5
+
+    window.launcher_view.cloud_button.click()
+    assert window.mode_stack.currentWidget() is window.workbench
+    assert window.tabs.currentIndex() == 4
 
     with qtbot.waitSignal(window.analysis_ready, timeout=5_000):
         window._start_inspect(source)

@@ -159,8 +159,8 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         background: #E0B457;
         border-color: #E0B457;
     }}
-    QPushButton#launcherSecondaryButton, QPushButton#launcherOpenButton,
-    QPushButton#launcherBackButton {{
+    QPushButton#launcherSecondaryButton, QPushButton#launcherCloudButton,
+    QPushButton#launcherOpenButton, QPushButton#launcherBackButton {{
         color: {c['olive']};
         border-color: {c['olive_dim']};
     }}

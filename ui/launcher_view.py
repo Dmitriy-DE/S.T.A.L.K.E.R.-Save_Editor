@@ -79,6 +79,7 @@ class LauncherView(QWidget):
 
     open_requested = Signal(object)
     import_requested = Signal()
+    cloud_requested = Signal()
     refresh_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -121,6 +122,13 @@ class LauncherView(QWidget):
         self.refresh_button.setObjectName("launcherSecondaryButton")
         self.refresh_button.clicked.connect(self.refresh_requested)
         header_layout.addWidget(self.refresh_button, 0, Qt.AlignmentFlag.AlignTop)
+        self.cloud_button = QPushButton("STEAM CLOUD")
+        self.cloud_button.setObjectName("launcherCloudButton")
+        self.cloud_button.setToolTip(
+            "Открыть удалённые сейвы S.T.A.L.K.E.R. 2 через Steam helper"
+        )
+        self.cloud_button.clicked.connect(self.cloud_requested)
+        header_layout.addWidget(self.cloud_button, 0, Qt.AlignmentFlag.AlignTop)
         self.import_button = QPushButton("ИМПОРТ СЕЙВА…")
         self.import_button.setObjectName("launcherPrimaryButton")
         self.import_button.setToolTip(
