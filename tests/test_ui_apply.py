@@ -175,9 +175,10 @@ def test_one_click_save_writes_without_manual_preview(
     _show_snapshot(window, source, synthetic_save)
     window._stage_stack_change(0x30000001, 3)
 
-    # One click: no manual _start_preview() call.
-    window._save_one_click()
-    qtbot.waitSignal(window.apply_ready, timeout=UI_TIMEOUT_MS)
+    # One click: no manual _start_preview() call. The chain preview->apply
+    # ends with apply_ready.
+    with qtbot.waitSignal(window.apply_ready, timeout=UI_TIMEOUT_MS):
+        window._save_one_click()
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=UI_TIMEOUT_MS)
 
     assert len(exported) == 1
