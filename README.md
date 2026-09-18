@@ -9,6 +9,11 @@ Chornobyl, Clear Sky и Call of Pripyat; для оригинальной три�
 `.sav` и `.scop` по содержимому контейнера. Desktop умеет auto-discovery
 стандартных каталогов, выбор release-specific профиля и ручную папку/файл.
 
+Стартовый экран Desktop — единая Zone-библиотека: он сразу показывает все
+четыре семейства игр и найденные локальные сейвы, не выбирая S.T.A.L.K.E.R. 2
+по умолчанию. Кнопка `ИМПОРТ СЕЙВА…` принимает скачанный файл без локальной
+установки игры, а `STEAM CLOUD` открывает отдельный удалённый поток.
+
 Для всех зарегистрированных форматов доступны локальный анализ, inventory
 snapshot, immutable preview и сохранение новой копии. В оригинальной трилогии
 доступны деньги, подтверждённые ammo stacks, добавление предметов из
@@ -23,8 +28,11 @@ Enhanced Editions уже есть в release selector и path discovery как �
 evidence. Их нельзя выдавать за совместимые с оригинальным X-Ray parser.
 Подробная граница: [EE evidence](docs/evidence/EE_FORMATS_2026-09-15.md).
 
-Плюс остаются browser резервных копий с восстановлением и вкладка Steam Cloud с
-явным connect/list/analyze/upload. Плюс CLI для исследования.
+Плюс остаются browser резервных копий с восстановлением и Desktop-вкладка Steam
+Cloud с явным connect/list/analyze/upload. Cloud transport сейчас привязан к
+S.T.A.L.K.E.R. 2 (`app_id=1643320`) и отдельному `SteamCloudFileManager`;
+универсальная обратная загрузка Cloud для оригинальной трилогии и Enhanced
+Edition не заявляется.
 PyInstaller собирает Linux `tar.gz`/`.deb` и Windows `zip`; обе цели проходят
 CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
 wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`.
@@ -95,7 +103,10 @@ actor-owned record, нажать preview и сохранить новую коп
 вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
 `WriteFile` автоматического повтора нет.
 
-Steam нужен только для cloud-режима, helper устанавливается отдельно.
+Steam нужен только для cloud-режима, helper устанавливается отдельно. Локальная
+папка установленной игры редактору для remote snapshot не нужна, но реальный
+Steam/helper сценарий без установленной игры в текущем проходе не подтверждён;
+это внешний runtime-gate, а не результат Linux synthetic tests.
 Cloud-upload из автоматических тестов блокируется в коде: `SteamWorker`
 отказывает в `Connect`/`WriteFile` для app_id игры под pytest, пока не
 выставлен `STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного ручного прогона.

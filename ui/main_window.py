@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -38,7 +39,7 @@ from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
-from editor.platforms import backup_dirs
+from editor.platforms import backup_dirs, installed_releases
 from editor.service import EditorService
 from editor.settings import PathSettings, load_settings, search_paths_for_settings
 from save_format import SaveError, SaveInfo
@@ -48,6 +49,7 @@ from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
 from .faction_view import FactionView
 from .inventory_view import InventoryView
+from .launcher_view import LauncherView
 from .operation_worker import OperationWorker
 from .save_slots_view import (
     RELEASE_IDS,
@@ -201,7 +203,22 @@ class MainWindow(QMainWindow):
         root = QWidget(self)
         root.setObjectName("appRoot")
         self.setCentralWidget(root)
-        layout = QVBoxLayout(root)
+        root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        self.mode_stack = QStackedWidget()
+        self.mode_stack.setObjectName("modeStack")
+        self.launcher_view = LauncherView()
+        self.launcher_view.set_installed_families(
+            game.game_id for game in installed_releases()
+        )
+        self.mode_stack.addWidget(self.launcher_view)
+
+        workbench = QWidget()
+        workbench.setObjectName("workbench")
+        self.workbench = workbench
+        layout = QVBoxLayout(workbench)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -220,6 +237,11 @@ class MainWindow(QMainWindow):
         ui_hint = QLabel("ZONE / SAVE WORKBENCH")
         ui_hint.setObjectName("sidebarStatus")
         title_layout.addWidget(ui_hint)
+        self.launcher_button = QPushButton("← ЗОНА")
+        self.launcher_button.setObjectName("launcherBackButton")
+        self.launcher_button.setToolTip("Вернуться к библиотеке игр и сохранений")
+        self.launcher_button.clicked.connect(self._show_launcher)
+        title_layout.addWidget(self.launcher_button)
         self.support_button = QPushButton("♡ Support project")
         self.support_button.setObjectName("supportButton")
         self.support_button.setToolTip("Поддержать проект")
@@ -360,6 +382,30 @@ class MainWindow(QMainWindow):
         self.setTabOrder(self.open_button, self.nav_buttons[0])
         self.setTabOrder(self.tabs, self.preview_button)
         self.setTabOrder(self.preview_button, self.save_copy_button)
+
+        self.mode_stack.addWidget(workbench)
+        root_layout.addWidget(self.mode_stack, 1)
+        self.launcher_view.import_requested.connect(self.open_local)
+        self.launcher_view.open_requested.connect(self._start_inspect)
+        self.launcher_view.cloud_requested.connect(self._show_cloud)
+        self.launcher_view.refresh_requested.connect(self.save_slots_view.refresh)
+        self.mode_stack.setCurrentWidget(self.launcher_view)
+
+    def _show_launcher(self) -> None:
+        """Show the read-only library without discarding the current snapshot."""
+
+        if hasattr(self, "mode_stack"):
+            self.mode_stack.setCurrentWidget(self.launcher_view)
+
+    def _show_workbench(self) -> None:
+        if hasattr(self, "mode_stack"):
+            self.mode_stack.setCurrentWidget(self.workbench)
+
+    def _show_cloud(self) -> None:
+        """Enter the remote-save flow without requiring a local game save."""
+
+        self._show_workbench()
+        self.tabs.setCurrentIndex(self.nav_labels.index("Steam Cloud"))
 
     def _select_tab(self, index: int) -> None:
         if 0 <= index < self.tabs.count():
@@ -658,6 +704,8 @@ class MainWindow(QMainWindow):
         self.save_slots_view = SaveSlotsView(self.slot_discovery, parent=self)
         self.save_slots_view.open_requested.connect(self._start_inspect)
         self.save_slots_view.discovery_failed.connect(self._on_slot_discovery_failed)
+        self.save_slots_view.discovery_ready.connect(self.launcher_view.set_discovery)
+        self.save_slots_view.discovery_failed.connect(self.launcher_view.set_error)
         # Discovery is asynchronous and read-only.  No path is opened as a
         # side effect; the user still has to double-click a row or use the
         # manual file picker above.
@@ -715,6 +763,10 @@ class MainWindow(QMainWindow):
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             return
 
+        # Selecting a library row or importing a file enters the workbench
+        # immediately, so a failed/unsupported file is reported on-screen
+        # instead of leaving the user on a stale launcher state.
+        self._show_workbench()
         self._pending_path = path
         self.open_button.setEnabled(False)
         if self.snapshot is None:
@@ -739,6 +791,7 @@ class MainWindow(QMainWindow):
     def _on_analysis_ready(self, snapshot: LocalSnapshot) -> None:
         self.snapshot = snapshot
         self._render_snapshot(snapshot)
+        self._show_workbench()
         self.analysis_ready.emit(snapshot)
 
     def _on_analysis_failed(self, message: str) -> None:
@@ -846,6 +899,7 @@ class MainWindow(QMainWindow):
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True
         self._update_action_buttons()
+        self._show_workbench()
 
     def _render_inventory(self, info: SaveInfo) -> None:
         self.inventory_view.set_items(info.inventory)
