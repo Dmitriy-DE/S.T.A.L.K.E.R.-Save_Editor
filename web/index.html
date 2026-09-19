@@ -40,6 +40,7 @@
     <div class="sidebar-heading">РАЗДЕЛЫ</div>
     <button class="nav" data-panel="overview" aria-current="true">Обзор</button>
     <button class="nav" data-panel="inventory">Инвентарь</button>
+    <button class="nav" data-panel="equipment">Оборудование</button>
     <button class="nav" data-panel="changes">Изменения</button>
     <div class="sidebar-foot">
       <div>CORE: <span id="core-state">загружается</span></div>
@@ -130,6 +131,46 @@
           <button class="button" id="item-add-stage">Застейджить добавление</button>
         </div>
       </fieldset>
+    </div>
+
+    <div class="panel" id="panel-equipment" hidden>
+      <div class="card block">
+        <div class="card-caption">ЕДИНАЯ КАРТОЧКА ОБОРУДОВАНИЯ</div>
+        <p id="equipment-status">Открой сейв для загрузки оружия, брони и шлемов.</p>
+        <p class="muted">Категория и способ сериализации показываются отдельно. Прочность можно менять только там, где для конкретного релиза и предмета есть source-backed anchor.</p>
+      </div>
+      <div class="row">
+        <input id="equipment-search" type="search" placeholder="Поиск по имени, type-key, категории, handle…">
+        <select id="equipment-filter">
+          <option value="all">Всё оборудование</option>
+          <option value="weapon">Оружие</option>
+          <option value="armor">Броня</option>
+          <option value="helmet">Шлемы</option>
+          <option value="equipped">Экипировано</option>
+          <option value="inventory">В инвентаре</option>
+          <option value="damaged">Не 100%</option>
+          <option value="staged">Изменённое</option>
+        </select>
+        <label for="equipment-percent">Прочность, %</label>
+        <input id="equipment-percent" type="number" min="0" max="100" step="0.1" value="100">
+        <button class="button" id="equipment-repair-selected" type="button">Застейджить выбранное</button>
+        <button class="button" id="equipment-reset-selected" type="button">Сбросить выбранное</button>
+      </div>
+      <div class="row">
+        <span class="muted">Массовая правка:</span>
+        <button class="button" id="equipment-repair-damaged" type="button">Повреждённые</button>
+        <button class="button" id="equipment-repair-equipped" type="button">Экипированные</button>
+        <button class="button" id="equipment-repair-weapon" type="button">Оружие</button>
+        <button class="button" id="equipment-repair-armor" type="button">Броня</button>
+        <button class="button" id="equipment-repair-helmet" type="button">Шлемы</button>
+      </div>
+      <table class="grid" id="equipment">
+        <thead><tr>
+          <th>Иконка</th><th>Название</th><th>Категория</th><th>Где</th>
+          <th>Прочность</th><th>Поддержка</th><th>Type-key</th><th>Handle</th><th>Действие</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
 
     <div class="panel" id="panel-changes" hidden>

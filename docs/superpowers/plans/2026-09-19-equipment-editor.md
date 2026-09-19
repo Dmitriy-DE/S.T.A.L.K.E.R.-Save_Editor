@@ -43,11 +43,11 @@
 - Consumes: immutable `InventoryItem`, `ItemCatalog`, `ReleaseDescriptor`, and existing format capability booleans.
 - Produces: `EquipmentCategory`, `EquipmentLocation`, `SupportMaturity`, `FeatureSupport`, `EquipmentSupport`, `EquipmentItem`, `equipment_items()`, and `equipment_support_for_release()`.
 
-- [ ] **Step 1: Write failing projection and maturity tests.** Assert that an exact X-Ray weapon maps to category `weapon`, an `outfit` maps to `armor`, a `helm_` catalog key maps to `helmet` only for the CoP/known helmet case, storage maps to equipped/inventory/unknown, and S2/EE support has explicit maturity and reason fields.
-- [ ] **Step 2: Run `pytest tests/test_equipment.py tests/test_capabilities.py tests/test_formats.py -q`; confirm failure because the projection and metadata types do not exist.**
-- [ ] **Step 3: Implement immutable enums/dataclasses and exact classification.** Preserve the original `InventoryItem.category` and `serialization_family`; derive display taxonomy only from release-scoped catalog metadata and conservative key/slot evidence. Add `equipment` metadata to `FormatCapabilities.as_dict()` while keeping all existing boolean fields stable.
-- [ ] **Step 4: Run the targeted tests and then `pytest tests/test_capabilities.py tests/test_formats.py -q`; confirm green.**
-- [ ] **Step 5: Commit `feat: add release-aware equipment projection`.**
+- [x] **Step 1: Write failing projection and maturity tests.** Assert that an exact X-Ray weapon maps to category `weapon`, an `outfit` maps to `armor`, a `helm_` catalog key maps to `helmet` only for the CoP/known helmet case, storage maps to equipped/inventory/unknown, and S2/EE support has explicit maturity and reason fields.
+- [x] **Step 2: Run `pytest tests/test_equipment.py tests/test_capabilities.py tests/test_formats.py -q`; confirm failure because the projection and metadata types do not exist.**
+- [x] **Step 3: Implement immutable enums/dataclasses and exact classification.** Preserve the original `InventoryItem.category` and `serialization_family`; derive display taxonomy only from release-scoped catalog metadata and conservative key/slot evidence. Add `equipment` metadata to `FormatCapabilities.as_dict()` while keeping all existing boolean fields stable.
+- [x] **Step 4: Run the targeted tests and then `pytest tests/test_capabilities.py tests/test_formats.py -q`; confirm green.**
+- [x] **Step 5: Commit `feat: add release-aware equipment projection`.**
 
 ### Task 2: X-Ray equipment taxonomy and item metadata
 

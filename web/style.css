@@ -174,10 +174,12 @@ table.grid th {
 }
 table.grid td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
 #inventory th:first-child, #inventory td:first-child { width: 46px; padding-left: 7px; padding-right: 7px; text-align: center; }
+#equipment th:first-child, #equipment td:first-child { width: 46px; padding-left: 7px; padding-right: 7px; text-align: center; }
 table.grid tr.readonly td { color: var(--text-disabled); }
 table.grid tr.staged td { color: var(--olive); }
 table.grid input[type="number"] { width: 120px; padding: 4px 7px; }
 table.grid input.condition-input { width: 82px; }
+#equipment td:nth-child(6) { min-width: 150px; }
 table.grid td:nth-child(10) { min-width: 190px; }
 .upgrade-editor { min-width: 170px; }
 .upgrade-editor summary { cursor: pointer; color: var(--olive); }

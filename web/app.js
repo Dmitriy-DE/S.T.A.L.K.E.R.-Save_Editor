@@ -24,6 +24,7 @@ const state = {
   playerFaction: null,
   adds: new Map(),
   detach: new Set(),
+  equipmentSelectedHandle: null,
   prepared: null,
 };
 
@@ -91,6 +92,7 @@ async function openFile(file) {
     state.playerFaction = null;
     state.adds.clear();
     state.detach.clear();
+    state.equipmentSelectedHandle = null;
     state.prepared = null;
     renderSnapshot(snapshot);
     setStatus(`Анализ завершён за ${ms} мс; snapshot готов`);
@@ -184,6 +186,7 @@ function renderSnapshot(s) {
 
   renderFaction(s);
   renderInventory();
+  renderEquipment();
   renderChanges();
 }
 
@@ -592,6 +595,182 @@ function renderInventory() {
   }));
 }
 
+const EQUIPMENT_LOCATION_LABELS = {
+  equipped: "экипировано",
+  inventory: "инвентарь",
+  unknown: "неизвестно",
+};
+
+function equipmentFilterMatches(item, filter) {
+  if (filter === "staged") return state.durability.has(item.handle);
+  if (filter === "damaged") return item.damaged === true;
+  if (filter === "equipped" || filter === "inventory") return item.location === filter;
+  if (filter === "weapon" || filter === "armor" || filter === "helmet") return item.category === filter;
+  return true;
+}
+
+function visibleEquipment() {
+  const query = el("equipment-search").value.trim().toLowerCase();
+  const filter = el("equipment-filter").value;
+  return (state.snapshot?.equipment ?? []).filter((item) => {
+    if (!equipmentFilterMatches(item, filter)) return false;
+    if (!query) return true;
+    return [item.name, item.category, item.location, item.type_key, item.handle_hex]
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
+}
+
+function equipmentSupportText(item) {
+  const support = item.durability ?? {};
+  return support.reason
+    ? `${support.maturity}: ${support.reason}`
+    : String(support.maturity ?? "unsupported");
+}
+
+function equipmentPercent() {
+  const value = Number(el("equipment-percent").value);
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    setStatus("Прочность должна быть числом 0…100", "error");
+    return null;
+  }
+  return value / 100;
+}
+
+function stageEquipmentRepair(handles, percentage) {
+  if (!state.snapshot) return;
+  const target = Number(percentage);
+  if (!Number.isFinite(target) || target < 0 || target > 1) {
+    setStatus("Прочность должна быть числом 0…100", "error");
+    return;
+  }
+  const byHandle = new Map((state.snapshot.equipment ?? []).map((item) => [item.handle, item]));
+  let changed = 0;
+  const skipped = [];
+  for (const handle of [...new Set(handles)]) {
+    const item = byHandle.get(handle);
+    if (!item) {
+      skipped.push(`${handle}: не найден`);
+      continue;
+    }
+    if (item.condition === null || item.condition === undefined) {
+      skipped.push(`${item.name}: прочность не прочитана`);
+      continue;
+    }
+    if (!item.durability_editable) {
+      skipped.push(`${item.name}: ${equipmentSupportText(item)}`);
+      continue;
+    }
+    if (Math.abs(target - item.condition) <= 0.000001) state.durability.delete(handle);
+    else state.durability.set(handle, target);
+    changed += 1;
+  }
+  invalidate();
+  renderEquipment();
+  renderInventory();
+  renderChanges();
+  const details = skipped.length ? ` Пропущено: ${skipped.slice(0, 3).join("; ")}` : "";
+  el("equipment-status").textContent = `Подготовлено строк: ${changed}.${details}`;
+  setStatus(
+    changed ? `Прочность подготовлена: ${changed} предмет(ов); исходный файл не изменён` : "Нет безопасных изменений прочности",
+    changed ? "" : "error",
+  );
+}
+
+function resetEquipmentRepair(handles) {
+  for (const handle of [...new Set(handles)]) state.durability.delete(handle);
+  invalidate();
+  renderEquipment();
+  renderInventory();
+  renderChanges();
+  el("equipment-status").textContent = "Staged-изменения прочности выбранных предметов отменены.";
+}
+
+function renderEquipment() {
+  const table = el("equipment");
+  if (!table) return;
+  const body = table.tBodies[0];
+  body.replaceChildren(...visibleEquipment().map((item) => {
+    const tr = document.createElement("tr");
+    const staged = state.durability.get(item.handle);
+    tr.className = staged === undefined
+      ? (item.durability_editable ? "" : "readonly")
+      : "staged";
+
+    const icon = document.createElement("td");
+    icon.className = "item-icon-cell";
+    icon.append(itemGlyph(item));
+    tr.append(icon);
+
+    for (const value of [
+      item.name,
+      item.category,
+      EQUIPMENT_LOCATION_LABELS[item.location] ?? item.location,
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    }
+
+    const condition = document.createElement("td");
+    if (item.condition === null || item.condition === undefined) {
+      condition.textContent = "неизвестно";
+      condition.className = "muted";
+    } else if (item.durability_editable) {
+      const input = document.createElement("input");
+      input.className = "condition-input";
+      input.type = "number";
+      input.min = "0";
+      input.max = "100";
+      input.step = "0.1";
+      input.value = ((staged ?? item.condition) * 100).toFixed(1);
+      input.title = "Staged до предпросмотра; исходный файл не изменяется";
+      input.addEventListener("change", () => {
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          input.value = ((staged ?? item.condition) * 100).toFixed(1);
+          return;
+        }
+        stageEquipmentRepair([item.handle], value / 100);
+      });
+      condition.append(input);
+    } else {
+      condition.textContent = `${(staged ?? item.condition) * 100}%`;
+      condition.className = "muted";
+    }
+    tr.append(condition);
+
+    const support = document.createElement("td");
+    support.textContent = item.durability?.maturity ?? "unsupported";
+    support.title = equipmentSupportText(item);
+    support.className = item.durability_editable ? "" : "muted";
+    tr.append(support);
+
+    for (const value of [item.type_key, item.handle_hex]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      td.className = "mono";
+      tr.append(td);
+    }
+
+    const action = document.createElement("td");
+    const select = document.createElement("button");
+    select.className = "button";
+    select.type = "button";
+    select.textContent = state.equipmentSelectedHandle === item.handle ? "Выбрано" : "Выбрать";
+    select.disabled = !item.durability_editable;
+    select.title = item.durability_editable ? "Выбрать для отдельной или массовой правки" : equipmentSupportText(item);
+    select.addEventListener("click", () => {
+      state.equipmentSelectedHandle = item.handle;
+      renderEquipment();
+    });
+    action.append(select);
+    tr.append(action);
+    return tr;
+  }));
+}
+
 function renderChanges() {
   const list = el("changes-list");
   const items = [];
@@ -752,6 +931,37 @@ el("file-input").addEventListener("change", (event) => {
 });
 el("inventory-search").addEventListener("input", renderInventory);
 el("inventory-filter").addEventListener("change", renderInventory);
+el("equipment-search").addEventListener("input", renderEquipment);
+el("equipment-filter").addEventListener("change", renderEquipment);
+el("equipment-repair-selected").addEventListener("click", () => {
+  const target = equipmentPercent();
+  if (target === null) return;
+  if (state.equipmentSelectedHandle === null) {
+    setStatus("Сначала выбери оборудование", "error");
+    return;
+  }
+  stageEquipmentRepair([state.equipmentSelectedHandle], target);
+});
+el("equipment-reset-selected").addEventListener("click", () => {
+  if (state.equipmentSelectedHandle === null) {
+    setStatus("Сначала выбери оборудование", "error");
+    return;
+  }
+  resetEquipmentRepair([state.equipmentSelectedHandle]);
+});
+const stageEquipmentBulk = (filter) => {
+  const target = equipmentPercent();
+  if (target === null) return;
+  const handles = (state.snapshot?.equipment ?? [])
+    .filter((item) => equipmentFilterMatches(item, filter))
+    .map((item) => item.handle);
+  stageEquipmentRepair(handles, target);
+};
+el("equipment-repair-damaged").addEventListener("click", () => stageEquipmentBulk("damaged"));
+el("equipment-repair-equipped").addEventListener("click", () => stageEquipmentBulk("equipped"));
+el("equipment-repair-weapon").addEventListener("click", () => stageEquipmentBulk("weapon"));
+el("equipment-repair-armor").addEventListener("click", () => stageEquipmentBulk("armor"));
+el("equipment-repair-helmet").addEventListener("click", () => stageEquipmentBulk("helmet"));
 el("money-stage").addEventListener("click", () => {
   const value = Number(el("money-input").value);
   if (!Number.isInteger(value) || value < 0 || value > 2_000_000_000) {

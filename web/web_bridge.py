@@ -17,6 +17,7 @@ import editor.codec as codec
 import save_format as sf
 from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
+from editor.equipment import equipment_items
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
@@ -215,6 +216,11 @@ def analyze(data: bytes, name: str) -> str:
     upgrade_catalog = _upgrade_catalogs.get(format_.id)
     _state["upgrade_catalog"] = upgrade_catalog
     relation_values = dict(info.faction_relations)
+    equipment_rows = equipment_items(
+        info.inventory,
+        release_id=format_.release_id,
+        catalog=catalog,
+    )
 
     return json.dumps(
         {
@@ -313,6 +319,7 @@ def analyze(data: bytes, name: str) -> str:
                 and info.money_anchor_count == 1
             ),
             "inventory_count": len(info.inventory),
+            "equipment_count": len(equipment_rows),
             "stack_max": 65535 if format_.id in {"stalker-soc", "stalker-cs", "stalker-cop"} else 1_000_000,
             "warnings": list(info.warnings),
             "metadata": _metadata_rows(
@@ -361,6 +368,7 @@ def analyze(data: bytes, name: str) -> str:
                 }
                 for item in info.inventory
             ],
+            "equipment": [row.as_dict() for row in equipment_rows],
         },
         ensure_ascii=False,
     )
