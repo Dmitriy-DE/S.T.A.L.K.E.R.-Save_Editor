@@ -12,9 +12,22 @@
 Добавлен refresh для истёкших CDP download URL, синхронизация game picker с
 content-detected snapshot и контрастные discovery labels. Cloud snapshot в
 рабочей области теперь явно показывает `Сохранить и загрузить в облако`.
-Локальные gates: `442 passed`, `make check`. Live read-only smoke получил 50
-remote S2 slots и скачал один слот через Steam web. Live `WriteFile`, игровой
-load/re-save и системная установка `.deb` остаются отдельными внешними gates.
+Локальные gates: `442 passed`, `make check`. Тег `v0.5.8` указывает на
+`103ec666d091754024c2073d2e435f586cb4e688`; source CI
+[35446190978](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35446190978)
+прошёл четырьмя matrix jobs, standalone build
+[35446471756](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35446471756)
+прошёл Linux/Windows packaged diagnostics, а
+[GitHub Release v0.5.8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.8)
+опубликован с portable Linux, Debian, Windows и SHA256SUMS.
+
+Stable-файлы в Cloudflare R2 обновлены и прочитаны обратно через Worker:
+публичные SHA256 совпали с CI (`12dc2d26…aaa8e7` Linux,
+`a125a55c…c6c82` Debian, `aec3e7ed…2ea40` Windows). Pages revision
+`72b9aa0d` отвечает HTTP 200 и содержит три stable download link.
+Live read-only smoke получил 50 remote S2 slots и скачал один слот через Steam
+web. Live `WriteFile`, игровой load/re-save и системная установка `.deb`
+остаются отдельными внешними gates.
 
 ## 2026-09-19 — v0.5.7: Steam Cloud web fallback и синхронизация игры в редакторе
 

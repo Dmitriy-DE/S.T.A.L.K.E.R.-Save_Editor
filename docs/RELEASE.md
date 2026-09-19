@@ -12,11 +12,30 @@
 - discovery-подсказки больше не используют `palette(mid)` на тёмном фоне, а
   cloud snapshot получает явную кнопку `Сохранить и загрузить в облако`.
 
-Локальное доказательство этого прохода: `442 passed`, `make check`; read-only
-live discovery нашёл 53 локальных S2 slot-файла и 50 remote `Data/*.sav` через
-Steam Cloud web. Реальный `WriteFile` пользовательского слота в release gate не
-запускался: его результат должен проверяться владельцем на конкретном слоте.
-Тег, CI и фактические release assets добавляются сюда после tag-build.
+Локальное доказательство: `442 passed`, `make check`; read-only live discovery
+нашёл 53 локальных S2 slot-файла и 50 remote `Data/*.sav` через Steam Cloud web.
+Тег `v0.5.8` указывает на `103ec666d091754024c2073d2e435f586cb4e688`.
+Source CI [35446190978](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35446190978)
+прошёл всеми четырьмя matrix jobs; standalone build
+[35446471756](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35446471756)
+прошёл Linux и Windows, включая packaged diagnostics. Релиз опубликован:
+[GitHub Release v0.5.8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.8).
+
+Assets release: Linux portable, Debian amd64, Windows x64 и `SHA256SUMS`.
+Хэши: Linux `12dc2d2602c24c4760ca5a96c23e0cb0821476b9ca2ac7755c88543cc7aaa8e7`,
+Debian `a125a55c5b1bdad1ffef929333d7d9f06058f56fc3baa98b2ae84c89555c6c82`,
+Windows `aec3e7ede72c01a16477e13587a298b74add288787073f0be8fa6b2701b2ea40`.
+Эти же SHA256 получены при read-back трёх stable-файлов через Cloudflare
+Worker: [Linux](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-linux-x86_64.tar.gz),
+[Windows](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-windows-x86_64.zip),
+[Debian](https://save-editor-downloads.save-editor.workers.dev/stalker2-save-editor_amd64.deb).
+Pages повторно опубликован с revision `72b9aa0d`:
+[stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev/) отдаёт
+HTTP 200 и содержит все три stable download link.
+
+Реальный `WriteFile` пользовательского слота, игровой load/re-save и системная
+установка `.deb` с правами root в release gate не запускались: это отдельная
+проверка владельца на резервной копии конкретного слота.
 
 ## Выпуск v0.5.7 — Steam Cloud web fallback и исправление game picker
 
@@ -63,14 +82,8 @@ Tag-triggered workflow
 Linux/Windows source tests, standalone build и packaged `SaveEditor-native`
 smoke.
 
-В релиз прикреплены portable Linux `tar.gz`, Debian `amd64`, Windows `zip`
-и отдельные SHA256SUMS. Стабильные копии для страницы опубликованы в
-Cloudflare R2 и проверены через worker:
-[`Linux`](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-linux-x86_64.tar.gz),
-[`Windows`](https://save-editor-downloads.save-editor.workers.dev/SaveEditor-windows-x86_64.zip),
-[`Debian`](https://save-editor-downloads.save-editor.workers.dev/stalker2-save-editor_amd64.deb).
-`web/` не менялся, поэтому Pages повторно не деплоился; обновлялись только
-release-артефакты, которые использует текущая страница загрузок.
+В этом разделе исторически зафиксирована публикация v0.5.6; актуальная
+публикация v0.5.8 и read-back находятся выше.
 
 ## Выпуск v0.4.3
 
