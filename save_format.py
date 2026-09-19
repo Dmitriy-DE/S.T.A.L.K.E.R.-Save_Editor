@@ -17,6 +17,11 @@ from editor.kraken_blocks import (
     RebuildMode,
     compact_rebuild_stream,
 )
+from editor.s2_item_state import (
+    S2_EQUIPMENT_KIND_CODES,
+    has_s2_equipment_shape,
+    read_s2_armor_condition,
+)
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -579,7 +584,69 @@ def _inventory_details(
                 display_name=display_name,
             )
         )
-    items.sort(key=lambda it: (it.y, it.x, it.handle))
+    # Equipped items are actor-owned but intentionally absent from the grid.
+    # Only the observed nested same-handle shape is enough to distinguish them
+    # from ordinary orphan records; synthetic/unknown records stay orphaned.
+    grid_handles = {cell.handle for cell in layout.grid_cells}
+    for handle in layout.owned_handles:
+        if handle == 0xFFFFFFFF or handle in grid_handles or handle in unresolved:
+            continue
+        candidates = _candidate_object_records(raw, handle)
+        if len(candidates) != 1:
+            continue
+        rec_off, count, total_weight, kind = candidates[0]
+        if kind not in S2_EQUIPMENT_KIND_CODES or not has_s2_equipment_shape(
+            raw,
+            handle=handle,
+            record_offset=rec_off,
+            kind_code=kind,
+        ):
+            continue
+        type_key_bytes = raw[rec_off + 8 : rec_off + 11]
+        condition = None
+        condition_editable = False
+        if kind == 1:
+            condition_anchor = read_s2_armor_condition(
+                raw,
+                handle=handle,
+                record_offset=rec_off,
+                kind_code=kind,
+            )
+            if condition_anchor is not None:
+                condition = condition_anchor.value
+                condition_editable = True
+            else:
+                warnings.append(
+                    f"Equipped handle 0x{handle:08X}: S2 armor condition не подтверждён"
+                )
+        items.append(
+            InventoryItem(
+                handle=handle,
+                x=None,
+                y=None,
+                width=None,
+                height=None,
+                cells=(),
+                count=count,
+                total_weight=total_weight,
+                unit_weight=total_weight / count if count else 0.0,
+                kind_code=kind,
+                category=_category_name(kind),
+                record_offset=rec_off,
+                record_end_guess=ends.get(handle, min(len(raw), rec_off + 512)),
+                fingerprint=raw[rec_off + 4 : rec_off + 18].hex(),
+                type_key=type_key_bytes.hex(),
+                editable_count=False,
+                display_name=_s2_display_name(name_table, type_key_bytes),
+                position_label="экипировано",
+                size_label="неизвестно",
+                count_max=1_000_000,
+                condition=condition,
+                condition_editable=condition_editable,
+                storage="equipped",
+            )
+        )
+    items.sort(key=lambda it: (it.y is None, it.y or 0, it.x is None, it.x or 0, it.handle))
     if not items and layout.declared_grid_count:
         warnings.append("Не удалось сопоставить ни одной grid cell с object record")
     for handle in layout.owned_handles:
@@ -610,6 +677,13 @@ def locate_orphans(raw: bytes) -> tuple[OrphanItem, ...]:
         if len(c) != 1:
             continue
         rec_off, count, weight, kind = c[0]
+        if has_s2_equipment_shape(
+            raw,
+            handle=h,
+            record_offset=rec_off,
+            kind_code=kind,
+        ):
+            continue
         x = struct.unpack_from("<H", raw, rec_off + OBJ_POS_X_OFFSET)[0]
         y = struct.unpack_from("<H", raw, rec_off + OBJ_POS_Y_OFFSET)[0]
         out.append(

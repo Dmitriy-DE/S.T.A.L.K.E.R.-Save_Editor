@@ -7,6 +7,7 @@ import struct
 from dataclasses import dataclass
 
 S2_ARMOR_KIND_CODE = 1
+S2_EQUIPMENT_KIND_CODES = frozenset({0, 1, 2})
 S2_ARMOR_NESTED_RELATIVE_OFFSET = 0x23
 S2_ARMOR_CONDITION_RELATIVE_OFFSET = 4
 
@@ -24,6 +25,29 @@ class S2ConditionAnchor:
     nested_offset: int
     value_offset: int
     value: float
+
+
+def has_s2_equipment_shape(
+    raw: bytes | bytearray,
+    *,
+    handle: int,
+    record_offset: int,
+    kind_code: int,
+) -> bool:
+    """Return whether an owned non-grid record has the observed S2 shape."""
+
+    if kind_code not in S2_EQUIPMENT_KIND_CODES:
+        return False
+    if record_offset < 0 or record_offset + 4 > len(raw):
+        return False
+    nested_offset = record_offset + S2_ARMOR_NESTED_RELATIVE_OFFSET
+    if nested_offset + 4 > len(raw):
+        return False
+    packed_handle = struct.pack("<I", handle)
+    return (
+        raw[record_offset : record_offset + 4] == packed_handle
+        and raw[nested_offset : nested_offset + 4] == packed_handle
+    )
 
 
 def _read_anchor(
@@ -110,8 +134,10 @@ __all__ = [
     "S2_ARMOR_CONDITION_RELATIVE_OFFSET",
     "S2_ARMOR_KIND_CODE",
     "S2_ARMOR_NESTED_RELATIVE_OFFSET",
+    "S2_EQUIPMENT_KIND_CODES",
     "S2ConditionAnchor",
     "S2ItemStateError",
+    "has_s2_equipment_shape",
     "patch_s2_armor_condition",
     "read_s2_armor_condition",
 ]
