@@ -113,3 +113,14 @@ def test_writer_rejects_record_handle_mismatch() -> None:
             kind_code=1,
             value=0.5,
         )
+
+
+def test_writer_rejects_handle_outside_u32() -> None:
+    with pytest.raises(S2ItemStateError, match="handle"):
+        patch_s2_armor_condition(
+            _record(),
+            handle=0x1_0000_0000,
+            record_offset=RECORD_OFFSET,
+            kind_code=1,
+            value=0.5,
+        )

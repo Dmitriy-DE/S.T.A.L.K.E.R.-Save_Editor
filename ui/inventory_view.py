@@ -233,6 +233,7 @@ class InventoryView(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self.condition_spin.setEnabled(False)
+        self.condition_spin.setVisible(False)
         self.condition_spin.valueChanged.connect(self._on_condition_changed)
         condition_controls.addWidget(self.condition_spin)
         self.condition_unknown_label = QLabel("—")

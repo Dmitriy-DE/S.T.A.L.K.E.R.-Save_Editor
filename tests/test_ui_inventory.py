@@ -260,6 +260,7 @@ def test_confirmed_s2_armor_condition_is_editable(
     assert not view.condition_spin.isHidden()
     assert view.condition_spin.value() == pytest.approx(75.0)
     assert view.condition_stage_button.isEnabled()
+    assert "S2 STATE f32 armor anchor" in view.condition_status_label.text()
 
 
 def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(

@@ -27,6 +27,12 @@ class S2ConditionAnchor:
     value: float
 
 
+def _packed_handle(handle: int) -> bytes | None:
+    if not 0 <= handle <= 0xFFFFFFFF:
+        return None
+    return struct.pack("<I", handle)
+
+
 def has_s2_equipment_shape(
     raw: bytes | bytearray,
     *,
@@ -43,7 +49,9 @@ def has_s2_equipment_shape(
     nested_offset = record_offset + S2_ARMOR_NESTED_RELATIVE_OFFSET
     if nested_offset + 4 > len(raw):
         return False
-    packed_handle = struct.pack("<I", handle)
+    packed_handle = _packed_handle(handle)
+    if packed_handle is None:
+        return False
     return (
         raw[record_offset : record_offset + 4] == packed_handle
         and raw[nested_offset : nested_offset + 4] == packed_handle
@@ -61,13 +69,16 @@ def _read_anchor(
         return None
     if record_offset < 0 or record_offset + 4 > len(raw):
         return None
-    if raw[record_offset : record_offset + 4] != struct.pack("<I", handle):
+    packed_handle = _packed_handle(handle)
+    if packed_handle is None:
+        return None
+    if raw[record_offset : record_offset + 4] != packed_handle:
         return None
     nested_offset = record_offset + S2_ARMOR_NESTED_RELATIVE_OFFSET
     value_offset = nested_offset + S2_ARMOR_CONDITION_RELATIVE_OFFSET
     if value_offset + 4 > len(raw):
         return None
-    if raw[nested_offset : nested_offset + 4] != struct.pack("<I", handle):
+    if raw[nested_offset : nested_offset + 4] != packed_handle:
         return None
     value = struct.unpack_from("<f", raw, value_offset)[0]
     if not math.isfinite(value) or not 0.0 <= value <= 1.0:

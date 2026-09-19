@@ -1126,7 +1126,12 @@ class MainWindow(QMainWindow):
             reason=(
                 "Только чтение: правка прочности не подтверждена для этого релиза"
                 if capabilities is not None and not capabilities.edit_durability
-                else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"
+                else (
+                    "Экспериментально: S2 STATE f32 armor anchor; backup обязателен"
+                    if self.snapshot is not None
+                    and self.snapshot.format_id == "stalker2"
+                    else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"
+                )
                 if capabilities is not None and capabilities.is_experimental("edit_durability")
                 else None
             ),
