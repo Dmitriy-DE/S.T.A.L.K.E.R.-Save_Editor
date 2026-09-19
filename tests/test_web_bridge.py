@@ -49,7 +49,11 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["edition"] == "s2"
     assert snapshot["capabilities"]["read_inventory"] is True
     assert snapshot["capabilities"]["edit_money"] is True
-    assert snapshot["capabilities"]["experimental_fields"] == ["edit_money"]
+    assert snapshot["capabilities"]["experimental_fields"] == [
+        "edit_durability",
+        "edit_money",
+    ]
+    assert snapshot["capabilities"]["edit_durability"] is True
     assert snapshot["capabilities"]["edit_stacks"] is False
     assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["catalog_available"] is False
