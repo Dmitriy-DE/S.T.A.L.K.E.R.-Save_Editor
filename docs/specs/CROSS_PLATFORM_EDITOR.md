@@ -137,6 +137,16 @@ prototype bytes или право add/clone/upgrade. Browser принимает 
 release-scoped metadata bundle только когда он явно сгенерирован из official
 resource root; сайт не получает доступ к локальной папке игры автоматически.
 
+Equipment Editor использует один shared projection для Qt и web. Пользовательские
+категории `weapon`, `armor` и `helmet` не подменяют format-specific serializer
+family; location (`equipped`/`inventory`) и точные catalog names/icons остаются
+отдельными полями. Для original X-Ray прочность и bulk repair имеют maturity
+`experimental` до game load/re-save evidence. Для S2 condition writer,
+placement, add/remove и upgrades остаются `research` или `unsupported`, то есть
+read-only с конкретной причиной; scalar observation не включает запись. Каждая
+Enhanced Edition имеет независимый unavailable profile и не наследует writer
+оригинальной игры.
+
 Для original X-Ray `EditPlan.detach` остаётся явно structural операцией. Перед
 удалением writer запускает `editor.xray_delete.analyze_xray_delete(...)` и
 отказывает для отсутствующего/unresolved target, explicit equipped placement,

@@ -64,11 +64,11 @@
 - Consumes: Task 1 projection and the existing X-Ray condition/placement anchors.
 - Produces: catalog-aware equipment rows with display category, serializer family, exact location, current condition, and per-item mutation reasons.
 
-- [ ] **Step 1: Add failing tests for weapon, armor, CoP helmet, equipped item, backpack item, and unknown condition rows using the existing X-Ray fixtures.** Include assertions that a helmet remains serializer family `outfit` and that no category is inferred from an unverified generic name.
-- [ ] **Step 2: Run the targeted tests and observe the expected taxonomy/metadata failures.**
-- [ ] **Step 3: Implement the catalog bridge.** Add only exact release-scoped mappings; preserve unknown names and icons as unknown; expose the existing condition codec result without changing offsets or the writer.
-- [ ] **Step 4: Run `pytest tests/test_equipment.py tests/test_xray_durability.py tests/test_xray_catalog.py -q`.**
-- [ ] **Step 5: Commit `feat: classify xray equipment safely`.**
+- [x] **Step 1: Add failing tests for weapon, armor, CoP helmet, equipped item, backpack item, and unknown condition rows using the existing X-Ray fixtures.** Include assertions that a helmet remains serializer family `outfit` and that no category is inferred from an unverified generic name.
+- [x] **Step 2: Run the targeted tests and observe the expected taxonomy/metadata failures.**
+- [x] **Step 3: Implement the catalog bridge.** Add only exact release-scoped mappings; preserve unknown names and icons as unknown; expose the existing condition codec result without changing offsets or the writer.
+- [x] **Step 4: Run `pytest tests/test_equipment.py tests/test_xray_durability.py tests/test_xray_catalog.py -q`.**
+- [x] **Step 5: Commit `feat: classify xray equipment safely`.**
 
 ### Task 3: Durable staging and bulk repair
 
@@ -85,12 +85,12 @@
 - Consumes: `EquipmentItem`, `EquipmentSupport`, existing `EditPlan.durability`, and `LocalSnapshot`.
 - Produces: `RepairSkip`, `RepairStageResult`, `stage_repair()`, and `stage_bulk_repair()`; Qt actions for individual and bulk repair.
 
-- [ ] **Step 1: Write failing pure tests for 0%, 50%, 100%, invalid values, no-op reset, missing/ambiguous anchors, and bulk filters.** Verify only writable equipment produces durability tuples and skipped rows include a stable reason.
-- [ ] **Step 2: Run `pytest tests/test_equipment_edits.py -q`; confirm the expected missing-interface failures.**
-- [ ] **Step 3: Implement finite 0…1 validation and deterministic handle-deduplicated staging.** Do not mutate `SaveInfo` or source bytes. Keep the existing writer preflight as the final guard.
-- [ ] **Step 4: Add `EquipmentTableModel` and `EquipmentView` with product filters, individual reset, bulk filter buttons, catalog icons, and maturity reasons.** Use Russian product terminology; keep technical codec terms in tooltips. Wire staged values into existing preview/apply counters and clear actions without replacing the established inventory surface.
-- [ ] **Step 5: Run `pytest tests/test_equipment_edits.py tests/test_ui_equipment.py tests/test_edit_plan.py tests/test_ui_inventory.py -q`.**
-- [ ] **Step 6: Commit `feat: add safe individual and bulk equipment repair staging`.**
+- [x] **Step 1: Write failing pure tests for 0%, 50%, 100%, invalid values, no-op reset, missing/ambiguous anchors, and bulk filters.** Verify only writable equipment produces durability tuples and skipped rows include a stable reason.
+- [x] **Step 2: Run `pytest tests/test_equipment_edits.py -q`; confirm the expected missing-interface failures.**
+- [x] **Step 3: Implement finite 0…1 validation and deterministic handle-deduplicated staging.** Do not mutate `SaveInfo` or source bytes. Keep the existing writer preflight as the final guard.
+- [x] **Step 4: Add `EquipmentTableModel` and `EquipmentView` with product filters, individual reset, bulk filter buttons, catalog icons, and maturity reasons.** Use Russian product terminology; keep technical codec terms in tooltips. Wire staged values into existing preview/apply counters and clear actions without replacing the established inventory surface.
+- [x] **Step 5: Run `pytest tests/test_equipment_edits.py tests/test_ui_equipment.py tests/test_edit_plan.py tests/test_ui_inventory.py -q`.**
+- [x] **Step 6: Commit `feat: add safe individual and bulk equipment repair staging`.**
 
 ### Task 4: S2 research boundary and independent Enhanced Edition profiles
 
@@ -110,12 +110,12 @@
 - Consumes: shared projection, parsed save-local S2 names, and explicit sample paths.
 - Produces: read-only research report with source hashes, release id, observed categories, and exact blockers; seven release-specific support descriptors.
 
-- [ ] **Step 1: Write failing tests for a multi-sample report and for S2/EE capabilities.** Assert that no writer capability is enabled from a scalar observation alone and that EE never falls through to an original adapter.
-- [ ] **Step 2: Run the targeted tests and observe the expected missing-report/profile failures.**
-- [ ] **Step 3: Implement the research report.** It reads only explicit files, records SHA-256 and parser observations, reports missing controlled A/B/game evidence, and never writes a save. Add independent EE metadata with `unsupported` reasons.
-- [ ] **Step 4: Add CLI argument validation and human-readable JSON/text output; test malformed paths and mixed release samples.**
-- [ ] **Step 5: Run `pytest tests/test_equipment_research.py tests/test_releases.py tests/test_formats.py -q`.**
-- [ ] **Step 6: Commit `feat: document s2 and enhanced equipment evidence gates`.**
+- [x] **Step 1: Write failing tests for a multi-sample report and for S2/EE capabilities.** Assert that no writer capability is enabled from a scalar observation alone and that EE never falls through to an original adapter.
+- [x] **Step 2: Run the targeted tests and observe the expected missing-report/profile failures.**
+- [x] **Step 3: Implement the research report.** It reads only explicit files, records SHA-256 and parser observations, reports missing controlled A/B/game evidence, and never writes a save. Add independent EE metadata with `unsupported` reasons.
+- [x] **Step 4: Add CLI argument validation and human-readable JSON/text output; test malformed paths and mixed release samples.**
+- [x] **Step 5: Run `pytest tests/test_equipment_research.py tests/test_releases.py tests/test_formats.py -q`.**
+- [x] **Step 6: Commit `feat: document s2 and enhanced equipment evidence gates`.**
 
 ### Task 5: Shared web bridge and Equipment view
 
@@ -134,12 +134,12 @@
 - Consumes: Task 1 projection, Task 3 staging result, and existing web `prepare()` contract.
 - Produces: JSON equipment rows/support metadata and matching Qt/web filters, controls, staged before→after display, and skipped-item messages.
 
-- [ ] **Step 1: Write failing bridge tests for equipment rows, maturity metadata, filters, and repair staging parity with desktop.**
-- [ ] **Step 2: Run targeted web/Qt tests and confirm missing JSON/UI behavior.**
-- [ ] **Step 3: Add a bridge serializer that emits only projection values and exact catalog icon metadata; leave S2/EE condition fields read-only when unsupported.**
-- [ ] **Step 4: Add web controls and Qt equipment presentation using the same filter names and support reasons.**
-- [ ] **Step 5: Run `pytest tests/test_web_bridge.py tests/test_web_equipment.py tests/test_ui_equipment.py -q`, `node --check web/app.js`, and `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python web`.**
-- [ ] **Step 6: Commit `feat: expose shared equipment editor in qt and web`.**
+- [x] **Step 1: Write failing bridge tests for equipment rows, maturity metadata, filters, and repair staging parity with desktop.**
+- [x] **Step 2: Run targeted web/Qt tests and confirm missing JSON/UI behavior.**
+- [x] **Step 3: Add a bridge serializer that emits only projection values and exact catalog icon metadata; leave S2/EE condition fields read-only when unsupported.**
+- [x] **Step 4: Add web controls and Qt equipment presentation using the same filter names and support reasons.**
+- [x] **Step 5: Run `pytest tests/test_web_bridge.py tests/test_web_equipment.py tests/test_ui_equipment.py -q`, `node --check web/app.js`, and `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python web`.**
+- [x] **Step 6: Commit `feat: expose shared equipment editor in qt and web`.**
 
 ### Task 6: Full gates, generated assets, and release documentation
 
@@ -156,11 +156,11 @@
 - Consumes: all prior shared interfaces and committed evidence limits.
 - Produces: current documentation that distinguishes implemented X-Ray repair from S2/EE research/read-only support and reproducible generated web artifacts.
 
-- [ ] **Step 1: Add failing consistency assertions for Equipment terminology, release maturity, and generated web parity.**
-- [ ] **Step 2: Run the targeted documentation tests and observe stale-document failures.**
-- [ ] **Step 3: Update docs and regenerate only repository-approved web artifacts.** Document that structural round-trip is not game acceptance and list the exact S2 evidence still required for a writer.
-- [ ] **Step 4: Run `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python check`, `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python test`, `node --check web/app.js`, and `git diff --check`.**
-- [ ] **Step 5: Commit `docs: record equipment editor scope and evidence gates`.**
+- [x] **Step 1: Add failing consistency assertions for Equipment terminology, release maturity, and generated web parity.**
+- [x] **Step 2: Run the targeted documentation tests and observe stale-document failures.**
+- [x] **Step 3: Update docs and regenerate only repository-approved web artifacts.** Document that structural round-trip is not game acceptance and list the exact S2 evidence still required for a writer.
+- [x] **Step 4: Run `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python check`, `make PYTHON=/home/dmytro/Projects/save-editor/.venv/bin/python test`, `node --check web/app.js`, and `git diff --check`.**
+- [x] **Step 5: Commit `docs: record equipment editor scope and evidence gates`.**
 
 ## Self-review
 

@@ -59,6 +59,7 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
     import tools.export_theme as theme
 
     assert "editor/capabilities.py" in bundle.MODULES
+    assert "editor/equipment.py" in bundle.MODULES
     assert "editor/xray_delete.py" in bundle.MODULES
     assert bundle.main(["--check"]) == 0, (
         "web/pysrc.json is stale; run python3 tools/build_web_bundle.py"
@@ -66,6 +67,22 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
     assert theme.main(["--check"]) == 0, (
         "web/theme.css is stale; run python3 tools/export_theme.py"
     )
+
+
+def test_cross_platform_spec_records_equipment_evidence_boundary() -> None:
+    document = (render.ROOT / "docs" / "specs" / "CROSS_PLATFORM_EDITOR.md").read_text(
+        encoding="utf-8"
+    )
+    for marker in (
+        "Equipment",
+        "weapon",
+        "armor",
+        "helmet",
+        "S2",
+        "game load/re-save",
+        "read-only",
+    ):
+        assert marker in document
 
 
 def test_browser_catalog_is_compact_official_metadata_only() -> None:

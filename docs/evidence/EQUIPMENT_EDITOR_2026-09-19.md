@@ -4,13 +4,13 @@
 
 The shared projection in `editor/equipment.py` separates the product category
 (`weapon`, `armor`, `helmet`, `other`) from the serializer family and exposes
-`equipped`, `inventory`, or `unknown` placement. Exact catalog definitions
+`equipped`, `inventory`, `belt`, or `unknown` placement. Exact catalog definitions
 provide names and icon coordinates; an absent definition never creates a
 fabricated name or icon.
 
 Qt and web consume the same projection contract. Qt has a dedicated Equipment
-surface with category/location/damaged/staged filters, search, sorting,
-individual 0–100% staging, reset, and bulk repair actions. Bulk staging uses
+surface with release-scoped category/location/damaged/staged filters, search,
+sorting, individual 0–100% staging, reset, and bulk repair actions. Bulk staging uses
 the immutable `EditPlan.durability` path and reports every skipped item.
 
 ## Release maturity
@@ -28,6 +28,11 @@ the immutable `EditPlan.durability` path and reports every skipped item.
 `experimental` means the exact parser/writer round-trip is guarded, not that
 the game accepted the edited file. `verified` is intentionally unused until a
 release-specific load/re-save result exists.
+
+Only Call of Pripyat Original and S2 expose a separate helmet category in the
+current product model. SoC/CS Original treat helmet-like outfit keys as armor;
+Enhanced Edition filters remain unavailable with their independent unsupported
+profiles.
 
 ## S.T.A.L.K.E.R. 2 research boundary
 

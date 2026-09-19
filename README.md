@@ -65,8 +65,9 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   container, actor money, полный actor-owned inventory snapshot, официальные
   catalog keys и serializer families. Ammo count пишется одновременно в
   STATE и UPDATE.
-- Equipment Editor: общий Qt/web-проектор различает weapon, armor и helmet,
-  equipped и inventory, показывает точные catalog names/icons и поддерживает
+- Equipment Editor: общий Qt/web-проектор различает weapon, armor и release-specific
+  helmet (отдельные helmets сейчас только для CoP Original/S2), equipped,
+  backpack и belt, показывает точные catalog names/icons и поддерживает
   индивидуальный/массовый staged repair для подтверждённых X-Ray condition
   anchors. Это experimental до игрового load/re-save. S.T.A.L.K.E.R. 2
   показывает equipment в research/read-only maturity с воспроизводимым CLI
