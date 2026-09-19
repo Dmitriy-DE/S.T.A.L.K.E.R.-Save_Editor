@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
+from editor.equipment import equipment_support_for_release
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs, installed_releases
@@ -71,6 +72,7 @@ def _default_s2_capabilities() -> FormatCapabilities:
         read_inventory=True,
         edit_money=True,
         edit_stacks=True,
+        equipment=equipment_support_for_release("stalker2"),
         experimental_fields=frozenset({"edit_money"}),
     )
 

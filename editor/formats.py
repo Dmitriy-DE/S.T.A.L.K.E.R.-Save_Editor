@@ -11,6 +11,7 @@ from save_format import SaveError, SaveInfo, inspect_save
 
 from .capabilities import FormatCapabilities, gate_mutations_for_release
 from .catalog import GameCatalog, ItemCatalog
+from .equipment import equipment_support_for_release
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
 from .releases import release_by_id
@@ -118,6 +119,7 @@ class _Stalker2Format:
             edit_money=True,
             edit_stacks=True,
             catalog=True,
+            equipment=equipment_support_for_release("stalker2"),
             experimental_fields=frozenset({"edit_money"}),
         ),
     )
@@ -221,6 +223,7 @@ class _XRayFormat:
                 edit_player_faction=True,
                 edit_placement=True,
                 catalog=True,
+                equipment=equipment_support_for_release(spec.id),
                 experimental_fields=frozenset(
                     {
                         "edit_durability",

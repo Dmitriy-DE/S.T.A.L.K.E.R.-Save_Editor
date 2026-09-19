@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from .equipment import EquipmentSupport
+
 # The owner accepted the three installed original X-Ray releases after loading
 # the edited copies in each official game and confirming the visible result.
 # S.T.A.L.K.E.R. 2 and Enhanced Editions remain gated until their own local
@@ -50,6 +52,7 @@ class FormatCapabilities:
     edit_relations: bool = False
     edit_player_faction: bool = False
     edit_placement: bool = False
+    equipment: EquipmentSupport | None = None
     experimental_fields: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
@@ -87,6 +90,7 @@ class FormatCapabilities:
             "edit_relations": self.edit_relations,
             "edit_player_faction": self.edit_player_faction,
             "edit_placement": self.edit_placement,
+            "equipment": self.equipment.as_dict() if self.equipment is not None else None,
             "experimental_fields": sorted(self.experimental_fields),
         }
 
