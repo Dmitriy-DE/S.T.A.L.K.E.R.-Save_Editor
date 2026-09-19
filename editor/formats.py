@@ -14,8 +14,12 @@ from .catalog import GameCatalog, ItemCatalog
 from .equipment import equipment_support_for_release
 from .models import EditPlan, PreparedEdit
 from .prepare import prepare_edit
-from .releases import release_by_id
-from .s2_catalog import S2CatalogProvider
+from .releases import ReleaseDescriptor, release_by_id
+from .s2_catalog import (
+    S2CatalogProvider,
+    S2CatalogSource,
+    discover_s2_catalog_sources,
+)
 from .xray_catalog import XRayCatalogProvider
 from .xray_save import (
     COP_FORMAT,
@@ -153,38 +157,31 @@ class _Stalker2Format:
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_save(data, with_inventory=with_inventory)
 
-    @staticmethod
-    def _roots_for_source(source_name: str | None) -> tuple[Path, ...]:
-        if not source_name:
-            return ()
-        source = Path(source_name).expanduser()
-        if not source.is_absolute() and not source.exists():
-            return ()
-        try:
-            source = source.resolve()
-        except OSError:
-            return ()
-        start = source.parent if source.is_file() else source
-        return (start, *start.parents)
-
     def catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
-        """Read official loose S2 prototype metadata, never save mappings."""
+        """Read loose S2 metadata, keeping Workshop overlays explicit."""
 
         provider = S2CatalogProvider()
         release = release_by_id(self.release_id)
-        roots = list(self._roots_for_source(source_name))
+        installed_roots: list[Path] = []
+        steam_roots: tuple[Path, ...] = ()
         try:
-            from .platforms import installed_releases
+            from .platforms import installed_releases, steam_libraries
 
-            roots.extend(
+            installed_roots.extend(
                 game.install_dir
                 for game in installed_releases()
                 if game.release_id == self.release_id
             )
+            steam_roots = steam_libraries()
         except (OSError, RuntimeError):
             pass
-        for root in dict.fromkeys(roots):
-            catalog = provider.load(release, root)
+        sources = discover_s2_catalog_sources(
+            source_name,
+            installed_roots=installed_roots,
+            steam_libraries=steam_roots,
+        )
+        for source in sources:
+            catalog = self._load_catalog_source(provider, release, source)
             if catalog is not None:
                 return catalog
         return None
@@ -194,22 +191,49 @@ class _Stalker2Format:
 
         provider = S2CatalogProvider()
         release = release_by_id(self.release_id)
-        roots = list(self._roots_for_source(source_name))
+        installed_roots: list[Path] = []
+        steam_roots: tuple[Path, ...] = ()
         try:
-            from .platforms import installed_releases
+            from .platforms import installed_releases, steam_libraries
 
-            roots.extend(
+            installed_roots.extend(
                 game.install_dir
                 for game in installed_releases()
                 if game.release_id == self.release_id
             )
+            steam_roots = steam_libraries()
         except (OSError, RuntimeError):
             pass
-        for root in dict.fromkeys(roots):
-            catalog = provider.load_bundle(release, root)
+        sources = discover_s2_catalog_sources(
+            source_name,
+            installed_roots=installed_roots,
+            steam_libraries=steam_roots,
+        )
+        for source in sources:
+            catalog = self._load_bundle_source(provider, release, source)
             if catalog is not None:
                 return catalog
         return None
+
+    @staticmethod
+    def _load_catalog_source(
+        provider: S2CatalogProvider,
+        release: ReleaseDescriptor,
+        source: S2CatalogSource,
+    ) -> ItemCatalog | None:
+        if source.kind == "workshop":
+            return provider.load_overlay(release, source.root)
+        return provider.load(release, source.root)
+
+    @staticmethod
+    def _load_bundle_source(
+        provider: S2CatalogProvider,
+        release: ReleaseDescriptor,
+        source: S2CatalogSource,
+    ) -> GameCatalog | None:
+        if source.kind == "workshop":
+            return provider.load_overlay_bundle(release, source.root)
+        return provider.load_bundle(release, source.root)
 
     def prepare(
         self,

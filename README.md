@@ -62,6 +62,13 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   сохранением CRC/Kraken safeguards; для экипированной брони с exact
   condition-anchor доступна экспериментальная правка прочности. Структура
   GVAS-инвентаря и добавление предметов пока не включены без доказанной схемы.
+- S2 catalog discovery умеет брать реальные loose names/icons/upgrade metadata
+  из официального `Content/GameLite/GameData`, Zone Kit или Steam Workshop.
+  Для SDK можно задать `STALKER2_ZONE_KIT_ROOT` (или `ZONE_KIT_ROOT`), а
+  Workshop ищется в Steam libraries под
+  `steamapps/workshop/content/1643320`. Чтение Workshop — отдельный
+  catalog-only overlay: `.pak` не распаковываются и writer сейва от этого не
+  включается.
 - Original Shadow of Chornobyl, Clear Sky и Call of Pripyat: strict X-Ray
   container, actor money, полный actor-owned inventory snapshot, официальные
   catalog keys и serializer families. Ammo count пишется одновременно в

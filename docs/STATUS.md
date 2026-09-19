@@ -1,5 +1,15 @@
 # Состояние и пробелы — 2026-09-20
 
+## 2026-09-20 — S2 Zone Kit / Steam Workshop catalog discovery
+
+S2 catalog теперь обнаруживает official install roots, явные Zone Kit roots и
+Steam Workshop `content/1643320` roots. Loose Workshop layout читается только
+через opt-in overlay provider; реальные CFG display names, upgrade names и
+icon paths передаются в общий catalog/icon resolver. `.pak` и Blueprint не
+распаковываются, а S2 add/upgrade/repair writer и SID/type-key mapping от этой
+метаинформации не включаются. Подробности: [S2 Zone Kit / Steam Workshop
+evidence](evidence/S2_ZONEKIT_WORKSHOP_2026-09-20.md).
+
 ## 2026-09-20 — merged main, local cleanup и Pages continuation
 
 Merged `main` — `0f9d207`. После merge подтверждены `496 passed`, `make check`,

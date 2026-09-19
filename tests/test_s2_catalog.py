@@ -4,7 +4,10 @@ from pathlib import Path
 
 from editor.formats import STALKER2_FORMAT, by_id
 from editor.releases import release_by_id
-from editor.s2_catalog import S2CatalogProvider
+from editor.s2_catalog import (
+    S2CatalogProvider,
+    discover_s2_catalog_sources,
+)
 
 
 def _write_s2_resources(root: Path) -> Path:
@@ -76,6 +79,7 @@ struct.end
 
 GunAKU_Upgrade_Attachment : struct.begin
     SID = GunAKU_Upgrade_Attachment
+    DisplayName = UI_Upgrade_GunAKU_Attachment
     ItemPrototypeSID = GunAKU
 struct.end
 """.strip()
@@ -126,6 +130,9 @@ def test_s2_catalog_reads_official_cfg_metadata_without_save_mapping(tmp_path: P
         "Bandage_Upgrade_Standalone",
         "Bandage_Upgrade_Test",
     ]
+    attachment = bundle.upgrades.resolve("GunAKU_Upgrade_Attachment")
+    assert attachment is not None
+    assert attachment.display_name == "UI_Upgrade_GunAKU_Attachment"
     assert not bundle.factions.factions
     assert bundle.items.resolve_display_name("UI_Item_Bandage") == bandage
 
@@ -184,6 +191,86 @@ def test_s2_provider_rejects_mod_overlay_root_and_nested_files(tmp_path: Path) -
     catalog = S2CatalogProvider().load(release_by_id("stalker2"), official_root)
     assert catalog is not None
     assert catalog.resolve("Injected") is None
+
+
+def test_s2_provider_reads_workshop_overlay_only_through_explicit_method(
+    tmp_path: Path,
+) -> None:
+    workshop_item = tmp_path / "workshop" / "123456"
+    mod_root = workshop_item / "Stalker2" / "Mods" / "FixtureMod"
+    _write_s2_resources(mod_root)
+
+    provider = S2CatalogProvider()
+    assert provider.load(release_by_id("stalker2"), workshop_item) is None
+
+    catalog = provider.load_overlay(release_by_id("stalker2"), workshop_item)
+
+    assert catalog is not None
+    assert catalog.source_root == mod_root
+    assert catalog.resolve("Bandage") is not None
+
+
+def test_s2_catalog_source_discovery_finds_zonekit_and_workshop_roots(
+    tmp_path: Path,
+) -> None:
+    save_root = tmp_path / "saves"
+    save_root.mkdir()
+    save_path = save_root / "slot.sav"
+    save_path.write_bytes(b"placeholder")
+    installed_root = tmp_path / "installed-s2"
+    zonekit_root = tmp_path / "zone-kit"
+    installed_root.mkdir()
+    zonekit_root.mkdir()
+    library = tmp_path / "steam-library"
+    workshop_item = library / "steamapps" / "workshop" / "content" / "1643320" / "123456"
+    workshop_item.mkdir(parents=True)
+
+    sources = discover_s2_catalog_sources(
+        str(save_path),
+        installed_roots=(installed_root,),
+        steam_libraries=(library,),
+        environ={"STALKER2_ZONE_KIT_ROOT": str(zonekit_root)},
+    )
+
+    assert any(source.root == save_root and source.kind == "official" for source in sources)
+    assert any(source.root == installed_root and source.kind == "official" for source in sources)
+    assert any(source.root == zonekit_root and source.kind == "zonekit" for source in sources)
+    assert any(source.root == workshop_item and source.kind == "workshop" for source in sources)
+    assert next(source.kind for source in sources if source.root == workshop_item) == "workshop"
+
+
+def test_s2_catalog_source_discovery_accepts_explicit_workshop_item_root(
+    tmp_path: Path,
+) -> None:
+    workshop_item = tmp_path / "123456"
+    (workshop_item / "Content" / "GameLite" / "GameData").mkdir(parents=True)
+
+    sources = discover_s2_catalog_sources(
+        environ={"STALKER2_WORKSHOP_ROOT": str(workshop_item)},
+    )
+
+    assert any(source.root == workshop_item and source.kind == "workshop" for source in sources)
+
+
+def test_s2_format_uses_loose_workshop_catalog_when_official_tree_is_missing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    library = tmp_path / "steam-library"
+    workshop_item = library / "steamapps" / "workshop" / "content" / "1643320" / "123456"
+    mod_root = workshop_item / "Stalker2" / "Mods" / "FixtureMod"
+    _write_s2_resources(mod_root)
+    workshop_item.mkdir(parents=True, exist_ok=True)
+
+    from editor import platforms
+
+    monkeypatch.setattr(platforms, "installed_releases", lambda **_kwargs: ())
+    monkeypatch.setattr(platforms, "steam_libraries", lambda **_kwargs: (library,))
+
+    bundle = STALKER2_FORMAT.game_catalog_for_source(None)
+
+    assert bundle is not None
+    assert bundle.items.source_root == mod_root
+    assert bundle.items.resolve("Bandage") is not None
 
 
 def test_format_registry_points_at_s2_adapter() -> None:

@@ -1,18 +1,22 @@
-"""Read-only metadata catalog for an official S.T.A.L.K.E.R. 2 install.
+"""Read-only metadata catalog for loose S.T.A.L.K.E.R. 2 resources.
 
 S.T.A.L.K.E.R. 2 keeps its gameplay prototypes in Unreal-style ``.cfg``
-structures.  This reader deliberately consumes only loose files under the
-official ``Content/GameLite/GameData`` tree.  It does not unpack PAK files,
-read a mod overlay, or claim that an Unreal prototype SID is the compact key
-stored in a save.  The latter mapping and every S2 save writer remain separate
-evidence gates.
+structures.  The canonical path consumes only loose files under the official
+``Content/GameLite/GameData`` tree.  An explicitly selected Zone Kit or
+Workshop tree can be read as provenance-labeled catalog research data, but
+the reader does not unpack PAK files or claim that an Unreal prototype SID is
+the compact key stored in a save.  The latter mapping and every S2 save writer
+remain separate evidence gates.
 """
 
 from __future__ import annotations
 
+import os
 import re
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from .catalog import (
     FactionCatalog,
@@ -67,10 +71,33 @@ _CATEGORY_BY_FILE = {
 _UPGRADE_KEY_RE = re.compile(r"upgrade.*sids?$", re.IGNORECASE)
 _REFKEY_RE = re.compile(r"\brefkey\s*=\s*([^;}]+)", re.IGNORECASE)
 _NUMBER_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
+_S2_APP_ID = 1643320
+_ZONE_KIT_ENV_KEYS = ("STALKER2_ZONE_KIT_ROOT", "ZONE_KIT_ROOT")
+_WORKSHOP_ENV_KEYS = ("STALKER2_WORKSHOP_ROOT",)
 
 
 class S2CatalogError(ValueError):
     """A malformed loose S2 config file."""
+
+
+@dataclass(frozen=True)
+class S2CatalogSource:
+    """One explicitly discoverable loose metadata source.
+
+    ``official`` and ``zonekit`` sources are read through the canonical
+    parser.  ``workshop`` is deliberately a separate opt-in source because a
+    mod overlay can override the game's prototypes and must never silently
+    become authoritative save metadata.
+    """
+
+    root: Path
+    kind: Literal["official", "zonekit", "workshop"]
+
+    def __post_init__(self) -> None:
+        root = Path(self.root).expanduser()
+        object.__setattr__(self, "root", root)
+        if self.kind not in {"official", "zonekit", "workshop"}:
+            raise ValueError(f"unsupported S2 catalog source kind: {self.kind!r}")
 
 
 @dataclass
@@ -89,6 +116,7 @@ class _S2Record:
 class _UpgradeRow:
     category: str | None
     source: str
+    display_name: str | None = None
     items: set[str] = field(default_factory=set)
 
 
@@ -179,6 +207,118 @@ def _read_text(path: Path) -> str:
 
 def _is_mod_path(path: Path) -> bool:
     return any(part.casefold() in _MOD_PARTS for part in path.parts)
+
+
+def _resolved_path(value: str | Path) -> Path:
+    path = Path(value).expanduser()
+    try:
+        return path.resolve()
+    except OSError:
+        return path
+
+
+def _environment_paths(
+    environ: Mapping[str, str],
+    keys: Sequence[str],
+) -> tuple[Path, ...]:
+    paths: list[Path] = []
+    for key in keys:
+        raw = environ.get(key, "")
+        for value in raw.split(os.pathsep):
+            if value.strip():
+                paths.append(_resolved_path(value.strip()))
+    return tuple(paths)
+
+
+def _append_source(
+    sources: list[S2CatalogSource],
+    seen: set[tuple[Path, str]],
+    root: str | Path,
+    kind: Literal["official", "zonekit", "workshop"],
+) -> None:
+    path = _resolved_path(root)
+    try:
+        if not path.is_dir():
+            return
+    except OSError:
+        return
+    key = (path, kind)
+    if key in seen:
+        return
+    seen.add(key)
+    sources.append(S2CatalogSource(path, kind))
+
+
+def _workshop_item_roots(root: str | Path) -> tuple[Path, ...]:
+    """Return Steam Workshop item directories below one library override."""
+
+    path = _resolved_path(root)
+    if not path.is_dir():
+        return ()
+    if (path / "Content").is_dir() or (path / "Stalker2").is_dir():
+        return (path,)
+    library_content_root = path / "steamapps" / "workshop" / "content" / str(_S2_APP_ID)
+    if library_content_root.is_dir():
+        content_root = library_content_root
+    elif path.name == str(_S2_APP_ID):
+        content_root = path
+    elif (path / str(_S2_APP_ID)).is_dir():
+        content_root = path / str(_S2_APP_ID)
+    elif path.name.isdigit() and path.parent.name == str(_S2_APP_ID):
+        return (path,)
+    else:
+        content_root = path
+    try:
+        return tuple(
+            child
+            for child in sorted(content_root.iterdir(), key=lambda item: item.name.casefold())
+            if child.is_dir() and not child.is_symlink()
+        )
+    except OSError:
+        return ()
+
+
+def discover_s2_catalog_sources(
+    source_name: str | None = None,
+    *,
+    installed_roots: Iterable[str | Path] = (),
+    steam_libraries: Iterable[str | Path] = (),
+    environ: Mapping[str, str] | None = None,
+) -> tuple[S2CatalogSource, ...]:
+    """Discover loose S2 metadata without treating mods as canonical.
+
+    The source path and installed roots are searched first.  Zone Kit roots
+    are explicit environment overrides.  Steam Workshop directories are
+    included last and are only usable through :meth:`load_overlay`, so an
+    overlay cannot shadow an official catalog by accident.
+    """
+
+    sources: list[S2CatalogSource] = []
+    seen: set[tuple[Path, str]] = set()
+    if source_name:
+        source_path = Path(source_name).expanduser()
+        if source_path.is_absolute() or source_path.exists():
+            try:
+                source_path = source_path.resolve()
+            except OSError:
+                pass
+            start = source_path.parent if source_path.is_file() else source_path
+            for source_root in (start, *start.parents):
+                _append_source(sources, seen, source_root, "official")
+
+    for installed_root in installed_roots:
+        _append_source(sources, seen, installed_root, "official")
+
+    env = os.environ if environ is None else environ
+    for zonekit_root in _environment_paths(env, _ZONE_KIT_ENV_KEYS):
+        _append_source(sources, seen, zonekit_root, "zonekit")
+
+    workshop_roots = list(_environment_paths(env, _WORKSHOP_ENV_KEYS))
+    workshop_roots.extend(_resolved_path(library) for library in steam_libraries)
+    for root in workshop_roots:
+        for item_root in _workshop_item_roots(root):
+            _append_source(sources, seen, item_root, "workshop")
+    return tuple(sources)
 
 
 def _effective_values(
@@ -366,7 +506,7 @@ def _source(root: Path, path: Path) -> str:
         return path.as_posix()
 
 
-def _find_game_data(root: Path) -> Path | None:
+def _find_game_data(root: Path, *, allow_mod_path: bool = False) -> Path | None:
     candidates: list[Path] = [
         root / "Content" / "GameLite" / "GameData",
         root / "Stalker2" / "Content" / "GameLite" / "GameData",
@@ -375,13 +515,45 @@ def _find_game_data(root: Path) -> Path | None:
     if root.name.casefold() == "gamedata":
         candidates.insert(0, root)
     for candidate in candidates:
-        if candidate.is_dir() and not _is_mod_path(candidate):
+        if candidate.is_dir() and (allow_mod_path or not _is_mod_path(candidate)):
             return candidate
+    if not allow_mod_path:
+        return None
+    try:
+        nested_candidates = sorted(
+            (
+                path
+                for path in root.rglob("GameData")
+                if path.is_dir()
+                and not path.is_symlink()
+                and tuple(part.casefold() for part in path.parts[-3:])
+                == ("content", "gamelite", "gamedata")
+            ),
+            key=lambda item: item.as_posix().casefold(),
+        )
+    except OSError:
+        return None
+    if nested_candidates:
+        return nested_candidates[0]
     return None
 
 
+def _catalog_source_root(root: Path, game_data: Path) -> Path:
+    """Return the content root from which loose image assets are addressable."""
+
+    if root.name.casefold() == "gamedata":
+        return root
+    if tuple(part.casefold() for part in game_data.parts[-3:]) == (
+        "content",
+        "gamelite",
+        "gamedata",
+    ):
+        return game_data.parents[2]
+    return root
+
+
 class S2CatalogProvider:
-    """Load official loose S2 prototype metadata without save semantics."""
+    """Load loose S2 prototype metadata without save semantics."""
 
     def __init__(self) -> None:
         self._catalog: ItemCatalog | None = None
@@ -392,24 +564,53 @@ class S2CatalogProvider:
         release: ReleaseDescriptor,
         game_root: Path | None = None,
     ) -> ItemCatalog | None:
+        """Load canonical official metadata and reject mod overlays."""
+
+        return self._load(release, game_root, allow_mod_overlay=False)
+
+    def load_overlay(
+        self,
+        release: ReleaseDescriptor,
+        game_root: Path | None = None,
+    ) -> ItemCatalog | None:
+        """Load one explicitly selected loose Workshop/mod metadata tree.
+
+        This is catalog-only research data. It never changes the selected
+        save format capabilities and it is never merged into an official
+        catalog implicitly.
+        """
+
+        return self._load(release, game_root, allow_mod_overlay=True)
+
+    def _load(
+        self,
+        release: ReleaseDescriptor,
+        game_root: Path | None,
+        *,
+        allow_mod_overlay: bool,
+    ) -> ItemCatalog | None:
         self._catalog = None
         self._game_catalog = None
         if release.family != "stalker2" or release.edition != "s2" or game_root is None:
             return None
         root = Path(game_root).expanduser()
-        if not root.is_dir() or _is_mod_path(root):
+        if not root.is_dir() or (not allow_mod_overlay and _is_mod_path(root)):
             return None
-        game_data = _find_game_data(root)
+        game_data = _find_game_data(root, allow_mod_path=allow_mod_overlay)
         if game_data is None:
             return None
         item_root = game_data / "ItemPrototypes"
-        if not item_root.is_dir() or _is_mod_path(item_root):
+        if not item_root.is_dir() or (
+            not allow_mod_overlay and _is_mod_path(item_root)
+        ):
             return None
 
         item_paths = tuple(
             path
             for path in sorted(item_root.rglob("*.cfg"), key=lambda item: item.as_posix().casefold())
-            if path.is_file() and not path.is_symlink() and not _is_mod_path(path)
+            if path.is_file()
+            and not path.is_symlink()
+            and (allow_mod_overlay or not _is_mod_path(path))
         )
         records: list[_S2Record] = []
         for path in item_paths:
@@ -425,7 +626,7 @@ class S2CatalogProvider:
             for path in sorted(game_data.rglob("*.cfg"), key=lambda item: item.as_posix().casefold())
             if path.is_file()
             and not path.is_symlink()
-            and not _is_mod_path(path)
+            and (allow_mod_overlay or not _is_mod_path(path))
             and "upgrade" in path.as_posix().casefold()
             and path not in item_paths
         )
@@ -473,7 +674,7 @@ class S2CatalogProvider:
         if not items:
             return None
 
-        source_root = root
+        source_root = _catalog_source_root(root, game_data)
         item_catalog = ItemCatalog(release.id, source_root, tuple(items))
         upgrade_rows: dict[str, _UpgradeRow] = {}
         for item_sid, upgrade_sids in item_upgrade_refs.items():
@@ -498,8 +699,11 @@ class S2CatalogProvider:
                     _UpgradeRow(
                         category=_category(record, values),
                         source=f"{record.source}#{record.name or sid}",
+                        display_name=_display_name(values),
                     ),
                 )
+                if row.display_name is None:
+                    row.display_name = _display_name(values)
                 for item_sid in _item_sids(values):
                     if item_sid in item_by_sid:
                         row.items.add(item_sid)
@@ -511,7 +715,7 @@ class S2CatalogProvider:
                 tuple(
                     UpgradeDefinition(
                         key=key,
-                        display_name=None,
+                        display_name=row.display_name,
                         category=row.category,
                         item_key=(
                             sorted(row.items)[0]
@@ -543,8 +747,23 @@ class S2CatalogProvider:
         self.load(release, game_root)
         return self._game_catalog
 
+    def load_overlay_bundle(
+        self,
+        release: ReleaseDescriptor,
+        game_root: Path | None = None,
+    ) -> GameCatalog | None:
+        """Load one explicit Workshop/mod tree as a catalog-only bundle."""
+
+        self.load_overlay(release, game_root)
+        return self._game_catalog
+
     def resolve(self, key: str) -> ItemDefinition | None:
         return self._catalog.resolve(key) if self._catalog is not None else None
 
 
-__all__ = ["S2CatalogError", "S2CatalogProvider"]
+__all__ = [
+    "S2CatalogError",
+    "S2CatalogProvider",
+    "S2CatalogSource",
+    "discover_s2_catalog_sources",
+]

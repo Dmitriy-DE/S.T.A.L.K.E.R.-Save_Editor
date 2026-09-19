@@ -1,5 +1,13 @@
 # Проверка и выпуск
 
+## Непубликованный continuation — 2026-09-20
+
+Добавлен read-only S2 catalog discovery для loose official/Zone Kit/Steam
+Workshop CFG: реальные item/upgrade names и icon paths могут попасть в общий
+каталог, Workshop overlay выбирается явно, а `.pak` и S2 save writer остаются
+за evidence gate. Это изменение пока не является новым release/tag и не
+подтверждает игровой load/re-save.
+
 ## Продолжение main — 2026-09-20
 
 Коммит `0f9d207` продолжает v0.5.8 без поднятия версии: добавлены guarded
