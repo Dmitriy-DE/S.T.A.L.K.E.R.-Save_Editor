@@ -400,7 +400,6 @@ class SaveSlotsView(QWidget):
         self.search_paths_label = QLabel("Каталоги поиска появятся после обновления")
         self.search_paths_label.setWordWrap(True)
         self.search_paths_label.setObjectName("discoveryHint")
-        self.search_paths_label.setStyleSheet("color: palette(mid);")
         self.search_paths_label.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )

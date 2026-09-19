@@ -596,27 +596,41 @@ class SteamCdpWorker:
         return files
 
     def read_file(self, filename: str) -> bytes:
-        url = self._urls.get(filename)
-        if not url:
-            raise SteamCdpError(
-                f"Steam web cloud не дал download URL для {filename}; обнови список"
-            )
-        parsed = urllib.parse.urlsplit(url)
-        host = (parsed.hostname or "").casefold()
-        if parsed.scheme != "https" or not (
-            host == "store.steampowered.com"
-            or host.endswith(".steamusercontent.com")
-            or host.endswith(".akamaihd.net")
-        ):
-            raise SteamCdpError("Steam Cloud download URL не прошёл проверку домена")
-        try:
-            with urllib.request.urlopen(url, timeout=self.timeout) as response:
-                data = response.read(MAX_FILE_BYTES + 1)
-        except Exception as exc:
-            raise SteamCdpError(f"Не удалось скачать Steam Cloud файл: {exc}") from exc
-        if len(data) > MAX_FILE_BYTES:
-            raise SteamCdpError(f"Steam Cloud файл слишком большой (>{MAX_FILE_BYTES} bytes)")
-        return data
+        last_error: Exception | None = None
+        for attempt in range(2):
+            url = self._urls.get(filename)
+            if not url:
+                raise SteamCdpError(
+                    f"Steam web cloud не дал download URL для {filename}; обнови список"
+                )
+            parsed = urllib.parse.urlsplit(url)
+            host = (parsed.hostname or "").casefold()
+            if parsed.scheme != "https" or not (
+                host == "store.steampowered.com"
+                or host.endswith(".steamusercontent.com")
+                or host.endswith(".akamaihd.net")
+            ):
+                raise SteamCdpError("Steam Cloud download URL не прошёл проверку домена")
+            try:
+                with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                    data = response.read(MAX_FILE_BYTES + 1)
+            except Exception as exc:
+                last_error = exc
+                if attempt == 0:
+                    try:
+                        # Steam's web links expire. Re-listing obtains a new
+                        # signed URL before the transaction attempts a fresh
+                        # source read or read-back.
+                        self.list_files()
+                    except Exception as refresh_exc:
+                        last_error = refresh_exc
+                        break
+                    continue
+                break
+            if len(data) > MAX_FILE_BYTES:
+                raise SteamCdpError(f"Steam Cloud файл слишком большой (>{MAX_FILE_BYTES} bytes)")
+            return data
+        raise SteamCdpError(f"Не удалось скачать Steam Cloud файл: {last_error}") from last_error
 
     def write_file(self, _filename: str, _data: bytes) -> None:
         raise SteamCdpError("Steam web cloud read-only; запись выполняется через Steam API")

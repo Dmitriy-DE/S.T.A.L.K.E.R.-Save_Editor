@@ -1,5 +1,21 @@
 # Состояние и пробелы — 2026-09-19
 
+## 2026-09-19 — v0.5.8: Proton Data discovery и Cloud transaction UX
+
+Выпущенный проход добавляет legacy Proton-путь S.T.A.L.K.E.R. 2 без manifest,
+отдельный `SaveGames/Data` search root и прямую проверку на текущем хосте:
+автопоиск нашёл 53 S2 `.sav`, включая `217BB29D4FA4C87BD9F734AE755338CB.sav`.
+Пути оригинальной трилогии на выбранном Steam root совпали с
+`STALKER Shadow of Chernobyl/_appdata_/savedgames`, `STALKER Clear Sky/_appdata_/savedgames`
+и `Stalker Call of Pripyat/_appdata_/savedgames`.
+
+Добавлен refresh для истёкших CDP download URL, синхронизация game picker с
+content-detected snapshot и контрастные discovery labels. Cloud snapshot в
+рабочей области теперь явно показывает `Сохранить и загрузить в облако`.
+Локальные gates: `442 passed`, `make check`. Live read-only smoke получил 50
+remote S2 slots и скачал один слот через Steam web. Live `WriteFile`, игровой
+load/re-save и системная установка `.deb` остаются отдельными внешними gates.
+
 ## 2026-09-19 — v0.5.7: Steam Cloud web fallback и синхронизация игры в редакторе
 
 Исправлен конкретный UI-баг из ручного импорта: после открытия S.T.A.L.K.E.R.

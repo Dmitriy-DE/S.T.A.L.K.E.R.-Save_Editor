@@ -391,6 +391,52 @@ def test_no_installed_store_or_steam_games_is_an_empty_read_only_result(
     assert before == after
 
 
+def test_stalker2_legacy_proton_profile_is_found_without_game_manifest(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    library = home / ".local" / "share" / "Steam"
+    save_dir = (
+        library
+        / "steamapps"
+        / "compatdata"
+        / "1643320"
+        / "pfx"
+        / "drive_c"
+        / "users"
+        / "steamuser"
+        / "Local Settings"
+        / "Application Data"
+        / "Stalker2"
+        / "Saved"
+        / "STEAM"
+        / "SaveGames"
+    )
+    save_dir.mkdir(parents=True)
+    data_dir = save_dir / "Data"
+    data_dir.mkdir()
+
+    automatic = save_directories(
+        "stalker2",
+        system="Linux",
+        environ={},
+        home=home,
+        steam_library_roots=(library,),
+    )
+    manual = manual_save_search_paths(
+        "stalker2",
+        steam_root=library,
+        system="Linux",
+        environ={},
+        home=home,
+    )
+
+    assert save_dir in automatic
+    assert data_dir in automatic
+    assert save_dir in manual
+    assert data_dir in manual
+
+
 def test_save_search_paths_explains_missing_candidates_without_creating_them(
     tmp_path: Path,
 ) -> None:

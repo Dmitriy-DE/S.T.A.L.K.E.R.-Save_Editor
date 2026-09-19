@@ -76,9 +76,9 @@ class SettingsView(QWidget):
         found_caption.setWordWrap(True)
         layout.addWidget(found_caption)
         self.found_all_label = QLabel("Сканирую…")
+        self.found_all_label.setObjectName("discoveryResults")
         self.found_all_label.setWordWrap(True)
         self.found_all_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.found_all_label.setStyleSheet("color: palette(mid);")
         layout.addWidget(self.found_all_label)
 
         self.status_label = QLabel("")
@@ -99,7 +99,6 @@ class SettingsView(QWidget):
         font = label.font()
         font.setPointSizeF(max(7.0, font.pointSizeF() - 1.0))
         label.setFont(font)
-        label.setStyleSheet("color: palette(mid);")
         return label
 
     def _path_row(self, edit: QLineEdit, hint: QLabel | None = None) -> QWidget:

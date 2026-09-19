@@ -131,6 +131,8 @@ def test_settings_view_explains_missing_path_and_can_persist_selection(
     qtbot.addWidget(view)
 
     assert str(missing) in view.warning_label.text()
+    assert view.found_all_label.objectName() == "discoveryResults"
+    assert "palette(mid)" not in view.found_all_label.styleSheet()
     # Game selection was removed from Settings; the Steam root override is the
     # only manual field now, and it persists.
     view.steam_root_edit.setText(str(selected))

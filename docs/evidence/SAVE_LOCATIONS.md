@@ -44,9 +44,13 @@ paths and gives the Steam app ID. Поэтому статический путь
 
 Для старых X-Ray сборок также проверяются `drive_c/users/Public/Documents` и
 `drive_c/ProgramData/Documents`: некоторые retail-конфигурации используют
-`%PUBLIC%`/`Public Documents`. Для S.T.A.L.K.E.R. 2 проверяется
-`drive_c/users/steamuser/AppData/Local/Stalker2/Saved/...`, включая
-`SaveGames`, `STEAM`, `EOS` и `GOG`.
+`%PUBLIC%`/`Public Documents`. Для S.T.A.L.K.E.R. 2 проверяются оба
+встречающихся в Proton дерева профиля:
+`drive_c/users/steamuser/AppData/Local/Stalker2/Saved/...` и legacy-вариант
+`drive_c/users/steamuser/Local Settings/Application Data/Stalker2/Saved/...`.
+В каждом из них проверяются `SaveGames` и вложенный `Data`, а также профили
+`STEAM`, `EOS` и `GOG`. На текущем хосте реально найден Steam-путь:
+`/home/dmytro/.steam/steam/steamapps/compatdata/1643320/pfx/drive_c/users/steamuser/Local Settings/Application Data/Stalker2/Saved/STEAM/SaveGames/Data`.
 
 App ID сверены по SteamDB: SoC `4500`, Clear Sky `20510`, Call of Pripyat
 `41700`, S.T.A.L.K.E.R. 2 `1643320`, Enhanced `2427410`, `2427420`, `2427430`.

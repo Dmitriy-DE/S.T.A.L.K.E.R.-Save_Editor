@@ -1375,6 +1375,45 @@ def _proton_prefix(game: InstalledGame) -> Path:
     )
 
 
+def _stalker2_proton_save_directories(library_root: Path) -> tuple[Path, ...]:
+    """Return S2 Proton save roots even when Steam has no app manifest.
+
+    Cloud downloads and older Proton prefixes can exist without a current
+    ``appmanifest_1643320.acf``. Wine/Proton has used both the modern
+    ``AppData/Local`` spelling and the legacy ``Local Settings/Application
+    Data`` spelling, so discovery must cover both.
+    """
+
+    prefix = (
+        Path(library_root)
+        / "steamapps"
+        / "compatdata"
+        / "1643320"
+        / "pfx"
+        / "drive_c"
+    )
+    user = prefix / "users" / "steamuser"
+    roots: list[Path] = []
+    for local_root in (
+        user / "AppData" / "Local",
+        user / "Local Settings" / "Application Data",
+    ):
+        saved = local_root / "Stalker2" / "Saved"
+        roots.extend(
+            (
+                saved / "SaveGames",
+                saved / "SaveGames" / "Data",
+                saved / "STEAM" / "SaveGames",
+                saved / "STEAM" / "SaveGames" / "Data",
+                saved / "EOS" / "SaveGames",
+                saved / "EOS" / "SaveGames" / "Data",
+                saved / "GOG" / "SaveGames",
+                saved / "GOG" / "SaveGames" / "Data",
+            )
+        )
+    return tuple(roots)
+
+
 def _add_xray_candidates(
     candidates: list[Path],
     game_id: str,
@@ -1405,16 +1444,7 @@ def _add_proton_candidates(candidates: list[Path], game: InstalledGame) -> None:
     prefix = _proton_prefix(game)
     users = (prefix / "users" / "steamuser", prefix / "users" / "Public")
     if game.game_id == "stalker2":
-        for user in users[:1]:
-            local = user / "AppData" / "Local" / "Stalker2" / "Saved"
-            candidates.extend(
-                (
-                    local / "SaveGames",
-                    local / "STEAM" / "SaveGames",
-                    local / "EOS" / "SaveGames",
-                    local / "GOG" / "SaveGames",
-                )
-            )
+        candidates.extend(_stalker2_proton_save_directories(game.library_root))
         return
     for user in users:
         documents = user / "Documents"
@@ -1457,9 +1487,13 @@ def _stalker2_local_save_directories(
     saved = local_root / "Stalker2" / "Saved"
     return (
         saved / "SaveGames",
+        saved / "SaveGames" / "Data",
         saved / "STEAM" / "SaveGames",
+        saved / "STEAM" / "SaveGames" / "Data",
         saved / "EOS" / "SaveGames",
+        saved / "EOS" / "SaveGames" / "Data",
         saved / "GOG" / "SaveGames",
+        saved / "GOG" / "SaveGames" / "Data",
     )
 
 
@@ -1532,6 +1566,18 @@ def _save_directory_candidates(
                 filesystem_root=filesystem_root,
             )
         )
+        # A cloud download may create a Proton prefix without installing the
+        # game or leaving a current appmanifest behind. Search every known
+        # Steam library directly in that case as well.
+        for library in steam_libraries(
+            system=name,
+            environ=env,
+            home=home_path,
+            filesystem_root=filesystem_root,
+            registry_reader=registry_reader,
+            steam_library_roots=steam_library_roots,
+        ):
+            candidates.extend(_stalker2_proton_save_directories(library))
     else:
         _add_xray_candidates(
             candidates,
@@ -1710,12 +1756,12 @@ def manual_save_search_paths(
             filesystem_root=filesystem_root,
         )
 
+    candidates: list[Path] = []
     if save_root is not None:
         return (as_path(save_root),)
 
     if game_root is not None:
         install_dir = as_path(game_root)
-        candidates: list[Path] = []
         if key == "stalker2":
             candidates.extend(
                 (
@@ -1775,6 +1821,8 @@ def manual_save_search_paths(
         return ()
 
     selected_steam_root = as_path(steam_root)
+    if key == "stalker2":
+        candidates.extend(_stalker2_proton_save_directories(selected_steam_root))
     games = installed_releases(
         system=name,
         environ=env,
@@ -1782,7 +1830,6 @@ def manual_save_search_paths(
         filesystem_root=filesystem_root,
         steam_library_roots=(selected_steam_root,),
     )
-    candidates = []
     for game in games:
         if game.game_id != key or (
             selected_release_id is not None and game.release_id != selected_release_id
@@ -1820,4 +1867,22 @@ def manual_save_search_paths(
                 )
         else:
             _add_proton_candidates(candidates, game)
+
+    # Keep the explicit Steam-root setting useful for retained/orphaned X-Ray
+    # installs too. A missing manifest must not hide the documented
+    # ``steamapps/common/<game>/_appdata_/savedgames`` folders.
+    if key != "stalker2":
+        for release in _RELEASES:
+            if release.game_id != key or release.edition != "original":
+                continue
+            if (
+                selected_release_id is not None
+                and _RELEASE_ID_BY_APP_ID.get(release.app_id) != selected_release_id
+            ):
+                continue
+            common = selected_steam_root / "steamapps" / "common"
+            candidates.extend(
+                common / folder / "_appdata_" / "savedgames"
+                for folder in release.install_dirs
+            )
     return _dedupe_paths(candidates)

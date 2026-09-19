@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import urllib.request
 from pathlib import Path
 
-from editor.steam_cdp import cloud_files_from_rows, discover_cached_cloud_files
+from editor.steam_cdp import (
+    SteamCdpWorker,
+    cloud_files_from_rows,
+    discover_cached_cloud_files,
+)
 
 
 def test_discover_cached_cloud_files_reads_steam_remotecache(tmp_path: Path) -> None:
@@ -55,3 +60,43 @@ def test_cloud_files_from_cdp_rows_builds_full_data_paths_and_download_urls() ->
     assert files[0].size == 6_400_000
     assert files[0].download_url == "https://steamusercontent-a.akamaihd.net/file"
     assert files[0].is_persisted is True
+
+
+def test_cdp_read_refreshes_an_expired_download_url(monkeypatch) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
+    worker = SteamCdpWorker()
+    worker._urls = {name: "https://steamusercontent-a.akamaihd.net/expired"}
+    refreshes: list[str] = []
+
+    def refresh() -> list[object]:
+        refreshes.append(name)
+        worker._urls[name] = "https://steamusercontent-a.akamaihd.net/fresh"
+        return []
+
+    monkeypatch.setattr(worker, "list_files", refresh)
+    calls = 0
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit: int) -> bytes:
+            return b"save"
+
+    def open_url(url: str, *, timeout: float):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise urllib.error.HTTPError(url, 403, "expired", {}, None)
+        assert url.endswith("/fresh")
+        assert timeout == worker.timeout
+        return Response()
+
+    monkeypatch.setattr(urllib.request, "urlopen", open_url)
+
+    assert worker.read_file(name) == b"save"
+    assert refreshes == [name]
+    assert calls == 2

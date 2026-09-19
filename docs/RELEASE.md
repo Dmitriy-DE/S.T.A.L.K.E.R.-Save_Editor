@@ -1,5 +1,23 @@
 # Проверка и выпуск
 
+## Выпуск v0.5.8 — Proton S2 discovery, Cloud URL refresh и явный upload
+
+Этот проход закрывает четыре проблемы из пользовательского запуска:
+
+- S.T.A.L.K.E.R. 2 на Linux/Proton ищется без текущего manifest-файла, включая
+  legacy `Local Settings/Application Data` и вложенный `SaveGames/Data`;
+- после анализа snapshot game picker синхронизируется с фактически найденным
+  `format_id`, поэтому S2 больше не отображается как Shadow of Chernobyl;
+- короткоживущий Steam web download URL обновляется при истечении срока;
+- discovery-подсказки больше не используют `palette(mid)` на тёмном фоне, а
+  cloud snapshot получает явную кнопку `Сохранить и загрузить в облако`.
+
+Локальное доказательство этого прохода: `442 passed`, `make check`; read-only
+live discovery нашёл 53 локальных S2 slot-файла и 50 remote `Data/*.sav` через
+Steam Cloud web. Реальный `WriteFile` пользовательского слота в release gate не
+запускался: его результат должен проверяться владельцем на конкретном слоте.
+Тег, CI и фактические release assets добавляются сюда после tag-build.
+
 ## Выпуск v0.5.7 — Steam Cloud web fallback и исправление game picker
 
 Изменения этого прохода исправляют рассинхрон game picker и пустой список

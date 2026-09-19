@@ -143,6 +143,10 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         padding: 3px 0;
     }}
+    QLabel#discoveryHint, QLabel#discoveryResults {{
+        background: transparent;
+        color: {c['text_secondary']};
+    }}
     QLabel#launcherPathCount {{
         background: transparent;
         color: {c['olive_dim']};

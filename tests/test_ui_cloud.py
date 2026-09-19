@@ -362,6 +362,44 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     assert [filename for filename, _data in transport.write_calls] == [name]
 
 
+def test_main_window_one_click_save_uploads_cloud_snapshot(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window.cloud_view.service = _ApprovedCloudService()
+    window.cloud_view.worker_factory = lambda _path: transport
+    window.cloud_view.backup_dir = tmp_path / "backups"
+
+    with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_view.start_connect()
+    qtbot.waitUntil(
+        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
+    window.cloud_view.table.selectRow(0)
+    with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_view.analyze_selected()
+    qtbot.waitUntil(
+        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
+
+    window.money_spin.setValue(900)
+    window._stage_money()
+    with qtbot.waitSignal(window.apply_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
+        window._save_one_click()
+
+    qtbot.waitUntil(
+        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        timeout=SIGNAL_TIMEOUT_MS,
+    )
+    assert blocker.args[0].status == "verified"
+    assert [filename for filename, _data in transport.write_calls] == [name]
+
+
 def test_closing_the_view_waits_for_its_worker(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     """Qt aborts the process if a QThread is destroyed while still running.
 

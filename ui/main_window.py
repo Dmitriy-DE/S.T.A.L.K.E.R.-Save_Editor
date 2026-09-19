@@ -947,6 +947,16 @@ class MainWindow(QMainWindow):
         self.staged_placements.clear()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
+        if snapshot.source_kind == "cloud":
+            self.save_copy_button.setText("Сохранить и загрузить в облако")
+            self.save_copy_button.setToolTip(
+                "Проверить staged-правки и загрузить их в выбранный Steam Cloud slot"
+            )
+        else:
+            self.save_copy_button.setText("Сохранить")
+            self.save_copy_button.setToolTip(
+                "Проверяет и сохраняет одним нажатием; бэкап исходного файла делается сам"
+            )
         crc = "OK" if info.crc_ok else "FAIL"
         money = "unknown" if info.money is None else str(info.money)
         source_label = "Steam Cloud" if snapshot.source_kind == "cloud" else "локальный"
