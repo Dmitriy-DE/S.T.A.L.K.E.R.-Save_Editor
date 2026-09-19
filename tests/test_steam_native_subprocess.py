@@ -266,6 +266,7 @@ def test_wait_persisted_caps_each_native_list_to_remaining_deadline(
     worker = steam_native.SteamNativeSubprocessWorker(timeout=15)
     worker.app_id = APP_ID
     timeouts: list[float | None] = []
+    requested_timeout = 0.02
 
     def fake_native_list(*, timeout=None):
         timeouts.append(timeout)
@@ -273,6 +274,13 @@ def test_wait_persisted_caps_each_native_list_to_remaining_deadline(
 
     monkeypatch.setattr(worker, "_native_list", fake_native_list)
 
-    assert worker.wait_persisted("slot.sav", 4, timeout=0.02) is False
+    assert worker.wait_persisted("slot.sav", 4, timeout=requested_timeout) is False
     assert timeouts
-    assert all(timeout is not None and timeout <= 0.02 for timeout in timeouts)
+    # ``monotonic() + timeout - monotonic()`` can round a few microseconds
+    # above the requested value on Windows.  That does not allow the child
+    # operation to outlive the deadline; the production path applies the
+    # final min() again in ``_run_native``.
+    assert all(
+        timeout is not None and timeout <= requested_timeout + 0.001
+        for timeout in timeouts
+    )

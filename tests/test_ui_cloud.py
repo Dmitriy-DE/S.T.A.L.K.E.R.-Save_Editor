@@ -166,6 +166,7 @@ def test_cloud_view_connects_without_a_helper(qtbot, synthetic_save: bytes, tmp_
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
+    _wait_cloud_idle(qtbot, view)
     assert view.transport is transport
 
 
@@ -184,6 +185,7 @@ def test_cloud_view_surfaces_a_connect_failure(qtbot, tmp_path: Path) -> None:
     with qtbot.waitSignal(view.operation_failed, timeout=SIGNAL_TIMEOUT_MS):
         view.start_connect()
 
+    _wait_cloud_idle(qtbot, view)
     assert view.transport is None
 
 
