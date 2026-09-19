@@ -1,4 +1,16 @@
-# Состояние и пробелы — 2026-09-19
+# Состояние и пробелы — 2026-09-20
+
+## 2026-09-20 — merged main, local cleanup и Pages continuation
+
+Merged `main` — `0f9d207`. После merge подтверждены `496 passed`, `make check`,
+Linux packaged diagnostic и SHA256 read-back двух локальных v0.5.8 artifacts.
+Pages preview revision `d555bfc9` отвечает HTTP 200; canonical Pages URL также
+отвечает HTTP 200. Старые локальные ветки/worktrees и caches удалены, личные
+fixtures вынесены из checkout во внешний пользовательский архив.
+
+Это не подтверждение Steam `WriteFile` и не доказательство game load/re-save:
+такие gates остаются ручными и выполняются только на резервной копии конкретного
+слота.
 
 ## 2026-09-19 — S2 equipment condition writer (experimental)
 

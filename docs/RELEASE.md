@@ -1,5 +1,21 @@
 # Проверка и выпуск
 
+## Продолжение main — 2026-09-20
+
+Коммит `0f9d207` продолжает v0.5.8 без поднятия версии: добавлены guarded
+experimental S2 armor-condition reader/writer для подтверждённой
+actor-owned брони, save-local names и icon resolution с официальными loose
+ресурсами/безопасным fallback. Локальная проверка merged `main`: `496 passed`,
+`make check`, packaged diagnostic с загруженным decoder.
+
+Локальные Linux artifacts пересобраны и проверены через `dist/SHA256SUMS`:
+`SaveEditor-linux-x86_64-v0.5.8.tar.gz` и
+`stalker2-save-editor_0.5.8_amd64.deb`. Web опубликован из `main` на Pages:
+[preview revision d555bfc9](https://d555bfc9.stalker-save-editor.pages.dev/);
+preview и canonical URL отвечают HTTP 200. Это не новый GitHub tag/release.
+Steam `WriteFile` пользовательского слота и игровой load/re-save здесь не
+запускались.
+
 ## Выпуск v0.5.8 — Proton S2 discovery, Cloud URL refresh и явный upload
 
 Этот проход закрывает четыре проблемы из пользовательского запуска:
