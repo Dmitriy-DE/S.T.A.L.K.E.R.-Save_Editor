@@ -15,6 +15,7 @@ from editor.catalog import ItemDefinition, catalog_from_items
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from save_format import inspect_save
+from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 from ui.inventory_model import InventoryTableModel
 from ui.main_window import LocalSnapshot, MainWindow
 
@@ -195,6 +196,70 @@ def test_inventory_layout_keeps_names_and_editor_fields_readable(
     assert view.table.minimumHeight() >= 220
     assert view.count_spin.minimumWidth() >= 180
     assert view.condition_spin.minimumWidth() >= 180
+
+
+def test_unknown_condition_shows_dash_instead_of_false_zero(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    info = inspect_save(synthetic_save, with_inventory=True)
+    window._render_snapshot(
+        LocalSnapshot(
+            path=tmp_path / "fixture.sav",
+            data=synthetic_save,
+            info=info,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_durability=True,
+                experimental_fields=frozenset({"edit_durability"}),
+            ),
+        )
+    )
+
+    view = window.inventory_view
+    view.table.selectRow(0)
+    qtbot.waitUntil(lambda: view.selected_handle is not None)
+
+    assert view.condition_unknown_label.text() == "—"
+    assert not view.condition_unknown_label.isHidden()
+    assert view.condition_spin.isHidden()
+    assert not view.condition_stage_button.isEnabled()
+
+
+def test_confirmed_s2_armor_condition_is_editable(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    data = _save_with_equipped_armor(synthetic_save)
+    info = inspect_save(data, with_inventory=True)
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window._render_snapshot(
+        LocalSnapshot(
+            path=tmp_path / "s2-armor.sav",
+            data=data,
+            info=info,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                edit_durability=True,
+                experimental_fields=frozenset({"edit_durability"}),
+            ),
+        )
+    )
+
+    view = window.inventory_view
+    row = next(
+        index
+        for index, item in enumerate(view.model.visible_items())
+        if item.handle == EQUIPPED_HANDLE
+    )
+    view.table.selectRow(row)
+    qtbot.waitUntil(lambda: view.selected_handle == EQUIPPED_HANDLE)
+
+    assert view.condition_unknown_label.isHidden()
+    assert not view.condition_spin.isHidden()
+    assert view.condition_spin.value() == pytest.approx(75.0)
+    assert view.condition_stage_button.isEnabled()
 
 
 def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(

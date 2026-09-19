@@ -235,6 +235,16 @@ class InventoryView(QWidget):
         self.condition_spin.setEnabled(False)
         self.condition_spin.valueChanged.connect(self._on_condition_changed)
         condition_controls.addWidget(self.condition_spin)
+        self.condition_unknown_label = QLabel("—")
+        self.condition_unknown_label.setObjectName("conditionUnknownLabel")
+        self.condition_unknown_label.setMinimumWidth(180)
+        self.condition_unknown_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self.condition_unknown_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        condition_controls.addWidget(self.condition_unknown_label)
         condition_actions = QHBoxLayout()
         condition_actions.setSpacing(6)
         self.condition_stage_button = QPushButton("Застейджить прочность")
@@ -628,7 +638,9 @@ class InventoryView(QWidget):
         self.condition_clear_button.setEnabled(False)
         if item is None:
             self.condition_spin.setEnabled(False)
-            self.condition_spin.setValue(0.0)
+            self.condition_spin.setVisible(False)
+            self.condition_unknown_label.setText("—")
+            self.condition_unknown_label.setVisible(True)
             self.condition_status_label.setText(
                 self._durability_reason or "Выбери оружие или экипировку."
             )
@@ -636,9 +648,14 @@ class InventoryView(QWidget):
             return
         if not self._durability_enabled:
             self.condition_spin.setEnabled(False)
-            self.condition_spin.setValue(
-                item.condition * 100.0 if item.condition is not None else 0.0
-            )
+            if item.condition is None:
+                self.condition_spin.setVisible(False)
+                self.condition_unknown_label.setText("—")
+                self.condition_unknown_label.setVisible(True)
+            else:
+                self.condition_unknown_label.setVisible(False)
+                self.condition_spin.setVisible(True)
+                self.condition_spin.setValue(item.condition * 100.0)
             self.condition_status_label.setText(
                 self._durability_reason
                 or "Только чтение: правка прочности не подтверждена для этого релиза."
@@ -647,9 +664,14 @@ class InventoryView(QWidget):
             return
         if not item.condition_editable or item.condition is None:
             self.condition_spin.setEnabled(False)
-            self.condition_spin.setValue(
-                item.condition * 100.0 if item.condition is not None else 0.0
-            )
+            if item.condition is None:
+                self.condition_spin.setVisible(False)
+                self.condition_unknown_label.setText("—")
+                self.condition_unknown_label.setVisible(True)
+            else:
+                self.condition_unknown_label.setVisible(False)
+                self.condition_spin.setVisible(True)
+                self.condition_spin.setValue(item.condition * 100.0)
             self.condition_status_label.setText(
                 "Только чтение: condition для этого объекта не разобран."
             )
@@ -658,6 +680,8 @@ class InventoryView(QWidget):
 
         staged = self._staged_durability.get(item.handle)
         effective = staged if staged is not None else item.condition
+        self.condition_unknown_label.setVisible(False)
+        self.condition_spin.setVisible(True)
         self.condition_spin.setEnabled(True)
         self.condition_spin.setValue(effective * 100.0)
         self.condition_stage_button.setEnabled(True)

@@ -137,7 +137,7 @@ function renderSnapshot(s) {
     caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
-    caps.edit_durability ? "прочность оружия/экипировки (experimental)" : "прочность read-only",
+    caps.edit_durability ? "прочность подтверждённой брони (experimental)" : "прочность read-only",
     caps.edit_upgrades && s.upgrade_catalog_available ? "улучшения оружия/экипировки (experimental)" : "улучшения read-only",
     caps.edit_placement ? "размещение предметов (experimental)" : "размещение read-only",
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
