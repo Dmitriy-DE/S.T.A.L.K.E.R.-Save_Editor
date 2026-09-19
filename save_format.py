@@ -20,6 +20,7 @@ from editor.kraken_blocks import (
 from editor.s2_item_state import (
     S2_EQUIPMENT_KIND_CODES,
     has_s2_equipment_shape,
+    patch_s2_armor_condition,
     read_s2_armor_condition,
 )
 
@@ -955,6 +956,40 @@ def _attach_orphan_in_raw(raw: bytes, handle: int, x: int, y: int, width: int, h
     return _rebuild_inventory_arrays(raw2, grid_cells=tuple(layout2.grid_cells) + tuple(new_cells))
 
 
+def _patch_s2_durability_in_raw(
+    raw: bytearray,
+    handle: int,
+    condition: float,
+) -> None:
+    """Patch one actor-owned S2 armor condition at its exact nested anchor."""
+
+    layout = locate_inventory_layout(bytes(raw))
+    if handle not in layout.owned_handles or handle in layout.unresolved_handles:
+        raise SaveError(
+            f"S2 armor handle 0x{handle:08X} не является однозначным actor-owned item"
+        )
+    record_offset, _count, _weight, kind = locate_object_record(bytes(raw), handle)
+    if not has_s2_equipment_shape(
+        raw,
+        handle=handle,
+        record_offset=record_offset,
+        kind_code=kind,
+    ):
+        raise SaveError(
+            f"S2 armor condition для handle 0x{handle:08X} не имеет подтверждённой формы"
+        )
+    try:
+        patch_s2_armor_condition(
+            raw,
+            handle=handle,
+            record_offset=record_offset,
+            kind_code=kind,
+            value=condition,
+        )
+    except ValueError as exc:
+        raise SaveError(f"S2 armor condition для 0x{handle:08X} не разобран: {exc}") from exc
+
+
 def _encode_raw_patch(patch: RawPatch) -> bytes:
     k = patch.kind.lower().strip()
     v = patch.value.strip()
@@ -1049,14 +1084,26 @@ def patch_save(
     detach: dict[int, bool] | None = None,
     attach_orphans: dict[int, tuple[int, int, int, int]] | None = None,
     raw_patches: Iterable[RawPatch] | None = None,
+    durability: dict[int, float] | None = None,
 ) -> PatchResult:
     stack_counts = dict(stack_counts or {})
     moves = dict(moves or {})
     detach = dict(detach or {})
     attach_orphans = dict(attach_orphans or {})
     raw_patches = tuple(raw_patches or ())
-    if new_money is None and not stack_counts and not moves and not detach and not attach_orphans and not raw_patches:
+    durability = {int(handle): float(value) for handle, value in (durability or {}).items()}
+    if (
+        new_money is None
+        and not stack_counts
+        and not moves
+        and not detach
+        and not attach_orphans
+        and not raw_patches
+        and not durability
+    ):
         raise SaveError("Нет изменений для применения")
+    if raw_patches and durability:
+        raise SaveError("Нельзя совмещать raw patch с S2 durability в одном edit plan")
     conflict = set(moves) & set(detach)
     if conflict:
         h = next(iter(conflict))
@@ -1107,6 +1154,8 @@ def patch_save(
         attached.append((int(handle), int(x), int(y), int(w), int(h)))
 
     raw_b = bytearray(raw)
+    for handle, condition in durability.items():
+        _patch_s2_durability_in_raw(raw_b, handle, condition)
     for p in raw_patches:
         _apply_raw_patch(raw_b, p)
 
@@ -1156,6 +1205,24 @@ def patch_save(
         expected = {(x + dx, y + dy) for dy in range(h) for dx in range(w)}
         if cells != expected:
             raise SaveError(f"После round-trip attach 0x{handle:08X} cells={cells}, ожидалось {expected}")
+    for handle, condition in durability.items():
+        record_offset, _count, _weight, kind = locate_object_record(roundtrip, handle)
+        anchor = read_s2_armor_condition(
+            roundtrip,
+            handle=handle,
+            record_offset=record_offset,
+            kind_code=kind,
+        )
+        if anchor is None or not math.isclose(
+            anchor.value,
+            condition,
+            rel_tol=0.0,
+            abs_tol=1e-6,
+        ):
+            raise SaveError(
+                f"После round-trip S2 armor condition 0x{handle:08X} "
+                f"не совпал с {condition}"
+            )
 
     return PatchResult(
         data=rebuilt,

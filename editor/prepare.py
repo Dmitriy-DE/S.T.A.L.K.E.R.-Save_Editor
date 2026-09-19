@@ -34,6 +34,10 @@ def prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit:
         raise SaveError(
             "Добавление предметов не подтверждено для S.T.A.L.K.E.R. 2"
         )
+    if plan.upgrades:
+        raise SaveError(
+            "Изменение улучшений не подтверждено для S.T.A.L.K.E.R. 2"
+        )
 
     result = patch_save(
         data,
@@ -46,6 +50,7 @@ def prepare_edit(data: bytes, plan: EditPlan) -> PreparedEdit:
             for handle, x, y, width, height in plan.attach
         },
         raw_patches=plan.raw,
+        durability=dict(plan.durability),
     )
     output = bytes(result.data)
     return PreparedEdit(plan=plan, data=output, output_sha256=_sha256(output))

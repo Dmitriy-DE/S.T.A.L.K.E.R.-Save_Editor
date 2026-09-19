@@ -132,8 +132,8 @@ class EditPlan:
         if len({handle for handle, *_ in placements}) != len(placements):
             raise ValueError("Duplicate placement handle in edit plan")
         for handle, _keys in upgrades:
-            if not 1 <= handle <= 0xFFFE:
-                raise ValueError("Upgrade handle must be in the range 1…65534")
+            if not 1 <= handle <= 0xFFFFFFFF:
+                raise ValueError("Upgrade handle must be in the range 1…4294967295")
         for handle, _placement_type, _slot_id in placements:
             if not 1 <= handle <= 0xFFFE:
                 raise ValueError("Placement handle must be in the range 1…65534")
@@ -150,8 +150,8 @@ class EditPlan:
             if "\x00" in player_faction:
                 raise ValueError("player faction key must not contain NUL")
         for handle, condition in durability:
-            if not 1 <= handle <= 0xFFFE:
-                raise ValueError("Durability handle must be in the range 1…65534")
+            if not 1 <= handle <= 0xFFFFFFFF:
+                raise ValueError("Durability handle must be in the range 1…4294967295")
             if not math.isfinite(condition) or not 0.0 <= condition <= 1.0:
                 raise ValueError("Durability value must be finite and in the range 0…1")
         for item_key, quantity, destination in adds:

@@ -118,9 +118,10 @@ class _Stalker2Format:
             read_inventory=True,
             edit_money=True,
             edit_stacks=True,
+            edit_durability=True,
             catalog=True,
             equipment=equipment_support_for_release("stalker2"),
-            experimental_fields=frozenset({"edit_money"}),
+            experimental_fields=frozenset({"edit_money", "edit_durability"}),
         ),
     )
 

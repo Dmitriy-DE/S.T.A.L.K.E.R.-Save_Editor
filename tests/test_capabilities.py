@@ -45,6 +45,10 @@ def test_registered_formats_expose_release_and_capability_metadata() -> None:
     assert s2.capabilities.read_inventory is True
     assert s2.capabilities.edit_money is True
     assert s2.capabilities.is_experimental("edit_money") is True
+    assert s2.capabilities.edit_durability is True
+    assert s2.capabilities.is_experimental("edit_durability") is True
+    assert s2.capabilities.add_items is False
+    assert s2.capabilities.edit_upgrades is False
     assert s2.capabilities.edit_stacks is False
 
     assert cop.release_id == "stalker-cop"
