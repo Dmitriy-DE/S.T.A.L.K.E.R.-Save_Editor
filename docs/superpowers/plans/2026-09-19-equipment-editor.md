@@ -74,23 +74,22 @@
 
 **Files:**
 - Create: `editor/equipment_edits.py`
-- Modify: `editor/models.py`
-- Modify: `editor/prepare.py`
+- Create: `ui/equipment_model.py`
+- Create: `ui/equipment_view.py`
 - Modify: `ui/main_window.py`
 - Modify: `ui/inventory_view.py`
 - Test: `tests/test_equipment_edits.py`
-- Test: `tests/test_edit_plan.py`
-- Test: `tests/test_ui_inventory.py`
+- Test: `tests/test_ui_equipment.py`
 
 **Interfaces:**
-- Consumes: `EquipmentItem`, `EquipmentSupport`, existing `EditPlan.durability`, and `FormatInspection`/`LocalSnapshot`.
-- Produces: `RepairTarget`, `RepairStageResult`, `stage_repair()`, and `stage_bulk_repair()`; Qt actions for individual and bulk repair.
+- Consumes: `EquipmentItem`, `EquipmentSupport`, existing `EditPlan.durability`, and `LocalSnapshot`.
+- Produces: `RepairSkip`, `RepairStageResult`, `stage_repair()`, and `stage_bulk_repair()`; Qt actions for individual and bulk repair.
 
 - [ ] **Step 1: Write failing pure tests for 0%, 50%, 100%, invalid values, no-op reset, missing/ambiguous anchors, and bulk filters.** Verify only writable equipment produces durability tuples and skipped rows include a stable reason.
 - [ ] **Step 2: Run `pytest tests/test_equipment_edits.py -q`; confirm the expected missing-interface failures.**
 - [ ] **Step 3: Implement finite 0…1 validation and deterministic handle-deduplicated staging.** Do not mutate `SaveInfo` or source bytes. Keep the existing writer preflight as the final guard.
-- [ ] **Step 4: Add Qt repair controls and bulk filter buttons to the existing inventory/equipment surface.** Use Russian product terminology; keep technical codec terms in tooltips. Wire staged values into existing preview/apply counters and clear actions.
-- [ ] **Step 5: Run `pytest tests/test_equipment_edits.py tests/test_edit_plan.py tests/test_ui_inventory.py -q`.**
+- [ ] **Step 4: Add `EquipmentTableModel` and `EquipmentView` with product filters, individual reset, bulk filter buttons, catalog icons, and maturity reasons.** Use Russian product terminology; keep technical codec terms in tooltips. Wire staged values into existing preview/apply counters and clear actions without replacing the established inventory surface.
+- [ ] **Step 5: Run `pytest tests/test_equipment_edits.py tests/test_ui_equipment.py tests/test_edit_plan.py tests/test_ui_inventory.py -q`.**
 - [ ] **Step 6: Commit `feat: add safe individual and bulk equipment repair staging`.**
 
 ### Task 4: S2 research boundary and independent Enhanced Edition profiles

@@ -96,6 +96,10 @@ class EquipmentItem:
     icon_texture: str | None = None
 
     @property
+    def handle_hex(self) -> str:
+        return f"0x{self.handle:08X}"
+
+    @property
     def durability_editable(self) -> bool:
         return self.condition_editable and self.durability.writable
 

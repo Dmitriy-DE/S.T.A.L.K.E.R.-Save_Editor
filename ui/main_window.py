@@ -39,7 +39,8 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
-from editor.equipment import equipment_support_for_release
+from editor.equipment import EquipmentItem, equipment_items, equipment_support_for_release
+from editor.equipment_edits import RepairStageResult, stage_bulk_repair, stage_repair
 from editor.formats import FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs, installed_releases
@@ -50,6 +51,7 @@ from save_format import SaveError, SaveInfo
 from .backups_view import BackupView, RestoreWorker
 from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
+from .equipment_view import EquipmentView
 from .faction_view import FactionView
 from .inventory_view import InventoryView
 from .launcher_view import LauncherView, _slot_family
@@ -188,6 +190,7 @@ class MainWindow(QMainWindow):
         self.staged_player_faction: str | None = None
         self.staged_upgrades: dict[int, tuple[str, ...]] = {}
         self.staged_placements: dict[int, tuple[str, int | None]] = {}
+        self.equipment_rows: tuple[EquipmentItem, ...] = ()
         self.prepared_edit: PreparedEdit | None = None
         self._pending_apply_path: Path | None = None
         self._pending_cloud_upload = False
@@ -343,6 +346,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._scrollable(self._build_cloud_tab()), "Steam Cloud")
         self.tabs.addTab(self._build_slots_tab(), "Найденные сейвы")
         self.tabs.addTab(self._scrollable(self._build_settings_tab()), "Настройки")
+        self.tabs.addTab(self._build_equipment_tab(), "Оборудование")
         self.tabs.tabBar().setVisible(False)
         content_layout.addWidget(self.tabs, 1)
 
@@ -355,6 +359,7 @@ class MainWindow(QMainWindow):
             "Steam Cloud",
             "Найденные сейвы",
             "Настройки",
+            "Оборудование",
         )
         for index, label in enumerate(self.nav_labels):
             button = QPushButton(label)
@@ -467,7 +472,13 @@ class MainWindow(QMainWindow):
             + (1 if self.staged_player_faction is not None else 0)
             + (1 if self.staged_money is not None else 0)
         )
-        counters: dict[int, int | None] = {1: inventory, 2: staged or None}
+        equipment_count = len(getattr(self, "equipment_rows", ())) if inventory is not None else 0
+        equipment = equipment_count or None
+        counters: dict[int, int | None] = {
+            1: inventory,
+            2: staged or None,
+            7: equipment,
+        }
         for index, button in enumerate(buttons):
             count = counters.get(index)
             label = self.nav_labels[index]
@@ -786,6 +797,13 @@ class MainWindow(QMainWindow):
         self.inventory_model = self.inventory_view.model
         return self.inventory_view
 
+    def _build_equipment_tab(self) -> QWidget:
+        self.equipment_view = EquipmentView(self)
+        self.equipment_view.repair_requested.connect(self._stage_equipment_repair)
+        self.equipment_view.reset_requested.connect(self._reset_equipment_repair)
+        self.equipment_view.bulk_repair_requested.connect(self._stage_equipment_bulk_repair)
+        return self.equipment_view
+
     def _build_changes_tab(self) -> QWidget:
         self.changes_view = ChangesView(self)
         self.changes_view.preview_requested.connect(self._start_preview)
@@ -947,6 +965,7 @@ class MainWindow(QMainWindow):
         self.staged_player_faction = None
         self.staged_upgrades.clear()
         self.staged_placements.clear()
+        self.equipment_rows = ()
         self.prepared_edit = None
         self.cloud_view.set_prepared(None)
         if snapshot.source_kind == "cloud":
@@ -1024,6 +1043,7 @@ class MainWindow(QMainWindow):
         self._sync_nav_counters()
         self._render_money(info)
         self._render_inventory(info)
+        self._render_equipment(info)
         self._render_factions(info)
         self.changes_view.set_staged(
             info,
@@ -1143,6 +1163,22 @@ class MainWindow(QMainWindow):
         )
         self.inventory_view.set_staged_placements(self.staged_placements)
         self.inventory_card_value.setText(str(len(info.inventory)))
+
+    def _render_equipment(self, info: SaveInfo) -> None:
+        snapshot = self.snapshot
+        if snapshot is None:
+            self.equipment_rows = ()
+            self.equipment_view.set_items(())
+            return
+        release_id = snapshot.release_id or snapshot.format_id
+        self.equipment_rows = equipment_items(
+            info.inventory,
+            release_id=release_id,
+            catalog=snapshot.catalog,
+        )
+        self.equipment_view.set_items(self.equipment_rows)
+        self.equipment_view.set_catalog(snapshot.catalog)
+        self.equipment_view.set_staged_durability(self.staged_durability)
 
     def _render_factions(self, info: SaveInfo) -> None:
         capabilities = self.snapshot.capabilities if self.snapshot is not None else None
@@ -1427,6 +1463,54 @@ class MainWindow(QMainWindow):
             f"Прочность очищена для {item.type_key}; bytes сейва не изменены"
         )
 
+    def _finish_equipment_repair(
+        self,
+        result: RepairStageResult,
+        *,
+        action: str,
+    ) -> None:
+        for handle, value in result.changes:
+            self.staged_durability[int(handle)] = float(value)
+        for skipped in result.skipped:
+            if skipped.reason.startswith("no-op:"):
+                self.staged_durability.pop(skipped.handle, None)
+        self.equipment_view.set_staged_durability(self.staged_durability)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("изменилось staged оборудование")
+        parts = [f"{action}: staged {len(result.changes)}"]
+        if result.skipped:
+            parts.append(f"пропущено {len(result.skipped)}")
+        details = "; ".join(
+            f"0x{item.handle:04X}: {item.reason}" for item in result.skipped[:3]
+        )
+        if details:
+            parts.append(details)
+        self.equipment_view.show_repair_result(". ".join(parts))
+        self.status_label.setText(
+            "Оборудование staged; bytes сейва не изменены — нужен preview"
+        )
+
+    def _stage_equipment_repair(self, handle: int, percentage: float) -> None:
+        result = stage_repair(self.equipment_rows, (int(handle),), percentage)
+        self._finish_equipment_repair(result, action="Ремонт предмета")
+
+    def _stage_equipment_bulk_repair(self, filter_name: str, percentage: float) -> None:
+        result = stage_bulk_repair(
+            self.equipment_rows,
+            filter_name,  # type: ignore[arg-type]
+            percentage,
+        )
+        self._finish_equipment_repair(result, action=f"Массовый ремонт ({filter_name})")
+
+    def _reset_equipment_repair(self, handle: int) -> None:
+        self.staged_durability.pop(int(handle), None)
+        self.equipment_view.set_staged_durability(self.staged_durability)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self._render_changes()
+        self._invalidate_preview("staged прочность оборудования очищена")
+        self.status_label.setText("Staged прочность очищена; bytes сейва не изменены")
+
     def _stage_item_upgrades(self, handle: int, values: object) -> None:
         if self.snapshot is None:
             return
@@ -1643,6 +1727,7 @@ class MainWindow(QMainWindow):
             self._render_factions(self.snapshot.info)
         self.inventory_view.set_staged_counts(self.staged_counts)
         self.inventory_view.set_staged_durability(self.staged_durability)
+        self.equipment_view.set_staged_durability(self.staged_durability)
         self.inventory_view.set_staged_upgrades(self.staged_upgrades)
         self.inventory_view.set_staged_placements(self.staged_placements)
         self.inventory_view.set_removed_handles(self.staged_detach)
@@ -1653,6 +1738,7 @@ class MainWindow(QMainWindow):
     def _render_changes(self) -> None:
         self._sync_nav_counters()
         self.inventory_view.set_clear_all_enabled(self._has_staged_changes())
+        self.equipment_view.set_staged_durability(self.staged_durability)
         if self.snapshot is None:
             return
         self.changes_view.set_staged(
