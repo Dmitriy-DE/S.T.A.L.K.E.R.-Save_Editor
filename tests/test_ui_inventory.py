@@ -8,6 +8,7 @@ pytest.importorskip("PySide6")
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 from test_xray_save import _fixture
 
 from editor.capabilities import FormatCapabilities
@@ -15,7 +16,6 @@ from editor.catalog import ItemDefinition, catalog_from_items
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from save_format import inspect_save
-from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 from ui.inventory_model import InventoryTableModel
 from ui.main_window import LocalSnapshot, MainWindow
 

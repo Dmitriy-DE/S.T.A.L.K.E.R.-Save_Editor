@@ -4,7 +4,6 @@ import struct
 
 import save_format as sf
 
-
 EQUIPPED_HANDLE = 0x300009BB
 ORPHAN_HANDLE = 0x30000003
 
@@ -29,7 +28,7 @@ def _save_with_equipped_armor(synthetic_save: bytes) -> bytes:
     layout = sf.locate_inventory_layout(raw)
     raw = sf._rebuild_inventory_arrays(
         raw,
-        owned_handles=layout.owned_handles + (EQUIPPED_HANDLE,),
+        owned_handles=(*layout.owned_handles, EQUIPPED_HANDLE),
         grid_cells=layout.grid_cells,
     )
     return sf.rebuild_uncompressed(raw + _equipped_record())

@@ -11,7 +11,6 @@ from editor.s2_item_state import (
     read_s2_armor_condition,
 )
 
-
 HANDLE = 0x300009BB
 RECORD_OFFSET = 19
 NESTED_OFFSET = RECORD_OFFSET + 0x23
@@ -58,7 +57,11 @@ def test_patches_only_the_confirmed_four_condition_bytes() -> None:
     )
 
     assert anchor.value == pytest.approx(0.9)
-    changed = {index for index, (left, right) in enumerate(zip(before, raw)) if left != right}
+    changed = {
+        index
+        for index, (left, right) in enumerate(zip(before, raw, strict=True))
+        if left != right
+    }
     assert changed <= set(range(VALUE_OFFSET, VALUE_OFFSET + 4))
     assert changed
     assert struct.unpack_from("<f", raw, VALUE_OFFSET)[0] == pytest.approx(0.9)

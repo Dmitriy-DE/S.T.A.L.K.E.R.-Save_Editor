@@ -3,11 +3,11 @@ from __future__ import annotations
 import hashlib
 
 import pytest
+from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 
 import save_format as sf
 from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
-from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 
 
 def _source(data: bytes) -> SourceRef:
