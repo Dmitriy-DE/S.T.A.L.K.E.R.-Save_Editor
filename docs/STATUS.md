@@ -246,10 +246,10 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 |---|---|---|
 | Надёжность | Общий parser gate покрывает S.T.A.L.K.E.R. 2 и подтверждённые оригинальные X-Ray containers; полный release gate всё ещё требует Windows/runtime evidence | B02 |
 | Linux + Windows | Decoder, пути, launcher и helper на обеих ОС; CI зелёная на обеих; Windows `.exe` собран и его diagnostic пройден на runner. Не проверен запуск окна на живом Windows-десктопе | B02 |
-| Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, staged money/stack, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
+| Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, отдельный Equipment Editor с category/location filters и staged bulk repair, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
 | Названия и каталог | Оригинальные metadata-каталоги загружаются desktop/web; S2 embedded save-local name table разрешает текущие inventory keys, loose official CFG catalog читается read-only; переносимый prototype SID/локализация не доказаны | R01–R02, M21, M25 |
-| Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors; game load/re-save не выполнен | R03–R04, M12 |
+| Прочность | Equipment Editor показывает weapon/armor/helmet и staged individual/bulk repair для подтверждённых X-Ray STATE/UPDATE anchors; maturity `experimental`, game load/re-save не выполнен. S2 durability остаётся `research` read-only с evidence CLI; EE `unsupported` | R03–R04, M12, Equipment |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
 | Настоящее удаление | X-Ray deep removal и Qt/web staging блокируют известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23–M24, R08 |
