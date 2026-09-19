@@ -8,7 +8,7 @@ import pytest
 pytest.importorskip("PySide6")
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QIcon
+from PySide6.QtGui import QColor, QIcon, QImage
 
 from editor.catalog import ItemDefinition, catalog_from_items
 from save_format import inspect_save
@@ -68,6 +68,41 @@ def test_xray_icon_resolver_crops_official_style_atlas(tmp_path: Path, qtbot) ->
     pixmap = icon.pixmap(24, 24)
     assert not pixmap.isNull()
     assert pixmap.toImage().pixelColor(12, 12).red() > 120
+
+
+def test_xray_icon_resolver_reads_loose_icon_by_unique_display_name(
+    tmp_path: Path, qtbot
+) -> None:
+    root = tmp_path / "stalker2"
+    image_path = root / "Content" / "GameLite" / "UI" / "Icons" / "Bandage.png"
+    image_path.parent.mkdir(parents=True)
+    image = QImage(12, 12, QImage.Format.Format_RGBA8888)
+    image.fill(QColor("#d44a6a"))
+    assert image.save(str(image_path))
+    definition = ItemDefinition(
+        key="Bandage",
+        display_name="UI_Item_Bandage",
+        category="consumable",
+        unit_weight=None,
+        width=None,
+        height=None,
+        max_stack=10,
+        slots=(),
+        prototype=None,
+        source="Content/GameLite/GameData/ItemPrototypes/Consumable.cfg#Bandage",
+        icon_texture="UI/Icons/Bandage",
+    )
+    catalog = catalog_from_items("stalker2", (definition,), source_root=root)
+
+    icon = XRayIconResolver(catalog).icon_for_item(
+        "opaque-save-key",
+        "UI_Item_Bandage",
+        "consumable",
+        size=24,
+    )
+
+    assert not icon.isNull()
+    assert icon.pixmap(24, 24).toImage().pixelColor(12, 12).red() > 150
 
 
 def test_inventory_model_exposes_a_zone_icon_for_each_item(synthetic_save: bytes, qtbot) -> None:

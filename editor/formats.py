@@ -172,7 +172,18 @@ class _Stalker2Format:
 
         provider = S2CatalogProvider()
         release = release_by_id(self.release_id)
-        for root in self._roots_for_source(source_name):
+        roots = list(self._roots_for_source(source_name))
+        try:
+            from .platforms import installed_releases
+
+            roots.extend(
+                game.install_dir
+                for game in installed_releases()
+                if game.release_id == self.release_id
+            )
+        except (OSError, RuntimeError):
+            pass
+        for root in dict.fromkeys(roots):
             catalog = provider.load(release, root)
             if catalog is not None:
                 return catalog
@@ -183,7 +194,18 @@ class _Stalker2Format:
 
         provider = S2CatalogProvider()
         release = release_by_id(self.release_id)
-        for root in self._roots_for_source(source_name):
+        roots = list(self._roots_for_source(source_name))
+        try:
+            from .platforms import installed_releases
+
+            roots.extend(
+                game.install_dir
+                for game in installed_releases()
+                if game.release_id == self.release_id
+            )
+        except (OSError, RuntimeError):
+            pass
+        for root in dict.fromkeys(roots):
             catalog = provider.load_bundle(release, root)
             if catalog is not None:
                 return catalog

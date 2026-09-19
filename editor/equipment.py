@@ -7,6 +7,7 @@ type-key, or scalar observation as proof of a writable save field.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -136,11 +137,25 @@ def _definition(catalog: ItemCatalog | None, key: str) -> ItemDefinition | None:
     return catalog.resolve(key)
 
 
+def _s2_name_category(name: str | None) -> EquipmentCategory | None:
+    """Classify only the exact save-local suffixes observed for S2 items."""
+
+    if not name:
+        return None
+    normalized = re.sub(r"\s+", "_", name.strip()).casefold()
+    if normalized.endswith("_helmet"):
+        return "helmet"
+    if normalized.endswith("_armor"):
+        return "armor"
+    return None
+
+
 def _is_helmet_key(
     key: str,
     definition: ItemDefinition | None,
     *,
     release_id: str,
+    display_name: str | None = None,
 ) -> bool:
     if not helmet_category_supported(release_id):
         return False
@@ -148,6 +163,8 @@ def _is_helmet_key(
     if lowered.startswith(("helm_", "helmet_")) or lowered.endswith(
         ("_helmet", "_helm")
     ):
+        return True
+    if _s2_name_category(display_name) == "helmet":
         return True
     if definition is None:
         return False
@@ -166,8 +183,20 @@ def _classify(
     catalog_category = (definition.category if definition is not None else "") or ""
     catalog_category = catalog_category.casefold()
     parser_category = item.category.casefold()
-    if _is_helmet_key(item.type_key, definition, release_id=release_id):
+    if _is_helmet_key(
+        item.type_key,
+        definition,
+        release_id=release_id,
+        display_name=item.display_name,
+    ):
         return "helmet"
+    named_category = _s2_name_category(item.display_name)
+    if release_id == "stalker2" and named_category is not None:
+        return named_category
+    if release_id == "stalker2" and definition is None:
+        if key.startswith(("wpn_", "weapon_")):
+            return "weapon"
+        return "other"
     if catalog_category == "weapon" or key.startswith(("wpn_", "weapon_")):
         return "weapon"
     if catalog_category in {"armor", "outfit"} or "брон" in parser_category:
@@ -190,6 +219,8 @@ def _serializer_family(
         return "weapon"
     if key.startswith(("outfit_", "scientific_", "helm_", "armor_")):
         return "outfit"
+    if _s2_name_category(item.display_name) in {"armor", "helmet"}:
+        return "outfit"
     return None
 
 
@@ -206,6 +237,9 @@ def _location(item: InventoryItem) -> EquipmentLocation:
 def _item_durability_support(
     item: InventoryItem,
     release_support: EquipmentSupport,
+    *,
+    category: EquipmentCategory,
+    release_id: str,
 ) -> FeatureSupport:
     if item.condition is None:
         return FeatureSupport(
@@ -216,6 +250,11 @@ def _item_durability_support(
         return FeatureSupport(
             "research",
             "Прочность прочитана, но точный writer-anchor отсутствует или неоднозначен.",
+        )
+    if release_id == "stalker2" and category != "armor":
+        return FeatureSupport(
+            "research",
+            "S2 condition writer подтверждён только для экипированной брони; этот класс остаётся read-only.",
         )
     return release_support.durability
 
@@ -232,6 +271,12 @@ def equipment_items(
     result: list[EquipmentItem] = []
     for item in items:
         definition = _definition(catalog, item.type_key)
+        if definition is None and catalog is not None and item.display_name:
+            definition = catalog.resolve_display_name(item.display_name)
+        category = _classify(item, definition, release_id=release_id)
+        condition_editable = item.condition_editable and not (
+            release_id == "stalker2" and category != "armor"
+        )
         result.append(
             EquipmentItem(
                 handle=item.handle,
@@ -242,12 +287,17 @@ def equipment_items(
                     or f"Неизвестный предмет · {item.handle_hex}"
                 ),
                 type_key=item.type_key,
-                category=_classify(item, definition, release_id=release_id),
+                category=category,
                 location=_location(item),
                 serializer_family=_serializer_family(item, definition),
                 condition=item.condition,
-                condition_editable=item.condition_editable,
-                durability=_item_durability_support(item, release_support),
+                condition_editable=condition_editable,
+                durability=_item_durability_support(
+                    item,
+                    release_support,
+                    category=category,
+                    release_id=release_id,
+                ),
                 upgrades=item.upgrades,
                 upgrades_editable=item.upgrades_editable
                 and release_support.upgrades.writable,
@@ -298,8 +348,8 @@ def equipment_support_for_release(release_id: str) -> EquipmentSupport:
     if release_id == "stalker2":
         return EquipmentSupport(
             FeatureSupport(
-                "research",
-                "Нет детерминированного condition codec для weapon/armor/helmet и game load/re-save evidence.",
+                "experimental",
+                "Экспериментально: для экипированной брони подтверждены kind=1, вложенный handle и f32 condition; game load/re-save ещё не выполнен.",
             ),
             FeatureSupport(
                 "research",

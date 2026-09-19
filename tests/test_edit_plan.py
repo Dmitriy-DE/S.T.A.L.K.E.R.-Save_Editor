@@ -61,6 +61,24 @@ def test_edit_plan_defaults_are_empty_immutable_tuples(synthetic_save: bytes) ->
     assert plan.adds == ()
 
 
+def test_edit_plan_accepts_s2_u32_durability_handles_but_keeps_xray_upgrade_bounds(
+    synthetic_save: bytes,
+) -> None:
+    s2_handle = 0x300009BB
+
+    plan = EditPlan(
+        source=_source(synthetic_save),
+        durability=((s2_handle, 0.5),),
+    )
+
+    assert plan.durability == ((s2_handle, 0.5),)
+    with pytest.raises(ValueError, match="Upgrade handle"):
+        EditPlan(
+            source=_source(synthetic_save),
+            upgrades=((s2_handle, ("upgrade",)),),
+        )
+
+
 def test_edit_plan_normalizes_and_validates_add_requests(synthetic_save: bytes) -> None:
     plan = EditPlan(
         source=_source(synthetic_save),

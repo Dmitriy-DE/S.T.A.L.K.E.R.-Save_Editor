@@ -132,8 +132,8 @@ class EditPlan:
         if len({handle for handle, *_ in placements}) != len(placements):
             raise ValueError("Duplicate placement handle in edit plan")
         for handle, _keys in upgrades:
-            if not 1 <= handle <= 0xFFFFFFFF:
-                raise ValueError("Upgrade handle must be in the range 1…4294967295")
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Upgrade handle must be in the range 1…65534")
         for handle, _placement_type, _slot_id in placements:
             if not 1 <= handle <= 0xFFFE:
                 raise ValueError("Placement handle must be in the range 1…65534")

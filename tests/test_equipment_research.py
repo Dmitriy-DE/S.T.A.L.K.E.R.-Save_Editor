@@ -24,7 +24,7 @@ def test_research_report_records_hashes_observations_and_s2_blockers(
     payload = report.as_dict()
 
     assert report.release_id == "stalker2"
-    assert report.maturity == "research"
+    assert report.maturity == "experimental"
     assert len(report.samples) == 2
     assert report.samples[0].sha256 == hashlib.sha256(synthetic_save).hexdigest()
     assert report.samples[0].category_counts

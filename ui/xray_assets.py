@@ -267,6 +267,7 @@ class XRayIconResolver:
         self._packed_atlas_cache: dict[tuple[Path, str], QImage | None] = {}
         self._icon_cache: dict[tuple[object, ...], QIcon] = {}
         self._bundled_cache: dict[tuple[str, int], QIcon | None] = {}
+        self._direct_image_cache: dict[tuple[Path, str, int], QIcon | None] = {}
 
     def _bundled_icon(self, key: str, *, size: int) -> QIcon | None:
         """Return the shipped icon for ``key``, or ``None`` if not packed.
@@ -309,7 +310,9 @@ class XRayIconResolver:
         )
         if cache_key in self._icon_cache:
             return self._icon_cache[cache_key]
-        icon = self._bundled_icon(definition.key, size=size)
+        icon = self._direct_image_icon(definition, size=size)
+        if icon is None:
+            icon = self._bundled_icon(definition.key, size=size)
         if icon is None:
             icon = self._atlas_icon(definition, size=size)
         if icon is None and self._donor is not None:
@@ -319,18 +322,36 @@ class XRayIconResolver:
         self._icon_cache[cache_key] = icon
         return icon
 
-    def icon_for_key(self, key: str, category: str | None = None, size: int = 30) -> QIcon:
-        bundled = self._bundled_icon(key, size=size)
-        if bundled is not None:
-            return bundled
+    def icon_for_item(
+        self,
+        key: str,
+        display_name: str | None = None,
+        category: str | None = None,
+        *,
+        size: int = 30,
+    ) -> QIcon:
+        """Resolve an exact key, then one unique catalog display name."""
+
         definition = self.catalog.resolve(key) if self.catalog is not None else None
+        if definition is None and self.catalog is not None and display_name:
+            definition = self.catalog.resolve_display_name(display_name)
         if definition is not None:
             return self.icon_for(definition, size=size)
+        for candidate in (key, display_name or ""):
+            if candidate:
+                bundled = self._bundled_icon(candidate, size=size)
+                if bundled is not None:
+                    return bundled
         if self._donor is not None:
-            donated = self._donor.atlas_icon_for_key(key, size=size)
-            if donated is not None:
-                return donated
+            for candidate in (key, display_name or ""):
+                if candidate:
+                    donated = self._donor.atlas_icon_for_key(candidate, size=size)
+                    if donated is not None:
+                        return donated
         return category_icon(category, size=size)
+
+    def icon_for_key(self, key: str, category: str | None = None, size: int = 30) -> QIcon:
+        return self.icon_for_item(key, category=category, size=size)
 
     def atlas_icon_for_key(self, key: str, *, size: int = 30) -> QIcon | None:
         """Return this catalog's real atlas crop for ``key``, or ``None``.
@@ -397,6 +418,76 @@ class XRayIconResolver:
                 )
             )
         )
+
+    def _direct_image_icon(
+        self,
+        definition: ItemDefinition,
+        *,
+        size: int,
+    ) -> QIcon | None:
+        """Read an official loose PNG/JPG icon when a catalog supplies one.
+
+        S2's packed PAK assets are intentionally not unpacked by the editor.
+        This path supports a user-provided official loose resource tree and
+        never treats a missing file as a successful icon lookup.
+        """
+
+        source_root = self.catalog.source_root if self.catalog is not None else None
+        texture = (definition.icon_texture or "").strip().replace("\\", "/")
+        if source_root is None or not texture:
+            return None
+        relative = Path(texture.lstrip("/"))
+        if relative.is_absolute() or ".." in relative.parts:
+            return None
+        image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+        if relative.suffix and relative.suffix.casefold() not in image_suffixes:
+            return None
+        cache_key = (source_root, relative.as_posix().casefold(), size)
+        if cache_key in self._direct_image_cache:
+            return self._direct_image_cache[cache_key]
+        relative_variants = [relative]
+        parts = relative.parts
+        if parts and parts[0].casefold() == "game":
+            relative_variants.append(Path(*parts[1:]))
+        if parts and parts[0].casefold() == "gamelite":
+            relative_variants.append(Path(*parts[1:]))
+        file_variants: list[Path] = []
+        for variant in relative_variants:
+            if not variant.parts:
+                continue
+            file_variants.append(variant)
+            if not variant.suffix:
+                file_variants.extend(variant.with_suffix(suffix) for suffix in sorted(image_suffixes))
+        candidates = tuple(
+            root / variant
+            for root in (
+                source_root,
+                source_root / "Content",
+                source_root / "Content" / "GameLite",
+                source_root / "Content" / "GameLite" / "GameData",
+            )
+            for variant in file_variants
+        )
+        icon: QIcon | None = None
+        for path in candidates:
+            if not path.is_file():
+                continue
+            image = QImage(str(path))
+            if image.isNull():
+                continue
+            icon = QIcon(
+                QPixmap.fromImage(
+                    image.scaled(
+                        size,
+                        size,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
+            )
+            break
+        self._direct_image_cache[cache_key] = icon
+        return icon
 
     @staticmethod
     def _atlas_path(source_root: Path, texture: str | None) -> Path | None:

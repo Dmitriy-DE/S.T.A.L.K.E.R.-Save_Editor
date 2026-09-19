@@ -55,12 +55,14 @@ helmets are displayed as `helmet` even when their serializer family is `outfit`;
 SoC/CS Original do not expose a separate helmet filter. S2 may display a
 read-only helmet row only when the save itself provides that category evidence.
 
-S.T.A.L.K.E.R. 2 currently has no accepted durability writer. The product
-must expose its equipment projection as read-only/research with a concrete
-reason. A writer can become experimental only after controlled same-handle
-weapon/armor/helmet samples, A/B game diffs, deterministic anchors, and a
-game load/re-save check. A scalar candidate alone is never promoted to a
-production writer.
+S.T.A.L.K.E.R. 2 has an experimental durability writer only for equipped armor
+rows whose save-local name ends in the observed exact `_Armor` form and whose
+record passes the nested same-handle/f32 anchor guard. The writer changes four
+condition bytes, rebuilds the container, and performs fresh CRC, round-trip,
+and read-back checks. S2 weapons, helmets, grid items, unknown names, and
+ambiguous records remain read-only. This is not game-accepted until a
+controlled load/re-save result exists. A scalar candidate, prototype SID, or
+catalog icon alone is never promoted to a production writer.
 
 Enhanced Editions remain independent and unavailable/read-only until their
 own parser and evidence gates are met.

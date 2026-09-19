@@ -68,12 +68,21 @@ def test_s2_prepare_edit_can_combine_money_and_armor_condition(
 
 
 def test_s2_prepare_edit_rejects_non_armor_condition(synthetic_save: bytes) -> None:
+    data = _save_with_equipped_armor(
+        synthetic_save,
+        display_name="GunBucket_MagIncreased",
+    )
+    item = next(
+        item for item in sf.inspect_save(data).inventory if item.handle == EQUIPPED_HANDLE
+    )
+    assert item.condition is not None
+    assert item.condition_editable is False
     with pytest.raises(sf.SaveError, match="S2 armor condition|condition"):
         prepare_edit(
-            synthetic_save,
+            data,
             EditPlan(
-                source=_source(synthetic_save),
-                durability=((0x30000001, 0.5),),
+                source=_source(data),
+                durability=((EQUIPPED_HANDLE, 0.5),),
             ),
         )
 
@@ -95,6 +104,6 @@ def test_s2_prepare_edit_rejects_unproven_upgrade_writer(synthetic_save: bytes) 
             synthetic_save,
             EditPlan(
                 source=_source(synthetic_save),
-                upgrades=((0x30000001, ("Armor_Upgrade_Test",)),),
+                upgrades=((1, ("Armor_Upgrade_Test",)),),
             ),
         )

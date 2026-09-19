@@ -44,6 +44,12 @@ _ITEM_FIELDS = frozenset(
         "weight",
         "maxstackcount",
         "maxstack",
+        "displayname",
+        "display_name",
+        "icon",
+        "iconpath",
+        "icontexture",
+        "inventoryicon",
     }
 )
 _CATEGORY_BY_FILE = {
@@ -201,6 +207,10 @@ def _first(values: dict[str, tuple[str, ...]], *keys: str) -> str | None:
         entries = values.get(key.casefold())
         if entries:
             return entries[0]
+    wanted = {key.casefold() for key in keys}
+    for path, entries in values.items():
+        if path.rsplit("::", 1)[-1] in wanted and entries:
+            return entries[0]
     return None
 
 
@@ -239,7 +249,12 @@ def _enum_leaf(value: str) -> str | None:
 def _slots(values: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
     result: list[str] = []
     for key in ("itemslottype", "itemslottypes"):
-        for value in values.get(key, ()):
+        for value in (
+            entry
+            for path, entries in values.items()
+            if path.rsplit("::", 1)[-1] == key
+            for entry in entries
+        ):
             for token in re.split(r"[,;]", value):
                 item = _enum_leaf(token)
                 if item is not None and item not in result:
@@ -273,7 +288,40 @@ def _category(record: _S2Record, values: dict[str, tuple[str, ...]]) -> str | No
 
 
 def _is_item(record: _S2Record, values: dict[str, tuple[str, ...]]) -> bool:
-    return bool(_first(values, "sid")) and bool(_ITEM_FIELDS.intersection(values))
+    leaves = {path.rsplit("::", 1)[-1] for path in values}
+    # SID is the record identity, not an arbitrary nested metadata field.
+    # Requiring the top-level key prevents a nested attachment/property SID
+    # from becoming a selectable item definition by accident.
+    return bool(record.values.get("sid")) and bool(_ITEM_FIELDS & leaves)
+
+
+def _display_name(values: dict[str, tuple[str, ...]]) -> str | None:
+    value = _first(
+        values,
+        "displayname",
+        "display_name",
+        "localizedname",
+        "itemname",
+    )
+    if value is None:
+        return None
+    normalized = value.strip().strip("\"'")
+    return normalized or None
+
+
+def _icon_texture(values: dict[str, tuple[str, ...]]) -> str | None:
+    value = _first(
+        values,
+        "icon",
+        "iconpath",
+        "icontexture",
+        "inventoryicon",
+        "itemicon",
+    )
+    if value is None:
+        return None
+    normalized = value.strip().strip("\"'")
+    return normalized or None
 
 
 def _tokens(value: str) -> tuple[str, ...]:
@@ -407,7 +455,7 @@ class S2CatalogProvider:
                 continue
             definition = ItemDefinition(
                 key=sid,
-                display_name=None,
+                display_name=_display_name(values),
                 category=_category(record, values),
                 unit_weight=_number(_first(values, "weight")),
                 width=None,
@@ -417,6 +465,7 @@ class S2CatalogProvider:
                 prototype=None,
                 source=f"{record.source}#{record.name or sid}",
                 serialization_family=None,
+                icon_texture=_icon_texture(values),
             )
             items.append(definition)
             item_by_sid[sid] = definition

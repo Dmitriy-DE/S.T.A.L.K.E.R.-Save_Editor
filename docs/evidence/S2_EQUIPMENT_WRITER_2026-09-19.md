@@ -30,6 +30,13 @@
 33 `kind=1` armor rows; все 33 armor rows прошли exact anchor guard. До и после
 сканирования SHA-256 и `mtime_ns` каждого файла совпали; scan ничего не писал.
 
+Классификация не выводится из одного `kind=1`: embedded save-local name table
+используется для exact suffix `_Armor`/`_Helmet`. Поэтому `GunBucket_*`, grid
+rows и modifier names вроде `*_Armor_PSY_*` не получают armor writer только из-за
+похожего kind или имени. Loose official CFG catalog дополнительно даёт
+display-name/icon metadata, когда установленная игра предоставляет такие
+ресурсы; при packed-only install UI показывает честный category glyph.
+
 Реализация в `editor/s2_item_state.py` пишет только четыре байта этого
 подтверждённого `f32`. Перед записью она проверяет kind, оба handle и диапазон;
 после container rebuild `save_format.patch_save` повторно читает каждое

@@ -26,6 +26,8 @@ struct.end
 Bandage : struct.begin {refkey=BaseConsumable}
     SID = Bandage
     Type = EItemPrototypeType::Consumable
+    DisplayName = UI_Item_Bandage
+    Icon = UI/Icons/Items/Bandage.png
     Weight = 0.05
     MaxStackCount = 10
     ItemSlotType = EItemSlotType::QuickUse
@@ -46,6 +48,18 @@ GunAKU : struct.begin
     ItemSlotType = EInventoryEquipmentSlot::PrimaryWeapon
     UpgradePrototypeSID = GunAKU_Upgrade_Rail
     UpgradePrototypeSID = GunAKU_Upgrade_Muzzle
+struct.end
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (directory / "NestedMetadata.cfg").write_text(
+        """
+NestedMetadata : struct.begin
+    Type = EItemPrototypeType::Weapon
+    Metadata : struct.begin
+        SID = NestedOnly
+    struct.end
 struct.end
 """.strip()
         + "\n",
@@ -79,12 +93,13 @@ def test_s2_catalog_reads_official_cfg_metadata_without_save_mapping(tmp_path: P
     assert bundle is not None
     bandage = bundle.items.resolve("Bandage")
     assert bandage is not None
-    assert bandage.display_name is None
+    assert bandage.display_name == "UI_Item_Bandage"
     assert bandage.category == "consumable"
     assert bandage.unit_weight == 0.05
     assert bandage.max_stack == 10
     assert bandage.slots == ("QuickUse",)
     assert bandage.serialization_family is None
+    assert bandage.icon_texture == "UI/Icons/Items/Bandage.png"
     assert bandage.prototype is None
     assert bandage.source.endswith("ConsumablePrototypes.cfg#Bandage")
 
@@ -99,6 +114,7 @@ def test_s2_catalog_reads_official_cfg_metadata_without_save_mapping(tmp_path: P
     assert weapon.category == "weapon"
     assert weapon.unit_weight == 2.75
     assert weapon.slots == ("PrimaryWeapon",)
+    assert bundle.items.resolve("NestedOnly") is None
 
     assert bundle.upgrades is not None
     assert [item.key for item in bundle.upgrades.for_item("GunAKU")] == [
@@ -111,6 +127,7 @@ def test_s2_catalog_reads_official_cfg_metadata_without_save_mapping(tmp_path: P
         "Bandage_Upgrade_Test",
     ]
     assert not bundle.factions.factions
+    assert bundle.items.resolve_display_name("UI_Item_Bandage") == bandage
 
 
 def test_s2_provider_walks_from_save_path_but_never_enables_save_writer(
@@ -127,6 +144,28 @@ def test_s2_provider_walks_from_save_path_but_never_enables_save_writer(
     assert catalog.resolve("Bandage") is not None
     assert STALKER2_FORMAT.capabilities.catalog is True
     assert STALKER2_FORMAT.capabilities.add_items is False
+
+
+def test_s2_format_discovers_installed_loose_resources_without_save_path(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_s2_resources(tmp_path)
+    from editor import platforms
+
+    game = platforms.InstalledGame(
+        game_id="stalker2",
+        app_id=1643320,
+        edition="s2",
+        library_root=tmp_path,
+        install_dir=tmp_path,
+    )
+    monkeypatch.setattr(platforms, "installed_releases", lambda **_kwargs: (game,))
+
+    catalog = STALKER2_FORMAT.catalog_for_source(None)
+
+    assert catalog is not None
+    assert catalog.source_root == tmp_path
+    assert catalog.resolve("Bandage") is not None
 
 
 def test_s2_provider_rejects_mod_overlay_root_and_nested_files(tmp_path: Path) -> None:

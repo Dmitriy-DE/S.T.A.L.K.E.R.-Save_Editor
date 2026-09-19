@@ -326,6 +326,26 @@ class ItemCatalog:
                 return item
         return None
 
+    def resolve_display_name(self, display_name: str) -> ItemDefinition | None:
+        """Resolve one unique official display name without fuzzy matching.
+
+        A save-local name can be useful for presentation, but it must not be
+        treated as a prototype SID when several definitions share that label.
+        Ambiguous labels therefore return ``None`` and keep the row on the
+        category/read-only fallback path.
+        """
+
+        normalized = str(display_name).strip().casefold()
+        if not normalized:
+            return None
+        matches = tuple(
+            item
+            for item in self.items
+            if item.display_name is not None
+            and item.display_name.strip().casefold() == normalized
+        )
+        return matches[0] if len(matches) == 1 else None
+
 
 class CatalogProvider(Protocol):
     """Provider contract used by desktop and future browser catalog loaders."""

@@ -261,6 +261,26 @@ def _category_name(kind: int) -> str:
     }.get(kind, f"Тип {kind}")
 
 
+def _s2_category_name(kind: int, display_name: str | None) -> str:
+    """Use save-local names instead of treating a serialization kind as class."""
+
+    normalized = (display_name or "").strip().casefold()
+    if _s2_armor_name(display_name) or normalized.endswith("_helmet"):
+        return "Броня/экипировка"
+    if "_armor_" in normalized or "_helmet_" in normalized:
+        return "Разное"
+    if normalized.startswith("gunbucket_"):
+        return "Разное"
+    return _category_name(kind)
+
+
+def _s2_armor_name(display_name: str | None) -> bool:
+    """Return whether a save-local S2 name has the exact observed armor suffix."""
+
+    normalized = (display_name or "").strip().replace(" ", "_").casefold()
+    return normalized.endswith("_armor")
+
+
 def locate_inventory_layout(raw: bytes) -> InventoryLayout:
     """Parse the confirmed player-inventory arrays near the wallet anchor.
 
@@ -576,7 +596,7 @@ def _inventory_details(
                 total_weight=total_weight,
                 unit_weight=unit_weight,
                 kind_code=kind,
-                category=_category_name(kind),
+                category=_s2_category_name(kind, display_name),
                 record_offset=rec_off,
                 record_end_guess=ends.get(handle, min(len(raw), rec_off + 512)),
                 fingerprint=fingerprint,
@@ -604,6 +624,7 @@ def _inventory_details(
         ):
             continue
         type_key_bytes = raw[rec_off + 8 : rec_off + 11]
+        display_name = _s2_display_name(name_table, type_key_bytes)
         condition = None
         condition_editable = False
         if kind == 1:
@@ -615,7 +636,7 @@ def _inventory_details(
             )
             if condition_anchor is not None:
                 condition = condition_anchor.value
-                condition_editable = True
+                condition_editable = _s2_armor_name(display_name)
             else:
                 warnings.append(
                     f"Equipped handle 0x{handle:08X}: S2 armor condition не подтверждён"
@@ -632,13 +653,13 @@ def _inventory_details(
                 total_weight=total_weight,
                 unit_weight=total_weight / count if count else 0.0,
                 kind_code=kind,
-                category=_category_name(kind),
+                category=_s2_category_name(kind, display_name),
                 record_offset=rec_off,
                 record_end_guess=ends.get(handle, min(len(raw), rec_off + 512)),
                 fingerprint=raw[rec_off + 4 : rec_off + 18].hex(),
                 type_key=type_key_bytes.hex(),
                 editable_count=False,
-                display_name=_s2_display_name(name_table, type_key_bytes),
+                display_name=display_name,
                 position_label="экипировано",
                 size_label="неизвестно",
                 count_max=1_000_000,
@@ -968,7 +989,25 @@ def _patch_s2_durability_in_raw(
         raise SaveError(
             f"S2 armor handle 0x{handle:08X} не является однозначным actor-owned item"
         )
-    record_offset, _count, _weight, kind = locate_object_record(bytes(raw), handle)
+    if any(cell.handle == handle for cell in layout.grid_cells):
+        raise SaveError(
+            f"S2 armor condition handle 0x{handle:08X} находится в grid; writer принимает только equipped state"
+        )
+    items, _unresolved, _warnings = _inventory_details(bytes(raw), layout)
+    confirmed = next(
+        (item for item in items if item.handle == handle and item.condition_editable),
+        None,
+    )
+    if confirmed is None:
+        raise SaveError(
+            f"S2 armor condition для handle 0x{handle:08X} не подтверждён parser-ом"
+        )
+    if not _s2_armor_name(confirmed.display_name):
+        raise SaveError(
+            f"S2 armor condition для handle 0x{handle:08X} не подтверждён exact armor name"
+        )
+    record_offset = confirmed.record_offset
+    kind = confirmed.kind_code
     if not has_s2_equipment_shape(
         raw,
         handle=handle,

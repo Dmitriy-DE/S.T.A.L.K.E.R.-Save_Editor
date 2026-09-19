@@ -116,7 +116,7 @@ def analyze_equipment_samples(
                 "Need at least three controlled same-handle S2 samples covering weapon, armor, and helmet states."
             )
         blockers.append(
-            "Game load/re-save evidence is required before enabling an S2 durability writer."
+            "Game load/re-save evidence is required before promoting the S2 durability writer from experimental to verified."
         )
         observed = {category for sample in samples for category, _count_value in sample.category_counts}
         missing = {"weapon", "armor", "helmet"} - observed

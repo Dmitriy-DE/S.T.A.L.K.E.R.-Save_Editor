@@ -355,23 +355,33 @@ function itemCategoryGlyph(item) {
 }
 
 function itemGlyph(item) {
-  // Prefer the shipped icon pack (icons/<item-key>.png); fall back to the
-  // drawn category glyph when the key has no packed art. The pack travels
-  // with the site, so icons are present without any game install.
-  const key = item.type_key;
-  if (!key) {
+  // Prefer the shipped icon pack by save key, then by an exact catalog display
+  // name. The latter is needed for S2 saves whose opaque type key resolves to
+  // an official prototype name only after parsing the embedded name table.
+  const candidates = [item.type_key, item.name].filter(Boolean);
+  if (!candidates.length) {
     return itemCategoryGlyph(item);
   }
   const img = document.createElement("img");
   img.className = "zone-item-icon";
   img.loading = "lazy";
   img.decoding = "async";
-  img.alt = `Иконка: ${key}`;
-  img.title = key;
-  img.src = `icons/${encodeURIComponent(key)}.png`;
+  let candidateIndex = 0;
+  const setSource = () => {
+    const candidate = candidates[candidateIndex];
+    img.alt = `Иконка: ${candidate}`;
+    img.title = candidate;
+    img.src = `icons/${encodeURIComponent(candidate)}.png`;
+  };
   img.addEventListener("error", () => {
+    candidateIndex += 1;
+    if (candidateIndex < candidates.length) {
+      setSource();
+      return;
+    }
     img.replaceWith(itemCategoryGlyph(item));
   });
+  setSource();
   return img;
 }
 

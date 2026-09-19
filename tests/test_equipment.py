@@ -21,6 +21,7 @@ def _item(
     condition: float | None = None,
     condition_editable: bool = False,
     placement_type: str | None = None,
+    display_name: str | None = None,
 ) -> InventoryItem:
     return InventoryItem(
         handle=0x1000 + len(type_key),
@@ -39,7 +40,7 @@ def _item(
         fingerprint="f" * 64,
         type_key=type_key,
         editable_count=False,
-        display_name=type_key,
+        display_name=display_name or type_key,
         condition=condition,
         condition_editable=condition_editable,
         storage=storage,  # type: ignore[arg-type]
@@ -108,6 +109,45 @@ def test_unknown_equipment_never_gets_a_guessed_category_or_location() -> None:
     assert row.serializer_family is None
     assert row.durability_editable is False
     assert row.durability.reason
+
+
+def test_s2_equipment_uses_save_names_instead_of_opaque_kind_codes() -> None:
+    rows = equipment_items(
+        (
+            _item(
+                "052c01",
+                "Оружие",
+                storage="inventory",
+                display_name="Heavy_Dolg_Armor",
+            ),
+            _item(
+                "05e300",
+                "Оружие",
+                storage="equipped",
+                display_name="Heavy_Svoboda_Helmet",
+            ),
+            _item(
+                "056f01",
+                "Броня/экипировка",
+                storage="equipped",
+                condition=0.75,
+                condition_editable=True,
+                display_name="GunBucket_MagIncreased",
+            ),
+            _item(
+                "05c600",
+                "Броня/экипировка",
+                storage="inventory",
+                display_name="Exoskeleton_Monolith_Armor_PSY_Left_2_2",
+            ),
+        ),
+        release_id="stalker2",
+    )
+
+    assert [row.category for row in rows] == ["armor", "helmet", "other", "other"]
+    assert rows[2].durability_editable is False
+    assert rows[2].durability.maturity == "research"
+
 
 
 def test_catalog_name_and_icon_are_used_for_a_cop_helmet() -> None:
@@ -188,7 +228,7 @@ def test_release_support_is_explicit_for_s2_original_and_enhanced_profiles() -> 
     cop = equipment_support_for_release("stalker-cop")
     ee = equipment_support_for_release("stalker-cop-ee")
 
-    assert s2.durability.maturity == "research"
+    assert s2.durability.maturity == "experimental"
     assert s2.durability.reason
     assert cop.durability.maturity == "experimental"
     assert cop.upgrades.maturity == "experimental"
@@ -202,5 +242,5 @@ def test_capability_json_contains_shared_equipment_maturity() -> None:
         equipment=equipment_support_for_release("stalker2"),
     ).as_dict()
 
-    assert payload["equipment"]["durability"]["maturity"] == "research"
+    assert payload["equipment"]["durability"]["maturity"] == "experimental"
     assert payload["equipment"]["placement"]["maturity"] == "unsupported"

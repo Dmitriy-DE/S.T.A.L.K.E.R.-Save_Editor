@@ -483,8 +483,9 @@ class InventoryView(QWidget):
     def _icon_for_item(self, item: InventoryItem) -> QIcon:
         """Return an official atlas crop or a Zone category glyph."""
 
-        return self._icon_resolver.icon_for_key(
+        return self._icon_resolver.icon_for_item(
             item.type_key,
+            item.display_name,
             item.category,
             size=30,
         )

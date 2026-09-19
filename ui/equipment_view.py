@@ -198,7 +198,12 @@ class EquipmentView(QWidget):
 
     def _icon_for_item(self, item: EquipmentItem):
         category = "outfit" if item.category in {"armor", "helmet"} else item.category
-        return self._resolver.icon_for_key(item.type_key, category, size=30)
+        return self._resolver.icon_for_item(
+            item.type_key,
+            item.name,
+            category,
+            size=30,
+        )
 
     def _selected_item(self) -> EquipmentItem | None:
         if self.selected_handle is None:

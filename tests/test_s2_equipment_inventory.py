@@ -23,7 +23,11 @@ def _equipped_record(handle: int = EQUIPPED_HANDLE, condition: float = 0.75) -> 
     return bytes(record)
 
 
-def _save_with_equipped_armor(synthetic_save: bytes) -> bytes:
+def _save_with_equipped_armor(
+    synthetic_save: bytes,
+    *,
+    display_name: str = "Exoskeleton_Monolith_Armor",
+) -> bytes:
     raw = sf.decompress_save(synthetic_save)
     layout = sf.locate_inventory_layout(raw)
     raw = sf._rebuild_inventory_arrays(
@@ -31,7 +35,15 @@ def _save_with_equipped_armor(synthetic_save: bytes) -> bytes:
         owned_handles=(*layout.owned_handles, EQUIPPED_HANDLE),
         grid_cells=layout.grid_cells,
     )
-    return sf.rebuild_uncompressed(raw + _equipped_record())
+    names = [""] * 289
+    names[0] = "GunAK74_ST"
+    names[0x120] = display_name
+    name_table = struct.pack("<H", len(names))
+    name_table += b"".join(
+        struct.pack("<H", len(value.encode("utf-8"))) + value.encode("utf-8")
+        for value in names
+    )
+    return sf.rebuild_uncompressed(raw + _equipped_record() + name_table)
 
 
 def test_s2_equipped_armor_is_listed_with_editable_condition(
@@ -47,6 +59,7 @@ def test_s2_equipped_armor_is_listed_with_editable_condition(
     assert item.cells == ()
     assert item.condition == 0.75
     assert item.condition_editable is True
+    assert item.display_name == "Exoskeleton_Monolith_Armor"
 
 
 def test_s2_shape_guard_does_not_reclassify_existing_synthetic_orphan(

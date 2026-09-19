@@ -59,8 +59,9 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
 ## Что доступно
 
 - S.T.A.L.K.E.R. 2: чтение и изменение денег/подтверждённых стаков с
-  сохранением CRC/Kraken safeguards. Структура GVAS-инвентаря и добавление
-  предметов пока не включены без доказанной схемы.
+  сохранением CRC/Kraken safeguards; для экипированной брони с exact
+  condition-anchor доступна экспериментальная правка прочности. Структура
+  GVAS-инвентаря и добавление предметов пока не включены без доказанной схемы.
 - Original Shadow of Chornobyl, Clear Sky и Call of Pripyat: strict X-Ray
   container, actor money, полный actor-owned inventory snapshot, официальные
   catalog keys и serializer families. Ammo count пишется одновременно в
@@ -70,8 +71,10 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   backpack и belt, показывает точные catalog names/icons и поддерживает
   индивидуальный/массовый staged repair для подтверждённых X-Ray condition
   anchors. Это experimental до игрового load/re-save. S.T.A.L.K.E.R. 2
-  показывает equipment в research/read-only maturity с воспроизводимым CLI
-  отчётом; Enhanced Editions остаются отдельными unavailable profiles.
+  разрешает только experimental condition-edit для подтверждённых
+  экипированных armor rows; weapon/helmet/unknown rows остаются read-only, а
+  CLI отчёт сохраняет отдельные blockers. Enhanced Editions остаются
+  отдельными unavailable profiles.
 - Для оригинальной трилогии writer умеет добавить предмет из каталога,
   клонировав существующий registry template той же подтверждённой
   serializer family, и удалить actor-owned record с новым registry framing.
@@ -101,12 +104,12 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   реального snapshot.
 
 **Не реализовано как подтверждённые production-функции:** игровое принятие
-X-Ray repair/upgrades/placement, S.T.A.L.K.E.R. 2 durability writer,
-S.T.A.L.K.E.R. 2 add/clone/upgrades, Enhanced Edition parser, полноценная
-inventory grid mutation и reference-safe удаление квестовых/equipped объектов.
-Equipment rows и staged repair остаются fail-closed по maturity; unknown fields
-read-only, а X-Ray structural proof не означает, что игра уже проверила
-результат загрузкой.
+X-Ray repair/upgrades/placement, игровое принятие experimental S.T.A.L.K.E.R. 2
+armor condition writer, S.T.A.L.K.E.R. 2 weapon condition/add/clone/upgrades,
+Enhanced Edition parser, полноценная inventory grid mutation и reference-safe
+удаление квестовых/equipped объектов. Equipment rows и staged repair остаются
+fail-closed по maturity; unknown fields read-only, а structural proof не
+означает, что игра уже проверила результат загрузкой.
 
 Cloud-процесс использует fresh SHA, exclusive backup/recovery, persisted и
 read-back; после WriteFile state machine различает `verified` и `uncertain` и

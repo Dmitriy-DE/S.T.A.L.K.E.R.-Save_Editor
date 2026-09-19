@@ -29,12 +29,12 @@ def test_web_snapshot_exposes_shared_equipment_projection() -> None:
     assert snapshot["capabilities"]["equipment"]["durability"]["maturity"] == "experimental"
 
 
-def test_web_snapshot_keeps_s2_equipment_read_only_until_evidence(
+def test_web_snapshot_exposes_s2_experimental_capability_but_keeps_unconfirmed_rows_read_only(
     synthetic_save: bytes,
 ) -> None:
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
 
-    assert snapshot["capabilities"]["equipment"]["durability"]["maturity"] == "research"
+    assert snapshot["capabilities"]["equipment"]["durability"]["maturity"] == "experimental"
     assert all(row["durability_editable"] is False for row in snapshot["equipment"])
 
 

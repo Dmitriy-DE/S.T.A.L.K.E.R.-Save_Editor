@@ -20,7 +20,7 @@ the immutable `EditPlan.durability` path and reports every skipped item.
 | SoC Original | experimental X-Ray condition anchors | unsupported | experimental structural gates |
 | Clear Sky Original | experimental X-Ray condition anchors | experimental structural gate | experimental structural gates |
 | Call of Pripyat Original | experimental X-Ray condition anchors | experimental structural gate | experimental structural gates |
-| S.T.A.L.K.E.R. 2 | research/read-only | research/read-only | unsupported |
+| S.T.A.L.K.E.R. 2 | experimental for confirmed equipped armor; research/read-only otherwise | research/read-only | unsupported |
 | SoC Enhanced Edition | unsupported | unsupported | unsupported |
 | Clear Sky Enhanced Edition | unsupported | unsupported | unsupported |
 | Call of Pripyat Enhanced Edition | unsupported | unsupported | unsupported |
@@ -34,14 +34,15 @@ current product model. SoC/CS Original treat helmet-like outfit keys as armor;
 Enhanced Edition filters remain unavailable with their independent unsupported
 profiles.
 
-## S.T.A.L.K.E.R. 2 research boundary
+## S.T.A.L.K.E.R. 2 research and writer boundary
 
 `tools/research_equipment.py` accepts explicit save paths, records each source
 SHA-256, release id, observed categories/locations, condition rows, and
 concrete blockers. It does not write save bytes. At least three controlled
 same-handle weapon/armor/helmet states plus A/B game diffs and game
-load/re-save evidence are still required before a deterministic S2 durability
-writer can be promoted beyond `research`.
+load/re-save evidence is still required before the narrow S2 armor durability
+writer can be promoted beyond `experimental`; weapon, helmet, grid, and
+unknown rows remain `research`/read-only.
 
 Example:
 
@@ -51,7 +52,8 @@ python3 tools/research_equipment.py --json \
 ```
 
 The report is observational. A scalar candidate, catalog prototype SID, or
-structural binary round-trip does not enable S2 writing.
+structural binary round-trip does not broaden S2 writing beyond the exact
+equipped-armor anchor.
 
 ## Verification
 
