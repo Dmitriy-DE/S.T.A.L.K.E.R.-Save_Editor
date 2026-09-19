@@ -216,7 +216,12 @@ def equipment_items(
         result.append(
             EquipmentItem(
                 handle=item.handle,
-                name=item.display_name or f"Неизвестный предмет · {item.handle_hex}",
+                name=(
+                    definition.display_name
+                    if definition is not None and definition.display_name
+                    else item.display_name
+                    or f"Неизвестный предмет · {item.handle_hex}"
+                ),
                 type_key=item.type_key,
                 category=_classify(item, definition),
                 location=_location(item),

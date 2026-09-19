@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from test_xray_durability import _condition_fixture
+
 from editor.capabilities import FormatCapabilities
 from editor.catalog import ItemDefinition, catalog_from_items
 from editor.equipment import (
     equipment_items,
     equipment_support_for_release,
 )
+from editor.xray_save import COP_FORMAT, parse_xray
 from save_format import InventoryItem
 
 
@@ -102,6 +105,56 @@ def test_unknown_equipment_never_gets_a_guessed_category_or_location() -> None:
     assert row.serializer_family is None
     assert row.durability_editable is False
     assert row.durability.reason
+
+
+def test_catalog_name_and_icon_are_used_for_a_cop_helmet() -> None:
+    catalog = catalog_from_items(
+        "stalker-cop",
+        (
+            ItemDefinition(
+                key="helm_battle",
+                display_name="Battle Helmet",
+                category="outfit",
+                unit_weight=None,
+                width=None,
+                height=None,
+                max_stack=None,
+                slots=("helmet",),
+                prototype=None,
+                source="official/items.ltx#helm_battle",
+                serialization_family="outfit",
+                icon_x=4,
+                icon_y=5,
+                icon_texture="ui_icon_equipment",
+            ),
+        ),
+    )
+
+    row = equipment_items(
+        (_item("helm_battle", "Броня/экипировка", storage="equipped"),),
+        release_id="stalker-cop",
+        catalog=catalog,
+    )[0]
+
+    assert row.name == "Battle Helmet"
+    assert row.icon_x == 4
+    assert row.icon_y == 5
+    assert row.icon_texture == "ui_icon_equipment"
+    assert row.category == "helmet"
+    assert row.serializer_family == "outfit"
+
+
+def test_xray_helmet_keeps_outfit_serializer_family() -> None:
+    parsed = parse_xray(
+        _condition_fixture(version=128, outer=6, name="helm_battle"),
+        COP_FORMAT,
+    )
+    row = equipment_items(parsed.inventory, release_id="stalker-cop")[0]
+
+    assert row.category == "helmet"
+    assert row.serializer_family == "outfit"
+    assert row.condition == 0.25
+    assert row.durability_editable is True
 
 
 def test_release_support_is_explicit_for_s2_original_and_enhanced_profiles() -> None:
