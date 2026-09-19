@@ -145,7 +145,7 @@
           <option value="all">Всё оборудование</option>
           <option value="weapon">Оружие</option>
           <option value="armor">Броня</option>
-          <option value="helmet">Шлемы</option>
+          <option value="helmet" hidden>Шлемы</option>
           <option value="equipped">Экипировано</option>
           <option value="inventory">В инвентаре</option>
           <option value="damaged">Не 100%</option>
@@ -153,7 +153,8 @@
         </select>
         <label for="equipment-percent">Прочность, %</label>
         <input id="equipment-percent" type="number" min="0" max="100" step="0.1" value="100">
-        <button class="button" id="equipment-repair-selected" type="button">Застейджить выбранное</button>
+        <button class="button" id="equipment-repair-selected" type="button">Отремонтировать выбранное</button>
+        <button class="button" id="equipment-repair-full" type="button">Ремонт до 100%</button>
         <button class="button" id="equipment-reset-selected" type="button">Сбросить выбранное</button>
       </div>
       <div class="row">
@@ -162,12 +163,12 @@
         <button class="button" id="equipment-repair-equipped" type="button">Экипированные</button>
         <button class="button" id="equipment-repair-weapon" type="button">Оружие</button>
         <button class="button" id="equipment-repair-armor" type="button">Броня</button>
-        <button class="button" id="equipment-repair-helmet" type="button">Шлемы</button>
+        <button class="button" id="equipment-repair-helmet" type="button" hidden>Шлемы</button>
       </div>
       <table class="grid" id="equipment">
         <thead><tr>
           <th>Иконка</th><th>Название</th><th>Категория</th><th>Где</th>
-          <th>Прочность</th><th>Поддержка</th><th>Type-key</th><th>Handle</th><th>Действие</th>
+          <th>Прочность</th><th>Поддержка</th><th>Улучшения</th><th>Type-key</th><th>Handle</th><th>Действие</th>
         </tr></thead>
         <tbody></tbody>
       </table>

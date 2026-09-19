@@ -15,7 +15,7 @@ from save_format import InventoryItem
 from .catalog import ItemCatalog, ItemDefinition
 
 EquipmentCategory = Literal["weapon", "armor", "helmet", "other"]
-EquipmentLocation = Literal["equipped", "inventory", "unknown"]
+EquipmentLocation = Literal["equipped", "inventory", "belt", "unknown"]
 SupportMaturity = Literal["unsupported", "research", "experimental", "verified"]
 
 _FEATURE_NAMES = ("durability", "upgrades", "placement", "add", "remove")
@@ -23,6 +23,7 @@ _ORIGINAL_RELEASES = frozenset({"stalker-soc", "stalker-cs", "stalker-cop"})
 _EE_RELEASES = frozenset(
     {"stalker-soc-ee", "stalker-cs-ee", "stalker-cop-ee"}
 )
+_SEPARATE_HELMET_RELEASES = frozenset({"stalker-cop", "stalker2"})
 
 
 @dataclass(frozen=True)
@@ -135,7 +136,14 @@ def _definition(catalog: ItemCatalog | None, key: str) -> ItemDefinition | None:
     return catalog.resolve(key)
 
 
-def _is_helmet_key(key: str, definition: ItemDefinition | None) -> bool:
+def _is_helmet_key(
+    key: str,
+    definition: ItemDefinition | None,
+    *,
+    release_id: str,
+) -> bool:
+    if not helmet_category_supported(release_id):
+        return False
     lowered = key.casefold()
     if lowered.startswith(("helm_", "helmet_")) or lowered.endswith(
         ("_helmet", "_helm")
@@ -148,12 +156,17 @@ def _is_helmet_key(key: str, definition: ItemDefinition | None) -> bool:
     return category == "helmet" or "helmet" in slot_text or "head" in slot_text
 
 
-def _classify(item: InventoryItem, definition: ItemDefinition | None) -> EquipmentCategory:
+def _classify(
+    item: InventoryItem,
+    definition: ItemDefinition | None,
+    *,
+    release_id: str,
+) -> EquipmentCategory:
     key = item.type_key.casefold()
     catalog_category = (definition.category if definition is not None else "") or ""
     catalog_category = catalog_category.casefold()
     parser_category = item.category.casefold()
-    if _is_helmet_key(item.type_key, definition):
+    if _is_helmet_key(item.type_key, definition, release_id=release_id):
         return "helmet"
     if catalog_category == "weapon" or key.startswith(("wpn_", "weapon_")):
         return "weapon"
@@ -181,6 +194,8 @@ def _serializer_family(
 
 
 def _location(item: InventoryItem) -> EquipmentLocation:
+    if item.placement_type == "belt":
+        return "belt"
     if item.storage == "equipped":
         return "equipped"
     if item.storage == "inventory":
@@ -227,7 +242,7 @@ def equipment_items(
                     or f"Неизвестный предмет · {item.handle_hex}"
                 ),
                 type_key=item.type_key,
-                category=_classify(item, definition),
+                category=_classify(item, definition, release_id=release_id),
                 location=_location(item),
                 serializer_family=_serializer_family(item, definition),
                 condition=item.condition,
@@ -242,6 +257,12 @@ def equipment_items(
             )
         )
     return tuple(result)
+
+
+def helmet_category_supported(release_id: str) -> bool:
+    """Return whether this release has a separate helmet product category."""
+
+    return release_id in _SEPARATE_HELMET_RELEASES
 
 
 def _unsupported(reason: str) -> FeatureSupport:
@@ -308,4 +329,5 @@ __all__ = [
     "SupportMaturity",
     "equipment_items",
     "equipment_support_for_release",
+    "helmet_category_supported",
 ]

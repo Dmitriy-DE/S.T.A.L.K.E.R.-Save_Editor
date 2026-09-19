@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 from PySide6.QtCore import QModelIndex, QSize, Qt, Signal
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListView,
     QPushButton,
     QTableView,
     QVBoxLayout,
@@ -21,7 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.catalog import ItemCatalog
-from editor.equipment import EquipmentItem
+from editor.equipment import EquipmentItem, helmet_category_supported
 
 from .equipment_model import EquipmentTableModel
 from .inventory_view import _donor_resolver_for
@@ -42,8 +44,10 @@ class EquipmentView(QWidget):
         self.selected_handle: int | None = None
         self._items: tuple[EquipmentItem, ...] = ()
         self._staged: dict[int, float] = {}
+        self._release_id: str | None = None
         self._resolver = XRayIconResolver(None)
         self._build_ui()
+        self.set_release(None)
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -65,7 +69,7 @@ class EquipmentView(QWidget):
             ("Экипировано", "equipped"),
             ("Рюкзак", "inventory"),
             ("Повреждено", "damaged"),
-            ("Staged", "staged"),
+            ("Изменённое", "staged"),
         ):
             self.filter_combo.addItem(label, value)
         self.filter_combo.currentIndexChanged.connect(
@@ -92,6 +96,7 @@ class EquipmentView(QWidget):
             EquipmentTableModel.LOCATION_COLUMN: 130,
             EquipmentTableModel.CONDITION_COLUMN: 110,
             EquipmentTableModel.SUPPORT_COLUMN: 150,
+            EquipmentTableModel.UPGRADES_COLUMN: 180,
             EquipmentTableModel.HANDLE_COLUMN: 125,
         }.items():
             header.resizeSection(column, width)
@@ -113,9 +118,12 @@ class EquipmentView(QWidget):
         self.percent_spin.setValue(100.0)
         repair_row.addWidget(QLabel("Новое состояние"))
         repair_row.addWidget(self.percent_spin)
-        self.repair_button = QPushButton("Застейджить ремонт")
+        self.repair_button = QPushButton("Отремонтировать")
         self.repair_button.clicked.connect(self._repair_selected)
         repair_row.addWidget(self.repair_button)
+        self.repair_full_button = QPushButton("Ремонт до 100%")
+        self.repair_full_button.clicked.connect(self._repair_full_selected)
+        repair_row.addWidget(self.repair_full_button)
         self.reset_button = QPushButton("Сбросить выбранное")
         self.reset_button.clicked.connect(self._reset_selected)
         repair_row.addWidget(self.reset_button)
@@ -146,6 +154,25 @@ class EquipmentView(QWidget):
         editor_layout.addWidget(self.status_label)
         layout.addWidget(editor)
         self._update_actions(None)
+
+    def set_release(self, release_id: str | None) -> None:
+        """Expose the helmet filter only for releases with separate helmets."""
+
+        self._release_id = release_id
+        supported = release_id is not None and helmet_category_supported(release_id)
+        helmet_index = self.filter_combo.findData("helmet")
+        if helmet_index >= 0:
+            popup = self.filter_combo.view()
+            if isinstance(popup, QListView):
+                popup.setRowHidden(helmet_index, not supported)
+            model = self.filter_combo.model()
+            item = model.item(helmet_index) if isinstance(model, QStandardItemModel) else None
+            if item is not None:
+                item.setEnabled(supported)
+            if not supported and self.filter_combo.currentData() == "helmet":
+                self.filter_combo.setCurrentIndex(0)
+        self.bulk_helmet_button.setVisible(supported)
+        self._update_actions(self._selected_item())
 
     def set_items(self, items: Iterable[EquipmentItem]) -> None:
         self._items = tuple(items)
@@ -186,6 +213,7 @@ class EquipmentView(QWidget):
     def _update_actions(self, item: EquipmentItem | None) -> None:
         writable = item is not None and item.durability_editable
         self.repair_button.setEnabled(writable)
+        self.repair_full_button.setEnabled(writable)
         self.reset_button.setEnabled(item is not None and item.handle in self._staged)
         for button in (
             self.bulk_damaged_button,
@@ -198,7 +226,8 @@ class EquipmentView(QWidget):
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.status_label.setText(
-                "Выбери weapon, armor или helmet. Неизвестные и неподтверждённые поля остаются read-only."
+                f"Выбери weapon, armor{', helmet' if self._release_id and helmet_category_supported(self._release_id) else ''}. "
+                "Неизвестные и неподтверждённые поля остаются read-only."
             )
             return
         effective = self._staged.get(item.handle, item.condition)
@@ -221,6 +250,10 @@ class EquipmentView(QWidget):
     def _repair_selected(self) -> None:
         if self.selected_handle is not None:
             self.repair_requested.emit(self.selected_handle, self.percent_spin.value())
+
+    def _repair_full_selected(self) -> None:
+        if self.selected_handle is not None:
+            self.repair_requested.emit(self.selected_handle, 100.0)
 
     def _reset_selected(self) -> None:
         if self.selected_handle is not None:

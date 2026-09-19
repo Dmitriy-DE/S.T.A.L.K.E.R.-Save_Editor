@@ -23,6 +23,7 @@ _CATEGORY_LABELS = {
 _LOCATION_LABELS = {
     "equipped": "Экипировано",
     "inventory": "Рюкзак",
+    "belt": "Пояс",
     "unknown": "Не определено",
 }
 _MATURITY_LABELS = {
@@ -41,9 +42,18 @@ class EquipmentTableModel(QAbstractTableModel):
     LOCATION_COLUMN = 2
     CONDITION_COLUMN = 3
     SUPPORT_COLUMN = 4
-    HANDLE_COLUMN = 5
+    UPGRADES_COLUMN = 5
+    HANDLE_COLUMN = 6
 
-    HEADERS = ("Предмет", "Категория", "Где находится", "Прочность", "Поддержка", "Handle")
+    HEADERS = (
+        "Предмет",
+        "Категория",
+        "Где находится",
+        "Прочность",
+        "Поддержка",
+        "Улучшения",
+        "Handle",
+    )
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -179,6 +189,7 @@ class EquipmentTableModel(QAbstractTableModel):
             self.LOCATION_COLUMN: item.location,
             self.CONDITION_COLUMN: (condition is None, condition or 0.0),
             self.SUPPORT_COLUMN: item.durability.maturity,
+            self.UPGRADES_COLUMN: tuple(item.upgrades or ()),
             self.HANDLE_COLUMN: item.handle,
         }
         return values[self._sort_column], item.handle
@@ -197,6 +208,10 @@ class EquipmentTableModel(QAbstractTableModel):
             return f"{condition * 100.0:.1f}%"
         if column == self.SUPPORT_COLUMN:
             return _MATURITY_LABELS[item.durability.maturity]
+        if column == self.UPGRADES_COLUMN:
+            if item.upgrades is None:
+                return "—"
+            return ", ".join(item.upgrades) or "нет"
         if column == self.HANDLE_COLUMN:
             return item.handle_hex
         return ""
@@ -207,6 +222,8 @@ class EquipmentTableModel(QAbstractTableModel):
         if column == self.NAME_COLUMN:
             family = item.serializer_family or "не определено"
             return f"Type-key: {item.type_key}\nSerializer family: {family}"
+        if column == self.UPGRADES_COLUMN and item.upgrades is None:
+            return "Улучшения для этого предмета не прочитаны"
         if column == self.CONDITION_COLUMN and item.condition is None:
             return item.durability.reason or "Прочность отсутствует"
         return self._display(item, column)

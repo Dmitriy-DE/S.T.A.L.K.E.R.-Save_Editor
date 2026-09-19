@@ -17,7 +17,7 @@ import editor.codec as codec
 import save_format as sf
 from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
-from editor.equipment import equipment_items
+from editor.equipment import equipment_items, helmet_category_supported
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
@@ -231,6 +231,7 @@ def analyze(data: bytes, name: str) -> str:
             "format_title": format_.title,
             "release_id": format_.release_id,
             "edition": format_.edition,
+            "helmet_category_supported": helmet_category_supported(format_.release_id),
             "capabilities": format_.capabilities.as_dict(),
             "catalog_available": catalog is not None and bool(catalog.items),
             "catalog_source": catalog_source,

@@ -1036,6 +1036,14 @@ class MainWindow(QMainWindow):
                 " Изменение денег экспериментальное: round-trip редактора проверен, "
                 "загрузка и пересохранение игрой ещё не подтверждены."
             )
+        equipment_support = snapshot.capabilities.equipment
+        if equipment_support is not None:
+            support += (
+                " Оборудование: "
+                f"прочность {equipment_support.durability.maturity}, "
+                f"улучшения {equipment_support.upgrades.maturity}, "
+                f"позиция {equipment_support.placement.maturity}."
+            )
         if warnings:
             support += f" Предупреждения: {warnings}"
         self.support_label.setText(support)
@@ -1168,9 +1176,11 @@ class MainWindow(QMainWindow):
         snapshot = self.snapshot
         if snapshot is None:
             self.equipment_rows = ()
+            self.equipment_view.set_release(None)
             self.equipment_view.set_items(())
             return
         release_id = snapshot.release_id or snapshot.format_id
+        self.equipment_view.set_release(release_id)
         self.equipment_rows = equipment_items(
             info.inventory,
             release_id=release_id,

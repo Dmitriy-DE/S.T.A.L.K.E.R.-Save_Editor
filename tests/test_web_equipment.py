@@ -38,6 +38,19 @@ def test_web_snapshot_keeps_s2_equipment_read_only_until_evidence(
     assert all(row["durability_editable"] is False for row in snapshot["equipment"])
 
 
+def test_web_snapshot_does_not_expose_soc_helmet_category() -> None:
+    snapshot = json.loads(
+        web_bridge.analyze(
+            _condition_fixture(version=118, outer=3, name="helm_battle"),
+            "helmet.sav",
+        )
+    )
+
+    assert snapshot["release_id"] == "stalker-soc"
+    assert snapshot["helmet_category_supported"] is False
+    assert snapshot["equipment"][0]["category"] == "armor"
+
+
 def test_web_equipment_panel_contains_filters_and_bulk_repair_controls() -> None:
     html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
     app = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
@@ -49,6 +62,7 @@ def test_web_equipment_panel_contains_filters_and_bulk_repair_controls() -> None
         'id="equipment"',
         'id="equipment-percent"',
         'id="equipment-repair-selected"',
+        'id="equipment-repair-full"',
         'id="equipment-repair-damaged"',
         'id="equipment-repair-equipped"',
     ):
@@ -58,5 +72,6 @@ def test_web_equipment_panel_contains_filters_and_bulk_repair_controls() -> None
         "stageEquipmentRepair",
         'el("equipment-repair-damaged")',
         'el("equipment-filter")',
+        'helmet_category_supported',
     ):
         assert marker in app

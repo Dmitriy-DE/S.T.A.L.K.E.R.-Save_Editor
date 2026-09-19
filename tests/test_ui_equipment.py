@@ -103,6 +103,20 @@ def test_equipment_view_disables_read_only_repair_with_reason(qtbot) -> None:
     assert "research" in view.status_label.text()
 
 
+def test_equipment_view_hides_helmet_controls_for_releases_without_them(qtbot) -> None:
+    view = EquipmentView()
+    qtbot.addWidget(view)
+
+    helmet_index = view.filter_combo.findData("helmet")
+    view.set_release("stalker-soc")
+    assert view.filter_combo.view().isRowHidden(helmet_index)
+    assert view.bulk_helmet_button.isHidden()
+
+    view.set_release("stalker-cop")
+    assert not view.filter_combo.view().isRowHidden(helmet_index)
+    assert not view.bulk_helmet_button.isHidden()
+
+
 def test_main_window_stages_equipment_bulk_repair_through_existing_plan(qtbot, tmp_path) -> None:
     data = _condition_fixture(version=128, outer=6, name="wpn_test")
     info = inspect_xray(data, COP_FORMAT)

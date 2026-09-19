@@ -188,10 +188,15 @@ class ChangesView(QWidget):
                 if item is not None and item.condition is not None
                 else "unknown"
             )
+            label = (
+                f"{item.display_name or item.type_key} · {item.handle_hex}"
+                if item is not None
+                else f"0x{int(handle):08X}"
+            )
             rows.append(
                 (
                     "Прочность",
-                    item.handle_hex if item is not None else f"0x{int(handle):08X}",
+                    label,
                     before,
                     f"{float(condition) * 100.0:.1f}%",
                     "STATE f32 + UPDATE q8 + client-data mirror"

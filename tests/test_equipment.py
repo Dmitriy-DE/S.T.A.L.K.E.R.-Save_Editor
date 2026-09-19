@@ -7,6 +7,7 @@ from editor.catalog import ItemDefinition, catalog_from_items
 from editor.equipment import (
     equipment_items,
     equipment_support_for_release,
+    helmet_category_supported,
 )
 from editor.xray_save import COP_FORMAT, parse_xray
 from save_format import InventoryItem
@@ -19,6 +20,7 @@ def _item(
     storage: str | None = None,
     condition: float | None = None,
     condition_editable: bool = False,
+    placement_type: str | None = None,
 ) -> InventoryItem:
     return InventoryItem(
         handle=0x1000 + len(type_key),
@@ -41,6 +43,7 @@ def _item(
         condition=condition,
         condition_editable=condition_editable,
         storage=storage,  # type: ignore[arg-type]
+        placement_type=placement_type,  # type: ignore[arg-type]
     )
 
 
@@ -155,6 +158,29 @@ def test_xray_helmet_keeps_outfit_serializer_family() -> None:
     assert row.serializer_family == "outfit"
     assert row.condition == 0.25
     assert row.durability_editable is True
+
+
+def test_separate_helmet_taxonomy_is_release_scoped() -> None:
+    helmet = (_item("helm_battle", "Броня/экипировка", condition=0.5),)
+
+    assert helmet_category_supported("stalker-cop") is True
+    assert helmet_category_supported("stalker-soc") is False
+    assert helmet_category_supported("stalker-cs") is False
+    assert helmet_category_supported("stalker-cop-ee") is False
+    assert helmet_category_supported("stalker2") is True
+    assert equipment_items(helmet, release_id="stalker-cop")[0].category == "helmet"
+    assert equipment_items(helmet, release_id="stalker-soc")[0].category == "armor"
+    assert equipment_items(helmet, release_id="stalker-cs")[0].category == "armor"
+    assert equipment_items(helmet, release_id="stalker-cop-ee")[0].category == "armor"
+
+
+def test_belt_location_is_distinct_from_backpack() -> None:
+    row = equipment_items(
+        (_item("wpn_test", "Оружие", storage="inventory", placement_type="belt"),),
+        release_id="stalker-cop",
+    )[0]
+
+    assert row.location == "belt"
 
 
 def test_release_support_is_explicit_for_s2_original_and_enhanced_profiles() -> None:

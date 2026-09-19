@@ -36,6 +36,7 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
         "Steam Cloud",
         "Найденные сейвы",
         "Настройки",
+        "Оборудование",
     ]
     assert COLORS["bg_base"] in QApplication.instance().styleSheet()
 

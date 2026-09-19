@@ -143,6 +143,11 @@ function renderSnapshot(s) {
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
     caps.edit_player_faction && s.faction_catalog_available && s.player_faction_editable ? "группировка игрока (experimental)" : "группировка игрока read-only",
   ];
+  const equipment = caps.equipment ?? {};
+  if (equipment.durability) {
+    supportedEdits.push(`оборудование: прочность ${equipment.durability.maturity}`);
+    supportedEdits.push(`улучшения ${equipment.upgrades?.maturity ?? "unsupported"}`);
+  }
   el("support").textContent =
     `Релиз: ${s.release_id} (${s.edition}). Формат: ${s.format_title}. ` +
     `Доступно: ${supportedEdits.join(", ")}; неизвестные поля остаются read-only.` +
@@ -183,6 +188,18 @@ function renderSnapshot(s) {
   el("item-add-status").textContent = s.catalog_available
     ? `Доступно ключей: ${catalogItems.length}. Источник: ${s.catalog_source === "save-observed" ? "текущий сейв" : "официальный каталог"}.`
     : "Официальный каталог для браузера не найден в загруженном файле.";
+
+  const helmetOption = [...el("equipment-filter").options]
+    .find((option) => option.value === "helmet");
+  const helmetSupported = s.helmet_category_supported === true;
+  if (helmetOption) {
+    helmetOption.hidden = !helmetSupported;
+    helmetOption.disabled = !helmetSupported;
+    if (!helmetSupported && el("equipment-filter").value === "helmet") {
+      el("equipment-filter").value = "all";
+    }
+  }
+  el("equipment-repair-helmet").hidden = !helmetSupported;
 
   renderFaction(s);
   renderInventory();
@@ -598,13 +615,15 @@ function renderInventory() {
 const EQUIPMENT_LOCATION_LABELS = {
   equipped: "экипировано",
   inventory: "инвентарь",
+  belt: "пояс",
   unknown: "неизвестно",
 };
 
 function equipmentFilterMatches(item, filter) {
   if (filter === "staged") return state.durability.has(item.handle);
   if (filter === "damaged") return item.damaged === true;
-  if (filter === "equipped" || filter === "inventory") return item.location === filter;
+  if (filter === "equipped") return item.location === "equipped";
+  if (filter === "inventory") return item.location === "inventory" || item.location === "belt";
   if (filter === "weapon" || filter === "armor" || filter === "helmet") return item.category === filter;
   return true;
 }
@@ -725,7 +744,7 @@ function renderEquipment() {
       input.max = "100";
       input.step = "0.1";
       input.value = ((staged ?? item.condition) * 100).toFixed(1);
-      input.title = "Staged до предпросмотра; исходный файл не изменяется";
+      input.title = "Изменение подготовлено до предпросмотра; исходный файл не изменяется";
       input.addEventListener("change", () => {
         const value = Number(input.value);
         if (!Number.isFinite(value) || value < 0 || value > 100) {
@@ -746,6 +765,13 @@ function renderEquipment() {
     support.title = equipmentSupportText(item);
     support.className = item.durability_editable ? "" : "muted";
     tr.append(support);
+
+    const upgrades = document.createElement("td");
+    upgrades.textContent = item.upgrades === null
+      ? "неизвестно"
+      : item.upgrades.length ? item.upgrades.join(", ") : "нет";
+    upgrades.className = item.upgrades_editable ? "" : "muted";
+    tr.append(upgrades);
 
     for (const value of [item.type_key, item.handle_hex]) {
       const td = document.createElement("td");
@@ -783,7 +809,13 @@ function renderChanges() {
   }
   for (const [handle, condition] of state.durability) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
-    items.push(`Прочность ${item?.handle_hex ?? `0x${handle.toString(16).padStart(8, "0")}`}: ${(item.condition * 100).toFixed(1)}% → ${(condition * 100).toFixed(1)}% (experimental)`);
+    const label = item
+      ? `${item.name} · ${item.handle_hex}`
+      : `0x${handle.toString(16).padStart(8, "0")}`;
+    const before = item?.condition === null || item?.condition === undefined
+      ? "?"
+      : `${(item.condition * 100).toFixed(1)}%`;
+    items.push(`Прочность ${label}: ${before} → ${(condition * 100).toFixed(1)}% (experimental)`);
   }
   for (const [handle, values] of state.upgrades) {
     const item = state.snapshot.inventory.find((i) => i.handle === handle);
@@ -941,6 +973,14 @@ el("equipment-repair-selected").addEventListener("click", () => {
     return;
   }
   stageEquipmentRepair([state.equipmentSelectedHandle], target);
+});
+el("equipment-repair-full").addEventListener("click", () => {
+  if (state.equipmentSelectedHandle === null) {
+    setStatus("Сначала выбери оборудование", "error");
+    return;
+  }
+  el("equipment-percent").value = "100";
+  stageEquipmentRepair([state.equipmentSelectedHandle], 1);
 });
 el("equipment-reset-selected").addEventListener("click", () => {
   if (state.equipmentSelectedHandle === null) {
