@@ -46,6 +46,7 @@ from steam_cloud import (
 )
 
 from .platforms import locate_libsteam_api
+from .steam_cdp import SteamCdpWorker, discover_cached_cloud_files
 
 # Known ISteamRemoteStorage flat accessor versions, newest first.  The exact
 # version baked into a given libsteam_api build varies by SDK release, so we
@@ -300,6 +301,8 @@ class SteamNativeSubprocessWorker:
         helper_factory: Callable[..., Any] = SteamWorker,
         log: Callable[[str], None] | None = None,
         timeout: float = 15.0,
+        cdp_factory: Callable[..., Any] = SteamCdpWorker,
+        cache_finder: Callable[[int], Any] = discover_cached_cloud_files,
     ) -> None:
         if timeout <= 0:
             raise ValueError("native cloud timeout must be positive")
@@ -307,8 +310,13 @@ class SteamNativeSubprocessWorker:
         self.helper_factory = helper_factory
         self.log = log or (lambda _s: None)
         self.timeout = timeout
+        self.cdp_factory = cdp_factory
+        self.cache_finder = cache_finder
         self.app_id: int | None = None
         self._helper: SteamWorker | None = None
+        self._cdp: Any | None = None
+        self._cached_files: dict[str, CloudFile] = {}
+        self._status_hint = ""
         self._closed = False
         self._process_lock = threading.Lock()
         self._active_process: subprocess.Popen[str] | None = None
@@ -505,35 +513,117 @@ class SteamNativeSubprocessWorker:
                 ) from exc
         return files
 
+    @property
+    def status_hint(self) -> str:
+        """Explain when listing/download uses Steam's web or cache fallback."""
+
+        return self._status_hint
+
+    def _web_or_cache_files(self) -> list[CloudFile] | None:
+        if (
+            "PYTEST_CURRENT_TEST" in os.environ
+            and self.cdp_factory is SteamCdpWorker
+            and self.cache_finder is discover_cached_cloud_files
+        ):
+            return None
+        for attempt in range(3):
+            cdp = self.cdp_factory()
+            try:
+                cdp.start()
+                cdp.connect(self.app_id or APP_ID)
+                files = list(cdp.list_files())
+            except Exception as exc:
+                try:
+                    cdp.close()
+                except Exception:
+                    pass
+                self.log(f"Steam Cloud web fallback недоступен: {exc}")
+                if attempt < 2:
+                    time.sleep(1.0)
+                continue
+            if files:
+                self._cdp = cdp
+                self._status_hint = "список и скачивание через Steam Cloud web"
+                return files
+            try:
+                cdp.close()
+            except Exception:
+                pass
+            break
+
+        try:
+            cached = tuple(self.cache_finder(self.app_id or APP_ID))
+        except Exception as exc:
+            self.log(f"Steam Cloud cache fallback недоступен: {exc}")
+            cached = ()
+        if cached:
+            self._cached_files = {item.name: item for item in cached}
+            self._status_hint = (
+                "список найден в Steam cache; для скачивания открой Steam Cloud web "
+                "или перезапусти Steam с -cef-enable-debugging"
+            )
+            return list(cached)
+        return None
+
     def list_files(self) -> list[CloudFile]:
         if self._closed:
             raise SteamCloudError("Steam Cloud worker уже закрыт")
+        if self._cdp is not None:
+            return list(self._cdp.list_files())
         if self._helper is not None:
-            return self._helper.list_files()
+            files = self._helper.list_files()
+            if files:
+                return files
+            fallback = self._web_or_cache_files()
+            return [] if fallback is None else fallback
+        native_error: SteamCloudError | None = None
         try:
-            return self._native_list()
-        except SteamCloudError as native_error:
-            if self.helper_path is None:
-                raise
-            helper = self.helper_factory(self.helper_path, log=self.log)
-            try:
-                helper.start()
-                helper.connect(self.app_id or APP_ID)
-                files = helper.list_files()
-            except Exception as helper_error:
+            files = self._native_list()
+            if files:
+                return files
+        except SteamCloudError as error:
+            native_error = error
+            if self.helper_path is not None:
+                helper = self.helper_factory(self.helper_path, log=self.log)
                 try:
-                    helper.close()
-                except Exception:
-                    pass
-                raise SteamCloudError(
-                    f"Нативный Steam Cloud недоступен ({native_error}); helper тоже не ответил: "
-                    f"{helper_error}"
-                ) from helper_error
-            self._helper = helper
-            self.log(f"Steam Cloud: native child недоступен ({native_error}); использую helper")
-            return files
+                    helper.start()
+                    helper.connect(self.app_id or APP_ID)
+                    files = helper.list_files()
+                except Exception as helper_error:
+                    try:
+                        helper.close()
+                    except Exception:
+                        pass
+                    self.log(
+                        f"Нативный Steam Cloud недоступен ({error}); helper тоже не ответил: "
+                        f"{helper_error}"
+                    )
+                else:
+                    self._helper = helper
+                    if files:
+                        self.log(
+                            f"Steam Cloud: native child недоступен ({error}); использую helper"
+                        )
+                        return files
+            else:
+                self.log(f"Нативный Steam Cloud недоступен: {error}")
+
+        fallback = self._web_or_cache_files()
+        if fallback is not None:
+            return fallback
+        if native_error is not None:
+            raise native_error
+        return []
 
     def read_file(self, filename: str) -> bytes:
+        if self._cdp is not None:
+            return self._cdp.read_file(filename)
+        cached = self._cached_files.get(filename)
+        if cached is not None and cached.local_path is not None:
+            try:
+                return cached.local_path.read_bytes()
+            except OSError as exc:
+                raise SteamCloudError(f"Не удалось прочитать Steam cache файл: {exc}") from exc
         if self._helper is not None:
             return self._helper.read_file(filename)
         response, data = self._run_native("read", name=filename, read_output=True)
@@ -561,6 +651,14 @@ class SteamNativeSubprocessWorker:
         # The child pumps callbacks after FileWrite and shuts down immediately.
 
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
+        if self._cdp is not None:
+            return self._cdp.wait_persisted(filename, expected_size, timeout=timeout)
+        cached = self._cached_files.get(filename)
+        if cached is not None and cached.local_path is not None:
+            try:
+                return cached.local_path.stat().st_size == expected_size
+            except OSError:
+                return False
         if self._helper is not None:
             return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
         deadline = time.monotonic() + timeout
@@ -591,6 +689,11 @@ class SteamNativeSubprocessWorker:
                 self._helper.close()
             finally:
                 self._helper = None
+        if self._cdp is not None:
+            try:
+                self._cdp.close()
+            finally:
+                self._cdp = None
 
 
 def run_cli_op(args: list[str]) -> int:

@@ -83,6 +83,11 @@ class CloudFile:
     timestamp: int
     is_persisted: bool
     exists: bool
+    # Steam's web cloud page exposes a short-lived download URL even when the
+    # client RemoteStorage API returns no file list.  Native/helper callers do
+    # not populate it, so the field stays optional and backwards-compatible.
+    download_url: str | None = None
+    local_path: Path | None = None
 
 
 class SteamWorker:

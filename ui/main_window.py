@@ -729,9 +729,28 @@ class MainWindow(QMainWindow):
         for family in families:
             self.switcher_game_combo.addItem(GAME_TITLES.get(family, family), family)
         self.switcher_game_combo.blockSignals(False)
-        if families:
-            self.switcher_game_combo.setCurrentIndex(0)
+        selected_family = self.snapshot.format_id if self.snapshot is not None else None
+        selected_index = (
+            self.switcher_game_combo.findData(selected_family)
+            if selected_family is not None
+            else -1
+        )
+        if selected_index < 0 and families:
+            selected_index = 0
+        if selected_index >= 0:
+            self.switcher_game_combo.setCurrentIndex(selected_index)
         self._on_switcher_game_changed()
+
+    def _sync_switcher_to_snapshot(self, snapshot: LocalSnapshot) -> None:
+        """Keep the quick picker aligned with the file currently in the editor."""
+
+        index = self.switcher_game_combo.findData(snapshot.format_id)
+        if index < 0:
+            return
+        self.switcher_game_combo.blockSignals(True)
+        self.switcher_game_combo.setCurrentIndex(index)
+        self.switcher_game_combo.blockSignals(False)
+        self._on_switcher_game_changed(index)
 
     def _on_switcher_game_changed(self, _index: int = -1) -> None:
         family = self.switcher_game_combo.currentData()
@@ -915,6 +934,7 @@ class MainWindow(QMainWindow):
         # Keep the render helper safe for direct synthetic/UI tests as well as
         # the signal path, where _on_analysis_ready already assigned it.
         self.snapshot = snapshot
+        self._sync_switcher_to_snapshot(snapshot)
         info = snapshot.info
         self.staged_counts.clear()
         self.staged_money = None

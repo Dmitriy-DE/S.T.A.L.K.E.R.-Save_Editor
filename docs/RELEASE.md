@@ -1,5 +1,20 @@
 # Проверка и выпуск
 
+## Выпуск v0.5.7 — Steam Cloud web fallback и исправление game picker
+
+Изменения этого прохода исправляют рассинхрон game picker и пустой список
+Steam Cloud на сессиях, где `SteamAPI::GetFiles` возвращает `0`, хотя Steam
+web/cache содержит сейвы. В transport добавлен read-only CDP fallback для
+Steam Cloud web, локальный `remotecache.vdf` fallback и явная кнопка перезапуска
+Steam с `-cef-enable-debugging`; запись остаётся через native Steam API и старую
+fail-closed transaction.
+
+Локальное доказательство: `439 passed`, `ruff`, `mypy`; live read-only smoke
+получил 50 cloud slots и скачал один слот через Steam web. Live `WriteFile`
+на пользовательский сейв намеренно не запускался. Tag-triggered CI и hashes
+артефактов фиксируются в разделе фактической публикации после завершения
+сборки.
+
 ## Выпуск v0.5.6
 
 v0.5.6 закрывает зависание Steam Cloud, при котором `v0.5.4` останавливался

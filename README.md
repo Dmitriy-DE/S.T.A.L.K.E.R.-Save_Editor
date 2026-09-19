@@ -30,7 +30,11 @@ evidence. Их нельзя выдавать за совместимые с ор
 
 Плюс остаются browser резервных копий с восстановлением и Desktop-вкладка Steam
 Cloud с явным connect/list/analyze/upload. Cloud transport сейчас привязан к
-S.T.A.L.K.E.R. 2 (`app_id=1643320`). С v0.5.0 облако работает через
+S.T.A.L.K.E.R. 2 (`app_id=1643320`). Если native Steam API подключился, но
+вернул пустой список, desktop читает Steam `remotecache.vdf`, а после явного
+перезапуска Steam с `-cef-enable-debugging` получает cloud-строки и download URL
+из авторизованной web-сессии через localhost CDP. Запись всё равно идёт через
+native Steam API. С v0.5.0 облако работает через
 **встроенный нативный worker** (`editor/steam_native.py`, ctypes поверх
 `libsteam_api`), но с v0.5.6 каждый native-вызов выполняется в отдельном
 короткоживущем дочернем процессе с жёстким таймаутом: зависший Steam API больше
@@ -74,7 +78,9 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
   backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
   логики правок не имеют.
 - Cloud tab не вызывает helper при старте: сначала явное подключение и список
-  `Data/*.sav`, затем анализ выбранного slot и upload только его preview.
+  `Data/*.sav`; при пустом API показывает Steam cache и предлагает одной
+  кнопкой перезапустить Steam с CEF debug, затем анализирует выбранный slot и
+  upload-ит только его preview.
 - Интерфейс следует визуальному референсу Zone: demo-данные макета не
   копируются, badges, cards и таблица метаданных заполняются только из
   реального snapshot.

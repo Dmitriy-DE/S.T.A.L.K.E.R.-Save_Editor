@@ -1,4 +1,27 @@
-# Состояние и пробелы — 2026-09-16
+# Состояние и пробелы — 2026-09-19
+
+## 2026-09-19 — v0.5.7: Steam Cloud web fallback и синхронизация игры в редакторе
+
+Исправлен конкретный UI-баг из ручного импорта: после открытия S.T.A.L.K.E.R.
+2 быстрый game/save picker больше не оставляет первым семейством Shadow of
+Chornobyl. Он синхронизируется с `format_id` фактически распознанного snapshot,
+включая cloud snapshot.
+
+Cloud transport теперь не считает пустой `RemoteStorage::GetFiles` доказательством
+пустого облака. После bounded native/helper list он читает локальный Steam
+`remotecache.vdf`; если пользователь одним действием включил CEF debugging,
+тот же transport получает строки и короткоживущие download URL из авторизованной
+Steam Cloud web-страницы через localhost CDP. Скачивание идёт через этот URL,
+а `WriteFile`, `SyncCloudFiles`, persisted и read-back SHA остаются на native
+Steam API. Вкладка показывает честное состояние `найдено в Steam cache`, если
+debug-порт ещё не включён, и содержит кнопку, которая явно перезапускает Steam
+с `-cef-enable-debugging`.
+
+Live read-only smoke на текущей Linux Steam-сессии: новый helper перезапустил
+Steam с debug-портом, получил 50 `Data/*.sav` через web fallback и скачал
+`217BB29D4FA4C87BD9F734AE755338CB.sav` размером 6,722,835 bytes. `WriteFile`
+не запускался; cloud upload и игровая загрузка/re-save по-прежнему требуют
+отдельного осознанного ручного прогона.
 
 ## 2026-09-19 — v0.5.6 опубликован: bounded native cloud transport
 

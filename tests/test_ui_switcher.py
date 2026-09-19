@@ -9,7 +9,7 @@ import pytest
 pytest.importorskip("PySide6")
 
 from editor.service import EditorService
-from ui.main_window import MainWindow
+from ui.main_window import LocalSnapshot, MainWindow
 from ui.save_slots_view import SaveDiscovery, SaveSlot
 
 
@@ -57,3 +57,45 @@ def test_switcher_empty_discovery_disables_open(qtbot):
     win._populate_switcher(SaveDiscovery((), ()))
     assert win.switcher_game_combo.count() == 0
     assert not win.switcher_open_button.isEnabled()
+
+
+def test_switcher_follows_the_format_of_the_opened_snapshot(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    win = MainWindow(EditorService())
+    qtbot.addWidget(win)
+    _settle(win)
+
+    soc = tmp_path / "soc.sav"
+    s2 = tmp_path / "s2.sav"
+    soc.write_bytes(b"soc-placeholder")
+    s2.write_bytes(synthetic_save)
+    win._populate_switcher(
+        SaveDiscovery(
+            (
+                _slot(soc, "soc"),
+                _slot(s2, "stalker2"),
+            ),
+            (),
+        )
+    )
+
+    inspection = EditorService().inspect_result(
+        synthetic_save,
+        source_name=s2.name,
+    )
+    win._render_snapshot(
+        LocalSnapshot(
+            path=s2,
+            data=synthetic_save,
+            info=inspection.info,
+            format_id="stalker2",
+            format_title="S.T.A.L.K.E.R. 2: Heart of Chornobyl",
+            release_id="stalker2",
+            edition="s2",
+            capabilities=inspection.capabilities,
+        )
+    )
+
+    assert win.switcher_game_combo.currentData() == "stalker2"
+    assert win.switcher_save_combo.currentData() == str(s2)

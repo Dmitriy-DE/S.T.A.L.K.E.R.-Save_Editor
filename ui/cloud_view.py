@@ -27,6 +27,7 @@ from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
 from editor.service import EditorService
 from editor.steam_backend import make_cloud_worker
+from editor.steam_cdp import restart_steam_with_debugging
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
 from steam_cloud import APP_ID, SAVE_PREFIX, CloudFile, discover_helper
@@ -193,6 +194,21 @@ class CloudOperationWorker(QThread):
                 pass
 
 
+class SteamWebEnableWorker(QThread):
+    """Restart Steam with its local CEF debug channel on explicit user action."""
+
+    completed = Signal()
+    failed = Signal(str)
+
+    def run(self) -> None:
+        try:
+            restart_steam_with_debugging()
+        except Exception as exc:
+            self.failed.emit(f"{type(exc).__name__}: {exc}")
+        else:
+            self.completed.emit()
+
+
 class CloudView(QWidget):
     """Connect explicitly, select a Data save, and display upload certainty."""
 
@@ -241,6 +257,8 @@ class CloudView(QWidget):
         self._snapshot: CloudSnapshot | None = None
         self._prepared: PreparedEdit | None = None
         self._thread: CloudOperationWorker | None = None
+        self._debug_thread: SteamWebEnableWorker | None = None
+        self._debug_succeeded = False
         self._auto_connected = False
         self._build_ui()
 
@@ -254,7 +272,10 @@ class CloudView(QWidget):
 
     @property
     def is_busy(self) -> bool:
-        return self._thread is not None and self._thread.isRunning()
+        return bool(
+            (self._thread is not None and self._thread.isRunning())
+            or (self._debug_thread is not None and self._debug_thread.isRunning())
+        )
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -280,6 +301,13 @@ class CloudView(QWidget):
         self.connect_button = QPushButton("Обновить список")
         self.connect_button.clicked.connect(self.start_connect)
         actions.addWidget(self.connect_button)
+        self.enable_web_button = QPushButton("Включить Steam Cloud web")
+        self.enable_web_button.setToolTip(
+            "Перезапустить Steam с -cef-enable-debugging, чтобы скачать cloud-файл "
+            "из уже авторизованной Steam-сессии"
+        )
+        self.enable_web_button.clicked.connect(self.start_steam_web)
+        actions.addWidget(self.enable_web_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
@@ -380,6 +408,41 @@ class CloudView(QWidget):
         # what to check instead of leaving a silent "подключение…" forever.
         self._connect_deadline = time.monotonic()
         QTimer.singleShot(30_000, self._warn_if_still_connecting)
+
+    def start_steam_web(self) -> None:
+        if self.is_busy:
+            self.status_label.setText("Steam Cloud: дождись завершения текущей операции")
+            return
+        self._debug_succeeded = False
+        self.enable_web_button.setEnabled(False)
+        self.status_label.setText(
+            "Steam Cloud web: закрываю Steam и запускаю его с debug-портом…"
+        )
+        worker = SteamWebEnableWorker(self)
+        worker.completed.connect(self._on_steam_web_ready)
+        worker.failed.connect(self._on_steam_web_failed)
+        worker.finished.connect(self._on_steam_web_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._debug_thread = worker
+        worker.start()
+
+    def _on_steam_web_ready(self) -> None:
+        self._debug_succeeded = True
+
+    def _on_steam_web_failed(self, message: str) -> None:
+        self._debug_succeeded = False
+        self.error_label.setText(message)
+        self.error_label.setVisible(True)
+
+    def _on_steam_web_finished(self) -> None:
+        succeeded = self._debug_succeeded
+        self._debug_thread = None
+        self.enable_web_button.setEnabled(True)
+        if succeeded:
+            self.status_label.setText("Steam Cloud web включён; обновляю список…")
+            QTimer.singleShot(0, self.start_connect)
+        elif not self.error_label.isVisible():
+            self.status_label.setText("Steam Cloud web не включён")
 
     def _warn_if_still_connecting(self) -> None:
         if self.is_busy and self.transport is None:
@@ -486,11 +549,19 @@ class CloudView(QWidget):
                 self.table.setItem(row, column, QTableWidgetItem(value))
         self.table.clearSelection()
         self._on_selection_changed()
-        self.status_label.setText(
-            f"Steam Cloud: подключено · {len(self._files)} Data/*.sav"
-            if self._files
-            else "Steam Cloud: подключено · 0 Data/*.sav (список пуст)"
+        hint = str(getattr(self.transport, "status_hint", "") or "").strip()
+        status_prefix = (
+            "Steam Cloud: найдено в Steam cache"
+            if "Steam cache" in hint
+            else "Steam Cloud: подключено"
         )
+        if self._files:
+            status = f"{status_prefix} · {len(self._files)} Data/*.sav"
+        else:
+            status = f"{status_prefix} · 0 Data/*.sav (список пуст)"
+        if hint:
+            status += f" · {hint}"
+        self.status_label.setText(status)
         self.files_ready.emit(self._files)
 
     def _on_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
@@ -546,12 +617,14 @@ class CloudView(QWidget):
     def set_busy(self, busy: bool) -> None:
         for widget in (
             self.connect_button,
+            self.enable_web_button,
             self.table,
             self.analyze_button,
             self.upload_button,
         ):
             widget.setEnabled(not busy)
         if not busy:
+            self.enable_web_button.setEnabled(self._debug_thread is None)
             self.analyze_button.setEnabled(self.selected_file() is not None and self.transport is not None)
             self.upload_button.setEnabled(self._prepared is not None and self.transport is not None)
         self.busy_changed.emit(busy)
@@ -562,6 +635,7 @@ class CloudView(QWidget):
         if self.is_busy:
             return
         self.connect_button.setEnabled(not busy)
+        self.enable_web_button.setEnabled(not busy and self._debug_thread is None)
         self.table.setEnabled(not busy)
         self.analyze_button.setEnabled(not busy and self.selected_file() is not None and self.transport is not None)
         self.upload_button.setEnabled(not busy and self._prepared is not None and self.transport is not None)
@@ -597,8 +671,15 @@ class CloudView(QWidget):
             thread.cancel()
             if not thread.wait(timeout_ms):
                 return False
+        debug_thread = self._debug_thread
+        if debug_thread is not None and debug_thread.isRunning():
+            debug_thread.requestInterruption()
+            if not debug_thread.wait(timeout_ms):
+                return False
         if self._thread is thread:
             self._thread = None
+        if self._debug_thread is debug_thread:
+            self._debug_thread = None
         self.set_busy(False)
         self._close_transport()
         return True

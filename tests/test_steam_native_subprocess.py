@@ -170,6 +170,49 @@ def test_initial_native_list_timeout_selects_helper_once(
     assert helper_instances[0].list_calls == 2
 
 
+def test_empty_native_list_uses_cdp_cloud_files_for_download(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = {"type": "Files", "files": []}
+
+    def fake_popen(command, **_kwargs):
+        return _FakeProcess(command, stdout=json.dumps(response) + "\n")
+
+    class FakeCdp:
+        def __init__(self, *_args, **_kwargs):
+            self.closed = False
+
+        def start(self):
+            return None
+
+        def connect(self, _app_id):
+            return None
+
+        def list_files(self):
+            return [CloudFile("Stalker2/Saved/STEAM/SaveGames/Data/slot.sav", 4, 1, True, True)]
+
+        def read_file(self, _filename):
+            return b"save"
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    worker = steam_native.SteamNativeSubprocessWorker(
+        cdp_factory=FakeCdp,
+        cache_finder=lambda _app_id: (),
+    )
+    worker.start()
+    worker.app_id = APP_ID
+
+    files = worker.list_files()
+
+    assert [item.name for item in files] == [
+        "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
+    ]
+    assert worker.read_file(files[0].name) == b"save"
+
+
 def test_native_read_and_write_use_isolated_payload_files(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
