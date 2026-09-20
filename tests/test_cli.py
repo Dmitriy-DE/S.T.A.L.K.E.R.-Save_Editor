@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 from test_xray_catalog import _write_unpacked_fixture
+from test_xray_durability import _condition_fixture
 from test_xray_save import _fixture, _fixture_with_base_item
 
 import cli
@@ -186,3 +187,40 @@ def test_xray_cli_add_uses_the_official_catalog_and_keeps_the_source(
     after = inspect_xray(output.read_bytes(), COP_FORMAT)
     added = tuple(item for item in after.inventory if item.type_key == "device_test")
     assert len(added) == 2
+
+
+def test_xray_cli_stages_equipment_durability_and_placement(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    data = _condition_fixture(
+        version=128,
+        outer=6,
+        condition=0.25,
+        client_place=1 | (2 << 4) | (3 << 10),
+    )
+    path = _write_save(tmp_path, data, "slot.scop")
+    output = tmp_path / "edited.scop"
+
+    assert cli.main(
+        [
+            "edit",
+            str(path),
+            "--durability",
+            "0x3456=0.75",
+            "--placement",
+            "0x3456=slot:4",
+            "-o",
+            str(output),
+            "--backup-dir",
+            str(tmp_path / "backups"),
+        ]
+    ) == 0
+
+    result = capsys.readouterr().out
+    assert "Durability 0x00003456" in result
+    assert "Placement 0x00003456" in result
+    assert path.read_bytes() == data
+    item = inspect_xray(output.read_bytes(), COP_FORMAT).inventory[0]
+    assert item.condition == pytest.approx(0.75)
+    assert item.placement_type == "slot"
+    assert item.placement_slot == 4

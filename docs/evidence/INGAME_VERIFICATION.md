@@ -7,12 +7,14 @@ successful result from another game is not an in-game pass.
 ## Procedure
 
 For each row below, use a fresh workspace and one ordinary official save from
-the selected release:
+the selected release. Each run changes exactly one bounded field or one
+explicitly listed equipment record; never combine unrelated mutations in the
+same game-validation run.
 
 1. Close the game and make sure the selected save is not being synchronized or
    rewritten by another process.
-2. Prepare a copy and change only money. The command does not write the source
-   file or a game directory:
+2. Prepare a copy with one bounded mutation. The command does not write the
+   source file or a game directory. For money:
 
    ```bash
    python -m tools.prepare_ingame_verification \
@@ -22,10 +24,26 @@ the selected release:
      --money <new-value>
    ```
 
+   For an equipment condition, use the exact handle from the inspection and a
+   normalized value from `0` to `1`:
+
+   ```bash
+   python -m tools.prepare_ingame_verification \
+     --release <release-id> \
+     --source /absolute/path/to/save \
+     --workspace /absolute/path/to/private/m10/<release-id>-durability \
+     --durability <handle-or-0x-handle> <value>
+   ```
+
+   The same protocol accepts `--upgrade HANDLE key1,key2` and
+   `--placement HANDLE slot SLOT` for formats whose source-backed writer
+   exposes those operations. The tool refuses an unsupported anchor before it
+   exports the edited handoff copy.
+
 3. Copy the generated `edited_path` to a disposable slot/location accepted by
    that release. Do not overwrite the original save.
 4. Launch the matching official game manually, load the edited copy, and
-   confirm that the money value is the requested value and that the visible
+   confirm that the requested bounded value is present and that the visible
    world/inventory has no unexpected change.
 5. Save again from inside the game. Keep that re-saved file outside the Git
    worktree.
@@ -37,12 +55,14 @@ the selected release:
      --resaved /absolute/path/to/private/m10/<release-id>/resaved-save
    ```
 
-7. Add only release version/build, source/edited/re-saved SHA-256, observed
-   value, visible result, parser result, and a concise limitation to the row.
+7. Add only release version/build, source/edited/re-saved SHA-256, mutation,
+   observed value, visible result, parser result, and a concise limitation to
+   the row.
 
-The first successful row enables only `edit_money` for that exact release.
-Later cards repeat the same load/re-save gate for their own capability. An
-unsupported or failed row stays read-only with its reason. For the three
+The first successful row enables only the exact capability and release tested
+by that row. Later cards repeat the same load/re-save gate for their own
+capability; a money result does not validate equipment durability or upgrades.
+An unsupported or failed row stays read-only with its reason. For the three
 installed originals, the owner explicitly accepted the visible load result and
 asked to proceed without another launch; their rows are therefore marked
 `passed-owner-attested`. This is product acceptance, while the absent second
@@ -76,6 +96,6 @@ recorded here:
 
 ## Local automated preparation checks
 
-- `PYTHON=.venv/bin/python -m pytest tests/test_ingame_protocol.py -q` — exit 0,
-  `5 passed`.
+- `.venv/bin/python3.14 -m pytest tests/test_ingame_protocol.py -q` — exit 0,
+  `7 passed`.
 - No real game was launched and no game directory was written by this check.

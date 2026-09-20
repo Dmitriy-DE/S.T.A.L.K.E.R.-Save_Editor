@@ -874,7 +874,10 @@ function renderChanges() {
   const has = items.length > 0;
   el("preview").disabled = !has;
   el("money-clear").disabled = state.money === null;
-  el("download").disabled = state.prepared === null;
+  el("download").disabled = !has && state.prepared === null;
+  el("download").textContent = state.prepared === null
+    ? "Проверить и скачать копию"
+    : "Скачать копию";
 }
 
 function invalidate() {
@@ -934,6 +937,7 @@ function preview() {
     el("preview-status").textContent = lines.join(" · ");
     el("preview-status").className = "";
     el("download").disabled = false;
+    el("download").textContent = "Скачать копию";
     setStatus("Предпросмотр выполнен; исходный файл не изменялся");
   } catch (error) {
     fail(error);
@@ -942,6 +946,12 @@ function preview() {
 
 function download() {
   try {
+    // The browser has no destination-side backup journal, so keep the same
+    // immutable preview gate while reducing the common flow to one click.
+    if (state.prepared === null) {
+      preview();
+      if (state.prepared === null) return;
+    }
     const bytes = state.bridge.output_bytes().toJs();
     const match = state.snapshot.name.match(/\.(sav|scop|scs)$/i);
     const extension = match ? `.${match[1].toLowerCase()}` : ".sav";

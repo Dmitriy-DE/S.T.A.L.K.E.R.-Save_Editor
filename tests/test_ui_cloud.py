@@ -233,6 +233,37 @@ def test_cloud_view_filters_non_data_files(
     assert view.table.rowCount() == 1
 
 
+def test_cloud_view_profile_switch_filters_the_selected_game_path(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    original_name = "_appdata_/savedgames/slot.scop"
+    transport = FakeCloudTransport(
+        synthetic_save,
+        files=[
+            _cloud_file(original_name),
+            _cloud_file("Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"),
+            _cloud_file("_appdata_/screenshots/slot.png"),
+        ],
+    )
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_path=tmp_path / "helper",
+    )
+    qtbot.addWidget(view)
+    index = view.profile_combo.findData("stalker-cop")
+    assert index >= 0
+    view.profile_combo.setCurrentIndex(index)
+    assert view.profile.release_id == "stalker-cop"
+    assert view.app_id == 41700
+
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+    _wait_cloud_idle(qtbot, view)
+
+    assert [cloud_file.name for cloud_file in view.files] == [original_name]
+
+
 def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:

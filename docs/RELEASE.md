@@ -1,5 +1,23 @@
 # Проверка и выпуск
 
+## v0.5.16 — bounded equipment protocol, release-aware Steam Cloud и UX — 2026-09-20
+
+Этот релиз-кандидат объединяет continuation по issues #95–#99: bounded
+condition/upgrades/placement protocol для контролируемой проверки, семь
+release-aware Steam Cloud profiles с app ID/path/backend diagnostics, безопасное
+определение Enhanced Edition без подмены формата оригинальным X-Ray parser и
+автоматический preview перед web-download. Backup, fresh SHA, atomic export,
+CRC/Kraken round-trip и fail-closed cloud transaction сохранены.
+
+Локальный gate: `make check`, полный `make test` — `547 passed`, focused
+Qt/web/cloud — `54 passed`. Linux portable и `.deb` собраны из `0.5.16` и
+проверены packaged diagnostic; Windows portable и installer собираются только
+на Windows runner. Реальный Steam Cloud upload и game load/re-save не входят в
+автоматический gate.
+
+Hosted release URL, commit, artifact sizes/SHA-256, R2 read-back и Pages
+revision добавляются сюда после завершения tag-triggered workflow.
+
 ## v0.5.15: Windows installer + portable и автообновление — 2026-09-20
 
 Windows release-контур теперь публикует две разные сборки: Windows portable

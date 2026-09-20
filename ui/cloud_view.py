@@ -12,6 +12,7 @@ from typing import Protocol
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -28,9 +29,15 @@ from editor.platforms import backup_dirs
 from editor.service import EditorService
 from editor.steam_backend import make_cloud_worker
 from editor.steam_cdp import restart_steam_with_debugging
+from editor.steam_profiles import (
+    SteamCloudProfile,
+    steam_cloud_profile_for_app_id,
+    steam_cloud_profile_for_release,
+    steam_cloud_profiles,
+)
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
-from steam_cloud import APP_ID, SAVE_PREFIX, CloudFile, discover_helper
+from steam_cloud import APP_ID, CloudFile, discover_helper
 
 
 class CloudSession(CloudTransport, Protocol):
@@ -94,6 +101,8 @@ class CloudOperationWorker(QThread):
         prepared: PreparedEdit | None = None,
         backup_dir: Path | None = None,
         app_id: int = APP_ID,
+        profile: SteamCloudProfile | None = None,
+        release_id: str | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -105,7 +114,13 @@ class CloudOperationWorker(QThread):
         self.cloud_file = cloud_file
         self.prepared = prepared
         self.backup_dir = backup_dir
-        self.app_id = app_id
+        if profile is not None:
+            self.profile = profile
+        elif release_id is not None:
+            self.profile = steam_cloud_profile_for_release(release_id)
+        else:
+            self.profile = steam_cloud_profile_for_app_id(app_id)
+        self.app_id = self.profile.app_id
 
     def run(self) -> None:
         created_transport = False
@@ -121,6 +136,9 @@ class CloudOperationWorker(QThread):
                 created_transport = True
                 if self.isInterruptionRequested():
                     raise SaveError("Steam Cloud operation отменена")
+                setter = getattr(transport, "set_file_filter", None)
+                if callable(setter):
+                    setter(self.profile.accepts)
                 transport.start()
                 transport.connect(self.app_id)
                 files = transport.list_files()
@@ -142,6 +160,11 @@ class CloudOperationWorker(QThread):
                     with_inventory=True,
                     source_name=cloud_file.name,
                 )
+                if result.release_id != self.profile.release_id:
+                    raise SaveError(
+                        f"Cloud save распознан как {result.release_id!r}, "
+                        f"а выбран профиль {self.profile.release_id!r}"
+                    )
                 self.completed.emit(
                     CloudSnapshot(
                         cloud_file.name,
@@ -173,14 +196,22 @@ class CloudOperationWorker(QThread):
 
             raise SaveError(f"Неизвестный cloud operation: {self.mode}")
         except FormatDetectionError as exc:
-            self.failed.emit(str(exc))
+            self.failed.emit(self._diagnostic_message(exc))
         except Exception as exc:
             if created_transport and transport is not None:
                 try:
                     transport.close()
                 except Exception:
                     pass
-            self.failed.emit(f"{type(exc).__name__}: {exc}")
+            self.failed.emit(self._diagnostic_message(exc))
+
+    def _diagnostic_message(self, exc: BaseException) -> str:
+        """Keep backend, selected app and remote path visible in failures."""
+
+        context = f"{self.profile.title} (app_id={self.app_id})"
+        if self.cloud_file is not None:
+            context += f" · path={self.cloud_file.name}"
+        return f"{context}: {type(exc).__name__}: {exc}"
 
     def cancel(self) -> None:
         """Request cancellation and kill an active native child if present."""
@@ -251,7 +282,8 @@ class CloudView(QWidget):
             if backup_dir is not None
             else backup_dirs()[0]
         )
-        self.app_id = app_id
+        self.profile = steam_cloud_profile_for_app_id(app_id)
+        self.app_id = self.profile.app_id
         self.transport: CloudSession | None = None
         self._files: tuple[CloudFile, ...] = ()
         self._snapshot: CloudSnapshot | None = None
@@ -288,6 +320,22 @@ class CloudView(QWidget):
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
+
+        profile_row = QHBoxLayout()
+        profile_row.addWidget(QLabel("Игра в Steam Cloud:"))
+        self.profile_combo = QComboBox()
+        profiles = steam_cloud_profiles()
+        for profile in profiles:
+            self.profile_combo.addItem(profile.title, profile.release_id)
+        current_index = next(
+            index
+            for index, profile in enumerate(profiles)
+            if profile.release_id == self.profile.release_id
+        )
+        self.profile_combo.setCurrentIndex(current_index)
+        self.profile_combo.currentIndexChanged.connect(self._on_profile_changed)
+        profile_row.addWidget(self.profile_combo, 1)
+        layout.addLayout(profile_row)
 
         actions = QHBoxLayout()
         self.analyze_button = QPushButton("Скачать выбранный сейв")
@@ -400,6 +448,7 @@ class CloudView(QWidget):
             helper_path=helper,
             worker_factory=self.worker_factory,
             app_id=self.app_id,
+            profile=self.profile,
             parent=self,
         )
         worker.completed.connect(self._on_files_ready)
@@ -463,7 +512,9 @@ class CloudView(QWidget):
             return
         cloud_file = self.selected_file()
         if cloud_file is None:
-            self._on_failed("Сначала выбери Data/*.sav в cloud списке")
+            self._on_failed(
+                f"Сначала выбери сохранение из профиля {self.profile.title}"
+            )
             return
         if self.transport is None:
             self._on_failed("Steam Cloud не подключён; запись не выполнялась")
@@ -475,6 +526,7 @@ class CloudView(QWidget):
             transport=self.transport,
             cloud_file=cloud_file,
             worker_factory=self.worker_factory,
+            profile=self.profile,
             parent=self,
         )
         worker.completed.connect(self._on_snapshot_ready)
@@ -519,6 +571,7 @@ class CloudView(QWidget):
             prepared=prepared,
             backup_dir=self.backup_dir,
             worker_factory=self.worker_factory,
+            profile=self.profile,
             parent=self,
         )
         worker.completed.connect(self._on_upload_ready)
@@ -532,8 +585,7 @@ class CloudView(QWidget):
             cloud_file
             for cloud_file in files
             if isinstance(cloud_file, CloudFile)
-            and cloud_file.name.startswith(SAVE_PREFIX)
-            and cloud_file.name.lower().endswith(".sav")
+            and self.profile.accepts(cloud_file.name)
         )
         self._snapshot = None
         self._prepared = None
@@ -556,13 +608,38 @@ class CloudView(QWidget):
             else "Steam Cloud: подключено"
         )
         if self._files:
-            status = f"{status_prefix} · {len(self._files)} Data/*.sav"
+            status = f"{status_prefix} · {len(self._files)} · {self.profile.save_label}"
         else:
-            status = f"{status_prefix} · 0 Data/*.sav (список пуст)"
+            status = f"{status_prefix} · 0 · {self.profile.save_label} (список пуст)"
         if hint:
             status += f" · {hint}"
         self.status_label.setText(status)
         self.files_ready.emit(self._files)
+
+    def _on_profile_changed(self, index: int) -> None:
+        if index < 0:
+            return
+        release_id = self.profile_combo.itemData(index)
+        try:
+            profile = steam_cloud_profile_for_release(str(release_id))
+        except KeyError:
+            return
+        if profile.release_id == self.profile.release_id:
+            return
+        if self.is_busy:
+            return
+        self._close_transport()
+        self.profile = profile
+        self.app_id = profile.app_id
+        self._files = ()
+        self._snapshot = None
+        self._prepared = None
+        self.table.setRowCount(0)
+        self._on_selection_changed()
+        self.clear_error()
+        self.status_label.setText(
+            f"Steam Cloud: выбран профиль {profile.title}; нажми «Обновить список»"
+        )
 
     def _on_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
         self._snapshot = snapshot
@@ -618,6 +695,7 @@ class CloudView(QWidget):
         for widget in (
             self.connect_button,
             self.enable_web_button,
+            self.profile_combo,
             self.table,
             self.analyze_button,
             self.upload_button,

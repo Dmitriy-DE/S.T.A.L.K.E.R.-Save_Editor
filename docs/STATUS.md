@@ -1,5 +1,33 @@
 # Состояние и пробелы — 2026-09-20
 
+## v0.5.16 — issues #95–#99 continuation — 2026-09-20
+
+The shared bounded-mutation protocol now covers condition, confirmed X-Ray
+upgrades, and confirmed X-Ray placement for controlled manual game-validation
+runs. The S.T.A.L.K.E.R. 2 writer remains limited to the source-backed equipped
+armor condition anchor; S2 weapon/helmet condition, upgrades, add-item and
+unknown records stay read-only. This is implementation and round-trip evidence,
+not a game load/re-save result.
+
+Steam Cloud now uses one release-aware profile table for all seven official
+Steam app IDs. S2 keeps `Data/*.sav`; original and Enhanced Edition cloud
+roots follow their official `savedgames` directory and retain extensionless or
+sidecar candidates for safe content detection. The Cloud tab carries the
+selected release/app ID into native, helper, cache and CDP list paths and shows
+which backend answered. Live Steam Cloud upload was not run in this pass.
+
+Enhanced Edition descriptors and cloud paths are safe and separate, but no EE
+parser is enabled: this host still has no accepted EE save fixture or complete
+serialization evidence. EE bytes therefore fail closed instead of being sent
+through an original X-Ray parser. The browser save action now performs its
+existing preview/verification gate automatically before downloading a new copy.
+
+Local verification before hosted publication: `make check`, full `make test`
+(`547 passed`), and `54 passed` in the Qt/web/cloud-focused run. No personal
+save, live cloud write, or game load/re-save was performed. Linux artifacts are
+rebuildable from the tagged clean commit; Windows artifacts remain a hosted
+Windows-runner gate.
+
 ## v0.5.15 — отдельный Windows installer и portable — 2026-09-20
 
 Windows теперь имеет две отдельные сборки: `SaveEditor-windows-x86_64-setup.exe`

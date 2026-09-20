@@ -8,6 +8,7 @@ from editor.steam_cdp import (
     cloud_files_from_rows,
     discover_cached_cloud_files,
 )
+from editor.steam_profiles import steam_cloud_profile_for_release
 
 
 def test_discover_cached_cloud_files_reads_steam_remotecache(tmp_path: Path) -> None:
@@ -60,6 +61,29 @@ def test_cloud_files_from_cdp_rows_builds_full_data_paths_and_download_urls() ->
     assert files[0].size == 6_400_000
     assert files[0].download_url == "https://steamusercontent-a.akamaihd.net/file"
     assert files[0].is_persisted is True
+
+
+def test_cloud_files_from_cdp_rows_accepts_original_savedgames_paths() -> None:
+    profile = steam_cloud_profile_for_release("stalker-cop")
+    files = cloud_files_from_rows(
+        [
+            {
+                "folder": "_appdata_/savedgames",
+                "name": "slot.scop",
+                "size_str": "1 KB",
+                "time_str": "2026-09-19 12:00:00",
+            },
+            {
+                "folder": "_appdata_/screenshots",
+                "name": "slot.png",
+                "size_str": "1 KB",
+                "time_str": "2026-09-19 12:00:00",
+            },
+        ],
+        file_filter=profile.accepts,
+    )
+
+    assert [item.name for item in files] == ["_appdata_/savedgames/slot.scop"]
 
 
 def test_cdp_read_refreshes_an_expired_download_url(monkeypatch) -> None:

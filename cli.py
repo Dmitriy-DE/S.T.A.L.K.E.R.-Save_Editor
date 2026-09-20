@@ -87,6 +87,27 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--attach", action="append", default=[], metavar="HANDLE=X,Y,W,H")
     q.add_argument("--raw", action="append", default=[], metavar="OFFSET:TYPE:VALUE")
     q.add_argument("--add", action="append", default=[], metavar="ITEM=COUNT")
+    q.add_argument(
+        "--durability",
+        action="append",
+        default=[],
+        metavar="HANDLE=VALUE",
+        help="bounded condition value in the range 0…1",
+    )
+    q.add_argument(
+        "--upgrade",
+        action="append",
+        default=[],
+        metavar="HANDLE=KEY[,KEY]",
+        help="replace one confirmed X-Ray upgrade vector; empty keys clears it",
+    )
+    q.add_argument(
+        "--placement",
+        action="append",
+        default=[],
+        metavar="HANDLE=TYPE[:SLOT]",
+        help="slot:1…13, belt, or ruck for one confirmed X-Ray item",
+    )
     add_export_args(q)
     return p
 
@@ -191,6 +212,9 @@ def _run(argv: list[str] | None) -> int:
             attach: dict[int, tuple[int, int, int, int]] = {}
             raw_patches: list[RawPatch] = []
             adds: list[tuple[str, int, str]] = []
+            durability: dict[int, float] = {}
+            upgrades: dict[int, tuple[str, ...]] = {}
+            placements: dict[int, tuple[str, int | None]] = {}
             if a.cmd == "set-money": money = a.money
             elif a.cmd == "set-stack": stacks[a.handle] = a.count
             elif a.cmd == "move": moves[a.handle] = (a.x, a.y)
@@ -212,8 +236,31 @@ def _run(argv: list[str] | None) -> int:
                 for spec in a.add:
                     item_key, quantity = spec.split("=", 1)
                     adds.append((item_key, int(quantity, 0), "inventory"))
+                for spec in a.durability:
+                    handle, value = spec.split("=", 1)
+                    durability[parse_int(handle)] = float(value)
+                for spec in a.upgrade:
+                    handle, values = spec.split("=", 1)
+                    upgrades[parse_int(handle)] = tuple(
+                        value for value in values.split(",") if value
+                    )
+                for spec in a.placement:
+                    handle, value = spec.split("=", 1)
+                    placement_type, separator, raw_slot = value.partition(":")
+                    slot_id = int(raw_slot, 0) if separator and raw_slot else None
+                    placements[parse_int(handle)] = (placement_type, slot_id)
 
-            if money is None and not (stacks or moves or detach or attach or raw_patches or adds):
+            if money is None and not (
+                stacks
+                or moves
+                or detach
+                or attach
+                or raw_patches
+                or adds
+                or durability
+                or upgrades
+                or placements
+            ):
                 raise SaveError("Нет изменений")
             source_sha = hashlib.sha256(data).hexdigest()
             plan = EditPlan(
@@ -225,9 +272,16 @@ def _run(argv: list[str] | None) -> int:
                 attach=tuple((handle, x, y, width, height) for handle, (x, y, width, height) in attach.items()),
                 raw=tuple(raw_patches),
                 adds=tuple(adds),
+                durability=tuple(durability.items()),
+                upgrades=tuple(upgrades.items()),
+                placements=tuple(
+                    (handle, placement_type, slot_id)
+                    for handle, (placement_type, slot_id) in placements.items()
+                ),
             )
             catalog = None
-            if adds:
+            game_catalog = None
+            if adds or upgrades:
                 inspection = EDITOR_SERVICE.inspect_result(
                     data,
                     with_inventory=True,
@@ -235,11 +289,13 @@ def _run(argv: list[str] | None) -> int:
                     catalog_source=src,
                 )
                 catalog = inspection.catalog
+                game_catalog = inspection.game_catalog
             prepared = EDITOR_SERVICE.prepare(
                 data,
                 plan,
                 source_name=str(src),
                 catalog=catalog,
+                game_catalog=game_catalog,
             )
             suffix = ".scop" if src.suffix.lower() == ".scop" else ".sav"
             destination = Path(a.output) if a.output else src.with_name(src.stem + "_edited" + suffix)
@@ -275,6 +331,36 @@ def _run(argv: list[str] | None) -> int:
             for handle, (at_x, at_y, at_w, at_h) in attach.items(): print(f"Attach 0x{handle:08X}: {at_x},{at_y} {at_w}x{at_h}")
             for patch in raw_patches: print(f"Raw 0x{patch.offset:X}: {patch.kind}={patch.value}")
             for item_key, quantity, _destination in adds: print(f"Add {item_key} x{quantity}")
+            for handle, condition in durability.items():
+                previous = before_by_handle.get(handle)
+                current = after_by_handle.get(handle)
+                print(
+                    f"Durability 0x{handle:08X}: "
+                    f"{previous.condition if previous else '?'} -> "
+                    f"{current.condition if current else condition}"
+                )
+            for handle, values in upgrades.items():
+                previous = before_by_handle.get(handle)
+                current = after_by_handle.get(handle)
+                print(
+                    f"Upgrades 0x{handle:08X}: "
+                    f"{previous.upgrades if previous else '?'} -> "
+                    f"{current.upgrades if current else values}"
+                )
+            for handle, (placement_type, slot_id) in placements.items():
+                previous = before_by_handle.get(handle)
+                current = after_by_handle.get(handle)
+                before_place = (
+                    (previous.placement_type, previous.placement_slot)
+                    if previous
+                    else "?"
+                )
+                after_place = (
+                    (current.placement_type, current.placement_slot)
+                    if current
+                    else (placement_type, slot_id)
+                )
+                print(f"Placement 0x{handle:08X}: {before_place} -> {after_place}")
         except (OSError, SaveError, ValueError, IndexError) as exc:
             _print_error(exc)
             return 2

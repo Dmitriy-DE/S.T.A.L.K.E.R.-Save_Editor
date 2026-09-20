@@ -1,20 +1,24 @@
 # S.T.A.L.K.E.R. Save Editor
 
 Единый локальный редактор сохранений официальных PC-версий вселенной
-S.T.A.L.K.E.R. с подключением Steam Cloud для S.T.A.L.K.E.R. 2.
+S.T.A.L.K.E.R. с release-aware подключением Steam Cloud.
 
 **Сейчас:** один Qt-редактор и одна статическая web-версия поверх общего
 форматного ядра. Зарегистрированы S.T.A.L.K.E.R. 2 и оригинальные Shadow of
 Chornobyl, Clear Sky и Call of Pripyat; для оригинальной трилогии принимаются
 `.sav` и `.scop` по содержимому контейнера. Desktop умеет auto-discovery
 стандартных каталогов, выбор release-specific профиля и ручную папку/файл.
+Исходная версия текущего release-кандидата: `0.5.16`; стабильная публикация
+создаётся только из чистого tagged commit после Linux/Windows packaged gates.
 
 Стартовый экран Desktop — единая Zone-библиотека: он сразу показывает все
 четыре семейства игр и найденные локальные сейвы, не выбирая S.T.A.L.K.E.R. 2
 по умолчанию. Кнопка `ИМПОРТ СЕЙВА…` принимает скачанный файл без локальной
 установки игры как локальную копию. Для полного цикла `открыть из Steam
 Cloud → изменить → загрузить обратно` нужно открыть `STEAM CLOUD`, выбрать
-удалённый `Data/*.sav` и нажать одну кнопку сохранения в рабочей области.
+профиль игры и удалённый сейв, затем нажать одну кнопку сохранения в рабочей
+области. Путь фильтруется по выбранному Steam app ID, а не по случайно
+оставшемуся профилю Shadow of Chornobyl.
 
 Для всех зарегистрированных форматов доступны локальный анализ, inventory
 snapshot, immutable preview и сохранение новой копии. В оригинальной трилогии
@@ -31,8 +35,9 @@ evidence. Их нельзя выдавать за совместимые с ор
 Подробная граница: [EE evidence](docs/evidence/EE_FORMATS_2026-09-15.md).
 
 Плюс остаются browser резервных копий с восстановлением и Desktop-вкладка Steam
-Cloud с явным connect/list/analyze/upload. Cloud transport сейчас привязан к
-S.T.A.L.K.E.R. 2 (`app_id=1643320`). Если native Steam API подключился, но
+Cloud с явным connect/list/analyze/upload. Cloud transport имеет отдельные
+профили для S.T.A.L.K.E.R. 2, оригинальной трилогии и трёх Enhanced Edition
+app ID. Если native Steam API подключился, но
 вернул пустой список, desktop читает Steam `remotecache.vdf`, а после явного
 перезапуска Steam с `-cef-enable-debugging` получает cloud-строки и download URL
 из авторизованной web-сессии через localhost CDP. Запись всё равно идёт через
@@ -46,8 +51,10 @@ native Steam API. С v0.5.0 облако работает через
 (`--appimage-extract`), что убирает прежний краш `libfuse.so.2`. Библиотека
 Valve `libsteam_api` — единственная неустранимая зависимость (её нельзя
 заменить чистым Python); она берётся из установленной игры/Steam или из
-payload helper'а. Универсальная обратная загрузка Cloud для оригинальной
-трилогии и Enhanced Edition не заявляется.
+payload helper'а. Для Enhanced Edition путь уже отделён от оригинального
+X-Ray, но отсутствие принятого EE parser оставляет такие файлы
+read-only/unavailable; live cloud read/write для каждого профиля остаётся
+отдельным runtime gate.
 PyInstaller собирает Linux `tar.gz`/`.deb` и Windows portable `zip`; отдельный
 Windows installer `.exe` собирается Inno Setup из того же runtime. Обе цели
 проходят CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
@@ -91,18 +98,19 @@ wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.
 - CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
 - Qt-интерфейс для локальных файлов и Steam Cloud; веб-версия для локальных
   файлов; CLI для исследования. Все три используют одно ядро.
-- CLI поддерживает batch-редактирование денег/стаков и добавление из официального каталога
-  (`edit --add ITEM=COUNT`); experimental остаются move, detach/deep detach,
-  attach существующего orphan, raw patch и diff-record.
+- CLI поддерживает batch-редактирование денег/стаков, bounded condition,
+  подтверждённых X-Ray upgrades/placement и добавление из официального
+  каталога (`edit --add ITEM=COUNT`); experimental остаются move,
+  detach/deep detach, attach существующего orphan, raw patch и diff-record.
 - Общий UI-free `EditorService` связывает parser, immutable preview, local export,
   backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
   логики правок не имеют.
 - Cloud tab не вызывает helper при старте: сначала подключается в фоне и
-  показывает список `Data/*.sav`; при пустом API показывает Steam cache и
-  предлагает одной кнопкой перезапустить Steam с CEF debug. Выбранный remote
-  slot анализируется в той же рабочей области, а нижняя кнопка меняет подпись
-  на `Сохранить и загрузить в облако` и запускает только его fail-closed
-  preview/upload.
+  показывает список только для выбранного release profile. При пустом API
+  показывает Steam cache, backend и app ID, а также предлагает одной кнопкой
+  перезапустить Steam с CEF debug. Выбранный remote slot анализируется в той
+  же рабочей области, а нижняя кнопка меняет подпись на `Сохранить и
+  загрузить в облако` и запускает только его fail-closed preview/upload.
 - На Linux/Proton S.T.A.L.K.E.R. 2 поиск проверяет также старое дерево
   `compatdata/1643320/.../Local Settings/Application Data/Stalker2/Saved/` и
   вложенный `STEAM/SaveGames/Data`; сохранённый вручную Steam root больше не
@@ -253,8 +261,9 @@ Linux создаёт `SaveEditor-linux-x86_64-v*.tar.gz` и
 Каждый запуск создаёт `SHA256SUMS`, а
 внутри bundle лежат `BUILD_MANIFEST.json`, `SOURCE_COMMIT.txt`, notices и
 provenance native decoder. `SaveEditor-diagnostic --diagnostic` проверяет
-вложенный Qt/decoder без открытия окна. `dist/` не коммитится и автоматический
-GitHub Release до B02 не выполняется.
+вложенный Qt/decoder без открытия окна. `dist/` не коммитится; tag-triggered
+GitHub Release выполняется только после source tests, Linux/Windows packaging
+и packaged diagnostics.
 
 Новые настройки и backups пишутся в platform user-data directory
 (`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на

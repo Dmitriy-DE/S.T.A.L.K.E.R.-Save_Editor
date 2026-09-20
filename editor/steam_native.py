@@ -38,11 +38,12 @@ from typing import Any
 from steam_cloud import (
     APP_ID,
     MAX_FILE_BYTES,
-    SAVE_PREFIX,
     CloudFile,
+    CloudFileFilter,
     SteamCloudError,
     SteamWorker,
     _refuse_automated_live_session,
+    default_cloud_file_filter,
 )
 
 from .platforms import locate_libsteam_api
@@ -54,6 +55,8 @@ from .steam_cdp import SteamCdpWorker, discover_cached_cloud_files
 _REMOTE_STORAGE_ACCESSORS = tuple(
     f"SteamAPI_SteamRemoteStorage_v{v:03d}" for v in (20, 19, 18, 17, 16, 15, 14)
 )
+_STEAM_APP_ID_ENV = "SteamAppId"
+_STEAM_GAME_ID_ENV = "SteamGameId"
 
 
 class SteamNativeUnavailableError(SteamCloudError):
@@ -81,17 +84,26 @@ class SteamNativeWorker:
         self,
         library_path: str | Path | None = None,
         log: Callable[[str], None] | None = None,
+        file_filter: CloudFileFilter | None = None,
     ) -> None:
         self.log = log or (lambda _s: None)
         self.app_id: int | None = None
         self._initialised = False
+        self._initialised_app_id: int | None = None
         self._remote: Any = None
+        # The isolated child returns raw RemoteStorage entries.  The parent
+        # release profile applies the allow-list, while direct callers may
+        # still opt into a narrower view.
+        self._file_filter: CloudFileFilter = file_filter or (lambda _name: True)
         resolved = Path(library_path).expanduser() if library_path else locate_libsteam_api()
         if resolved is None or not Path(resolved).is_file():
             raise SteamNativeUnavailableError("libsteam_api не найдена")
         self._library_path = Path(resolved)
         self._lib = _load_library(self._library_path)
         self._bind_symbols()
+
+    def set_file_filter(self, file_filter: CloudFileFilter | None) -> None:
+        self._file_filter = file_filter or (lambda _name: True)
 
     def _bind_symbols(self) -> None:
         lib = self._lib
@@ -155,8 +167,14 @@ class SteamNativeWorker:
     def start(self) -> None:
         if self._initialised:
             return
-        os.environ.setdefault("SteamAppId", str(APP_ID))
-        os.environ.setdefault("SteamGameId", str(APP_ID))
+        # The child receives the selected app id before construction.  Do not
+        # let a stale parent environment silently initialize another game.
+        os.environ.setdefault(_STEAM_APP_ID_ENV, str(APP_ID))
+        os.environ.setdefault(_STEAM_GAME_ID_ENV, str(APP_ID))
+        try:
+            init_app_id = int(os.environ.get(_STEAM_APP_ID_ENV, str(APP_ID)))
+        except ValueError:
+            init_app_id = APP_ID
         if self._init_flat is not None:
             buf = ctypes.create_string_buffer(1024)
             rc = self._init_flat(buf)
@@ -172,22 +190,33 @@ class SteamNativeWorker:
                     "SteamAPI_Init вернул false (клиент Steam не запущен?)"
                 )
         self._initialised = True
+        self._initialised_app_id = init_app_id
 
     def connect(self, app_id: int = APP_ID) -> None:
-        _refuse_automated_live_session(app_id, "Connect")
+        try:
+            selected_app_id = int(app_id)
+        except (TypeError, ValueError) as exc:
+            raise SteamCloudError(f"Некорректный Steam app_id: {app_id}") from exc
+        if selected_app_id <= 0:
+            raise SteamCloudError(f"Некорректный Steam app_id: {app_id}")
+        _refuse_automated_live_session(selected_app_id, "Connect")
         if not self._initialised:
+            # SteamAPI reads the identity during Init.  This matters for direct
+            # callers; the subprocess parent already supplies the same values
+            # in its isolated child environment.
+            os.environ[_STEAM_APP_ID_ENV] = str(selected_app_id)
+            os.environ[_STEAM_GAME_ID_ENV] = str(selected_app_id)
             self.start()
-        if app_id != APP_ID:
-            # The native worker binds the app at init via SteamAppId; a
-            # different app id would need a re-init with a matching env.
+        elif self._initialised_app_id not in (None, selected_app_id):
             raise SteamCloudError(
-                f"Нативный worker инициализирован для app_id={APP_ID}, запрошен {app_id}"
+                "SteamAPI уже инициализирован для другого app_id: "
+                f"{self._initialised_app_id} != {selected_app_id}"
             )
         remote = self._accessor()
         if not remote:
             raise SteamCloudError("ISteamRemoteStorage недоступен")
         self._remote = remote
-        self.app_id = app_id
+        self.app_id = selected_app_id
 
     def close(self) -> None:
         if self._initialised:
@@ -196,6 +225,7 @@ class SteamNativeWorker:
             except Exception:
                 pass
         self._initialised = False
+        self._initialised_app_id = None
         self._remote = None
 
     # ---- helpers -------------------------------------------------------
@@ -222,7 +252,7 @@ class SteamNativeWorker:
             if not name_ptr:
                 continue
             name = name_ptr.decode("utf-8", "replace")
-            if not name.startswith(SAVE_PREFIX) or not name.lower().endswith(".sav"):
+            if not self._file_filter(name):
                 continue
             name_b = name.encode("utf-8")
             out.append(
@@ -302,7 +332,8 @@ class SteamNativeSubprocessWorker:
         log: Callable[[str], None] | None = None,
         timeout: float = 15.0,
         cdp_factory: Callable[..., Any] = SteamCdpWorker,
-        cache_finder: Callable[[int], Any] = discover_cached_cloud_files,
+        cache_finder: Callable[..., Any] = discover_cached_cloud_files,
+        file_filter: CloudFileFilter | None = None,
     ) -> None:
         if timeout <= 0:
             raise ValueError("native cloud timeout must be positive")
@@ -312,6 +343,7 @@ class SteamNativeSubprocessWorker:
         self.timeout = timeout
         self.cdp_factory = cdp_factory
         self.cache_finder = cache_finder
+        self._file_filter: CloudFileFilter = file_filter or default_cloud_file_filter
         self.app_id: int | None = None
         self._helper: SteamWorker | None = None
         self._cdp: Any | None = None
@@ -327,13 +359,25 @@ class SteamNativeSubprocessWorker:
 
     def connect(self, app_id: int = APP_ID) -> None:
         _refuse_automated_live_session(app_id, "Connect")
-        if app_id != APP_ID:
-            raise SteamCloudError(
-                f"Нативный worker поддерживает только app_id={APP_ID}, запрошен {app_id}"
-            )
         if self._closed:
             raise SteamCloudError("Steam Cloud worker уже закрыт")
+        if int(app_id) <= 0:
+            raise SteamCloudError(f"Некорректный Steam app_id: {app_id}")
         self.app_id = app_id
+
+    def set_file_filter(self, file_filter: CloudFileFilter | None) -> None:
+        """Apply one release allow-list to every list/cache/web backend."""
+
+        self._file_filter = file_filter or default_cloud_file_filter
+        for backend in (self._helper, self._cdp):
+            setter = getattr(backend, "set_file_filter", None)
+            if callable(setter):
+                setter(self._file_filter)
+
+    def _configure_backend(self, backend: Any) -> None:
+        setter = getattr(backend, "set_file_filter", None)
+        if callable(setter):
+            setter(self._file_filter)
 
     def _command(self, op: str) -> list[str]:
         if getattr(sys, "frozen", False):
@@ -369,6 +413,9 @@ class SteamNativeSubprocessWorker:
             environment["PYTHONPATH"] = os.pathsep.join(
                 value for value in (str(project_root), current) if value
             )
+        app_id = str(self.app_id or APP_ID)
+        environment["SteamAppId"] = app_id
+        environment["SteamGameId"] = app_id
         return environment
 
     @staticmethod
@@ -497,10 +544,13 @@ class SteamNativeSubprocessWorker:
         for item in response["files"]:
             if not isinstance(item, dict):
                 raise SteamCloudError("Steam native child вернул некорректную запись файла")
+            name = str(item.get("name", ""))
+            if not self._file_filter(name):
+                continue
             try:
                 files.append(
                     CloudFile(
-                        name=str(item["name"]),
+                        name=name,
                         size=int(item["size"]),
                         timestamp=int(item["timestamp"]),
                         is_persisted=bool(item["is_persisted"]),
@@ -529,6 +579,7 @@ class SteamNativeSubprocessWorker:
         for attempt in range(3):
             cdp = self.cdp_factory()
             try:
+                self._configure_backend(cdp)
                 cdp.start()
                 cdp.connect(self.app_id or APP_ID)
                 files = list(cdp.list_files())
@@ -552,7 +603,18 @@ class SteamNativeSubprocessWorker:
             break
 
         try:
-            cached = tuple(self.cache_finder(self.app_id or APP_ID))
+            try:
+                cached = tuple(
+                    self.cache_finder(
+                        self.app_id or APP_ID,
+                        file_filter=self._file_filter,
+                    )
+                )
+            except TypeError:
+                # Keep small injected test doubles and third-party adapters
+                # compatible with the old one-argument cache contract.
+                cached = tuple(self.cache_finder(self.app_id or APP_ID))
+                cached = tuple(item for item in cached if self._file_filter(item.name))
         except Exception as exc:
             self.log(f"Steam Cloud cache fallback недоступен: {exc}")
             cached = ()
@@ -569,16 +631,31 @@ class SteamNativeSubprocessWorker:
         if self._closed:
             raise SteamCloudError("Steam Cloud worker уже закрыт")
         if self._cdp is not None:
+            self._configure_backend(self._cdp)
             return list(self._cdp.list_files())
         if self._helper is not None:
+            self._configure_backend(self._helper)
             files = self._helper.list_files()
             if files:
+                self._status_hint = (
+                    "список через SteamCloudFileManager helper "
+                    f"(app_id={self.app_id or APP_ID})"
+                )
                 return files
             fallback = self._web_or_cache_files()
+            if fallback is None:
+                self._status_hint = (
+                    "SteamCloudFileManager helper ответил пустым списком "
+                    f"(app_id={self.app_id or APP_ID}); web/cache не дали подходящих файлов"
+                )
             return [] if fallback is None else fallback
         native_error: SteamCloudError | None = None
         try:
             files = self._native_list()
+            self._status_hint = (
+                "список через Steam RemoteStorage "
+                f"(app_id={self.app_id or APP_ID})"
+            )
             if files:
                 return files
         except SteamCloudError as error:
@@ -586,6 +663,7 @@ class SteamNativeSubprocessWorker:
             if self.helper_path is not None:
                 helper = self.helper_factory(self.helper_path, log=self.log)
                 try:
+                    self._configure_backend(helper)
                     helper.start()
                     helper.connect(self.app_id or APP_ID)
                     files = helper.list_files()
@@ -601,6 +679,10 @@ class SteamNativeSubprocessWorker:
                 else:
                     self._helper = helper
                     if files:
+                        self._status_hint = (
+                            "список через SteamCloudFileManager helper "
+                            f"(app_id={self.app_id or APP_ID})"
+                        )
                         self.log(
                             f"Steam Cloud: native child недоступен ({error}); использую helper"
                         )
@@ -613,6 +695,10 @@ class SteamNativeSubprocessWorker:
             return fallback
         if native_error is not None:
             raise native_error
+        self._status_hint = (
+            "Steam RemoteStorage ответил пустым списком "
+            f"(app_id={self.app_id or APP_ID}); web/cache не дали подходящих файлов"
+        )
         return []
 
     def read_file(self, filename: str) -> bytes:

@@ -22,8 +22,10 @@ __all__ = [
     "LIVE_WRITE_OVERRIDE_ENV",
     "SAVE_PREFIX",
     "CloudFile",
+    "CloudFileFilter",
     "SteamCloudError",
     "SteamWorker",
+    "default_cloud_file_filter",
     "discover_helper",
 ]
 
@@ -57,6 +59,15 @@ SAVE_PREFIX = "Stalker2/Saved/STEAM/SaveGames/Data/"
 # larger, so allow a bounded margin while still rejecting runaway responses.
 MAX_RESPONSE_BYTES = 256 * 1024 * 1024
 MAX_FILE_BYTES = 64 * 1024 * 1024
+
+CloudFileFilter = Callable[[str], bool]
+
+
+def default_cloud_file_filter(name: str) -> bool:
+    """Keep backwards-compatible S.T.A.L.K.E.R. 2 filtering by default."""
+
+    normalized = str(name or "").replace("\\", "/")
+    return normalized.startswith(SAVE_PREFIX) and normalized.casefold().endswith(".sav")
 
 
 def _helper_environment(library_dir: Path) -> dict[str, str]:
@@ -97,7 +108,12 @@ class SteamWorker:
     SteamCloudFileManager itself.  We deliberately do not automate its GUI.
     """
 
-    def __init__(self, helper_path: str | Path, log: Callable[[str], None] | None = None):
+    def __init__(
+        self,
+        helper_path: str | Path,
+        log: Callable[[str], None] | None = None,
+        file_filter: CloudFileFilter | None = None,
+    ):
         self.helper_path = str(Path(helper_path).expanduser())
         self.log = log or (lambda _s: None)
         self.proc: subprocess.Popen[str] | None = None
@@ -109,6 +125,12 @@ class SteamWorker:
         # The app id of the last successful Connect, used by the live-session
         # guard so a WriteFile is judged by the cloud it targets.
         self.app_id: int | None = None
+        self._file_filter: CloudFileFilter = file_filter or default_cloud_file_filter
+
+    def set_file_filter(self, file_filter: CloudFileFilter | None) -> None:
+        """Select the release-aware save allow-list without reconnecting."""
+
+        self._file_filter = file_filter or default_cloud_file_filter
 
     def _reader_loop(
         self, proc: subprocess.Popen[str], responses: queue.Queue[object]
@@ -303,7 +325,7 @@ class SteamWorker:
         out: list[CloudFile] = []
         for f in resp.get("files", []):
             name = str(f.get("name", ""))
-            if not name.startswith(SAVE_PREFIX) or not name.lower().endswith(".sav"):
+            if not self._file_filter(name):
                 continue
             out.append(
                 CloudFile(

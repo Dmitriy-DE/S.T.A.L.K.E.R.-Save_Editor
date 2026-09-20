@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 import editor.steam_native as steam_native
+from editor.steam_profiles import steam_cloud_profile_for_release
 from steam_cloud import APP_ID, CloudFile, SteamCloudError
 
 
@@ -103,6 +104,47 @@ def test_native_list_decodes_child_file_records(monkeypatch: pytest.MonkeyPatch)
     assert [(item.name, item.size, item.is_persisted) for item in files] == [
         ("Stalker2/Saved/STEAM/SaveGames/Data/slot.sav", 123, True)
     ]
+
+
+def test_native_list_uses_selected_release_filter_and_reports_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = {
+        "type": "Files",
+        "files": [
+            {
+                "name": "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav",
+                "size": 123,
+                "timestamp": 1_700_000_000,
+                "is_persisted": True,
+                "exists": True,
+            },
+            {
+                "name": "_appdata_/savedgames/slot.scop",
+                "size": 456,
+                "timestamp": 1_700_000_001,
+                "is_persisted": True,
+                "exists": True,
+            },
+        ],
+    }
+
+    def fake_popen(command, **_kwargs):
+        assert "--app-id" in command
+        assert command[command.index("--app-id") + 1] == "41700"
+        return _FakeProcess(command, stdout=json.dumps(response) + "\n")
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    profile = steam_cloud_profile_for_release("stalker-cop")
+    worker = steam_native.SteamNativeSubprocessWorker(file_filter=profile.accepts)
+    worker.start()
+    worker.app_id = profile.app_id
+
+    files = worker.list_files()
+
+    assert [item.name for item in files] == ["_appdata_/savedgames/slot.scop"]
+    assert "RemoteStorage" in worker.status_hint
+    assert "41700" in worker.status_hint
 
 
 def test_initial_native_list_timeout_selects_helper_once(

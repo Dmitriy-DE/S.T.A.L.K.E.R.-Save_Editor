@@ -26,7 +26,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from steam_cloud import APP_ID, MAX_FILE_BYTES, SAVE_PREFIX, CloudFile, SteamCloudError
+from steam_cloud import (
+    APP_ID,
+    MAX_FILE_BYTES,
+    CloudFile,
+    CloudFileFilter,
+    SteamCloudError,
+    default_cloud_file_filter,
+)
 
 from .platforms import _parse_vdf, _read_text, steam_roots
 
@@ -81,7 +88,7 @@ def _parse_page_time(value: object) -> int:
 def _full_cloud_name(folder: object, filename: object) -> str:
     directory = str(folder or "").strip().strip("/")
     name = str(filename or "").strip().lstrip("/")
-    if name.startswith(SAVE_PREFIX):
+    if "/" in name or "\\" in name:
         return name
     return f"{directory}/{name}" if directory else name
 
@@ -90,15 +97,17 @@ def cloud_files_from_rows(
     rows: Sequence[Mapping[str, object]],
     *,
     cached: Mapping[str, CloudFile] | None = None,
+    file_filter: CloudFileFilter | None = None,
 ) -> list[CloudFile]:
     """Convert Steam web-table rows into the editor's cloud-file model."""
 
     cached = cached or {}
+    file_filter = file_filter or default_cloud_file_filter
     result: list[CloudFile] = []
     seen: set[str] = set()
     for row in rows:
-        name = _full_cloud_name(row.get("folder"), row.get("name"))
-        if not name.startswith(SAVE_PREFIX) or not name.casefold().endswith(".sav"):
+        name = _full_cloud_name(row.get("folder"), row.get("name")).replace("\\", "/")
+        if not file_filter(name):
             continue
         if name in seen:
             continue
@@ -153,9 +162,11 @@ def discover_cached_cloud_files(
     system: str | None = None,
     environ: Mapping[str, str] | None = None,
     home: Path | None = None,
+    file_filter: CloudFileFilter | None = None,
 ) -> tuple[CloudFile, ...]:
     """Read Steam's local metadata cache without starting another process."""
 
+    file_filter = file_filter or default_cloud_file_filter
     result: dict[str, CloudFile] = {}
     for cache_path in _cache_file_paths(
         app_id,
@@ -175,17 +186,18 @@ def discover_cached_cloud_files(
             continue
         remote_root = cache_path.parent / "remote"
         for raw_name, raw_entry in app_value.items():
-            if not raw_name.startswith(SAVE_PREFIX) or not raw_name.casefold().endswith(".sav"):
+            name = str(raw_name).replace("\\", "/")
+            if not file_filter(name):
                 continue
             entry = raw_entry if isinstance(raw_entry, dict) else {}
-            relative = Path(*raw_name.split("/"))
+            relative = Path(*name.split("/"))
             local_path = remote_root / relative
             try:
                 local_exists = local_path.is_file()
             except OSError:
                 local_exists = False
             candidate = CloudFile(
-                name=raw_name,
+                name=name,
                 size=max(0, _as_int(entry.get("size"))),
                 timestamp=max(
                     0,
@@ -199,9 +211,9 @@ def discover_cached_cloud_files(
                 exists=local_exists,
                 local_path=local_path if local_exists else None,
             )
-            previous = result.get(raw_name)
+            previous = result.get(name)
             if previous is None or candidate.timestamp >= previous.timestamp:
-                result[raw_name] = candidate
+                result[name] = candidate
     return tuple(sorted(result.values(), key=lambda item: item.timestamp, reverse=True))
 
 
@@ -527,6 +539,7 @@ class SteamCdpWorker:
         *,
         client_factory: type[SteamCdpClient] = SteamCdpClient,
         timeout: float = 15.0,
+        file_filter: CloudFileFilter | None = None,
     ) -> None:
         self.client_factory = client_factory
         self.timeout = timeout
@@ -534,16 +547,22 @@ class SteamCdpWorker:
         self.client: SteamCdpClient | None = None
         self._urls: dict[str, str] = {}
         self._closed = False
+        self._file_filter: CloudFileFilter = file_filter or default_cloud_file_filter
+
+    def set_file_filter(self, file_filter: CloudFileFilter | None) -> None:
+        """Change the release allow-list without rebuilding the CEF session."""
+
+        self._file_filter = file_filter or default_cloud_file_filter
 
     def start(self) -> None:
         if self._closed:
             raise SteamCdpError("Steam CEF cloud worker уже закрыт")
 
     def connect(self, app_id: int = APP_ID) -> None:
-        if app_id != APP_ID:
-            raise SteamCdpError(f"Steam web cloud поддерживает только app_id={APP_ID}")
         if self._closed:
             raise SteamCdpError("Steam CEF cloud worker уже закрыт")
+        if int(app_id) <= 0:
+            raise SteamCdpError(f"Некорректный Steam app_id: {app_id}")
         self.app_id = app_id
         self.client = self.client_factory.connect(timeout=self.timeout)
 
@@ -553,7 +572,10 @@ class SteamCdpWorker:
         assert self.app_id is not None
         cached = {
             item.name: item
-            for item in discover_cached_cloud_files(self.app_id)
+            for item in discover_cached_cloud_files(
+                self.app_id,
+                file_filter=self._file_filter,
+            )
         }
         all_rows: list[Mapping[str, object]] = []
         for offset in range(0, 1000, 50):
@@ -587,7 +609,11 @@ class SteamCdpWorker:
             all_rows.extend(valid_rows)
             if len(valid_rows) < 50:
                 break
-        files = cloud_files_from_rows(all_rows, cached=cached)
+        files = cloud_files_from_rows(
+            all_rows,
+            cached=cached,
+            file_filter=self._file_filter,
+        )
         self._urls = {
             file.name: file.download_url
             for file in files
