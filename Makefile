@@ -1,5 +1,8 @@
 PYTHON ?= python3
 SAVE ?=
+VERSION ?= $(shell sed -n '1p' VERSION)
+ARTIFACT_DIR ?= release-input
+OUTPUT_DIR ?= release-output
 
 .PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package
 check: lint typecheck docs-check
@@ -59,3 +62,9 @@ package-plan:
 
 package:
 	$(PYTHON) packaging/build.py --target auto --output-dir dist
+
+release-manifest:
+	$(PYTHON) tools/publish_release.py --artifacts $(ARTIFACT_DIR) --version $(VERSION) --commit $$(git rev-parse HEAD) --output $(OUTPUT_DIR)
+
+r2-publish:
+	$(PYTHON) tools/publish_release.py --artifacts $(ARTIFACT_DIR) --version $(VERSION) --commit $$(git rev-parse HEAD) --output $(OUTPUT_DIR) --publish-r2 --verify-r2

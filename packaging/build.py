@@ -23,8 +23,13 @@ import zipfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-APP_NAME = "SaveEditor"
-DEBIAN_NAME = "stalker2-save-editor"
+from editor.release_artifacts import (
+    APP_NAME,
+    DEBIAN_NAME,
+    artifact_names,
+    debian_version as _debian_version,
+)
+
 SUPPORTED_TARGETS = frozenset({"linux", "windows"})
 PRIVATE_NAMES = frozenset(
     {
@@ -85,26 +90,6 @@ def read_version(root: Path | None = None) -> str:
     if not value or any(ch.isspace() for ch in value):
         raise BuildError("VERSION пуст или содержит пробелы")
     return value
-
-
-def _debian_version(version: str) -> str:
-    """Return a Debian-compatible version without inventing a release tag."""
-
-    clean = "".join(ch if (ch.isalnum() or ch in ".+~-") else "-" for ch in version)
-    if not clean or not clean[0].isdigit():
-        clean = f"0+{clean}"
-    return clean
-
-
-def artifact_names(version: str, target: str) -> tuple[str, ...]:
-    if target == "linux":
-        return (
-            f"{APP_NAME}-linux-x86_64-v{version}.tar.gz",
-            f"{DEBIAN_NAME}_{_debian_version(version)}_amd64.deb",
-        )
-    if target == "windows":
-        return (f"{APP_NAME}-windows-x86_64-v{version}.zip",)
-    raise BuildError(f"Неизвестный target: {target}")
 
 
 def _git_commit(root: Path) -> str:

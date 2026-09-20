@@ -19,8 +19,17 @@ export default {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set("etag", object.httpEtag);
-    headers.set("cache-control", "public, max-age=3600");
-    headers.set("content-disposition", `attachment; filename="${key.split("/").pop()}"`);
+    const manifest = key === "latest.json";
+    headers.set(
+      "cache-control",
+      manifest ? "public, max-age=60, must-revalidate" : "public, max-age=31536000, immutable",
+    );
+    if (manifest) {
+      headers.set("content-type", "application/json; charset=utf-8");
+      headers.set("content-disposition", "inline");
+    } else {
+      headers.set("content-disposition", `attachment; filename="${key.split("/").pop()}"`);
+    }
     return new Response(request.method === "HEAD" ? null : object.body, { headers });
   },
 };

@@ -136,3 +136,66 @@ jobs:
           name: SaveEditor-${{ matrix.target }}-${{ github.sha }}
           path: artifacts/
           if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release and Cloudflare R2
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download native build outputs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: SaveEditor-*-${{ github.sha }}
+          path: release-input
+          merge-multiple: true
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Export package version
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          version = Path("VERSION").read_text(encoding="utf-8").strip()
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"VERSION={version}\n")
+
+      - name: Prepare and publish stable R2 objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/publish_release.py --artifacts release-input --version "$VERSION" --commit "$GITHUB_SHA" --output release-output --publish-r2 --verify-r2
+
+      - name: Create or update GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          assets=(
+            release-output/SaveEditor-windows-x86_64.zip
+            release-output/SaveEditor-linux-x86_64.tar.gz
+            release-output/stalker2-save-editor_amd64.deb
+            release-output/SHA256SUMS
+            release-output/latest.json
+          )
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes
+          fi

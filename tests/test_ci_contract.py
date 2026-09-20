@@ -122,3 +122,16 @@ def test_python_shell_steps_actually_contain_python() -> None:
                         f"{path.name}:{job_name}: step {step.get('name')!r} declares "
                         f"shell: python but its body is not Python ({exc.msg})"
                     ) from exc
+
+
+def test_release_workflow_collects_native_builds_and_publishes_manifest() -> None:
+    text = BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "download-artifact" in text
+    assert "latest.json" in text
+    assert "gh release" in text
+    assert "--publish-r2" in text
+    assert "r2" in (ROOT / "tools" / "publish_release.py").read_text(encoding="utf-8")
+    assert "CLOUDFLARE_API_TOKEN" in text
+    assert "CLOUDFLARE_ACCOUNT_ID" in text
+    assert "contents: write" in text
