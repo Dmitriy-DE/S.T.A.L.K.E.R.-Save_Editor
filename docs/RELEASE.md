@@ -27,10 +27,14 @@ manifest, сеть, размер или hash не затрагивают тек�
 проверяет все четыре R2 object-а через публичный Worker. GitHub Actions source
 test job остаётся без cloud credentials.
 
-На текущем локальном проходе проверены unit/UI/update/publish контракты и
-полный suite; hosted Windows runner, реальный R2 read-back и privileged .deb
-install считаются подтверждёнными только после фактического запуска release
-workflow.
+Релиз v0.5.10 фактически опубликован. Hosted run 35479286615 подтвердил
+Windows и Linux native build, source tests и packaged smoke; GitHub Release
+содержит пять assets. Worker был задеплоен, четыре стабильных R2 object-а
+загружены, а `tools/publish_release.py --verify-r2` прочитал их обратно и
+сверил размеры/байты. В репозитории пока нет `CLOUDFLARE_API_TOKEN` и
+`CLOUDFLARE_ACCOUNT_ID`, поэтому release-job остановился на deploy Worker;
+этот конкретный релиз завершён локальным авторизованным Wrangler и gh без
+сохранения OAuth-токена в GitHub Secrets.
 
 ## Непубликованный continuation — 2026-09-20
 

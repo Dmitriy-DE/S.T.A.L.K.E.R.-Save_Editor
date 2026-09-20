@@ -7,8 +7,12 @@ contract с Linux .deb: latest.json и SHA-256 строятся из финал�
 GitHub Release и Cloudflare R2 получают один набор stable-файлов. Desktop
 проверяет обновления в фоне и применяет portable-архив отдельным updater после
 закрытия GUI; .deb передаётся системному установщику после подтверждения.
-Полное локальное тестирование прошло (528 passed). Hosted Windows, реальный
-R2 read-back и privileged package install ещё требуют фактического release-run.
+Полное локальное тестирование прошло (530 passed). В hosted run
+35479286615 оба native build и packaged smoke прошли; v0.5.10 опубликован в
+GitHub Release и прочитан обратно из публичного R2 Worker. Автоматический
+release-job всё ещё требует repository secrets CLOUDFLARE_API_TOKEN и
+CLOUDFLARE_ACCOUNT_ID; текущая публикация выполнена локальным авторизованным
+Wrangler без помещения OAuth-токена в GitHub.
 
 ## 2026-09-20 — S2 Zone Kit / Steam Workshop catalog discovery
 
