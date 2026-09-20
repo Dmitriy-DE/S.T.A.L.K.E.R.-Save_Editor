@@ -86,6 +86,31 @@ def test_ci_runs_the_static_analysis_gate() -> None:
     assert (ROOT / "mypy.ini").is_file()
 
 
+def test_release_packages_run_the_complete_source_gate_before_building() -> None:
+    """A tag must not package source that the normal CI matrix rejects."""
+
+    import yaml
+
+    workflow = yaml.safe_load(BUILD_WORKFLOW.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["package"]["steps"]
+    names = [step.get("name") for step in steps]
+    gate_index = names.index("Run complete source gate")
+    build_index = names.index("Build standalone artifacts")
+    assert gate_index < build_index
+
+    body = steps[gate_index]["run"]
+    for required in (
+        '"ruff", "check", "."',
+        '"mypy"',
+        '"tools/render_task_index.py", "--check"',
+        '"tools/build_web_bundle.py", "--check"',
+        '"tools/export_theme.py", "--check"',
+        '"py_compile"',
+        '"pytest", "tests", "-q"',
+    ):
+        assert required in body
+
+
 def test_ci_runs_the_qt_suite_headless() -> None:
     for path in (WORKFLOW, BUILD_WORKFLOW):
         text = path.read_text(encoding="utf-8")

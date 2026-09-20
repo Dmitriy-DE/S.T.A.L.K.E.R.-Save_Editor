@@ -77,13 +77,31 @@ jobs:
               ]
           )
 
-      - name: Run source tests
+      - name: Run complete source gate
         shell: python
         run: |
           import subprocess
           import sys
 
-          subprocess.check_call([sys.executable, "-m", "pytest", "tests", "-q"])
+          commands = (
+              [sys.executable, "-m", "ruff", "check", "."],
+              [sys.executable, "-m", "mypy"],
+              [sys.executable, "tools/render_task_index.py", "--check"],
+              [sys.executable, "tools/build_web_bundle.py", "--check"],
+              [sys.executable, "tools/export_theme.py", "--check"],
+              [
+                  sys.executable,
+                  "-m",
+                  "py_compile",
+                  "cli.py",
+                  "save_format.py",
+                  "steam_cloud.py",
+                  "tests/selftest_real.py",
+              ],
+              [sys.executable, "-m", "pytest", "tests", "-q"],
+          )
+          for command in commands:
+              subprocess.check_call(command)
 
       - name: Build standalone artifacts
         shell: python

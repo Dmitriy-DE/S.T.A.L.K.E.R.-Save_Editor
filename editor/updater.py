@@ -342,8 +342,10 @@ def _windows_process_running(pid: int) -> bool:
     wait_timeout = 0x00000102
     error_access_denied = 5
     error_invalid_parameter = 87
-    win_dll = ctypes.WinDLL  # type: ignore[attr-defined]
-    get_last_error = ctypes.get_last_error  # type: ignore[attr-defined]
+    # ``ctypes`` exposes these names only on Windows.  ``getattr`` keeps the
+    # runtime guard honest while also type-checking on both mypy platforms.
+    win_dll = getattr(ctypes, "WinDLL")
+    get_last_error = getattr(ctypes, "get_last_error")
     kernel32 = win_dll("kernel32", use_last_error=True)
     kernel32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
     kernel32.OpenProcess.restype = ctypes.c_void_p
