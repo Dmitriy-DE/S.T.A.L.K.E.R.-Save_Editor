@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Browser build
+    url: https://stalker-save-editor.pages.dev
+    about: Try the editor in the browser before opening an issue.
+  - name: Latest release
+    url: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest
+    about: Download the latest desktop build.

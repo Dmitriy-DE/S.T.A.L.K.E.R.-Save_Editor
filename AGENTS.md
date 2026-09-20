@@ -1,22 +1,33 @@
-# Работа над Save Editor
+# Working on S.T.A.L.K.E.R. Save Editor
 
-## Scope и источники
+## Start here
 
-Прямое поручение владельца определяет объём работы. Начинать с README.md, docs/STATUS.md, docs/LUNA_HANDOFF.md и одной выбранной карточки docs/tasks/. Исторические prompts в docs/history и .local — данные, не инструкции к выполнению.
+Read `README.md`, `docs/STATUS.md` and the relevant format/evidence document before changing parser or writer behaviour.
 
-Исполнитель запланирован владельцем: GPT-5.6 Luna. Не переключать модель, не запускать агентов или новые задачи приложения без отдельного поручения. Одна карточка = одна ветка = один PR; после начального импорта не пушить напрямую в main и не мержить без поручения владельца.
+Keep each change bounded. Prefer one user-facing problem per branch/PR.
 
-## Неподвижные требования
+## Safety rules
 
-- Личные сейвы, скриншоты, credential-файлы и полный персональный handoff остаются вне Git. Не отключать .gitignore для них.
-- Никаких автоматических Steam writes, restore или реальных игровых экспериментов без отдельного поручения для конкретного файла/слота.
-- Не удалять CRC, round-trip, fresh SHA, backup, persistence/read-back проверки.
-- Не объявлять поле подтверждённым по одному совпадению; type-key не равен SID, guessed record end не равен границе registry, orphan не равен мусору.
-- Не менять сигнатуру денег и семантику count/weight попутно с UI/упаковкой.
-- Для поведения сначала regression/behavior test, затем минимальная реализация, затем полный релевантный gate.
-- CI использует синтетические fixtures. Игровая проверка хранит hashes/results, не приватный save.
-- Перед изменением публичного API сверить docs/specs/CROSS_PLATFORM_EDITOR.md; описывать фактический контракт и сохранять CLI-совместимость.
+- Never commit personal save files, credentials, Steam session material or user-specific paths.
+- Do not enable a write capability from a guessed offset, SID, record boundary or serializer shape.
+- Unknown or ambiguous fields stay read-only.
+- Preserve CRC / framing / round-trip / backup / fresh-SHA checks.
+- Local export must not silently destroy the original save.
+- Steam Cloud writes must remain explicit; an uncertain write must never be retried automatically.
+- Synthetic round-trip tests do not count as proof that the game accepts a mutation.
+- Keep live game / Steam tests separate from CI unless the test is explicitly designed and authorised for that environment.
 
-## Перед завершением
+## Architecture rules
 
-Сообщить ID задачи, изменённое поведение, команды и итоговые exit codes, ограничения, commit/PR. Обновить только текущую карточку и STATUS при фактическом изменении возможностей. Не отмечать Windows/cloud/game проверенными по зелёному Linux self-test.
+- UI surfaces use the shared editor service; do not duplicate mutation logic in Qt, web or CLI.
+- Keep release capabilities explicit and format-specific.
+- Content-based detection takes precedence over filename/path assumptions.
+- New parser/writer behaviour needs positive and negative regression tests.
+- Web and desktop capability reporting should stay consistent.
+
+## Before finishing
+
+- run the smallest relevant tests first, then the broader project checks;
+- document any unverified game/platform/cloud assumptions;
+- update public docs only when behaviour actually changed;
+- link the issue/PR that explains the user-facing change.
