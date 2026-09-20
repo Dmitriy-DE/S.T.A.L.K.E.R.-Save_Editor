@@ -1,5 +1,28 @@
 # Проверка и выпуск
 
+## v0.5.17 — fail-closed Cloud/update/publication hardening — 2026-09-20
+
+Кандидат v0.5.17 делает write capability явной во всём Steam Cloud flow:
+native/helper допускают upload, а web/CDP/cache используются только для
+list/download. До вызова `WriteFile` отказ однозначный; после потенциальной
+записи ошибка остаётся `uncertain` и не повторяется автоматически.
+
+Updater блокирует недоверенный redirect до сетевого запроса и отделяет rollback
+замены от best-effort удаления backup. Browser начинает четыре независимые
+core-загрузки параллельно и не анализирует файл до завершения фоновой установки
+каталога.
+
+Tag workflow теперь fail-closed: без любого Cloudflare secret GitHub Release не
+создаётся. Stable directory строится один раз; Worker deploy, шесть R2 objects с
+публичным read-back и GitHub assets используют один набор байтов. Локальные и
+hosted доказательства перечислены в
+[`evidence/HARDENING_0.5.17_2026-09-20.md`](evidence/HARDENING_0.5.17_2026-09-20.md).
+
+S2 condition writer по-прежнему ограничен подтверждённым equipped-armour
+anchor. Weapon/helmet condition, произвольные S2 add/upgrades, Enhanced Edition
+parser, live Steam upload и game load/re-save не объявляются готовыми без
+контролируемых данных.
+
 ## v0.5.16 — bounded equipment protocol, release-aware Steam Cloud и UX — 2026-09-20
 
 Этот релиз-кандидат объединяет continuation по issues #95–#99: bounded

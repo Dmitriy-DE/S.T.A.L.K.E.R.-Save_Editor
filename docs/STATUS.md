@@ -1,5 +1,35 @@
 # Состояние и пробелы — 2026-09-20
 
+## v0.5.17 — hardening release candidate — 2026-09-20
+
+Cloud upload теперь включается только для native/helper transport, который явно
+подтвердил write capability. Steam web/CDP и локальный cache остаются
+read-only: список и скачивание доступны, кнопка upload выключена с конкретной
+причиной. Отказ до вызова `WriteFile` имеет определённый no-write результат;
+ошибка после начала записи остаётся `uncertain` и не запускает автоматический
+повтор.
+
+Updater проверяет каждый redirect до соединения с новым host. После успешной
+замены portable tree ошибка удаления backup больше не откатывает рабочую новую
+версию: старое дерево остаётся как восстанавливаемая копия. Release workflow
+требует оба Cloudflare secret, один раз готовит stable directory, публикует и
+читает его обратно через R2/Worker, затем передаёт те же шесть файлов (четыре
+пакета, `latest.json`, `SHA256SUMS`) в GitHub Release.
+
+Browser bootstrap параллельно начинает загрузку ooz, Pyodide, Python bundle и
+bridge. File picker становится доступен после установки bridge; каталог
+догружается отдельно, но анализ сейва ждёт его и показывает ошибку вместо
+частично инициализированного редактора. Проверенный dead code удалён; публичные
+`gog_roots`/`xbox_roots` сохранены как контракт M03.
+
+Границы не расширены догадками: S2 weapon/helmet condition, произвольная выдача
+и upgrades, Enhanced Edition parser, реальный Steam `WriteFile` и игровой
+load/re-save остаются внешними evidence gates. Локальная/hosted/release
+верификация фиксируется отдельно в
+[`HARDENING_0.5.17_2026-09-20.md`](evidence/HARDENING_0.5.17_2026-09-20.md).
+Source gate кандидата прошёл локально: Ruff, mypy для Linux и Windows target,
+generated-file checks, `560 passed` и два Node bootstrap test.
+
 ## v0.5.16 — issues #95–#99 continuation — 2026-09-20
 
 The shared bounded-mutation protocol now covers condition, confirmed X-Ray

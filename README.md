@@ -26,7 +26,7 @@ The project uses **one Python editing core** across the Qt desktop app, CLI and 
 
 > **Safety first:** edits are staged and verified before export. Local editing writes a new copy rather than silently replacing the original save. Steam Cloud writes are explicit and guarded by backup/hash verification.
 
-The current release line is `0.5.16`. A release is published only from a clean
+The current release line is `0.5.17`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -108,7 +108,12 @@ the original trilogy and separate Enhanced Edition profiles. Each profile carrie
 its Steam app ID and remote save root into native, helper, cache and CDP paths;
 the UI reports which backend answered. Native calls use bounded subprocesses so a
 stuck Steam call cannot freeze the Qt UI indefinitely. Upload remains explicit,
-backup/hash guarded and reports verified versus uncertain outcomes.
+backup/hash guarded and reports verified versus uncertain outcomes. Only a native
+or helper backend that explicitly advertises write support can enable upload;
+Steam web/CDP and local-cache discovery remain read-only and explain why. A
+preflight refusal is a definite no-write result. An exception after `WriteFile`
+may have reached Steam, is reported as uncertain, and is never retried
+automatically.
 
 ## Updates and standalone packages
 
@@ -124,8 +129,15 @@ Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`:
   application exits; installer and `.deb` updates require explicit confirmation.
 
 The manifest and binaries are also mirrored to the public Cloudflare R2 download
-worker. Invalid manifests, unexpected hosts, network failures or hash mismatches
-leave the current installation untouched.
+worker. Redirect destinations are checked before the updater contacts them.
+Invalid manifests, unexpected hosts, network failures or hash mismatches leave
+the current installation untouched; a failed cleanup after a successful portable
+swap leaves the recoverable backup in place without rolling the new version back.
+
+Tag publication prepares the stable files once, uploads and reads those exact
+bytes back through the public Worker, and only then attaches the same directory
+to GitHub Release. Missing Cloudflare credentials fail the release job instead
+of silently publishing a split GitHub-only release.
 
 Release preparation and R2 read-back use the repository tools:
 
@@ -141,6 +153,8 @@ The browser version runs the same Python core through **Pyodide/WebAssembly**.
 - the save stays in the browser tab;
 - there is no application backend receiving the file;
 - supported local edits can be downloaded as a new copy;
+- decoder, Pyodide and shared core resources load concurrently; the catalogue
+  continues in the background, while analysis waits for it before exposing data;
 - Steam Cloud is desktop-only.
 
 Run it locally:
@@ -175,6 +189,8 @@ Important boundaries:
 - **Content detection wins over path assumptions.**
 - **Round-trip correctness is not treated as proof of in-game semantic acceptance.**
 - **Live Steam writes and game load/re-save checks are kept separate from automated CI.**
+- **S2 weapon/helmet condition, arbitrary equipment creation/upgrades and Enhanced
+  Edition parsing stay read-only until controlled differential and in-game evidence exists.**
 
 ## Run from source
 
