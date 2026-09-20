@@ -197,14 +197,27 @@ jobs:
               handle.write(f"VERSION={version}\n")
 
       - name: Deploy download Worker
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         shell: bash
         run: npx --yes wrangler@4 deploy --config infra/downloads-worker/wrangler.toml
 
-      - name: Prepare and publish stable R2 objects
+      - name: Prepare stable release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/publish_release.py --artifacts release-input --version "$VERSION" --commit "$GITHUB_SHA" --output release-output
+
+      - name: Publish stable R2 objects and verify read-back
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         shell: bash
         run: |
           set -euo pipefail
           python tools/publish_release.py --artifacts release-input --version "$VERSION" --commit "$GITHUB_SHA" --output release-output --publish-r2 --verify-r2
+
+      - name: Warn when R2 credentials are unavailable
+        if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
+        shell: bash
+        run: echo '::warning::Cloudflare secrets are unavailable; GitHub assets will publish, but Worker/R2 publication was skipped.'
 
       - name: Create or update GitHub Release
         shell: bash

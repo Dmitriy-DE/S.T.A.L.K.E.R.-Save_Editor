@@ -15,8 +15,30 @@ Qt/web/cloud — `54 passed`. Linux portable и `.deb` собраны из `0.5.
 на Windows runner. Реальный Steam Cloud upload и game load/re-save не входят в
 автоматический gate.
 
-Hosted release URL, commit, artifact sizes/SHA-256, R2 read-back и Pages
-revision добавляются сюда после завершения tag-triggered workflow.
+Тег `v0.5.16` указывает на чистый commit
+`c47e62d509467b9caaed092994edbae4e02352ae`. Hosted run
+[35514835825](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35514835825)
+прошёл Linux и Windows source tests, packaging, portable diagnostics и
+Windows installer smoke. Его release-job остановился на Worker deploy из-за
+пустых `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`; GitHub Release и R2 затем
+завершены теми же CI artifacts через авторизованный локальный Wrangler.
+
+Релиз: [GitHub Release v0.5.16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.16).
+Worker version `b5ba5517-a3a8-45d0-bc9a-a8cace7e64ad`; пять stable R2 объектов
+прочитаны обратно через public Worker и совпали с локальными байтами.
+
+Фактические размеры и SHA-256: Windows ZIP — 62,013,435 bytes,
+`15a0234fc806ade556a9d630261008bc06a6c0db29d07aad13c502560b2dadd7`;
+Windows installer — 38,192,590 bytes,
+`a06068bec04895e2a6d5bf1f4c52257278080312e6dbf307054c0eb9f9261f06`;
+Linux portable — 89,804,743 bytes,
+`0f278378b780f2f137513c11bcdf73f81f12a9298e9509a3d18b228bbdc492b0`;
+Debian — 93,129,042 bytes,
+`cb492a4cb94f1848cc9de9de33780ce011f374a36b2857c48077a15eacc34937`.
+
+Для будущих tag releases workflow сначала создаёт GitHub assets, а Worker/R2
+публикует только при наличии обоих secrets и иначе выдаёт явное warning; это не
+теряет уже собранный GitHub Release из-за внешней Cloudflare credentials.
 
 ## v0.5.15: Windows installer + portable и автообновление — 2026-09-20
 

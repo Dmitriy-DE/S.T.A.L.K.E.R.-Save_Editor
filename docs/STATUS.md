@@ -22,11 +22,31 @@ serialization evidence. EE bytes therefore fail closed instead of being sent
 through an original X-Ray parser. The browser save action now performs its
 existing preview/verification gate automatically before downloading a new copy.
 
-Local verification before hosted publication: `make check`, full `make test`
-(`547 passed`), and `54 passed` in the Qt/web/cloud-focused run. No personal
-save, live cloud write, or game load/re-save was performed. Linux artifacts are
-rebuildable from the tagged clean commit; Windows artifacts remain a hosted
-Windows-runner gate.
+Local verification: `make check`, full `make test` (`547 passed`), and `54
+passed` in the Qt/web/cloud-focused run. Tagged commit
+`c47e62d509467b9caaed092994edbae4e02352ae` passed hosted Linux and Windows
+source/build/package smoke in [run 35514835825](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35514835825),
+including Windows portable diagnostic and installer smoke.
+
+The hosted release job initially stopped at Worker deploy because repository
+secrets were empty. The same CI artifacts were then published through the
+authorized local Wrangler session: Worker version
+`b5ba5517-a3a8-45d0-bc9a-a8cace7e64ad`, five R2 objects, and byte-for-byte
+public read-back. [GitHub Release v0.5.16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.16)
+contains Windows installer/portable, Linux portable, `.deb`, `latest.json` and
+`SHA256SUMS`.
+
+Release/R2 assets: Windows portable 62,013,435 bytes,
+`15a0234fc806ade556a9d630261008bc06a6c0db29d07aad13c502560b2dadd7`;
+Windows installer 38,192,590 bytes,
+`a06068bec04895e2a6d5bf1f4c52257278080312e6dbf307054c0eb9f9261f06`;
+Linux portable 89,804,743 bytes,
+`0f278378b780f2f137513c11bcdf73f81f12a9298e9509a3d18b228bbdc492b0`;
+Debian 93,129,042 bytes,
+`cb492a4cb94f1848cc9de9de33780ce011f374a36b2857c48077a15eacc34937`.
+
+No personal save, live user-save cloud write, or game load/re-save was
+performed; those remain manual gates on a backup copy.
 
 ## v0.5.15 — отдельный Windows installer и portable — 2026-09-20
 
