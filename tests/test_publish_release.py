@@ -10,7 +10,7 @@ from urllib.request import Request
 
 import pytest
 
-from tools.publish_release import prepare_release, publish_r2, verify_public_r2
+from tools.publish_release import main, prepare_release, publish_r2, verify_public_r2
 
 
 def _versioned_artifacts(root: Path, version: str = "0.5.9") -> Path:
@@ -95,11 +95,46 @@ def test_publish_r2_uses_stable_keys_and_explicit_wrangler_commands(
     monkeypatch.setattr("tools.publish_release.subprocess.run", fake_run)
     publish_r2(output, runner="npx", wrangler_version="4")
 
-    assert len(commands) == 5
+    assert len(commands) == 6
     assert all("r2" in command and "object" in command and "put" in command for command in commands)
     assert any("save-editor-downloads/latest.json" in command for command in commands)
     assert any("save-editor-downloads/SaveEditor-windows-x86_64.zip" in command for command in commands)
     assert any("save-editor-downloads/SaveEditor-windows-x86_64-setup.exe" in command for command in commands)
+    assert any("save-editor-downloads/SHA256SUMS" in command for command in commands)
+
+
+def test_prepared_mode_publishes_without_regenerating_release(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = _versioned_artifacts(tmp_path)
+    output = tmp_path / "release"
+    prepare_release(
+        artifact_dir=artifacts,
+        output_dir=output,
+        version="0.5.9",
+        commit="3" * 40,
+        published_at="2026-09-20T12:00:00Z",
+    )
+    manifest_before = (output / "latest.json").read_bytes()
+    calls: list[tuple[str, Path]] = []
+
+    def reject_prepare(**_kwargs: object) -> dict[str, Path]:
+        raise AssertionError("prepared publication must not rebuild latest.json")
+
+    def fake_publish(root: Path) -> None:
+        calls.append(("publish", root))
+
+    def fake_verify(root: Path, *, base_url: str) -> None:
+        assert base_url
+        calls.append(("verify", root))
+
+    monkeypatch.setattr("tools.publish_release.prepare_release", reject_prepare)
+    monkeypatch.setattr("tools.publish_release.publish_r2", fake_publish)
+    monkeypatch.setattr("tools.publish_release.verify_public_r2", fake_verify)
+
+    assert main(["--output", str(output), "--prepared", "--publish-r2", "--verify-r2"]) == 0
+    assert calls == [("publish", output.resolve()), ("verify", output.resolve())]
+    assert (output / "latest.json").read_bytes() == manifest_before
 
 
 def test_verify_public_r2_identifies_itself_to_the_worker(

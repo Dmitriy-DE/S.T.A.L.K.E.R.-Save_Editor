@@ -27,6 +27,7 @@ STABLE_FILES = (
     "SaveEditor-linux-x86_64.tar.gz",
     "stalker2-save-editor_amd64.deb",
     "latest.json",
+    "SHA256SUMS",
 )
 _TARGETS = {
     "windows-x86_64": ("windows", "SaveEditor-windows-x86_64.zip"),
@@ -132,9 +133,22 @@ def prepare_release(
 
 
 def _content_type(path: Path) -> str:
+    if path.name == "SHA256SUMS":
+        return "text/plain; charset=utf-8"
     if path.name.endswith(".tar.gz"):
         return "application/gzip"
     return _CONTENT_TYPES.get(path.suffix.casefold(), "application/octet-stream")
+
+
+def _validate_prepared_release(output_dir: Path) -> Path:
+    output_dir = Path(output_dir).expanduser().resolve()
+    if not output_dir.is_dir():
+        raise ValueError(f"prepared release directory missing: {output_dir}")
+    for filename in STABLE_FILES:
+        path = output_dir / filename
+        if not path.is_file():
+            raise ValueError(f"prepared release file missing: {path}")
+    return output_dir
 
 
 def publish_r2(
@@ -212,10 +226,15 @@ def verify_public_r2(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifacts", type=Path, required=True)
-    parser.add_argument("--version", required=True)
-    parser.add_argument("--commit", required=True)
+    parser.add_argument("--artifacts", type=Path)
+    parser.add_argument("--version")
+    parser.add_argument("--commit")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--prepared",
+        action="store_true",
+        help="publish an existing prepared output directory without rebuilding it",
+    )
     parser.add_argument(
         "--published-at",
         default=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
@@ -225,20 +244,37 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--r2-base-url", default=DOWNLOAD_BASE_URL)
     args = parser.parse_args(argv)
     try:
-        prepare_release(
-            artifact_dir=args.artifacts,
-            output_dir=args.output,
-            version=args.version,
-            commit=args.commit,
-            published_at=args.published_at,
-        )
+        if args.prepared:
+            if args.artifacts is not None or args.version is not None or args.commit is not None:
+                parser.error("--prepared cannot be combined with --artifacts, --version, or --commit")
+            output_dir = _validate_prepared_release(args.output)
+        else:
+            missing = [
+                option
+                for option, value in (
+                    ("--artifacts", args.artifacts),
+                    ("--version", args.version),
+                    ("--commit", args.commit),
+                )
+                if value is None
+            ]
+            if missing:
+                parser.error(f"the following arguments are required: {', '.join(missing)}")
+            prepare_release(
+                artifact_dir=args.artifacts,
+                output_dir=args.output,
+                version=args.version,
+                commit=args.commit,
+                published_at=args.published_at,
+            )
+            output_dir = args.output.resolve()
         if args.publish_r2:
-            publish_r2(args.output)
+            publish_r2(output_dir)
         if args.verify_r2:
-            verify_public_r2(args.output, base_url=args.r2_base_url)
+            verify_public_r2(output_dir, base_url=args.r2_base_url)
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         parser.error(str(exc))
-    print(args.output.resolve())
+    print(output_dir)
     return 0
 
 

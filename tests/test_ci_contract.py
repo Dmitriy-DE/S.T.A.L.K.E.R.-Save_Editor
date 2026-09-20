@@ -165,3 +165,35 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
     assert "Install Windows installer tool" in text
     assert "Smoke Windows installer" in text
     assert "SaveEditor-windows-x86_64-setup.exe" in text
+
+
+def test_release_publication_is_atomic_across_r2_and_github() -> None:
+    """A tag must never publish GitHub assets when the R2 channel is skipped."""
+
+    import yaml
+
+    workflow = yaml.safe_load(BUILD_WORKFLOW.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["release"]["steps"]
+    names = [step.get("name") for step in steps]
+
+    credentials_index = names.index("Validate Cloudflare release credentials")
+    worker_index = names.index("Deploy download Worker")
+    prepare_index = names.index("Prepare stable release files")
+    r2_index = names.index("Publish stable R2 objects and verify read-back")
+    github_index = names.index("Create or update GitHub Release")
+    assert credentials_index < worker_index < prepare_index < r2_index < github_index
+    assert names.count("Prepare stable release files") == 1
+    assert "Warn when R2 credentials are unavailable" not in names
+
+    credential_body = steps[credentials_index]["run"]
+    assert "CLOUDFLARE_API_TOKEN" in credential_body
+    assert "CLOUDFLARE_ACCOUNT_ID" in credential_body
+    assert ":?" in credential_body
+    assert "if" not in steps[worker_index]
+    assert "if" not in steps[r2_index]
+
+    r2_body = steps[r2_index]["run"]
+    assert "--prepared" in r2_body
+    assert "--artifacts" not in r2_body
+    assert "--version" not in r2_body
+    assert "--commit" not in r2_body
