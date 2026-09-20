@@ -53,6 +53,7 @@ a = Analysis(
         str(ROOT / "packaging" / "gui_entry.py"),
         str(ROOT / "packaging" / "diagnostic.py"),
         str(ROOT / "packaging" / "native_entry.py"),
+        str(ROOT / "packaging" / "updater_entry.py"),
     ],
     pathex=[str(ROOT)],
     binaries=[],
@@ -83,6 +84,7 @@ def _entry(script_name):
 gui_entry = _entry("gui_entry.py")
 diagnostic_entry = _entry("diagnostic.py")
 native_entry = _entry("native_entry.py")
+updater_entry = _entry("updater_entry.py")
 gui = EXE(
     pyz,
     [*runtime_scripts, gui_entry],
@@ -116,10 +118,22 @@ native = EXE(
     upx=False,
     console=True,
 )
+updater = EXE(
+    pyz,
+    [*runtime_scripts, updater_entry],
+    exclude_binaries=True,
+    name="SaveEditor-updater",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    console=True,
+)
 COLLECT(
     gui,
     diagnostic,
     native,
+    updater,
     a.binaries,
     a.datas,
     strip=False,

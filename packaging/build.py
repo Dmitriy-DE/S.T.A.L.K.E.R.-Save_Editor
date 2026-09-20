@@ -499,6 +499,9 @@ def build(
     executable = runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
     if not executable.is_file():
         raise BuildError(f"PyInstaller output missing: {executable}")
+    updater = runtime / ("SaveEditor-updater.exe" if target == "windows" else "SaveEditor-updater")
+    if not updater.is_file():
+        raise BuildError(f"PyInstaller updater output missing: {updater}")
     manifest = build_manifest(root=root, target=target, version=version, output_dir=output_dir)
     _copy_metadata(runtime, manifest)
     scan_package_tree(runtime)

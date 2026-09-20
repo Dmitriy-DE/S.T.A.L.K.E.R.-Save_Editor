@@ -84,7 +84,13 @@ class ArtifactSpec:
     url: str
 
     @classmethod
-    def from_payload(cls, payload: object) -> "ArtifactSpec":
+    def from_payload(
+        cls,
+        payload: object,
+        *,
+        allowed_hosts: frozenset[str] = frozenset({DOWNLOAD_HOST}),
+        allowed_schemes: frozenset[str] = frozenset({"https"}),
+    ) -> "ArtifactSpec":
         if not isinstance(payload, dict):
             raise ManifestError("artifact must be an object")
         target = _require_string(payload.get("target"), "artifact.target")
@@ -101,7 +107,14 @@ class ArtifactSpec:
         if not _SHA256_RE.fullmatch(sha256):
             raise ManifestError("artifact.sha256 must be lowercase SHA-256")
         parsed = urlparse(url)
-        if parsed.scheme != "https" or parsed.hostname != DOWNLOAD_HOST or parsed.query or parsed.fragment:
+        if (
+            parsed.scheme not in allowed_schemes
+            or parsed.hostname not in allowed_hosts
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
             raise ManifestError("artifact download host or URL is not trusted")
         if parsed.path != f"/{file}":
             raise ManifestError("artifact URL does not match artifact filename")
@@ -153,7 +166,13 @@ class ReleaseManifest:
     artifacts: dict[str, ArtifactSpec]
 
     @classmethod
-    def from_json(cls, payload: str) -> "ReleaseManifest":
+    def from_json(
+        cls,
+        payload: str,
+        *,
+        allowed_hosts: frozenset[str] = frozenset({DOWNLOAD_HOST}),
+        allowed_schemes: frozenset[str] = frozenset({"https"}),
+    ) -> "ReleaseManifest":
         try:
             value = json.loads(payload)
         except json.JSONDecodeError as exc:
@@ -177,7 +196,11 @@ class ReleaseManifest:
             raise ManifestError("manifest artifacts are incomplete")
         artifacts: dict[str, ArtifactSpec] = {}
         for key in SUPPORTED_ARTIFACTS:
-            artifact = ArtifactSpec.from_payload(raw_artifacts[key])
+            artifact = ArtifactSpec.from_payload(
+                raw_artifacts[key],
+                allowed_hosts=allowed_hosts,
+                allowed_schemes=allowed_schemes,
+            )
             if artifact.target != key:
                 raise ManifestError(f"artifact target does not match key: {key}")
             artifacts[key] = artifact
