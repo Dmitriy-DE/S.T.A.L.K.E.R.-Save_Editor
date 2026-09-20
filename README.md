@@ -180,12 +180,19 @@ CI covers source tests plus packaged diagnostics for Linux and Windows. Release 
 
 ## Project status
 
-Current release: **v0.5.15**.
+The current stable release is shown in the badge above. Release history and binaries are available on the [Releases](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases) page.
 
 The detailed engineering/evidence log remains in [docs/STATUS.md](docs/STATUS.md). Format research and validation evidence live under [docs/evidence/](docs/evidence/).
 
 The public Issues board is for **bugs, user-facing features and roadmap items**. Internal research notes and implementation cards belong in the repository documentation, not as dozens of open user-facing tickets.
 
+## Roadmap
+
+- [S.T.A.L.K.E.R. 2: expand equipment editing beyond confirmed armour anchors](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/95)
+- [Enhanced Editions: add safe format detection and parser support](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/96)
+- [Validate experimental X-Ray equipment mutations in game](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/97)
+- [Steam Cloud: broaden support and improve runtime diagnostics](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/98)
+- [UX: simplify save flow without weakening backup and verification](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/99)
 ## Contributing
 
 Bug reports and focused feature requests are welcome.
