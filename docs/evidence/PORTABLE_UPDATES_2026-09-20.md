@@ -18,19 +18,21 @@
 
 At this snapshot:
 
-- `make test PYTHON=.venv/bin/python` — 530 passed;
+- `make test PYTHON=.venv/bin/python` — 531 passed;
 - `make check PYTHON=.venv/bin/python` — ruff, mypy, docs-check and py_compile passed;
-- hosted run `35479286615` — Linux and Windows packaging, source tests and
+- hosted run `35480101624` — Linux and Windows packaging, source tests and
   packaged smoke passed;
-- v0.5.10 GitHub Release assets and public R2 Worker matched by size and
+- v0.5.11 GitHub Release assets and public R2 Worker matched by size and
   SHA-256: Windows ZIP `61977876` bytes,
-  `d598b93606fd16d2e4fe7e87b0a28a372d9cbf45fd0d80715775751795a9d58b`,
-  Linux tar.gz `89760944` bytes,
-  `b6c44136d8641711c0551fc957d0e2a3c1587060e67421e83d6aaf48b3809166`,
-  Debian package `93116640` bytes,
-  `82742efdacb510cdbb978dda2ea6d7e4d7cf0c032f550bb1bde6cd6860ff7b9e`.
+  `107ab9e09f11672d2df25a0feb23ceb1a78336588b0f5f0674bd2e1f2c2e9fb1`,
+  Linux tar.gz `89763990` bytes,
+  `668c4ed406588d59ff4289f69847043db5ed2b72ad619298bfadb4fe57f6142c`,
+  Debian package `93116720` bytes,
+  `f295e792bcad6367595d85418fcfd631e45fbccd1bb7b01f3cbbdcb343444d08`.
 - `latest.json` public read-back matched the release asset;
-  SHA-256 `d60e2d4c244fff1ace6c756aa6b14e8d2f134a8a314498f61e0c1231dee0407e`.
+  SHA-256 `e6a272d646a79c925f7f1172e6a32c73b287afda42b8393637e537bf52f3ac68`.
+- Live update check through the Worker returned `available 0.5.11` from
+  `0.5.10` and `current` from `0.5.11`.
 - The privileged `.deb` install remains intentionally unrun; package contents,
   metadata, checksums and diagnostic runtime were verified.
 
