@@ -139,7 +139,11 @@ class UpdateClient:
 
         destination = Path(destination).expanduser().resolve()
         destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary = Path(tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".part", dir=destination.parent)[1])
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{destination.name}.", suffix=".part", dir=destination.parent
+        )
+        os.close(descriptor)
+        temporary = Path(temporary_name)
         try:
             with self._open(artifact.url) as response, temporary.open("wb") as output:
                 for chunk in iter(lambda: response.read(1024 * 1024), b""):
