@@ -1070,24 +1070,6 @@ def record_hex(raw: bytes, handle: int, limit: int = 512) -> tuple[int, bytes]:
     return off, raw[off:end]
 
 
-def scalar_candidates(raw: bytes, handle: int, limit: int = 1024) -> list[dict[str, object]]:
-    """Heuristic lab candidates, intentionally not labelled as durability.
-
-    Returns aligned/unaligned f32 values 0..1 and bytes 0..100 in the selected
-    record window. This is for differential research and manual testing only.
-    """
-    base, blob = record_hex(raw, handle, limit)
-    out: list[dict[str, object]] = []
-    for rel in range(0, max(0, len(blob) - 4)):
-        f = struct.unpack_from("<f", blob, rel)[0]
-        if math.isfinite(f) and 0.0 <= f <= 1.0:
-            out.append({"offset": base + rel, "rel": rel, "kind": "f32", "value": f})
-    for rel, b in enumerate(blob):
-        if b <= 100:
-            out.append({"offset": base + rel, "rel": rel, "kind": "u8", "value": b})
-    return out
-
-
 def diff_record(save_a_raw: bytes, save_b_raw: bytes, handle: int, limit: int = 2048) -> list[tuple[int, bytes, bytes]]:
     # Offsets are reported relative to each record, so the absolute bases of
     # the two saves are deliberately unused here.
@@ -1277,15 +1259,3 @@ def patch_save(
         rebuilt_blocks=rebuild_decision.rebuilt_blocks,
         rebuild_reason=rebuild_decision.reason,
     )
-
-
-def patch_money(data: bytes, new_money: int) -> tuple[bytes, int, int]:
-    result = patch_save(data, new_money=new_money)
-    assert result.old_money is not None and result.new_money is not None
-    return result.data, result.old_money, result.new_money
-
-
-def patch_stack_count(data: bytes, handle: int, new_count: int) -> tuple[bytes, int, int]:
-    result = patch_save(data, stack_counts={handle: new_count})
-    _h, old, new = result.changed_stacks[0]
-    return result.data, old, new

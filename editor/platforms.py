@@ -148,14 +148,6 @@ def _release_selector(value: str) -> tuple[str, str | None, str | None]:
     return family, None, None
 
 
-def _selected_release_ids(selector: str) -> tuple[str, ...]:
-    family, _edition, release_id = _release_selector(selector)
-    if release_id is not None:
-        return (release_id,)
-    return tuple(
-        descriptor.id for descriptor in official_releases() if descriptor.family == family
-    )
-
 _EE_SAVE_NAMES: dict[str, tuple[str, ...]] = {
     "soc": ("STALKER Shadow of Chornobyl - EE",),
     "clear_sky": ("STALKER Clear Sky - EE",),

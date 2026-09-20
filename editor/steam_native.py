@@ -826,8 +826,6 @@ def run_cli_op(args: list[str]) -> int:
     """
 
     import argparse
-    import base64  # noqa: F401 - kept for future binary framing if needed
-
     parser = argparse.ArgumentParser(prog="SaveEditor --steam-native-op", add_help=False)
     parser.add_argument("op", choices=("list", "read", "write"))
     parser.add_argument("--name")

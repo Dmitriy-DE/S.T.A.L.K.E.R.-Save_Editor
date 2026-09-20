@@ -614,60 +614,6 @@ def _upgrades_from_sections(
     return UpgradeCatalog(release_id, source_root, tuple(upgrades))
 
 
-def _read_uncompressed_xdb(path: Path) -> dict[str, bytes]:
-    data = path.read_bytes()
-    chunks: dict[int, list[bytes]] = {}
-    position = 0
-    while position < len(data):
-        if position + 8 > len(data):
-            raise _ArchiveUnavailableError("truncated XDB chunk")
-        chunk_type, size = struct.unpack_from("<II", data, position)
-        position += 8
-        end = position + size
-        if end > len(data):
-            raise _ArchiveUnavailableError("XDB chunk exceeds archive")
-        if chunk_type & 0x80000000:
-            raise _ArchiveUnavailableError("compressed XDB chunks are not verified")
-        chunks.setdefault(chunk_type, []).append(data[position:end])
-        position = end
-    headers = chunks.get(1, [])
-    bodies = chunks.get(0, [])
-    if len(headers) != 1 or len(bodies) != 1:
-        raise _ArchiveUnavailableError("XDB requires one header and one data chunk")
-    header = headers[0]
-    files: dict[str, bytes] = {}
-    position = 0
-    while position < len(header):
-        if position + 14 > len(header):
-            raise _ArchiveUnavailableError("truncated XDB file record")
-        name_size, real_size, compressed_size, crc = struct.unpack_from(
-            "<HIII", header, position
-        )
-        position += 14
-        name_length = name_size - 16
-        if name_length < 0 or position + name_length > len(header):
-            raise _ArchiveUnavailableError("invalid XDB file name size")
-        name = _decode(header[position : position + name_length]).replace("\\", "/")
-        position += name_length
-        if position + 4 > len(header):
-            raise _ArchiveUnavailableError("truncated XDB file offset")
-        offset = struct.unpack_from("<I", header, position)[0]
-        position += 4
-        if offset == 0:
-            continue
-        if offset + compressed_size > len(data):
-            raise _ArchiveUnavailableError("XDB file data exceeds archive")
-        raw = data[offset : offset + compressed_size]
-        if compressed_size != real_size:
-            raw = lzo1x_decompress(raw, real_size)
-        if len(raw) != real_size:
-            raise _ArchiveUnavailableError("XDB file size mismatch")
-        if crc and (binascii.crc32(raw) & 0xFFFFFFFF) != crc:
-            raise _ArchiveUnavailableError("XDB file CRC mismatch")
-        files[name] = bytes(raw)
-    return files
-
-
 def _read_xray_archive(
     path: Path,
     *,

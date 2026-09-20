@@ -424,13 +424,6 @@ def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetail
     )
 
 
-def _parse_actor_state(raw: bytes, obj: XRayObject) -> tuple[int, int]:
-    """Compatibility projection for callers that only need actor money."""
-
-    details = _parse_actor_state_details(raw, obj)
-    return details.money_offset, details.money
-
-
 def _parse_ammo_state_window(
     raw: bytes,
     *,
