@@ -1,295 +1,209 @@
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="S.T.A.L.K.E.R. Save Editor"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest"><img src="https://img.shields.io/github/v/release/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor?style=flat-square&label=release&color=C69A3E" alt="Latest release"/></a>
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+"/>
+  <img src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Windows x64"/>
+  <img src="https://img.shields.io/badge/Linux-x86__64-FCC624?style=flat-square&logo=linux&logoColor=000" alt="Linux x86_64"/>
+  <img src="https://img.shields.io/badge/license-GPL--3.0-7E8F3E?style=flat-square" alt="GPL-3.0"/>
+</p>
+
+<p align="center">
+  <a href="https://stalker-save-editor.pages.dev"><b>Open in browser</b></a>
+  ·
+  <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest"><b>Download desktop</b></a>
+  ·
+  <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues"><b>Report an issue</b></a>
+</p>
+
 # S.T.A.L.K.E.R. Save Editor
 
-Единый локальный редактор сохранений официальных PC-версий вселенной
-S.T.A.L.K.E.R. с подключением Steam Cloud для S.T.A.L.K.E.R. 2.
+A cross-platform save editor for the official PC releases of **S.T.A.L.K.E.R. 2** and the original **Shadow of Chernobyl / Clear Sky / Call of Pripyat** trilogy.
 
-**Сейчас:** один Qt-редактор и одна статическая web-версия поверх общего
-форматного ядра. Зарегистрированы S.T.A.L.K.E.R. 2 и оригинальные Shadow of
-Chornobyl, Clear Sky и Call of Pripyat; для оригинальной трилогии принимаются
-`.sav` и `.scop` по содержимому контейнера. Desktop умеет auto-discovery
-стандартных каталогов, выбор release-specific профиля и ручную папку/файл.
+The project uses **one Python editing core** across the Qt desktop app, CLI and browser build. Local files are analysed offline; unsupported structures stay read-only instead of being guessed.
 
-Стартовый экран Desktop — единая Zone-библиотека: он сразу показывает все
-четыре семейства игр и найденные локальные сейвы, не выбирая S.T.A.L.K.E.R. 2
-по умолчанию. Кнопка `ИМПОРТ СЕЙВА…` принимает скачанный файл без локальной
-установки игры как локальную копию. Для полного цикла `открыть из Steam
-Cloud → изменить → загрузить обратно` нужно открыть `STEAM CLOUD`, выбрать
-удалённый `Data/*.sav` и нажать одну кнопку сохранения в рабочей области.
+> **Safety first:** edits are staged and verified before export. Local editing writes a new copy rather than silently replacing the original save. Steam Cloud writes are explicit and guarded by backup/hash verification.
 
-Для всех зарегистрированных форматов доступны локальный анализ, inventory
-snapshot, immutable preview и сохранение новой копии. В оригинальной трилогии
-доступны деньги, подтверждённые ammo stacks, добавление предметов из
-официального каталога и глубокое удаление actor-owned registry records.
-Каталог и serializer family берутся из установленной официальной игры на
-desktop; в web поставляется компактный metadata-only каталог. Web принимает
-локальный файл и ничего не загружает на сервер.
+<p align="center">
+  <img src="./assets/readme/workbench.svg" width="100%" alt="S.T.A.L.K.E.R. Save Editor workbench"/>
+</p>
 
-Enhanced Editions уже есть в release selector и path discovery как отдельные
-официальные профили, но пока **не зарегистрированы как поддержанные форматы**:
-на текущем хосте нет их установок/сейвов и нет достаточного публичного format
-evidence. Их нельзя выдавать за совместимые с оригинальным X-Ray parser.
-Подробная граница: [EE evidence](docs/evidence/EE_FORMATS_2026-09-15.md).
+<p align="center"><sub>Illustrative values; the layout and controls are reconstructed from the actual desktop/browser UI.</sub></p>
 
-Плюс остаются browser резервных копий с восстановлением и Desktop-вкладка Steam
-Cloud с явным connect/list/analyze/upload. Cloud transport сейчас привязан к
-S.T.A.L.K.E.R. 2 (`app_id=1643320`). Если native Steam API подключился, но
-вернул пустой список, desktop читает Steam `remotecache.vdf`, а после явного
-перезапуска Steam с `-cef-enable-debugging` получает cloud-строки и download URL
-из авторизованной web-сессии через localhost CDP. Запись всё равно идёт через
-native Steam API. С v0.5.0 облако работает через
-**встроенный нативный worker** (`editor/steam_native.py`, ctypes поверх
-`libsteam_api`), но с v0.5.6 каждый native-вызов выполняется в отдельном
-короткоживущем дочернем процессе с жёстким таймаутом: зависший Steam API больше
-не блокирует Qt. Если нативный worker не поднимается, редактор автоматически
-откатывается на прежний
-`SteamCloudFileManager`, распаковывая его AppImage **без FUSE**
-(`--appimage-extract`), что убирает прежний краш `libfuse.so.2`. Библиотека
-Valve `libsteam_api` — единственная неустранимая зависимость (её нельзя
-заменить чистым Python); она берётся из установленной игры/Steam или из
-payload helper'а. Универсальная обратная загрузка Cloud для оригинальной
-трилогии и Enhanced Edition не заявляется.
-PyInstaller собирает Linux `tar.gz`/`.deb` и Windows portable `zip`; отдельный
-Windows installer `.exe` собирается Inno Setup из того же runtime. Обе цели
-проходят CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
-wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`.
+## What it does
 
-Это не означает поддержку модов, Enhanced Edition или любого неизвестного
-патча: проект принимает только официальные зарегистрированные profiles и
-отказывает закрыто, если контейнер/версия/границы не подтверждены.
+- discovers local saves for supported official PC releases;
+- detects the game/release from file contents instead of trusting the filename;
+- reads money, inventory and technical container metadata;
+- edits only capabilities proven for the detected format;
+- stages changes before writing;
+- verifies CRC / Kraken framing / parser round-trip where applicable;
+- exports a new local copy;
+- provides a Qt desktop app, CLI and browser build over the same core;
+- supports S.T.A.L.K.E.R. 2 Steam Cloud from the desktop app;
+- packages standalone Windows and Linux builds — **Python is not required for end users**.
 
-## Что доступно
+## Game support
 
-- S.T.A.L.K.E.R. 2: чтение и изменение денег/подтверждённых стаков с
-  сохранением CRC/Kraken safeguards; для экипированной брони с exact
-  condition-anchor доступна экспериментальная правка прочности. Структура
-  GVAS-инвентаря и добавление предметов пока не включены без доказанной схемы.
-- S2 catalog discovery умеет брать реальные loose names/icons/upgrade metadata
-  из официального `Content/GameLite/GameData`, Zone Kit или Steam Workshop.
-  Для SDK можно задать `STALKER2_ZONE_KIT_ROOT` (или `ZONE_KIT_ROOT`), а
-  Workshop ищется в Steam libraries под
-  `steamapps/workshop/content/1643320`. Чтение Workshop — отдельный
-  catalog-only overlay: `.pak` не распаковываются и writer сейва от этого не
-  включается.
-- Original Shadow of Chornobyl, Clear Sky и Call of Pripyat: strict X-Ray
-  container, actor money, полный actor-owned inventory snapshot, официальные
-  catalog keys и serializer families. Ammo count пишется одновременно в
-  STATE и UPDATE.
-- Equipment Editor: общий Qt/web-проектор различает weapon, armor и release-specific
-  helmet (отдельные helmets сейчас только для CoP Original/S2), equipped,
-  backpack и belt, показывает точные catalog names/icons и поддерживает
-  индивидуальный/массовый staged repair для подтверждённых X-Ray condition
-  anchors. Это experimental до игрового load/re-save. S.T.A.L.K.E.R. 2
-  разрешает только experimental condition-edit для подтверждённых
-  экипированных armor rows; weapon/helmet/unknown rows остаются read-only, а
-  CLI отчёт сохраняет отдельные blockers. Enhanced Editions остаются
-  отдельными unavailable profiles.
-- Для оригинальной трилогии writer умеет добавить предмет из каталога,
-  клонировав существующий registry template той же подтверждённой
-  serializer family, и удалить actor-owned record с новым registry framing.
-  Если в конкретном сейве нет подходящего template или нет каталога, операция
-  отказывается; game load/re-save этого результата ещё не подтверждён.
-- CRC32, распаковка Kraken, пересборка и побайтовая проверка round-trip.
-- Qt-интерфейс для локальных файлов и Steam Cloud; веб-версия для локальных
-  файлов; CLI для исследования. Все три используют одно ядро.
-- CLI поддерживает batch-редактирование денег/стаков и добавление из официального каталога
-  (`edit --add ITEM=COUNT`); experimental остаются move, detach/deep detach,
-  attach существующего orphan, raw patch и diff-record.
-- Общий UI-free `EditorService` связывает parser, immutable preview, local export,
-  backup restore и cloud transaction; интерфейс и CLI ходят через него, своей
-  логики правок не имеют.
-- Cloud tab не вызывает helper при старте: сначала подключается в фоне и
-  показывает список `Data/*.sav`; при пустом API показывает Steam cache и
-  предлагает одной кнопкой перезапустить Steam с CEF debug. Выбранный remote
-  slot анализируется в той же рабочей области, а нижняя кнопка меняет подпись
-  на `Сохранить и загрузить в облако` и запускает только его fail-closed
-  preview/upload.
-- На Linux/Proton S.T.A.L.K.E.R. 2 поиск проверяет также старое дерево
-  `compatdata/1643320/.../Local Settings/Application Data/Stalker2/Saved/` и
-  вложенный `STEAM/SaveGames/Data`; сохранённый вручную Steam root больше не
-  требует текущего `appmanifest_1643320.acf`.
-- Интерфейс следует визуальному референсу Zone: demo-данные макета не
-  копируются, badges, cards и таблица метаданных заполняются только из
-  реального snapshot.
+| Game | Status | Editing surface |
+|---|---|---|
+| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported | money, confirmed stack edits, save-local inventory names; experimental condition editing for confirmed equipped armour; desktop Steam Cloud |
+| **Shadow of Chernobyl — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations and confirmed equipment fields |
+| **Clear Sky — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; experimental equipment/upgrades where the exact format anchor is proven |
+| **Call of Pripyat — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; helmet/equipment/upgrades where the exact format anchor is proven |
+| **Enhanced Editions** | Not yet supported | release/path profiles exist, but parsing and editing stay disabled until format evidence is available |
+| **Mods / unknown save formats** | Out of scope | fail closed |
 
-**Не реализовано как подтверждённые production-функции:** игровое принятие
-X-Ray repair/upgrades/placement, игровое принятие experimental S.T.A.L.K.E.R. 2
-armor condition writer, S.T.A.L.K.E.R. 2 weapon condition/add/clone/upgrades,
-Enhanced Edition parser, полноценная inventory grid mutation и reference-safe
-удаление квестовых/equipped объектов. Equipment rows и staged repair остаются
-fail-closed по maturity; unknown fields read-only, а structural proof не
-означает, что игра уже проверила результат загрузкой.
+### S.T.A.L.K.E.R. 2 boundaries
 
-Cloud-процесс использует fresh SHA, exclusive backup/recovery, persisted и
-read-back; после WriteFile state machine различает `verified` и `uncertain` и
-не повторяет upload автоматически. Worker lifecycle покрыт fake helper, но
-работа с реальным Steam/GFN в этом репозитории ещё не проверена. Локальный
-export использует общий backup/atomic path после S03. Остальные ограничения:
-[состояние и пробелы](docs/STATUS.md).
+The project intentionally does **not** pretend that every visible catalogue entry can already be reconstructed inside a save.
 
-## Запуск из исходников
+Still read-only / research-gated in S2:
 
-Нужен Python 3.11+. Проверялся x86_64 Linux, не все дистрибутивы.
+- arbitrary item creation from SID;
+- general weapon condition editing;
+- weapon/equipment upgrade mutation without a proven serializer path;
+- unknown GVAS inventory structures;
+- unsupported Enhanced Edition containers.
+
+## Download
+
+The latest release ships four end-user packages.
+
+| Platform | Package |
+|---|---|
+| Windows | [Installer (.exe)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64-setup.exe) |
+| Windows | [Portable (.zip)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64.zip) |
+| Linux / Debian / Ubuntu | [.deb package](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/stalker2-save-editor_amd64.deb) |
+| Linux | [Portable (.tar.gz)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-linux-x86_64.tar.gz) |
+| Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
+
+Checksums are published with each GitHub release.
+
+## Desktop workflow
+
+```text
+Zone library
+    ↓
+choose / import save
+    ↓
+content-based format detection
+    ↓
+inspect inventory + metadata
+    ↓
+stage supported edits
+    ↓
+preview + verify
+    ↓
+export new copy
+```
+
+For S.T.A.L.K.E.R. 2, the desktop app also exposes a Steam Cloud flow. Cloud transport is currently S2-specific and uses bounded subprocesses so a stuck native Steam call cannot freeze the Qt UI indefinitely.
+
+## Browser build
+
+The browser version runs the same Python core through **Pyodide/WebAssembly**.
+
+- the save stays in the browser tab;
+- there is no application backend receiving the file;
+- supported local edits can be downloaded as a new copy;
+- Steam Cloud is desktop-only.
+
+Run it locally:
 
 ```bash
+make web-serve
+# http://localhost:8765
+```
+
+## Architecture
+
+```text
+                    ┌──────────────────────┐
+                    │   shared Python core │
+                    │ parser / editor /    │
+                    │ preview / verify     │
+                    └──────────┬───────────┘
+                               │
+             ┌─────────────────┼─────────────────┐
+             │                 │                 │
+             ▼                 ▼                 ▼
+      Qt desktop app          CLI        Browser / Pyodide
+             │                                   │
+             ▼                                   ▼
+      Steam Cloud / local                    local files
+```
+
+Important boundaries:
+
+- **UI does not own save mutation logic** — it goes through the shared editor service.
+- **Unknown fields remain opaque/read-only.**
+- **Content detection wins over path assumptions.**
+- **Round-trip correctness is not treated as proof of in-game semantic acceptance.**
+- **Live Steam writes and game load/re-save checks are kept separate from automated CI.**
+
+## Run from source
+
+Requires Python 3.11+.
+
+```bash
+git clone https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor.git
+cd S.T.A.L.K.E.R.-Save_Editor
+
 python3 -m pip install -r requirements.txt
 python3 -m ui
 ```
 
-На Windows: `py -3 -m pip install -r requirements.txt` и `py -3 -m ui`.
+Windows:
 
-В интерфейсе можно искать и фильтровать локальный inventory, застейджить
-подтверждённые money/stack изменения, добавить предмет из каталога или удалить
-actor-owned record, нажать preview и сохранить новую копию.
-На вкладке резервных копий видны hash/status журнала; проверенный backup можно
-восстановить в новый путь, а исходный сейв и backup остаются неизменными. На
-вкладке Steam Cloud upload показывает `verified` или `uncertain`; после
-`WriteFile` автоматического повтора нет.
-
-Steam (запущенный клиент) нужен только для cloud-режима. Нативные вызовы
-выполняются в короткоживущем дочернем процессе с жёстким таймаутом, поэтому
-зависший `SteamAPI_Init`/RemoteStorage не блокирует Qt; при сбое первичного
-списка доступный helper остаётся ограниченным fallback. Source и локальный
-standalone smoke подтверждают `init + connect + list` с пустым списком native
-API на этом хосте; web fallback отдельно дал remote slots и download URL.
-Реальный пользовательский `WriteFile` намеренно не выполняется автоматическим
-gate-ом: он меняет облачный сейв.
-Cloud-upload из автоматических тестов блокируется в коде: и `SteamWorker`, и
-`SteamNativeWorker` отказывают в `Connect`/`WriteFile` для app_id игры под
-pytest, пока не выставлен `STALKER2_ALLOW_LIVE_CLOUD=1` для осознанного
-ручного прогона.
-
-## Веб-версия
-
-Тот же редактор работает в браузере: `web/` — статическая страница, которая
-запускает **то же самое Python-ядро** через Pyodide и получает единственный
-нативный вызов (распаковка Kraken) из `ooz-wasm`. Второго парсера нет:
-`web/pysrc.json` генерируется из исходников репозитория, а `make docs-check`
-падает, если он отстал.
-
-```bash
-make web-serve      # http://localhost:8765
+```powershell
+py -3 -m pip install -r requirements.txt
+py -3 -m ui
 ```
 
-Файл никуда не загружается: читается в этой же вкладке и обрабатывается в
-WebAssembly. Сервера у приложения нет.
-
-Онлайн-версия работает здесь:
-**<https://stalker-save-editor.pages.dev>**
-
-Обновляется одной командой `make web-deploy` (Cloudflare Pages). Сервера у приложения нет — отдаётся только статика, а
-редактор целиком исполняется в браузере посетителя.
-
-Что доступно в вебе: открыть локальный `.sav`, `.scop` или другой файл для
-content-only detection, увидеть определённый release/edition, деньги,
-инвентарь и технические метаданные, поменять подтверждённые money/ammo stacks,
-добавить предмет из встроенного официального metadata-каталога, удалить
-actor-owned record и скачать изменённую копию. Capability flags и read-only
-причины приходят из того же registry, что и в desktop. Проверка S2 и
-оригинального X-Ray bridge зафиксирована в
-[evidence](docs/evidence/WEB_EDITION_2026-09-14.md) и
-`docs/evidence/XRAY_INVENTORY_2026-09-15.md`.
-
-Чего в вебе нет: **Steam Cloud** (helper — локальный процесс рядом со Steam,
-вкладка браузера его не запустит) и журнала резервных копий (в браузере нет
-каталога бэкапов, поэтому страница прямо требует сохранить оригинал самому).
-Разобранные альтернативы для облака: [STEAM_CLOUD_OPTIONS](docs/evidence/STEAM_CLOUD_OPTIONS.md).
-
-## Standalone-пакеты
-
-### Windows installer/portable, Linux portable и автообновления
-
-Релиз публикует отдельные Windows installer и portable, Linux portable и системный пакет:
-
-- Windows installer — SaveEditor-windows-x86_64-v*-setup.exe;
-- Windows portable — SaveEditor-windows-x86_64-v*.zip;
-- Linux portable — SaveEditor-linux-x86_64-v*.tar.gz;
-- Linux amd64 .deb — для установки через системный пакетный менеджер.
-
-Windows installer ставит приложение в систему, создаёт ярлык и доступен для
-обновления через скачанный installer. Portable-архивы не требуют Python и
-установки: распакуй каталог SaveEditor и запусти SaveEditor.exe на Windows или
-SaveEditor на Linux. Внутри portable также есть отдельный updater, который не
-заменяет работающий процесс.
-
-Стабильный manifest latest.json публикуется в Cloudflare R2 вместе с теми же
-байтами, которые прикреплены к GitHub Release. В manifest записаны платформа,
-размер и SHA-256. Desktop-сборка проверяет обновления после запуска в фоне и
-имеет ручную кнопку Обновления; при сбое сети приложение продолжает работать.
-Portable ZIP/tar.gz скачиваются, проверяются и применяются после перезапуска;
-Windows installer и `.deb` открываются системным установщиком с явным
-подтверждением пользователя.
-
-Подготовка локального release-набора без публикации:
-
-    make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-
-Публикация в R2 требует настроенных Wrangler credentials и выполняется только
-явной командой:
-
-    make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-
-Команда загружает stable-файлы и latest.json, затем читает их обратно через
-публичный Worker и сравнивает размер и SHA-256.
-
-В исходном режиме Python нужен только для запуска проекта. Для пользователя
-готового bundle Python и `pip` не нужны: PyInstaller вкладывает интерпретатор,
-PySide6/Qt plugins и native decoder. Core parser/storage остаются на
-стандартной библиотеке; SteamCloudFileManager не вкладывается и выбирается как
-отдельный helper.
-
-Сборка выполняется на целевой ОС, потому что PyInstaller не cross-компилирует:
+CLI:
 
 ```bash
-# Linux x86_64 (окружение с requirements-build.txt и dpkg-deb)
-python packaging/build.py --target linux --output-dir dist
-
-# Windows x64 (Windows Python 3.11 build environment)
-py -3 packaging/build.py --target windows --output-dir dist
+python3 cli.py --help
 ```
 
-Linux создаёт `SaveEditor-linux-x86_64-v*.tar.gz` и
-`stalker2-save-editor_*_amd64.deb`; Windows —
-`SaveEditor-windows-x86_64-v*.zip` и `SaveEditor-windows-x86_64-v*-setup.exe`.
-Каждый запуск создаёт `SHA256SUMS`, а
-внутри bundle лежат `BUILD_MANIFEST.json`, `SOURCE_COMMIT.txt`, notices и
-provenance native decoder. `SaveEditor-diagnostic --diagnostic` проверяет
-вложенный Qt/decoder без открытия окна. `dist/` не коммитится и автоматический
-GitHub Release до B02 не выполняется.
-
-Новые настройки и backups пишутся в platform user-data directory
-(`$XDG_DATA_HOME/Stalker2SaveEditor` или `~/.local/share/Stalker2SaveEditor` на
-Linux, `%APPDATA%\Stalker2SaveEditor` на Windows). Старый
-`~/Stalker2SaveEditor` читается как legacy fallback и не перемещается/удаляется.
+Developer checks:
 
 ```bash
-python3 cli.py info /path/to/save.sav
+python3 -m pip install -r requirements-dev.txt
 make check
-make selftest SAVE=/path/to/original-save.sav
 ```
 
-Текущая пересборка увеличивает файл примерно с 6–7 до 27 MB. Round-trip подтверждает байты, но не игровую семантику. Проверять experimental-результат нужно загрузкой и повторным сохранением в игре на копии слота.
+CI covers source tests plus packaged diagnostics for Linux and Windows. Release builds also produce the Windows installer, portable archives, Debian package, manifest and SHA-256 checksums.
 
-## Разработка и задачи
+## Project status
 
-1. [Текущее состояние и найденные ограничения](docs/STATUS.md).
-2. [Спецификация Linux/Windows и UI](docs/specs/CROSS_PLATFORM_EDITOR.md).
-3. [План этапов и зависимостей](docs/plans/ROADMAP.md).
-4. [Пошаговые задачи](docs/tasks/INDEX.md).
-5. [Инструкция для GPT-5.6 Luna](docs/LUNA_HANDOFF.md).
-6. [Проверка и выпуск](docs/RELEASE.md).
-7. [Навигация по документации](docs/README.md).
+Current release: **v0.5.15**.
 
-## Локальные материалы
+The detailed engineering/evidence log remains in [docs/STATUS.md](docs/STATUS.md). Format research and validation evidence live under [docs/evidence/](docs/evidence/).
 
-Исторические архивы v0.1/v0.3 удалены из дерева: они остаются в истории Git, а
-бинарные сборки публикуются в GitHub Releases после проверки на обеих ОС.
+The public Issues board is for **bugs, user-facing features and roadmap items**. Internal research notes and implementation cards belong in the repository documentation, not as dozens of open user-facing tickets.
 
-Исходные материалы владельца сохранены во внешнем пользовательском архиве
-`$XDG_DATA_HOME/Stalker2SaveEditor/private-import-2026-09-19/`, вне Git и
-рабочего дерева. Там находятся личные `.sav`, скриншоты, полный handoff,
-исходные архивы и manifest. При клонировании GitHub эти файлы не появятся;
-приложение и синтетические тесты не должны от них зависеть.
+## Contributing
 
-## Лицензия
+Bug reports and focused feature requests are welcome.
 
-GPL-3.0, см. [LICENSE](LICENSE) и [зависимости](THIRD_PARTY_NOTICES.md). Игра, игровые ассеты и SteamCloudFileManager в дистрибутив приложения не включены. Проект не является официальным инструментом GSC или Valve.
+Before opening a bug, include:
+
+- game + edition;
+- editor version;
+- desktop / browser / CLI;
+- OS;
+- what you expected;
+- what happened;
+- whether the original save still loads.
+
+Do **not** attach personal save files publicly unless you are comfortable publishing their contents. A minimal synthetic/reproducible sample is preferred.
+
+## License
+
+GNU GPL v3. See [LICENSE](LICENSE).
+
+S.T.A.L.K.E.R. and related names/assets belong to their respective owners. This project is an independent community tool and is not affiliated with GSC Game World.
