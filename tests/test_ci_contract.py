@@ -135,3 +135,5 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
     assert "CLOUDFLARE_API_TOKEN" in text
     assert "CLOUDFLARE_ACCOUNT_ID" in text
     assert "contents: write" in text
+    assert "wrangler@4 deploy" in text
+    assert "infra/downloads-worker/wrangler.toml" in text

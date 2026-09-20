@@ -177,6 +177,10 @@ jobs:
           with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
               handle.write(f"VERSION={version}\n")
 
+      - name: Deploy download Worker
+        shell: bash
+        run: npx --yes wrangler@4 deploy --config infra/downloads-worker/wrangler.toml
+
       - name: Prepare and publish stable R2 objects
         shell: bash
         run: |
