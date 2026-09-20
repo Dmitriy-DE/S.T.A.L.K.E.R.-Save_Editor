@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
+from editor.cloud_capabilities import CloudWriteCapability, cloud_write_capability
 from editor.formats import FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
@@ -47,6 +48,9 @@ class CloudSession(CloudTransport, Protocol):
     The Cloud tab additionally starts, connects and closes the helper process,
     so the widget-level contract is stated here instead of being assumed.
     """
+
+    @property
+    def write_capability(self) -> CloudWriteCapability: ...
 
     def start(self) -> None: ...
 
@@ -547,7 +551,23 @@ class CloudView(QWidget):
         self.result_label.setText(
             f"Cloud preview готов для {selected.name}; SHA {prepared.output_sha256[:12]}…"
         )
-        self.upload_button.setEnabled(self.transport is not None and not self.is_busy)
+        self._refresh_upload_state()
+
+    def _refresh_upload_state(self, *, blocked: bool = False) -> CloudWriteCapability:
+        capability = cloud_write_capability(self.transport)
+        can_upload = (
+            not blocked
+            and not self.is_busy
+            and self._prepared is not None
+            and capability.writable
+        )
+        self.upload_button.setEnabled(can_upload)
+        if self._prepared is not None and not capability.writable:
+            self.result_label.setText(
+                "Cloud preview готов, но upload отключён: "
+                f"{capability.reason}. WriteFile не запускался."
+            )
+        return capability
 
     def start_upload(self) -> None:
         if self._refuse_while_busy():
@@ -556,6 +576,13 @@ class CloudView(QWidget):
         prepared = self._prepared
         if self.transport is None:
             self._on_failed("Steam Cloud не подключён; upload не выполнялся")
+            return
+        capability = cloud_write_capability(self.transport)
+        if not capability.writable:
+            self._on_failed(
+                f"Upload недоступен: {capability.reason}; WriteFile не запускался"
+            )
+            self._refresh_upload_state()
             return
         if prepared is None or selected is None:
             self._on_failed("Сначала выбери cloud slot и создай его preview")
@@ -613,6 +640,9 @@ class CloudView(QWidget):
             status = f"{status_prefix} · 0 · {self.profile.save_label} (список пуст)"
         if hint:
             status += f" · {hint}"
+        capability = cloud_write_capability(self.transport)
+        if not capability.writable:
+            status += f" · только чтение: {capability.reason}"
         self.status_label.setText(status)
         self.files_ready.emit(self._files)
 
@@ -704,7 +734,7 @@ class CloudView(QWidget):
         if not busy:
             self.enable_web_button.setEnabled(self._debug_thread is None)
             self.analyze_button.setEnabled(self.selected_file() is not None and self.transport is not None)
-            self.upload_button.setEnabled(self._prepared is not None and self.transport is not None)
+            self._refresh_upload_state()
         self.busy_changed.emit(busy)
 
     def set_external_busy(self, busy: bool) -> None:
@@ -716,7 +746,7 @@ class CloudView(QWidget):
         self.enable_web_button.setEnabled(not busy and self._debug_thread is None)
         self.table.setEnabled(not busy)
         self.analyze_button.setEnabled(not busy and self.selected_file() is not None and self.transport is not None)
-        self.upload_button.setEnabled(not busy and self._prepared is not None and self.transport is not None)
+        self._refresh_upload_state(blocked=busy)
 
     def clear_error(self) -> None:
         self.error_label.clear()

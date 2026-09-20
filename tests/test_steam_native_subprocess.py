@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 import editor.steam_native as steam_native
+from editor.cloud_capabilities import CloudWriteNotAttemptedError
 from editor.steam_profiles import steam_cloud_profile_for_release
 from steam_cloud import APP_ID, CloudFile, SteamCloudError
 
@@ -253,6 +254,18 @@ def test_empty_native_list_uses_cdp_cloud_files_for_download(
         "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
     ]
     assert worker.read_file(files[0].name) == b"save"
+    assert worker.write_capability.writable is False
+
+    native_calls: list[str] = []
+
+    def forbid_native_write(operation: str, **_kwargs):
+        native_calls.append(operation)
+        raise AssertionError("read-only fallback must not invoke native write")
+
+    monkeypatch.setattr(worker, "_run_native", forbid_native_write)
+    with pytest.raises(CloudWriteNotAttemptedError, match="web"):
+        worker.write_file(files[0].name, b"edited")
+    assert native_calls == []
 
 
 def test_native_read_and_write_use_isolated_payload_files(

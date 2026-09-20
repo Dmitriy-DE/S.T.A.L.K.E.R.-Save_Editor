@@ -12,6 +12,7 @@ pytest.importorskip("pytestqt")
 
 
 from editor.capabilities import FormatCapabilities
+from editor.cloud_capabilities import CloudWriteCapability
 from editor.formats import FormatInspection
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
@@ -62,13 +63,24 @@ def _wait_cloud_idle(qtbot, view: CloudView) -> None:
 
 
 class FakeCloudTransport:
-    def __init__(self, source: bytes, *, files: list[CloudFile] | None = None, persisted: bool = True) -> None:
+    def __init__(
+        self,
+        source: bytes,
+        *,
+        files: list[CloudFile] | None = None,
+        persisted: bool = True,
+        writable: bool = True,
+    ) -> None:
         self.source = source
         self.files = files or []
         self.persisted = persisted
         self.connected = False
         self.write_calls: list[tuple[str, bytes]] = []
         self.closed = False
+        self.write_capability = CloudWriteCapability(
+            writable,
+            "fake writer ready" if writable else "Steam web read-only",
+        )
 
     def start(self) -> None:
         return None
@@ -294,6 +306,41 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     with qtbot.waitSignal(view.operation_failed, timeout=SIGNAL_TIMEOUT_MS):
         view.start_upload()
     assert transport.write_calls == []
+
+
+def test_cloud_view_keeps_upload_disabled_until_transport_is_writable(
+    qtbot,
+    synthetic_save: bytes,
+    tmp_path: Path,
+) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    transport = FakeCloudTransport(
+        synthetic_save,
+        files=[_cloud_file(name)],
+        writable=False,
+    )
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_path=tmp_path / "helper",
+        backup_dir=tmp_path / "backups",
+    )
+    qtbot.addWidget(view)
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+    _wait_cloud_idle(qtbot, view)
+    view.table.selectRow(0)
+
+    prepared = _prepared(synthetic_save, name)
+    view.set_prepared(prepared)
+
+    assert not view.upload_button.isEnabled()
+    assert "read-only" in view.result_label.text()
+
+    transport.write_capability = CloudWriteCapability(True, "native writer ready")
+    view.set_prepared(prepared)
+
+    assert view.upload_button.isEnabled()
 
 
 @pytest.mark.parametrize("persisted", [True, False])

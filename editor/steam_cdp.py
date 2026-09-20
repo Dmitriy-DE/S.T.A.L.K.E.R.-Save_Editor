@@ -35,6 +35,7 @@ from steam_cloud import (
     default_cloud_file_filter,
 )
 
+from .cloud_capabilities import CloudWriteCapability, CloudWriteNotAttemptedError
 from .platforms import _parse_vdf, _read_text, steam_roots
 
 
@@ -658,8 +659,15 @@ class SteamCdpWorker:
             return data
         raise SteamCdpError(f"Не удалось скачать Steam Cloud файл: {last_error}") from last_error
 
+    @property
+    def write_capability(self) -> CloudWriteCapability:
+        return CloudWriteCapability(
+            False,
+            "Steam web cloud read-only; запись требует Steam RemoteStorage",
+        )
+
     def write_file(self, _filename: str, _data: bytes) -> None:
-        raise SteamCdpError("Steam web cloud read-only; запись выполняется через Steam API")
+        raise CloudWriteNotAttemptedError(self.write_capability.reason)
 
     def sync(self) -> None:
         return None

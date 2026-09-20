@@ -3,6 +3,9 @@ from __future__ import annotations
 import urllib.request
 from pathlib import Path
 
+import pytest
+
+from editor.cloud_capabilities import CloudWriteNotAttemptedError
 from editor.steam_cdp import (
     SteamCdpWorker,
     cloud_files_from_rows,
@@ -124,3 +127,12 @@ def test_cdp_read_refreshes_an_expired_download_url(monkeypatch) -> None:
     assert worker.read_file(name) == b"save"
     assert refreshes == [name]
     assert calls == 2
+
+
+def test_cdp_transport_advertises_read_only_and_refuses_before_write() -> None:
+    worker = SteamCdpWorker()
+
+    assert worker.write_capability.writable is False
+    assert "read-only" in worker.write_capability.reason
+    with pytest.raises(CloudWriteNotAttemptedError, match="read-only"):
+        worker.write_file("slot.sav", b"edited")

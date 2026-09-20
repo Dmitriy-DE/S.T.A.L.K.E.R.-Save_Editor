@@ -15,6 +15,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
+from .cloud_capabilities import (
+    CloudWriteCapability,
+    CloudWriteNotAttemptedError,
+    cloud_write_capability,
+)
 from .models import CloudReceipt, PreparedEdit
 
 
@@ -23,6 +28,9 @@ class CloudTransactionError(RuntimeError):
 
 
 class CloudTransport(Protocol):
+    @property
+    def write_capability(self) -> CloudWriteCapability: ...
+
     def read_file(self, filename: str) -> bytes: ...
 
     def write_file(self, filename: str, data: bytes) -> None: ...
@@ -129,6 +137,12 @@ def upload_cloud(
             f"expected={prepared.output_sha256} actual={output_sha256}"
         )
 
+    capability = cloud_write_capability(worker)
+    if not capability.writable:
+        raise CloudTransactionError(
+            f"Cloud upload недоступен до WriteFile: {capability.reason}"
+        )
+
     _notify(on_stage, "fresh_read")
     try:
         fresh = bytes(worker.read_file(remote_path))
@@ -160,6 +174,8 @@ def upload_cloud(
 
     try:
         worker.write_file(remote_path, edited)
+    except CloudWriteNotAttemptedError as exc:
+        raise CloudTransactionError(f"WriteFile не запускался: {exc}") from exc
     except Exception as exc:
         return _uncertain(
             remote_path,

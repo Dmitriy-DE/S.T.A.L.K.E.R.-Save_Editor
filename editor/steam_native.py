@@ -46,6 +46,11 @@ from steam_cloud import (
     default_cloud_file_filter,
 )
 
+from .cloud_capabilities import (
+    CloudWriteCapability,
+    CloudWriteNotAttemptedError,
+    cloud_write_capability,
+)
 from .platforms import locate_libsteam_api
 from .steam_cdp import SteamCdpWorker, discover_cached_cloud_files
 
@@ -295,6 +300,10 @@ class SteamNativeWorker:
         if not ok:
             raise SteamCloudError(f"WriteFile: Steam отклонил запись {filename}")
         self._pump()
+
+    @property
+    def write_capability(self) -> CloudWriteCapability:
+        return CloudWriteCapability(True, "Steam RemoteStorage writer готов")
 
     def sync(self) -> None:
         # RemoteStorage writes are queued to the cloud by the Steam client;
@@ -569,6 +578,22 @@ class SteamNativeSubprocessWorker:
 
         return self._status_hint
 
+    @property
+    def write_capability(self) -> CloudWriteCapability:
+        if self._cdp is not None:
+            return CloudWriteCapability(
+                False,
+                "Steam Cloud web fallback доступен только для чтения",
+            )
+        if self._cached_files:
+            return CloudWriteCapability(
+                False,
+                "Steam cache fallback доступен только для чтения",
+            )
+        if self._helper is not None:
+            return cloud_write_capability(self._helper)
+        return CloudWriteCapability(True, "Steam RemoteStorage writer готов")
+
     def _web_or_cache_files(self) -> list[CloudFile] | None:
         if (
             "PYTEST_CURRENT_TEST" in os.environ
@@ -723,6 +748,9 @@ class SteamNativeSubprocessWorker:
         return data
 
     def write_file(self, filename: str, data: bytes) -> None:
+        capability = self.write_capability
+        if not capability.writable:
+            raise CloudWriteNotAttemptedError(capability.reason)
         _refuse_automated_live_session(self.app_id or 0, "WriteFile")
         if self._helper is not None:
             self._helper.write_file(filename, data)

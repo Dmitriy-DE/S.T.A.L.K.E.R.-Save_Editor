@@ -8,7 +8,7 @@ import pytest
 
 from editor.steam_backend import make_cloud_worker
 from editor.steam_native import SteamNativeSubprocessWorker
-from steam_cloud import SteamCloudError
+from steam_cloud import SteamCloudError, SteamWorker
 
 
 class _OkNative:
@@ -52,4 +52,11 @@ def test_default_backend_uses_killable_native_transport():
     worker = make_cloud_worker(None, native_factory=None)
 
     assert isinstance(worker, SteamNativeSubprocessWorker)
+    assert worker.write_capability.writable is True
     worker.close()
+
+
+def test_helper_transport_advertises_writable() -> None:
+    worker = SteamWorker(Path("/tmp/helper.AppImage"))
+
+    assert worker.write_capability.writable is True

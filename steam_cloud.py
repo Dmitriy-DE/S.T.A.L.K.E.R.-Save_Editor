@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from editor.cloud_capabilities import CloudWriteCapability
+
 # Re-exported for ui/cloud_view.py, which imports the helper lookup
 # from this module.  Keep it in __all__: an "unused import" cleanup that drops
 # it breaks the Cloud tab at import time.
@@ -131,6 +133,10 @@ class SteamWorker:
         """Select the release-aware save allow-list without reconnecting."""
 
         self._file_filter = file_filter or default_cloud_file_filter
+
+    @property
+    def write_capability(self) -> CloudWriteCapability:
+        return CloudWriteCapability(True, "SteamCloudFileManager writer готов")
 
     def _reader_loop(
         self, proc: subprocess.Popen[str], responses: queue.Queue[object]

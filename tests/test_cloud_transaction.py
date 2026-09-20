@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pytest
 
+from editor.cloud_capabilities import (
+    CloudWriteCapability,
+    CloudWriteNotAttemptedError,
+)
 from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
 from editor.transactions import CloudTransactionError, upload_cloud
@@ -21,6 +25,7 @@ class FakeCloud:
         self.write_calls: list[tuple[str, bytes]] = []
         self.sync_calls = 0
         self.wait_calls: list[tuple[str, int, int]] = []
+        self.write_capability = CloudWriteCapability(True, "fake writer ready")
 
     def read_file(self, filename: str) -> bytes:
         self.read_calls.append(filename)
@@ -33,6 +38,8 @@ class FakeCloud:
         return self.files[filename]
 
     def write_file(self, filename: str, data: bytes) -> None:
+        if self.mode == "write_not_attempted":
+            raise CloudWriteNotAttemptedError("writer disappeared before request")
         self.write_calls.append((filename, data))
         if filename != REMOTE_PATH:
             raise RuntimeError(f"wrong slot: {filename}")
@@ -117,6 +124,42 @@ def test_backup_failure_aborts_before_write(synthetic_save: bytes, tmp_path: Pat
 
     with pytest.raises(CloudTransactionError, match="backup"):
         upload_cloud(worker, prepared, backup_path)
+
+    assert worker.write_calls == []
+
+
+@pytest.mark.parametrize("advertised", [False, None])
+def test_read_only_or_unadvertised_transport_is_rejected_before_any_io(
+    synthetic_save: bytes,
+    tmp_path: Path,
+    advertised: bool | None,
+) -> None:
+    prepared = _prepared(synthetic_save)
+    worker = FakeCloud(synthetic_save)
+    if advertised is False:
+        worker.write_capability = CloudWriteCapability(False, "Steam web read-only")
+        expected = "Steam web read-only"
+    else:
+        del worker.write_capability
+        expected = "не подтверждает"
+
+    with pytest.raises(CloudTransactionError, match=expected):
+        upload_cloud(worker, prepared, tmp_path)
+
+    assert worker.read_calls == []
+    assert worker.write_calls == []
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_definite_write_refusal_is_not_reported_as_uncertain(
+    synthetic_save: bytes,
+    tmp_path: Path,
+) -> None:
+    prepared = _prepared(synthetic_save)
+    worker = FakeCloud(synthetic_save, mode="write_not_attempted")
+
+    with pytest.raises(CloudTransactionError, match="writer disappeared"):
+        upload_cloud(worker, prepared, tmp_path)
 
     assert worker.write_calls == []
 
