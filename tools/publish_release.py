@@ -6,10 +6,16 @@ import argparse
 import hashlib
 import shutil
 import subprocess
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
+
+# CI and Make invoke this file directly.  Put the repository root on the path
+# before importing sibling packages.
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from editor.release_artifacts import artifact_names
 from editor.update_manifest import DOWNLOAD_BASE_URL
@@ -32,6 +38,7 @@ _CONTENT_TYPES = {
     ".deb": "application/vnd.debian.binary-package",
     ".json": "application/json; charset=utf-8",
 }
+_RELEASE_USER_AGENT = "SaveEditor-release-verifier/1"
 
 
 def _sha256(path: Path) -> str:
@@ -175,7 +182,11 @@ def verify_public_r2(
         local = output_dir / filename
         if not local.is_file():
             raise ValueError(f"prepared release file missing: {local}")
-        request = Request(f"{base_url}/{filename}?readback={int(time.time())}", method="GET")
+        request = Request(
+            f"{base_url}/{filename}?readback={int(time.time())}",
+            headers={"User-Agent": _RELEASE_USER_AGENT},
+            method="GET",
+        )
         with urlopen(request, timeout=timeout) as response:
             body = response.read()
             status = getattr(response, "status", 200)

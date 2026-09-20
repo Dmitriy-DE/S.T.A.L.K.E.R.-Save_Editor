@@ -5,8 +5,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+# Keep ``python tools/build_release_manifest.py`` usable as a direct entry
+# point, just like the release publisher that imports this module.
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from editor.update_manifest import (
     DOWNLOAD_BASE_URL,
