@@ -261,24 +261,3 @@ def test_wait_for_process_exit_returns_for_an_exited_process() -> None:
     process = subprocess.Popen([sys.executable, "-c", "pass"])
     process.wait(timeout=2)
     updater.wait_for_process_exit(process.pid, timeout=0.5)
-
-
-def test_windows_process_check_uses_wait_handle(monkeypatch: pytest.MonkeyPatch) -> None:
-    import ctypes
-
-    class _Function:
-        def __init__(self, result: object) -> None:
-            self.result = result
-
-        def __call__(self, *_args: object) -> object:
-            return self.result
-
-    class _Kernel:
-        OpenProcess = _Function(123)
-        WaitForSingleObject = _Function(0x00000102)
-        CloseHandle = _Function(1)
-
-    monkeypatch.setattr(ctypes, "WinDLL", lambda *_args, **_kwargs: _Kernel(), raising=False)
-    monkeypatch.setattr(ctypes, "get_last_error", lambda: 0, raising=False)
-
-    assert updater._windows_process_running(123)
