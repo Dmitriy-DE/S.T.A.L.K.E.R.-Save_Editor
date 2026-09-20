@@ -1,23 +1,36 @@
 # Состояние и пробелы — 2026-09-20
 
-## Portable release/update continuation — 2026-09-20
+## v0.5.15 — отдельный Windows installer и portable — 2026-09-20
 
-Windows portable ZIP и Linux portable tar.gz теперь входят в общий release
-contract с Linux .deb: latest.json и SHA-256 строятся из финальных байтов,
-GitHub Release и Cloudflare R2 получают один набор stable-файлов. Desktop
-проверяет обновления в фоне и применяет portable-архив отдельным updater после
-закрытия GUI; .deb передаётся системному установщику после подтверждения.
-Полное локальное тестирование прошло (532 passed). Hosted run
-[35481243962](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35481243962)
-подтвердил native build, source tests и packaged smoke на Linux и Windows.
-Релиз [v0.5.14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.14)
-опубликован в GitHub Release; Worker версии `904711fb-1038-49e5-92df-c5ddc09f86d6`
-задеплоен, четыре стабильных R2 object-а загружены и прочитаны обратно.
-Реальный `UpdateClient` на Linux и Windows увидел `available 0.5.14` с текущей
-версией 0.5.13 и `current` с текущей версией 0.5.14. Автоматический
-release-job остановился на deploy Worker из-за отсутствующих repository secrets
-`CLOUDFLARE_API_TOKEN` и `CLOUDFLARE_ACCOUNT_ID`; публикация v0.5.14 завершена
-локальным авторизованным Wrangler и `gh` без помещения OAuth-токена в GitHub.
+Windows теперь имеет две отдельные сборки: `SaveEditor-windows-x86_64-setup.exe`
+для обычной установки с ярлыком и `SaveEditor-windows-x86_64.zip` для portable
+запуска. Linux сохраняет portable tar.gz и отдельный `.deb`. GitHub Release и
+Cloudflare R2 получают одинаковые итоговые байты; `latest.json` и `SHA256SUMS`
+строятся из финальных файлов.
+
+Локальные проверки: `537 passed`, `make check`. Hosted run
+[35508107671](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35508107671)
+подтвердил source tests, Linux/Windows native packaging, packaged diagnostics,
+реальную компиляцию Inno Setup и установку Windows `.exe` в smoke-папку с
+последующим запуском установленного diagnostic executable.
+
+Релиз [v0.5.15](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.15)
+собран из commit `7306dcbde417e9374038d9d9f47d198e4dfc2053` и содержит оба
+Windows варианта, Linux tar.gz, Debian package, `latest.json` и `SHA256SUMS`.
+Worker версии `6075860d-b502-4ebe-b987-410a85bc51a8` задеплоен; пять стабильных
+R2 object-ов загружены и прочитаны обратно через public Worker.
+
+Live `UpdateClient` подтвердил на обеих ОС и для Windows installer: с версии
+`0.5.14` результат `available 0.5.15`, с `0.5.15` — `current`, с выбором
+правильного файла (`.zip`, `.exe`, `.tar.gz`, `.deb`). Pages preview revision
+[db10e42b](https://db10e42b.stalker-save-editor.pages.dev/) и canonical URL
+отвечают HTTP 200; страница содержит отдельные ссылки Windows installer и
+Windows portable.
+
+Автоматический release-job дошёл до сборки и упал только на deploy Worker из-за
+отсутствующих repository secrets `CLOUDFLARE_API_TOKEN` и
+`CLOUDFLARE_ACCOUNT_ID`; R2, Worker и GitHub Release завершены локальным
+авторизованным Wrangler/`gh` без помещения OAuth-токена в GitHub.
 
 ## 2026-09-20 — S2 Zone Kit / Steam Workshop catalog discovery
 

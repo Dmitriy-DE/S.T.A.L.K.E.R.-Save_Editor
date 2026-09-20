@@ -1,6 +1,6 @@
 # Portable Builds, R2 Releases, and In-App Updates
 
-**Status:** approved design, implementation pending
+**Status:** implemented in v0.5.15
 
 **Date:** 2026-09-20
 
@@ -21,6 +21,8 @@ blocking the Qt UI or corrupting the current installation.
   download URL for each supported artifact.
 - Windows users receive a portable ZIP containing the onedir application and
   its bundled runtime; no Python or installer is required.
+- Windows users also receive a separate Inno Setup EXE that installs the same
+  runtime under Program Files and creates normal application shortcuts.
 - Linux users receive a portable tar.gz with the same property, plus the
   existing `.deb` for package-manager installation.
 - The application performs a non-blocking update check at startup and exposes a
@@ -35,6 +37,7 @@ blocking the Qt UI or corrupting the current installation.
 In scope:
 
 - Windows x86_64 portable ZIP.
+- Windows x86_64 installer EXE.
 - Linux x86_64 portable tar.gz.
 - Linux amd64 `.deb` publication and a package-manager handoff from the update
   dialog when the running application is a Debian installation.
@@ -65,6 +68,7 @@ tag, and publishes the same bytes to the R2 bucket behind the existing worker.
 R2 stable keys remain predictable:
 
 - `SaveEditor-windows-x86_64.zip`
+- `SaveEditor-windows-x86_64-setup.exe`
 - `SaveEditor-linux-x86_64.tar.gz`
 - `stalker2-save-editor_amd64.deb`
 - `latest.json`
@@ -99,6 +103,15 @@ The manifest is generated from the final files, never from filenames alone:
       "size": 0,
       "sha256": "<64 lowercase hex chars>",
       "url": "https://save-editor-downloads.save-editor.workers.dev/stalker2-save-editor_amd64.deb"
+    }
+  },
+  "optional_artifacts": {
+    "windows-installer-x86_64": {
+      "kind": "installer",
+      "file": "SaveEditor-windows-x86_64-setup.exe",
+      "size": 0,
+      "sha256": "<64 lowercase hex chars>",
+      "url": "https://save-editor-downloads.save-editor.workers.dev/SaveEditor-windows-x86_64-setup.exe"
     }
   }
 }
@@ -202,7 +215,7 @@ the same manifest generator and requires an explicit `--publish` action.
   manifest generation, R2 publication, and read-back verification are present.
 - Full `pytest`, `make check`, Linux package build, packaged diagnostic, and
   Windows runner build/smoke.
-- Public verification of `latest.json`, all three R2 download URLs, HTTP
+- Public verification of `latest.json`, all five R2 download URLs, HTTP
   status, sizes, and SHA-256 after publication.
 
 ## Review and simplification pass

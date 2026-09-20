@@ -1,18 +1,21 @@
 # Проверка и выпуск
 
-## Portable-релиз и автообновление — 2026-09-20
+## v0.5.15: Windows installer + portable и автообновление — 2026-09-20
 
-В release-контур добавлены Windows portable ZIP и Linux portable tar.gz.
-Linux .deb сохраняется как отдельный системный пакет. GitHub Release и
-Cloudflare R2 получают одинаковые итоговые байты; stable-имена и latest.json
-создаются из фактических файлов после сборки.
+Windows release-контур теперь публикует две разные сборки: Windows portable
+`SaveEditor-windows-x86_64.zip` для запуска без установки и отдельный установщик
+`SaveEditor-windows-x86_64-setup.exe` с ярлыком и обычной установкой. Linux сохраняет portable
+tar.gz и отдельный системный `.deb`. GitHub Release и Cloudflare R2 получают
+одинаковые итоговые байты; stable-имена, `latest.json` и `SHA256SUMS` создаются
+из фактических файлов после сборки.
 
 latest.json содержит версию, commit, target, размер и SHA-256 каждого файла.
 Приложение проверяет manifest в фоне, показывает ручную кнопку проверки,
 скачивает только разрешённый R2 host и перед заменой сверяет SHA-256. Portable
-обновление применяет отдельный updater после закрытия GUI; .deb открывается
-через системный установщик после подтверждения пользователя. Невалидный
-manifest, сеть, размер или hash не затрагивают текущую установку.
+обновление применяет отдельный updater после закрытия GUI;
+Windows installer и `.deb` открываются через системный установщик после
+подтверждения пользователя. Невалидный manifest, сеть, размер или hash не
+затрагивают текущую установку.
 
 Локальная подготовка:
 
@@ -22,33 +25,34 @@ manifest, сеть, размер или hash не затрагивают тек�
 
     make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
 
-В CI tag-triggered job вызывает tools/publish_release.py --publish-r2
---verify-r2, прикрепляет Windows/Linux portable и .deb к GitHub Release и
-проверяет все четыре R2 object-а через публичный Worker. GitHub Actions source
-test job остаётся без cloud credentials.
+В CI tag-triggered job вызывает `tools/publish_release.py --publish-r2
+--verify-r2`, прикрепляет два Windows варианта, Linux portable и `.deb` к
+GitHub Release и проверяет все пять R2 object-ов через публичный Worker.
+GitHub Actions source-test job остаётся без cloud credentials.
 
-Релиз v0.5.14 фактически опубликован из commit
-`33ff8afa411c9026b72f846fcac5bcc7bffbfec2`:
-[GitHub Release v0.5.14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.14).
-Hosted run [35481243962](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35481243962)
-подтвердил Windows и Linux source tests, native build и packaged smoke.
-Worker версии `904711fb-1038-49e5-92df-c5ddc09f86d6` задеплоен; четыре
-стабильных R2 object-а загружены и прочитаны обратно через
-`tools/publish_release.py --verify-r2`. Реальный `UpdateClient` на обеих
-платформах подтвердил переходы `0.5.13 -> available 0.5.14` и
-`0.5.14 -> current`.
+Релиз v0.5.15 фактически опубликован из commit
+`7306dcbde417e9374038d9d9f47d198e4dfc2053`:
+[GitHub Release v0.5.15](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.15).
+Hosted run [35508107671](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35508107671)
+подтвердил Windows installer smoke и Linux/Windows packaged smoke.
+Worker версии `6075860d-b502-4ebe-b987-410a85bc51a8` задеплоен; пять
+стабильных R2 object-ов загружены и прочитаны обратно через
+`tools/publish_release.py --verify-r2`.
 
-Фактические SHA-256 release/R2 assets: Windows ZIP
-`cde107541d78070d982457669aaad25ae8f8d3edcf76cf297af8c204368da787`, Linux
-portable tar.gz
-`78b78403faee2175a87c2e461f7cebd30a60fd1197550e4b0a0cf6b68848a946`, Debian
-`fe621d8fb5a4ec76f259e69f3f812c48e5bd84122299912d9790fc9b094e1e45`,
-`latest.json`
-`3fa3221d6f25f8f8dd3626074e355d2113be6445deb064ac05eb3b598761aeeb`.
+Фактические размеры и SHA-256 release/R2 assets: Windows ZIP — 61,985,583
+bytes, `39b6479e2e8a85610d00af5695f4448b5008994a566102cf62aee81ff3f4bf9b`;
+Windows installer — 38,187,197 bytes,
+`54761d30ddb502c7b8c8a5dacb160a621030632a6a0e4dcac5bcfdb098b768dc`; Linux
+portable tar.gz — 89,762,581 bytes,
+`3bb8e1290d5642d935c6232df823937d2b7863495a0f3472c4a7b7c166bb89b7`;
+Debian — 93,138,182 bytes,
+`9fdc4a5a70d83c88d3f5f2a61f358662d5276f81bcab531ec9621fd3ce056ada`;
+`latest.json` — 1,769 bytes,
+`4bae8680c398acad8fb1bbbc65263ef4a716f8697762ae8a594d5af975511dd7`.
 В репозитории пока нет `CLOUDFLARE_API_TOKEN` и
 `CLOUDFLARE_ACCOUNT_ID`, поэтому автоматический release-job остановился на
-deploy Worker; этот релиз завершён локальным авторизованным Wrangler и `gh`
-без сохранения OAuth-токена в GitHub Secrets.
+deploy Worker; публикация этого релиза завершена локальным авторизованным
+Wrangler и `gh` без сохранения OAuth-токена в GitHub Secrets.
 
 ## Непубликованный continuation — 2026-09-20
 
