@@ -327,14 +327,63 @@ def launch_update(command: list[str]) -> subprocess.Popen[bytes]:
     return subprocess.Popen(command, start_new_session=True)
 
 
+def _windows_process_running(pid: int) -> bool:
+    """Check a process handle without sending a signal on Windows."""
+
+    import ctypes
+
+    synchronize = 0x00100000
+    wait_object_0 = 0x00000000
+    wait_timeout = 0x00000102
+    error_access_denied = 5
+    error_invalid_parameter = 87
+    win_dll = ctypes.WinDLL  # type: ignore[attr-defined]
+    get_last_error = ctypes.get_last_error  # type: ignore[attr-defined]
+    kernel32 = win_dll("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    kernel32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+    kernel32.WaitForSingleObject.restype = ctypes.c_uint32
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_int
+    handle = kernel32.OpenProcess(synchronize, 0, pid)
+    if not handle:
+        error = get_last_error()
+        if error == error_invalid_parameter:
+            return False
+        if error == error_access_denied:
+            return True
+        raise OSError(error, f"OpenProcess failed for pid {pid}")
+    try:
+        result = kernel32.WaitForSingleObject(handle, 0)
+        if result == wait_object_0:
+            return False
+        if result == wait_timeout:
+            return True
+        error = get_last_error()
+        raise OSError(error, f"WaitForSingleObject failed for pid {pid}")
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _process_running(pid: int) -> bool:
+    if os.name == "nt":
+        return _windows_process_running(pid)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def wait_for_process_exit(pid: int, timeout: float = 30.0) -> None:
+    if pid <= 0:
+        raise ValueError("parent pid must be positive")
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return
-        except PermissionError:
+        if not _process_running(pid):
             return
         time.sleep(0.1)
     raise TimeoutError(f"parent process did not exit within {timeout:.1f}s")
