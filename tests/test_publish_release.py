@@ -101,6 +101,7 @@ def test_publish_r2_uses_stable_keys_and_explicit_wrangler_commands(
     assert any("save-editor-downloads/SaveEditor-windows-x86_64.zip" in command for command in commands)
     assert any("save-editor-downloads/SaveEditor-windows-x86_64-setup.exe" in command for command in commands)
     assert any("save-editor-downloads/SHA256SUMS" in command for command in commands)
+    assert "save-editor-downloads/latest.json" in commands[-1]
 
 
 def test_prepared_mode_publishes_without_regenerating_release(

@@ -26,8 +26,9 @@ STABLE_FILES = (
     "SaveEditor-windows-x86_64-setup.exe",
     "SaveEditor-linux-x86_64.tar.gz",
     "stalker2-save-editor_amd64.deb",
-    "latest.json",
     "SHA256SUMS",
+    # Publish the manifest last so it acts as the channel's commit marker.
+    "latest.json",
 )
 _TARGETS = {
     "windows-x86_64": ("windows", "SaveEditor-windows-x86_64.zip"),
