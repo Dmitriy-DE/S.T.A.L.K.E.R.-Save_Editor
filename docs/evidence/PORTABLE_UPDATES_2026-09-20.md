@@ -18,7 +18,7 @@
 
 At this snapshot:
 
-- pytest tests -q — 527 passed;
+- pytest tests -q — 528 passed;
 - targeted ruff/mypy checks for release/update files — passed;
 - no hosted Windows build, R2 upload, public read-back, or privileged .deb
   installation has been run in this local checkout yet.
