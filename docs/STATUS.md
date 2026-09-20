@@ -28,7 +28,9 @@ load/re-save остаются внешними evidence gates. Локальна�
 верификация фиксируется отдельно в
 [`HARDENING_0.5.17_2026-09-20.md`](evidence/HARDENING_0.5.17_2026-09-20.md).
 Source gate кандидата прошёл локально: Ruff, mypy для Linux и Windows target,
-generated-file checks, `560 passed` и два Node bootstrap test.
+generated-file checks, `560 passed` и два Node bootstrap test. Clean-tree Linux
+package build также прошёл: portable diagnostic загрузил bundled decoder,
+native child завершил read-only list, а SHA-256 portable/`.deb` совпали.
 
 ## v0.5.16 — issues #95–#99 continuation — 2026-09-20
 
