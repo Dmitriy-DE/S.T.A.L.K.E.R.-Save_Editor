@@ -40,7 +40,11 @@ def _server(root: Path, manifest_payload: dict[str, object]) -> Iterator[str]:
     port = server.server_address[1]
     artifacts = manifest_payload["artifacts"]
     assert isinstance(artifacts, dict)
-    for artifact in artifacts.values():
+    all_artifacts = list(artifacts.values())
+    optional = manifest_payload.get("optional_artifacts", {})
+    if isinstance(optional, dict):
+        all_artifacts.extend(optional.values())
+    for artifact in all_artifacts:
         assert isinstance(artifact, dict)
         artifact["url"] = f"http://127.0.0.1:{port}/{artifact['file']}"
     (root / "latest.json").write_text(
@@ -59,10 +63,12 @@ def _server(root: Path, manifest_payload: dict[str, object]) -> Iterator[str]:
 def _manifest_files(tmp_path: Path) -> dict[str, object]:
     files = {
         "windows-x86_64": tmp_path / "SaveEditor-windows-x86_64.zip",
+        "windows-installer-x86_64": tmp_path / "SaveEditor-windows-x86_64-setup.exe",
         "linux-x86_64": tmp_path / "SaveEditor-linux-x86_64.tar.gz",
         "linux-deb-amd64": tmp_path / "stalker2-save-editor_amd64.deb",
     }
     files["windows-x86_64"].write_bytes(b"windows release bytes")
+    files["windows-installer-x86_64"].write_bytes(b"windows installer bytes")
     files["linux-x86_64"].write_bytes(b"linux release bytes")
     files["linux-deb-amd64"].write_bytes(b"debian release bytes")
     output = tmp_path / "unused.json"
@@ -110,6 +116,11 @@ def test_update_client_identifies_requests_to_public_worker(
     for artifact in artifacts.values():
         assert isinstance(artifact, dict)
         artifact["url"] = f"https://download.example/{artifact['file']}"
+    optional = payload.get("optional_artifacts", {})
+    if isinstance(optional, dict):
+        for artifact in optional.values():
+            assert isinstance(artifact, dict)
+            artifact["url"] = f"https://download.example/{artifact['file']}"
     body = json.dumps(payload).encode("utf-8")
     captured: dict[str, str | None] = {}
 
@@ -165,6 +176,24 @@ def test_update_client_downloads_and_rejects_changed_bytes(tmp_path: Path) -> No
         assert not destination.exists()
 
 
+def test_update_client_selects_windows_installer_artifact(tmp_path: Path) -> None:
+    payload = _manifest_files(tmp_path)
+    with _server(tmp_path, payload) as manifest_url:
+        result = UpdateClient(
+            manifest_url=manifest_url,
+            current_version="0.5.0",
+            target="windows",
+            kind="installer",
+            allowed_hosts=frozenset({"127.0.0.1"}),
+            allowed_schemes=frozenset({"http"}),
+        ).check()
+
+    assert result.state == "available"
+    assert result.artifact is not None
+    assert result.artifact.kind == "installer"
+    assert result.artifact.file == "SaveEditor-windows-x86_64-setup.exe"
+
+
 def test_update_client_returns_unavailable_without_raising() -> None:
     result = UpdateClient(
         manifest_url="http://127.0.0.1:1/latest.json",
@@ -194,6 +223,22 @@ def test_detect_installation_reads_portable_manifest(tmp_path: Path) -> None:
     assert info.kind == "portable"
     assert info.target == "windows"
     assert info.root == root
+
+
+def test_detect_installation_reads_windows_installer_marker(tmp_path: Path) -> None:
+    root = tmp_path / "SaveEditor"
+    root.mkdir()
+    executable = root / "SaveEditor.exe"
+    executable.write_bytes(b"exe")
+    (root / "BUILD_MANIFEST.json").write_text(
+        json.dumps({"target": "windows", "architecture": "x86_64", "version": "0.5.9"}),
+        encoding="utf-8",
+    )
+    (root / "INSTALLER_MARKER").write_text("installed", encoding="utf-8")
+
+    info = detect_installation(executable=executable, platform_name="windows")
+
+    assert info.kind == "installer"
 
 
 def test_stage_archive_rejects_path_traversal(tmp_path: Path) -> None:

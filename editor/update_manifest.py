@@ -17,6 +17,7 @@ SUPPORTED_ARTIFACTS = (
     "linux-x86_64",
     "linux-deb-amd64",
 )
+OPTIONAL_ARTIFACTS = ("windows-installer-x86_64",)
 _VERSION_RE = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
@@ -118,7 +119,7 @@ class ArtifactSpec:
             raise ManifestError("artifact download host or URL is not trusted")
         if parsed.path != f"/{file}":
             raise ManifestError("artifact URL does not match artifact filename")
-        if kind not in {"portable", "package"}:
+        if kind not in {"portable", "package", "installer"}:
             raise ManifestError("artifact.kind is unsupported")
         return cls(target, architecture, kind, file, size, sha256, url)
 
@@ -192,7 +193,7 @@ class ReleaseManifest:
         raw_artifacts = value.get("artifacts")
         if not isinstance(raw_artifacts, dict):
             raise ManifestError("artifacts must be an object")
-        if set(raw_artifacts) != set(SUPPORTED_ARTIFACTS):
+        if not set(SUPPORTED_ARTIFACTS).issubset(raw_artifacts):
             raise ManifestError("manifest artifacts are incomplete")
         artifacts: dict[str, ArtifactSpec] = {}
         for key in SUPPORTED_ARTIFACTS:
@@ -204,10 +205,27 @@ class ReleaseManifest:
             if artifact.target != key:
                 raise ManifestError(f"artifact target does not match key: {key}")
             artifacts[key] = artifact
+        raw_optional = value.get("optional_artifacts", {})
+        if not isinstance(raw_optional, dict):
+            raise ManifestError("optional_artifacts must be an object")
+        unknown_optional = set(raw_optional) - set(OPTIONAL_ARTIFACTS)
+        if unknown_optional:
+            raise ManifestError("optional_artifacts contains an unsupported target")
+        for key in OPTIONAL_ARTIFACTS:
+            if key not in raw_optional:
+                continue
+            artifact = ArtifactSpec.from_payload(
+                raw_optional[key],
+                allowed_hosts=allowed_hosts,
+                allowed_schemes=allowed_schemes,
+            )
+            if artifact.target != key:
+                raise ManifestError(f"artifact target does not match key: {key}")
+            artifacts[key] = artifact
         return cls(MANIFEST_SCHEMA, "stable", version, source_commit, published_at, artifacts)
 
     def to_payload(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "schema": self.schema,
             "channel": self.channel,
             "version": self.version,
@@ -215,6 +233,14 @@ class ReleaseManifest:
             "published_at": self.published_at,
             "artifacts": {key: self.artifacts[key].to_payload() for key in SUPPORTED_ARTIFACTS},
         }
+        optional = {
+            key: self.artifacts[key].to_payload()
+            for key in OPTIONAL_ARTIFACTS
+            if key in self.artifacts
+        }
+        if optional:
+            payload["optional_artifacts"] = optional
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(self.to_payload(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -228,6 +254,8 @@ class ReleaseManifest:
     ) -> ArtifactSpec:
         if target == "windows" and kind == "portable":
             key = "windows-x86_64"
+        elif target == "windows" and kind == "installer":
+            key = "windows-installer-x86_64"
         elif target == "linux" and kind == "portable":
             key = "linux-x86_64"
         elif target == "linux" and kind == "package":
@@ -244,6 +272,7 @@ __all__ = [
     "DOWNLOAD_BASE_URL",
     "DOWNLOAD_HOST",
     "MANIFEST_SCHEMA",
+    "OPTIONAL_ARTIFACTS",
     "SUPPORTED_ARTIFACTS",
     "ArtifactSpec",
     "ManifestError",

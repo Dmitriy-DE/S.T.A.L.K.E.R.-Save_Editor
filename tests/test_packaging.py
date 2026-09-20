@@ -40,7 +40,49 @@ def test_artifact_names_include_architecture_and_version() -> None:
     )
     assert build.artifact_names("9.9.9-test", "windows") == (
         "SaveEditor-windows-x86_64-v9.9.9-test.zip",
+        "SaveEditor-windows-x86_64-v9.9.9-test-setup.exe",
     )
+
+
+def test_windows_installer_script_is_built_from_the_packaged_runtime() -> None:
+    script = build._windows_installer_script()
+
+    assert "SAVE_EDITOR_RUNTIME" in script
+    assert "SAVE_EDITOR_OUTPUT" in script
+    assert "SaveEditor.exe" in script
+    assert "PrivilegesRequired=admin" in script
+
+
+def test_windows_installer_build_uses_inno_and_requires_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runtime = tmp_path / "SaveEditor"
+    runtime.mkdir()
+    destination = tmp_path / "SaveEditor-windows-x86_64-v0.5.14-setup.exe"
+    compiler = tmp_path / "ISCC.exe"
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        environment = kwargs["env"]
+        assert isinstance(environment, dict)
+        Path(str(environment["SAVE_EDITOR_OUTPUT"]))
+        destination.write_bytes(b"installer")
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(build, "_find_inno_compiler", lambda: compiler)
+    monkeypatch.setattr(build.subprocess, "run", fake_run)
+
+    result = build._build_windows_installer(
+        runtime=runtime,
+        destination=destination,
+        work=tmp_path / "work",
+        version="0.5.14",
+    )
+
+    assert result == destination
+    assert destination.read_bytes() == b"installer"
+    assert calls and calls[0][0] == str(compiler)
 
 
 def test_scan_package_tree_rejects_private_inputs(tmp_path: Path) -> None:

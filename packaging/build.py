@@ -342,6 +342,111 @@ def _make_zip(runtime: Path, destination: Path) -> None:
                 archive.writestr(_zip_info(relative.as_posix(), mode=path.stat().st_mode), path.read_bytes())
 
 
+def _windows_installer_script() -> str:
+    """Return the Inno Setup script used for the Windows installer artifact."""
+
+    return r'''#define AppName "S.T.A.L.K.E.R. Save Editor"
+#define AppVersion GetEnv('SAVE_EDITOR_VERSION')
+#define RuntimeDir GetEnv('SAVE_EDITOR_RUNTIME')
+#define OutputDir GetEnv('SAVE_EDITOR_OUTPUT')
+#define OutputBaseName GetEnv('SAVE_EDITOR_OUTPUT_NAME')
+
+[Setup]
+AppId={{B5B1C7A0-9D5B-4D99-9D30-8A4DF0E6AC91}
+AppName={#AppName}
+AppVersion={#AppVersion}
+AppPublisher=Save Editor contributors
+DefaultDirName={autopf}\S.T.A.L.K.E.R. Save Editor
+DefaultGroupName={#AppName}
+UninstallDisplayIcon={app}\SaveEditor.exe
+OutputDir={#OutputDir}
+OutputBaseFilename={#OutputBaseName}
+Compression=lzma2
+SolidCompression=yes
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+PrivilegesRequired=admin
+CloseApplications=yes
+RestartApplications=no
+WizardStyle=modern
+
+[Files]
+Source: "{#RuntimeDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#AppName}"; Filename: "{app}\SaveEditor.exe"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\SaveEditor.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
+
+[Run]
+Filename: "{app}\SaveEditor.exe"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+Type: files; Name: "{app}\INSTALLER_MARKER"
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    SaveStringToFile(ExpandConstant('{app}\INSTALLER_MARKER'), 'installed-by-save-editor-installer' + #13#10, False);
+end;
+'''
+
+
+def _find_inno_compiler() -> Path:
+    """Locate the native Inno Setup compiler on a Windows build host."""
+
+    for command in ("ISCC.exe", "iscc"):
+        found = shutil.which(command)
+        if found:
+            return Path(found)
+    for variable in ("ProgramFiles(x86)", "ProgramFiles"):
+        root = os.environ.get(variable)
+        if root:
+            candidate = Path(root) / "Inno Setup 6" / "ISCC.exe"
+            if candidate.is_file():
+                return candidate
+    raise BuildError(
+        "Inno Setup не найден; установите Inno Setup 6 на Windows build host"
+    )
+
+
+def _build_windows_installer(
+    *, runtime: Path, destination: Path, work: Path, version: str
+) -> Path:
+    """Build a separately installable Windows executable from the runtime tree."""
+
+    compiler = _find_inno_compiler()
+    work.mkdir(parents=True, exist_ok=True)
+    script = work / "windows-installer.iss"
+    script.write_text(_windows_installer_script(), encoding="utf-8")
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "SAVE_EDITOR_VERSION": version,
+            "SAVE_EDITOR_RUNTIME": str(runtime),
+            "SAVE_EDITOR_OUTPUT": str(destination.parent),
+            "SAVE_EDITOR_OUTPUT_NAME": destination.stem,
+        }
+    )
+    try:
+        subprocess.run(
+            [str(compiler), "/Q", str(script)],
+            cwd=work,
+            env=environment,
+            check=True,
+        )
+    except FileNotFoundError as exc:
+        raise BuildError("Inno Setup compiler не найден") from exc
+    except subprocess.CalledProcessError as exc:
+        raise BuildError(f"Inno Setup завершился с exit code {exc.returncode}") from exc
+    if not destination.is_file():
+        raise BuildError(f"Windows installer output missing: {destination}")
+    return destination
+
+
 def _desktop_entry() -> str:
     return """[Desktop Entry]
 Type=Application
@@ -509,6 +614,14 @@ def build(
     else:
         _make_zip(runtime, archive)
         artifacts.append(archive)
+        installer = output_dir / names[1]
+        _build_windows_installer(
+            runtime=runtime,
+            destination=installer,
+            work=work,
+            version=version,
+        )
+        artifacts.append(installer)
     checksums = output_dir / "SHA256SUMS"
     _write_checksums(artifacts, checksums)
     shutil.rmtree(work)

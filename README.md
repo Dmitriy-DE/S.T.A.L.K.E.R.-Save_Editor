@@ -48,8 +48,9 @@ Valve `libsteam_api` — единственная неустранимая за�
 заменить чистым Python); она берётся из установленной игры/Steam или из
 payload helper'а. Универсальная обратная загрузка Cloud для оригинальной
 трилогии и Enhanced Edition не заявляется.
-PyInstaller собирает Linux `tar.gz`/`.deb` и Windows `zip`; обе цели проходят
-CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
+PyInstaller собирает Linux `tar.gz`/`.deb` и Windows portable `zip`; отдельный
+Windows installer `.exe` собирается Inno Setup из того же runtime. Обе цели
+проходят CI вместе с packaged diagnostic на самих раннерах. Декодер: `pyooz==0.0.8` из
 wheel, на Linux x86_64 — тот же бинарник из `vendor/ooz.abi3.so`.
 
 Это не означает поддержку модов, Enhanced Edition или любого неизвестного
@@ -195,24 +196,27 @@ actor-owned record и скачать изменённую копию. Capability
 
 ## Standalone-пакеты
 
-### Windows portable, Linux portable и автообновления
+### Windows installer/portable, Linux portable и автообновления
 
-Релиз публикует два portable-варианта и системный пакет:
+Релиз публикует отдельные Windows installer и portable, Linux portable и системный пакет:
 
+- Windows installer — SaveEditor-windows-x86_64-v*-setup.exe;
 - Windows portable — SaveEditor-windows-x86_64-v*.zip;
 - Linux portable — SaveEditor-linux-x86_64-v*.tar.gz;
 - Linux amd64 .deb — для установки через системный пакетный менеджер.
 
-Portable-архивы не требуют Python и установки: распакуй каталог SaveEditor и
-запусти SaveEditor.exe на Windows или SaveEditor на Linux. Внутри также есть
-отдельный updater, который не заменяет работающий процесс.
+Windows installer ставит приложение в систему, создаёт ярлык и доступен для
+обновления через скачанный installer. Portable-архивы не требуют Python и
+установки: распакуй каталог SaveEditor и запусти SaveEditor.exe на Windows или
+SaveEditor на Linux. Внутри portable также есть отдельный updater, который не
+заменяет работающий процесс.
 
 Стабильный manifest latest.json публикуется в Cloudflare R2 вместе с теми же
 байтами, которые прикреплены к GitHub Release. В manifest записаны платформа,
 размер и SHA-256. Desktop-сборка проверяет обновления после запуска в фоне и
 имеет ручную кнопку Обновления; при сбое сети приложение продолжает работать.
-Portable ZIP/tar.gz скачиваются, проверяются и применяются после перезапуска.
-Для .deb скачанный пакет открывается системным установщиком с явным
+Portable ZIP/tar.gz скачиваются, проверяются и применяются после перезапуска;
+Windows installer и `.deb` открываются системным установщиком с явным
 подтверждением пользователя.
 
 Подготовка локального release-набора без публикации:
@@ -245,7 +249,8 @@ py -3 packaging/build.py --target windows --output-dir dist
 
 Linux создаёт `SaveEditor-linux-x86_64-v*.tar.gz` и
 `stalker2-save-editor_*_amd64.deb`; Windows —
-`SaveEditor-windows-x86_64-v*.zip`. Каждый запуск создаёт `SHA256SUMS`, а
+`SaveEditor-windows-x86_64-v*.zip` и `SaveEditor-windows-x86_64-v*-setup.exe`.
+Каждый запуск создаёт `SHA256SUMS`, а
 внутри bundle лежат `BUILD_MANIFEST.json`, `SOURCE_COMMIT.txt`, notices и
 provenance native decoder. `SaveEditor-diagnostic --diagnostic` проверяет
 вложенный Qt/decoder без открытия окна. `dist/` не коммитится и автоматический

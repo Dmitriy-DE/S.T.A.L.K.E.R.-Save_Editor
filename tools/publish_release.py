@@ -23,17 +23,20 @@ from tools.build_release_manifest import build_release_manifest
 
 STABLE_FILES = (
     "SaveEditor-windows-x86_64.zip",
+    "SaveEditor-windows-x86_64-setup.exe",
     "SaveEditor-linux-x86_64.tar.gz",
     "stalker2-save-editor_amd64.deb",
     "latest.json",
 )
 _TARGETS = {
     "windows-x86_64": ("windows", "SaveEditor-windows-x86_64.zip"),
+    "windows-installer-x86_64": ("windows", "SaveEditor-windows-x86_64-setup.exe"),
     "linux-x86_64": ("linux", "SaveEditor-linux-x86_64.tar.gz"),
     "linux-deb-amd64": ("linux", "stalker2-save-editor_amd64.deb"),
 }
 _CONTENT_TYPES = {
     ".zip": "application/zip",
+    ".exe": "application/vnd.microsoft.portable-executable",
     ".gz": "application/gzip",
     ".deb": "application/vnd.debian.binary-package",
     ".json": "application/json; charset=utf-8",
@@ -73,12 +76,15 @@ def _locate(artifact_dir: Path, filename: str) -> Path:
 
 
 def _versioned_paths(artifact_dir: Path, version: str) -> dict[str, Path]:
-    names = artifact_names(version, "windows") + artifact_names(version, "linux")
+    windows_names = artifact_names(version, "windows")
+    linux_names = artifact_names(version, "linux")
+    names = windows_names + linux_names
     by_name = {name: _locate(artifact_dir, name) for name in names}
     return {
-        "windows-x86_64": by_name[names[0]],
-        "linux-x86_64": by_name[names[1]],
-        "linux-deb-amd64": by_name[names[2]],
+        "windows-x86_64": by_name[windows_names[0]],
+        "windows-installer-x86_64": by_name[windows_names[1]],
+        "linux-x86_64": by_name[linux_names[0]],
+        "linux-deb-amd64": by_name[linux_names[1]],
     }
 
 
@@ -114,7 +120,12 @@ def prepare_release(
     )
     checksum_lines = [
         f"{_sha256(stable_paths[target])}  {stable_paths[target].name}"
-        for target in ("windows-x86_64", "linux-x86_64", "linux-deb-amd64")
+        for target in (
+            "windows-x86_64",
+            "windows-installer-x86_64",
+            "linux-x86_64",
+            "linux-deb-amd64",
+        )
     ]
     (output_dir / "SHA256SUMS").write_text("\n".join(checksum_lines) + "\n", encoding="utf-8")
     return {"manifest": manifest_path, **stable_paths}

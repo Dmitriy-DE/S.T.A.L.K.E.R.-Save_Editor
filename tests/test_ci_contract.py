@@ -137,3 +137,6 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
     assert "contents: write" in text
     assert "wrangler@4 deploy" in text
     assert "infra/downloads-worker/wrangler.toml" in text
+    assert "Install Windows installer tool" in text
+    assert "Smoke Windows installer" in text
+    assert "SaveEditor-windows-x86_64-setup.exe" in text

@@ -17,11 +17,17 @@ if __package__ in {None, ""}:
 from editor.update_manifest import (
     DOWNLOAD_BASE_URL,
     MANIFEST_SCHEMA,
+    OPTIONAL_ARTIFACTS,
     SUPPORTED_ARTIFACTS,
 )
 
 _ARTIFACT_METADATA = {
     "windows-x86_64": ("portable", "x86_64", "SaveEditor-windows-x86_64.zip"),
+    "windows-installer-x86_64": (
+        "installer",
+        "x86_64",
+        "SaveEditor-windows-x86_64-setup.exe",
+    ),
     "linux-x86_64": ("portable", "x86_64", "SaveEditor-linux-x86_64.tar.gz"),
     "linux-deb-amd64": ("package", "x86_64", "stalker2-save-editor_amd64.deb"),
 }
@@ -50,14 +56,13 @@ def build_release_manifest(
         raise ValueError(f"artifacts missing required targets: {sorted(missing)}")
     if not commit or any(ch not in "0123456789abcdef" for ch in commit) or len(commit) < 40:
         raise ValueError("commit must be a lowercase Git SHA")
-    payload_artifacts: dict[str, dict[str, object]] = {}
-    for target in SUPPORTED_ARTIFACTS:
+    def describe(target: str) -> dict[str, object]:
         path = Path(artifacts[target]).resolve()
         if not path.is_file():
             raise ValueError(f"artifact is missing: {path}")
         kind, architecture, filename = _ARTIFACT_METADATA[target]
         size, sha256 = _sha256(path)
-        payload_artifacts[target] = {
+        return {
             "target": target,
             "architecture": architecture,
             "kind": kind,
@@ -66,6 +71,14 @@ def build_release_manifest(
             "sha256": sha256,
             "url": f"{DOWNLOAD_BASE_URL}/{filename}",
         }
+
+    payload_artifacts: dict[str, dict[str, object]] = {}
+    for target in SUPPORTED_ARTIFACTS:
+        payload_artifacts[target] = describe(target)
+    optional_payload: dict[str, dict[str, object]] = {}
+    for target in OPTIONAL_ARTIFACTS:
+        if target in artifacts:
+            optional_payload[target] = describe(target)
     payload: dict[str, object] = {
         "schema": MANIFEST_SCHEMA,
         "channel": "stable",
@@ -74,6 +87,8 @@ def build_release_manifest(
         "published_at": published_at,
         "artifacts": payload_artifacts,
     }
+    if optional_payload:
+        payload["optional_artifacts"] = optional_payload
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -82,7 +97,8 @@ def build_release_manifest(
 
 def _artifact_argument(value: str) -> tuple[str, Path]:
     target, separator, path = value.partition("=")
-    if not separator or target not in SUPPORTED_ARTIFACTS or not path:
+    supported = {*SUPPORTED_ARTIFACTS, *OPTIONAL_ARTIFACTS}
+    if not separator or target not in supported or not path:
         raise argparse.ArgumentTypeError("ожидалось target=PATH для поддержанного artifact target")
     return target, Path(path)
 

@@ -103,6 +103,15 @@ def test_release_docs_record_portable_updates_and_r2_contract() -> None:
     assert "--publish-r2" in release
 
 
+def test_download_page_exposes_separate_windows_installer_and_portable_links() -> None:
+    page = (Path(__file__).parents[1] / "web" / "index.html").read_text(encoding="utf-8")
+
+    assert 'id="dl-windows-installer"' in page
+    assert 'id="dl-windows-portable"' in page
+    assert "SaveEditor-windows-x86_64-setup.exe" in page
+    assert "SaveEditor-windows-x86_64.zip" in page
+
+
 def test_browser_catalog_is_compact_official_metadata_only() -> None:
     catalog_path = render.ROOT / "web" / "catalogs.json"
     document = json.loads(catalog_path.read_text(encoding="utf-8"))

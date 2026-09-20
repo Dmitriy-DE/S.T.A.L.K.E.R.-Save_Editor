@@ -35,6 +35,13 @@ def _artifact_payload(
 
 def _manifest_payload() -> dict[str, object]:
     body = _artifact_payload()
+    installer_body = _artifact_payload(
+        target="windows-installer-x86_64",
+        kind="installer",
+        file="SaveEditor-windows-x86_64-setup.exe",
+        body=b"installer bytes",
+        url="https://save-editor-downloads.save-editor.workers.dev/SaveEditor-windows-x86_64-setup.exe",
+    )
     linux_body = _artifact_payload(
         target="linux-x86_64",
         file="SaveEditor-linux-x86_64.tar.gz",
@@ -59,6 +66,9 @@ def _manifest_payload() -> dict[str, object]:
             "linux-x86_64": linux_body,
             "linux-deb-amd64": deb_body,
         },
+        "optional_artifacts": {
+            "windows-installer-x86_64": installer_body,
+        },
     }
 
 
@@ -67,6 +77,7 @@ def test_manifest_parses_and_selects_portable_targets() -> None:
 
     assert manifest.version == "0.5.9"
     assert manifest.select("windows").file == "SaveEditor-windows-x86_64.zip"
+    assert manifest.select("windows", kind="installer").file == "SaveEditor-windows-x86_64-setup.exe"
     assert manifest.select("linux").file == "SaveEditor-linux-x86_64.tar.gz"
     assert manifest.select("linux", kind="package").file == "stalker2-save-editor_amd64.deb"
 

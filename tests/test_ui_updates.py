@@ -16,11 +16,20 @@ from ui.update_dialog import UpdateCheckWorker, UpdateDialog
 
 
 def _artifact(kind: str = "portable") -> ArtifactSpec:
+    if kind == "installer":
+        target = "windows-installer-x86_64"
+        file = "SaveEditor-windows-x86_64-setup.exe"
+    elif kind == "package":
+        target = "linux-deb-amd64"
+        file = "stalker2-save-editor_amd64.deb"
+    else:
+        target = "windows-x86_64"
+        file = "SaveEditor-windows-x86_64.zip"
     return ArtifactSpec(
-        target="windows-x86_64" if kind == "portable" else "linux-deb-amd64",
+        target=target,
         architecture="x86_64",
         kind=kind,
-        file="SaveEditor-windows-x86_64.zip" if kind == "portable" else "stalker2-save-editor_amd64.deb",
+        file=file,
         size=4,
         sha256=hashlib.sha256(b"test").hexdigest(),
         url="https://save-editor-downloads.save-editor.workers.dev/update.zip",
@@ -72,6 +81,15 @@ def test_update_dialog_explains_current_and_available_states(qtbot, tmp_path: Pa
     qtbot.addWidget(available)
     assert "обновление" in available.status_label.text().casefold()
     assert available.download_button.isEnabled()
+
+    installer = UpdateDialog(
+        UpdateCheckResult("available", artifact=_artifact("installer")),
+        installation=_installation(tmp_path),
+        client=_FakeClient(UpdateCheckResult("available", artifact=_artifact("installer"))),
+    )
+    qtbot.addWidget(installer)
+    installer._on_downloaded(tmp_path / "setup.exe")
+    assert installer.restart_button.text() == "Открыть установщик"
 
 
 def test_main_window_manual_check_uses_injected_client(qtbot, tmp_path: Path) -> None:

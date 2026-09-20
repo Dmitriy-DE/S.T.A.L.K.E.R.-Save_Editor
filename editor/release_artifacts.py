@@ -22,7 +22,10 @@ def artifact_names(version: str, target: str) -> tuple[str, ...]:
             f"{DEBIAN_NAME}_{debian_version(version)}_amd64.deb",
         )
     if target == "windows":
-        return (f"{APP_NAME}-windows-x86_64-v{version}.zip",)
+        return (
+            f"{APP_NAME}-windows-x86_64-v{version}.zip",
+            f"{APP_NAME}-windows-x86_64-v{version}-setup.exe",
+        )
     raise ValueError(f"unknown build target: {target}")
 
 

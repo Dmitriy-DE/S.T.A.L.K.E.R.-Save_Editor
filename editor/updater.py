@@ -51,7 +51,7 @@ class InstallationInfo:
 
     target: str
     architecture: str
-    kind: Literal["portable", "package", "development"]
+    kind: Literal["portable", "installer", "package", "development"]
     root: Path
     executable: Path
 
@@ -187,7 +187,12 @@ def detect_installation(
         if manifest.get("target") != target:
             raise ManifestError("packaged build target does not match the current platform")
         architecture = str(manifest.get("architecture") or "x86_64")
-        return InstallationInfo(target, architecture, "portable", root, path)
+        kind: Literal["portable", "installer"] = (
+            "installer"
+            if target == "windows" and (root / "INSTALLER_MARKER").is_file()
+            else "portable"
+        )
+        return InstallationInfo(target, architecture, kind, root, path)
     if target == "linux" and root == Path("/usr/lib/stalker2-save-editor"):
         return InstallationInfo(target, "x86_64", "package", root, path)
     return InstallationInfo(target, "x86_64", "development", root, path)

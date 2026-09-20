@@ -9,9 +9,11 @@ from tools.build_release_manifest import build_release_manifest
 
 def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path) -> None:
     windows = tmp_path / "windows.zip"
+    installer = tmp_path / "windows-setup.exe"
     linux = tmp_path / "linux.tar.gz"
     deb = tmp_path / "editor.deb"
     windows.write_bytes(b"windows final bytes")
+    installer.write_bytes(b"installer final bytes")
     linux.write_bytes(b"linux final bytes")
     deb.write_bytes(b"deb final bytes")
     output = tmp_path / "latest.json"
@@ -21,6 +23,7 @@ def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path)
         commit="b" * 40,
         artifacts={
             "windows-x86_64": windows,
+            "windows-installer-x86_64": installer,
             "linux-x86_64": linux,
             "linux-deb-amd64": deb,
         },
@@ -36,6 +39,9 @@ def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path)
         b"windows final bytes"
     ).hexdigest()
     assert loaded["artifacts"]["linux-deb-amd64"]["file"] == "stalker2-save-editor_amd64.deb"
+    assert loaded["optional_artifacts"]["windows-installer-x86_64"]["size"] == len(
+        b"installer final bytes"
+    )
 
 
 def test_build_release_manifest_requires_all_targets(tmp_path: Path) -> None:

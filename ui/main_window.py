@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
         installation = self._update_installation_info()
         if installation is None or installation.kind == "development":
             return None
-        kind = "package" if installation.kind == "package" else "portable"
+        kind = installation.kind if installation.kind in {"installer", "package"} else "portable"
         self._update_client = UpdateClient(
             current_version=_version_text(),
             target=installation.target,

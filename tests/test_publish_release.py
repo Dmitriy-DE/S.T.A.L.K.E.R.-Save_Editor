@@ -17,6 +17,7 @@ def _versioned_artifacts(root: Path, version: str = "0.5.9") -> Path:
     artifacts = root / "artifacts"
     artifacts.mkdir()
     (artifacts / f"SaveEditor-windows-x86_64-v{version}.zip").write_bytes(b"windows bytes")
+    (artifacts / f"SaveEditor-windows-x86_64-v{version}-setup.exe").write_bytes(b"installer bytes")
     (artifacts / f"SaveEditor-linux-x86_64-v{version}.tar.gz").write_bytes(b"linux bytes")
     (artifacts / f"stalker2-save-editor_{version}_amd64.deb").write_bytes(b"deb bytes")
     return artifacts
@@ -48,11 +49,16 @@ def test_prepare_release_creates_exact_stable_files_and_manifest(tmp_path: Path)
     assert result["manifest"] == output / "latest.json"
     windows = output / "SaveEditor-windows-x86_64.zip"
     assert windows.read_bytes() == b"windows bytes"
+    installer = output / "SaveEditor-windows-x86_64-setup.exe"
+    assert installer.read_bytes() == b"installer bytes"
     manifest = json.loads((output / "latest.json").read_text(encoding="utf-8"))
     assert manifest["artifacts"]["windows-x86_64"]["sha256"] == hashlib.sha256(
         b"windows bytes"
     ).hexdigest()
-    assert (output / "SHA256SUMS").read_text(encoding="utf-8").count("\n") == 3
+    assert manifest["optional_artifacts"]["windows-installer-x86_64"]["sha256"] == hashlib.sha256(
+        b"installer bytes"
+    ).hexdigest()
+    assert (output / "SHA256SUMS").read_text(encoding="utf-8").count("\n") == 4
 
 
 def test_prepare_release_rejects_missing_versioned_artifact(tmp_path: Path) -> None:
@@ -89,10 +95,11 @@ def test_publish_r2_uses_stable_keys_and_explicit_wrangler_commands(
     monkeypatch.setattr("tools.publish_release.subprocess.run", fake_run)
     publish_r2(output, runner="npx", wrangler_version="4")
 
-    assert len(commands) == 4
+    assert len(commands) == 5
     assert all("r2" in command and "object" in command and "put" in command for command in commands)
     assert any("save-editor-downloads/latest.json" in command for command in commands)
     assert any("save-editor-downloads/SaveEditor-windows-x86_64.zip" in command for command in commands)
+    assert any("save-editor-downloads/SaveEditor-windows-x86_64-setup.exe" in command for command in commands)
 
 
 def test_verify_public_r2_identifies_itself_to_the_worker(

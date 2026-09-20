@@ -155,7 +155,8 @@ class UpdateDialog(QDialog):
         self.status_label.setText("Файл скачан и проверен; применение ещё не запускалось")
         self.restart_button.setText(
             "Открыть установщик"
-            if self.check_result.artifact and self.check_result.artifact.kind == "package"
+            if self.check_result.artifact
+            and self.check_result.artifact.kind in {"package", "installer"}
             else "Перезапустить и применить"
         )
         self.restart_button.setEnabled(True)
@@ -170,11 +171,15 @@ class UpdateDialog(QDialog):
         artifact = self.check_result.artifact
         if archive is None or artifact is None:
             return
-        if artifact.kind == "package":
+        if artifact.kind in {"package", "installer"}:
             if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(archive))):
-                self.status_label.setText(f"Пакет скачан: {archive}")
+                self.status_label.setText(f"Установщик скачан: {archive}")
             else:
-                self.status_label.setText("Установщик пакета открыт; подтверди обновление в системе")
+                self.status_label.setText("Установщик открыт; подтверди обновление в системе")
+                if artifact.kind == "installer":
+                    application = QApplication.instance()
+                    if application is not None:
+                        application.quit()
             return
         updater_name = "SaveEditor-updater.exe" if platform.system().casefold() == "windows" else "SaveEditor-updater"
         updater = self.installation.root / updater_name
