@@ -15,11 +15,12 @@ import uuid
 import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
+from http.client import HTTPMessage
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import IO, Literal
 from urllib.error import URLError
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .update_manifest import (
     DOWNLOAD_BASE_URL,
@@ -78,6 +79,36 @@ def _validate_url(url: str, *, allowed_hosts: frozenset[str], allowed_schemes: f
         raise ManifestError("update URL is outside the trusted download policy")
 
 
+class _PolicyRedirectHandler(HTTPRedirectHandler):
+    """Reject redirects before urllib connects to an untrusted destination."""
+
+    def __init__(
+        self,
+        *,
+        allowed_hosts: frozenset[str],
+        allowed_schemes: frozenset[str],
+    ) -> None:
+        super().__init__()
+        self.allowed_hosts = allowed_hosts
+        self.allowed_schemes = allowed_schemes
+
+    def redirect_request(
+        self,
+        req: Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: HTTPMessage,
+        newurl: str,
+    ) -> Request | None:
+        _validate_url(
+            newurl,
+            allowed_hosts=self.allowed_hosts,
+            allowed_schemes=self.allowed_schemes,
+        )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 class UpdateClient:
     """Fetch and verify a release manifest and one selected artifact."""
 
@@ -106,6 +137,12 @@ class UpdateClient:
         self.timeout = timeout
         self.allowed_hosts = allowed_hosts
         self.allowed_schemes = allowed_schemes
+        self._opener = build_opener(
+            _PolicyRedirectHandler(
+                allowed_hosts=allowed_hosts,
+                allowed_schemes=allowed_schemes,
+            )
+        )
 
     def _open(self, url: str):
         _validate_url(url, allowed_hosts=self.allowed_hosts, allowed_schemes=self.allowed_schemes)
@@ -116,7 +153,7 @@ class UpdateClient:
                 "User-Agent": UPDATE_USER_AGENT,
             },
         )
-        response = urlopen(request, timeout=self.timeout)
+        response = self._opener.open(request, timeout=self.timeout)
         final_url = response.geturl()
         _validate_url(final_url, allowed_hosts=self.allowed_hosts, allowed_schemes=self.allowed_schemes)
         return response
@@ -290,14 +327,19 @@ def replace_installation(
         new_executable = current / ("SaveEditor.exe" if installation.target == "windows" else "SaveEditor")
         if launcher is not None:
             launcher(new_executable)
-        shutil.rmtree(backup)
-        return current
     except Exception:
         if current.exists():
             shutil.rmtree(current)
         if backup.exists():
             os.replace(backup, current)
         raise
+    try:
+        shutil.rmtree(backup)
+    except OSError:
+        # The new installation is already committed and launched. Keep the
+        # recoverable backup instead of rolling back a successful update.
+        pass
+    return current
 
 
 def build_update_command(
@@ -344,8 +386,8 @@ def _windows_process_running(pid: int) -> bool:
     error_invalid_parameter = 87
     # ``ctypes`` exposes these names only on Windows.  ``getattr`` keeps the
     # runtime guard honest while also type-checking on both mypy platforms.
-    win_dll = getattr(ctypes, "WinDLL")
-    get_last_error = getattr(ctypes, "get_last_error")
+    win_dll = ctypes.__dict__["WinDLL"]
+    get_last_error = ctypes.__dict__["get_last_error"]
     kernel32 = win_dll("kernel32", use_last_error=True)
     kernel32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
     kernel32.OpenProcess.restype = ctypes.c_void_p

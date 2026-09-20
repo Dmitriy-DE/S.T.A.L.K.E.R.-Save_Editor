@@ -8,7 +8,7 @@ import threading
 import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -81,6 +81,61 @@ def _manifest_files(tmp_path: Path) -> dict[str, object]:
     )
 
 
+def test_update_client_rejects_redirect_before_contacting_disallowed_host() -> None:
+    target_hits: list[str] = []
+
+    class TargetHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            target_hits.append(self.path)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"{}")
+
+        def log_message(self, _format: str, *_args: object) -> None:
+            return
+
+    target = ThreadingHTTPServer(("127.0.0.1", 0), TargetHandler)
+    target_port = target.server_address[1]
+
+    class RedirectHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(302)
+            self.send_header("Location", f"http://localhost:{target_port}/latest.json")
+            self.end_headers()
+
+        def log_message(self, _format: str, *_args: object) -> None:
+            return
+
+    redirect = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
+    redirect_port = redirect.server_address[1]
+    threads = [
+        threading.Thread(target=target.serve_forever, daemon=True),
+        threading.Thread(target=redirect.serve_forever, daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+    try:
+        client = UpdateClient(
+            manifest_url=f"http://127.0.0.1:{redirect_port}/latest.json",
+            current_version="0.5.9",
+            target="windows",
+            allowed_hosts=frozenset({"127.0.0.1"}),
+            allowed_schemes=frozenset({"http"}),
+        )
+
+        with pytest.raises(ManifestError, match="trusted download policy"):
+            client._open(client.manifest_url)
+
+        assert target_hits == []
+    finally:
+        redirect.shutdown()
+        target.shutdown()
+        for thread in threads:
+            thread.join(timeout=2)
+        redirect.server_close()
+        target.server_close()
+
+
 def test_update_client_reports_current_and_available_versions(tmp_path: Path) -> None:
     payload = _manifest_files(tmp_path)
     with _server(tmp_path, payload) as manifest_url:
@@ -141,13 +196,14 @@ def test_update_client_identifies_requests_to_public_worker(
         captured["user_agent"] = request.get_header("User-agent")
         return _Response()
 
-    monkeypatch.setattr("editor.updater.urlopen", fake_urlopen)
-    result = UpdateClient(
+    client = UpdateClient(
         manifest_url="https://download.example/latest.json",
         current_version="0.5.9",
         target="windows",
         allowed_hosts=frozenset({"download.example"}),
-    ).check()
+    )
+    monkeypatch.setattr(client._opener, "open", fake_urlopen)
+    result = client.check()
 
     assert result.state == "current"
     assert captured["user_agent"] == UPDATE_USER_AGENT
@@ -300,6 +356,44 @@ def test_replace_installation_rolls_back_when_launcher_fails(tmp_path: Path) -> 
 
     assert (current / "SaveEditor.exe").read_text(encoding="utf-8") == "old"
     assert not staged.exists()
+
+
+def test_replace_installation_keeps_new_tree_when_backup_cleanup_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = tmp_path / "SaveEditor"
+    current.mkdir()
+    (current / "SaveEditor.exe").write_text("old", encoding="utf-8")
+    staged = tmp_path / "staged" / "SaveEditor"
+    staged.mkdir(parents=True)
+    (staged / "SaveEditor.exe").write_text("new", encoding="utf-8")
+    installation = InstallationInfo(
+        "windows",
+        "x86_64",
+        "portable",
+        current,
+        current / "SaveEditor.exe",
+    )
+    launched: list[Path] = []
+    real_rmtree = updater.shutil.rmtree
+
+    def fail_backup_cleanup(path, *args, **kwargs):
+        candidate = Path(path)
+        if candidate.name.startswith(".SaveEditor.backup-"):
+            raise OSError("backup is temporarily locked")
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(updater.shutil, "rmtree", fail_backup_cleanup)
+
+    result = replace_installation(staged, installation, launcher=launched.append)
+
+    assert result == current
+    assert launched == [current / "SaveEditor.exe"]
+    assert (current / "SaveEditor.exe").read_text(encoding="utf-8") == "new"
+    backups = list(tmp_path.glob(".SaveEditor.backup-*"))
+    assert len(backups) == 1
+    assert (backups[0] / "SaveEditor.exe").read_text(encoding="utf-8") == "old"
 
 
 def test_wait_for_process_exit_returns_for_an_exited_process() -> None:
