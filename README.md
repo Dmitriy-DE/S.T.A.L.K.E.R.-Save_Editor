@@ -116,14 +116,23 @@ Each GitHub release publishes separate Windows installer and portable ZIP files,
 Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`:
 
 - the installer creates the normal Windows installation and shortcut;
-- portable Windows and Linux bundles require neither Python nor installation;
-- desktop checks `latest.json` in the background and has a manual update action;
+- **Windows portable** ZIP and **Linux portable** tar.gz require neither Python
+  nor installation;
+- desktop checks `latest.json` in the background and has a manual
+  **автообновление** action;
 - portable updates verify size and SHA-256, then replace files only after the
   application exits; installer and `.deb` updates require explicit confirmation.
 
 The manifest and binaries are also mirrored to the public Cloudflare R2 download
 worker. Invalid manifests, unexpected hosts, network failures or hash mismatches
 leave the current installation untouched.
+
+Release preparation and R2 read-back use the repository tools:
+
+```bash
+make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+```
 
 ## Browser build
 
