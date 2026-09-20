@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from PySide6.QtCore import Qt, QThread, QUrl, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
@@ -46,6 +46,7 @@ from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs, installed_releases
 from editor.service import EditorService
 from editor.settings import PathSettings, load_settings, search_paths_for_settings
+from editor.updater import InstallationInfo, UpdateCheckResult, UpdateClient, detect_installation
 from save_format import SaveError, SaveInfo
 
 from .backups_view import BackupView, RestoreWorker
@@ -67,6 +68,7 @@ from .save_slots_view import (
 from .settings_view import SettingsView
 from .support_dialog import SupportDialog
 from .theme import apply_theme
+from .update_dialog import UpdateCheckWorker, UpdateDialog
 
 
 def _default_s2_capabilities() -> FormatCapabilities:
@@ -173,6 +175,8 @@ class MainWindow(QMainWindow):
         *,
         slot_discovery: SlotDiscoveryFn | None = None,
         settings_path: Path | None = None,
+        update_client: UpdateClient | None = None,
+        auto_update_check: bool = True,
     ) -> None:
         super().__init__()
         self.service = service
@@ -202,6 +206,11 @@ class MainWindow(QMainWindow):
         self._operation_kind: str | None = None
         self._cloud_busy = False
         self._support_dialog: SupportDialog | None = None
+        self._update_client = update_client
+        self._auto_update_check = auto_update_check
+        self._update_thread: UpdateCheckWorker | None = None
+        self._update_dialog: UpdateDialog | None = None
+        self._update_installation: InstallationInfo | None = None
 
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
@@ -210,6 +219,8 @@ class MainWindow(QMainWindow):
         self.resize(1280, 820)
         self.setMinimumSize(960, 620)
         self._build_ui()
+        if self._auto_update_check:
+            QTimer.singleShot(0, lambda: self.check_for_updates(manual=False))
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -254,6 +265,11 @@ class MainWindow(QMainWindow):
         self.launcher_button.setToolTip("Вернуться к библиотеке игр и сохранений")
         self.launcher_button.clicked.connect(self._show_launcher)
         title_layout.addWidget(self.launcher_button)
+        self.update_button = QPushButton("Обновления")
+        self.update_button.setObjectName("updateButton")
+        self.update_button.setToolTip("Проверить новую версию")
+        self.update_button.clicked.connect(lambda: self.check_for_updates(manual=True))
+        title_layout.addWidget(self.update_button)
         self.support_button = QPushButton("♡ Support project")
         self.support_button.setObjectName("supportButton")
         self.support_button.setToolTip("Поддержать проект")
@@ -440,6 +456,81 @@ class MainWindow(QMainWindow):
         self._support_dialog = dialog
         dialog.finished.connect(lambda _result: self._clear_support_dialog(dialog))
         dialog.open()
+
+    def _update_installation_info(self) -> InstallationInfo | None:
+        if self._update_installation is not None:
+            return self._update_installation
+        try:
+            self._update_installation = detect_installation()
+        except Exception:
+            return None
+        return self._update_installation
+
+    def _update_client_for_current_installation(self) -> UpdateClient | object | None:
+        if self._update_client is not None:
+            return self._update_client
+        installation = self._update_installation_info()
+        if installation is None or installation.kind == "development":
+            return None
+        kind = "package" if installation.kind == "package" else "portable"
+        self._update_client = UpdateClient(
+            current_version=_version_text(),
+            target=installation.target,
+            architecture=installation.architecture,
+            kind=kind,
+        )
+        return self._update_client
+
+    def check_for_updates(self, *, manual: bool = False) -> None:
+        """Check releases away from Qt and show only actionable results."""
+
+        if self._update_thread is not None and self._update_thread.isRunning():
+            return
+        client = self._update_client_for_current_installation()
+        if client is None:
+            if manual:
+                self.status_label.setText(
+                    "Автообновления доступны только в portable/package-сборке"
+                )
+            return
+        installation = self._update_installation_info()
+        if installation is None:
+            if manual:
+                self.status_label.setText("Не удалось определить тип установки")
+            return
+        worker = UpdateCheckWorker(client, self)
+        worker.result.connect(lambda result: self._on_update_result(result, manual, installation, client))
+        worker.finished.connect(self._on_update_thread_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._update_thread = worker
+        if manual:
+            self.status_label.setText("Проверка обновлений…")
+        worker.start()
+
+    def _on_update_result(
+        self,
+        result: UpdateCheckResult,
+        manual: bool,
+        installation: InstallationInfo,
+        client: object,
+    ) -> None:
+        if not manual and result.state != "available":
+            return
+        if self._update_dialog is not None and self._update_dialog.isVisible():
+            self._update_dialog.raise_()
+            self._update_dialog.activateWindow()
+            return
+        dialog = UpdateDialog(result, installation=installation, client=client, parent=self)
+        self._update_dialog = dialog
+        dialog.finished.connect(lambda _result: self._clear_update_dialog(dialog))
+        dialog.open()
+
+    def _on_update_thread_finished(self) -> None:
+        self._update_thread = None
+
+    def _clear_update_dialog(self, dialog: UpdateDialog) -> None:
+        if self._update_dialog is dialog:
+            self._update_dialog = None
 
     def _clear_support_dialog(self, dialog: SupportDialog) -> None:
         if self._support_dialog is dialog:
@@ -2290,6 +2381,15 @@ class MainWindow(QMainWindow):
             )
             event.ignore()
             return
+        if self._update_thread is not None and self._update_thread.isRunning():
+            self._update_thread.requestInterruption()
+            self._update_thread.wait(2_000)
+            if self._update_thread.isRunning():
+                self.status_label.setText(
+                    "Проверка обновлений ещё выполняется; окно закрыто не будет"
+                )
+                event.ignore()
+                return
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             self._inspect_thread.quit()
             self._inspect_thread.wait(10_000)
