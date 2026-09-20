@@ -41,12 +41,18 @@ def main(argv: list[str] | None = None) -> int:
             subprocess.Popen([str(executable)], cwd=executable.parent, start_new_session=True)
 
         replace_installation(staged, installation, launcher=launch)
-        Path(args.archive).unlink(missing_ok=True)
+        try:
+            Path(args.archive).unlink(missing_ok=True)
+        except OSError:
+            # A locked temporary archive must not turn a successful replacement
+            # into a false failure after the new process has already launched.
+            pass
         return 0
     except Exception as exc:
         print(f"Updater error: {type(exc).__name__}: {exc}")
-        shutil.rmtree(staging_root, ignore_errors=True)
         return 2
+    finally:
+        shutil.rmtree(staging_root, ignore_errors=True)
 
 
 if __name__ == "__main__":

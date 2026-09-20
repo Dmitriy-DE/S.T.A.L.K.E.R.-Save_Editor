@@ -31,6 +31,7 @@ from .update_manifest import (
 )
 
 DEFAULT_MANIFEST_URL = f"{DOWNLOAD_BASE_URL}/latest.json"
+UPDATE_USER_AGENT = "SaveEditor-updater/1"
 UpdateState = Literal["current", "available", "unavailable", "invalid"]
 
 
@@ -108,7 +109,13 @@ class UpdateClient:
 
     def _open(self, url: str):
         _validate_url(url, allowed_hosts=self.allowed_hosts, allowed_schemes=self.allowed_schemes)
-        request = Request(url, headers={"Accept": "application/json, application/octet-stream"})
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json, application/octet-stream",
+                "User-Agent": UPDATE_USER_AGENT,
+            },
+        )
         response = urlopen(request, timeout=self.timeout)
         final_url = response.geturl()
         _validate_url(final_url, allowed_hosts=self.allowed_hosts, allowed_schemes=self.allowed_schemes)
@@ -335,6 +342,7 @@ def wait_for_process_exit(pid: int, timeout: float = 30.0) -> None:
 
 __all__ = [
     "DEFAULT_MANIFEST_URL",
+    "UPDATE_USER_AGENT",
     "InstallationInfo",
     "UpdateCheckResult",
     "UpdateClient",

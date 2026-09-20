@@ -13,6 +13,7 @@ import pytest
 
 from editor.update_manifest import ManifestError
 from editor.updater import (
+    UPDATE_USER_AGENT,
     InstallationInfo,
     UpdateClient,
     detect_installation,
@@ -95,6 +96,47 @@ def test_update_client_reports_current_and_available_versions(tmp_path: Path) ->
         ).check()
         assert available.state == "available"
         assert available.artifact is not None
+
+
+def test_update_client_identifies_requests_to_public_worker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = _manifest_files(tmp_path)
+    artifacts = payload["artifacts"]
+    assert isinstance(artifacts, dict)
+    for artifact in artifacts.values():
+        assert isinstance(artifact, dict)
+        artifact["url"] = f"https://download.example/{artifact['file']}"
+    body = json.dumps(payload).encode("utf-8")
+    captured: dict[str, str | None] = {}
+
+    class _Response:
+        def __enter__(self) -> _Response:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def geturl(self) -> str:
+            return "https://download.example/latest.json"
+
+        def read(self, *_args: int) -> bytes:
+            return body
+
+    def fake_urlopen(request, *, timeout: float) -> _Response:
+        captured["user_agent"] = request.get_header("User-agent")
+        return _Response()
+
+    monkeypatch.setattr("editor.updater.urlopen", fake_urlopen)
+    result = UpdateClient(
+        manifest_url="https://download.example/latest.json",
+        current_version="0.5.9",
+        target="windows",
+        allowed_hosts=frozenset({"download.example"}),
+    ).check()
+
+    assert result.state == "current"
+    assert captured["user_agent"] == UPDATE_USER_AGENT
 
 
 def test_update_client_downloads_and_rejects_changed_bytes(tmp_path: Path) -> None:
