@@ -18,21 +18,22 @@
 
 At this snapshot:
 
-- `make test PYTHON=.venv/bin/python` — 531 passed;
+- `make test PYTHON=.venv/bin/python` — 532 passed;
 - `make check PYTHON=.venv/bin/python` — ruff, mypy, docs-check and py_compile passed;
-- hosted run `35480101624` — Linux and Windows packaging, source tests and
-  packaged smoke passed;
-- v0.5.11 GitHub Release assets and public R2 Worker matched by size and
-  SHA-256: Windows ZIP `61977876` bytes,
-  `107ab9e09f11672d2df25a0feb23ceb1a78336588b0f5f0674bd2e1f2c2e9fb1`,
-  Linux tar.gz `89763990` bytes,
-  `668c4ed406588d59ff4289f69847043db5ed2b72ad619298bfadb4fe57f6142c`,
-  Debian package `93116720` bytes,
-  `f295e792bcad6367595d85418fcfd631e45fbccd1bb7b01f3cbbdcb343444d08`.
+- hosted run `35481243962` — Linux and Windows packaging, source tests and
+  packaged smoke passed; the release job reached Worker deploy but could not
+  authenticate because repository Cloudflare secrets are absent;
+- v0.5.14 GitHub Release assets and public R2 Worker matched by size and
+  SHA-256: Windows ZIP `61982284` bytes,
+  `cde107541d78070d982457669aaad25ae8f8d3edcf76cf297af8c204368da787`,
+  Linux tar.gz `89778267` bytes,
+  `78b78403faee2175a87c2e461f7cebd30a60fd1197550e4b0a0cf6b68848a946`,
+  Debian package `93125592` bytes,
+  `fe621d8fb5a4ec76f259e69f3f812c48e5bd84122299912d9790fc9b094e1e45`.
 - `latest.json` public read-back matched the release asset;
-  SHA-256 `e6a272d646a79c925f7f1172e6a32c73b287afda42b8393637e537bf52f3ac68`.
-- Live update check through the Worker returned `available 0.5.11` from
-  `0.5.10` and `current` from `0.5.11`.
+  SHA-256 `3fa3221d6f25f8f8dd3626074e355d2113be6445deb064ac05eb3b598761aeeb`.
+- Live update checks through the Worker returned `available 0.5.14` from
+  `0.5.13` and `current` from `0.5.14` for both Linux and Windows targets.
 - The privileged `.deb` install remains intentionally unrun; package contents,
   metadata, checksums and diagnostic runtime were verified.
 

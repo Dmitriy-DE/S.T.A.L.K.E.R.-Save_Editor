@@ -27,16 +27,28 @@ manifest, сеть, размер или hash не затрагивают тек�
 проверяет все четыре R2 object-а через публичный Worker. GitHub Actions source
 test job остаётся без cloud credentials.
 
-Релиз v0.5.11 фактически опубликован. Hosted run 35480101624 подтвердил
-Windows и Linux native build, source tests и packaged smoke; GitHub Release
-содержит пять assets. Worker был задеплоен, четыре стабильных R2 object-а
-загружены, а `tools/publish_release.py --verify-r2` прочитал их обратно и
-сверил размеры/байты. Реальный `UpdateClient` проверен против публичного
-Worker: переходы `0.5.10 -> available 0.5.11` и `0.5.11 -> current` прошли.
+Релиз v0.5.14 фактически опубликован из commit
+`33ff8afa411c9026b72f846fcac5bcc7bffbfec2`:
+[GitHub Release v0.5.14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.14).
+Hosted run [35481243962](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35481243962)
+подтвердил Windows и Linux source tests, native build и packaged smoke.
+Worker версии `904711fb-1038-49e5-92df-c5ddc09f86d6` задеплоен; четыре
+стабильных R2 object-а загружены и прочитаны обратно через
+`tools/publish_release.py --verify-r2`. Реальный `UpdateClient` на обеих
+платформах подтвердил переходы `0.5.13 -> available 0.5.14` и
+`0.5.14 -> current`.
+
+Фактические SHA-256 release/R2 assets: Windows ZIP
+`cde107541d78070d982457669aaad25ae8f8d3edcf76cf297af8c204368da787`, Linux
+portable tar.gz
+`78b78403faee2175a87c2e461f7cebd30a60fd1197550e4b0a0cf6b68848a946`, Debian
+`fe621d8fb5a4ec76f259e69f3f812c48e5bd84122299912d9790fc9b094e1e45`,
+`latest.json`
+`3fa3221d6f25f8f8dd3626074e355d2113be6445deb064ac05eb3b598761aeeb`.
 В репозитории пока нет `CLOUDFLARE_API_TOKEN` и
-`CLOUDFLARE_ACCOUNT_ID`, поэтому release-job остановился на deploy Worker;
-этот конкретный релиз завершён локальным авторизованным Wrangler и gh без
-сохранения OAuth-токена в GitHub Secrets.
+`CLOUDFLARE_ACCOUNT_ID`, поэтому автоматический release-job остановился на
+deploy Worker; этот релиз завершён локальным авторизованным Wrangler и `gh`
+без сохранения OAuth-токена в GitHub Secrets.
 
 ## Непубликованный continuation — 2026-09-20
 

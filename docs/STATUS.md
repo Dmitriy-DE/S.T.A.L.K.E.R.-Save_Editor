@@ -7,14 +7,17 @@ contract с Linux .deb: latest.json и SHA-256 строятся из финал�
 GitHub Release и Cloudflare R2 получают один набор stable-файлов. Desktop
 проверяет обновления в фоне и применяет portable-архив отдельным updater после
 закрытия GUI; .deb передаётся системному установщику после подтверждения.
-Полное локальное тестирование прошло (531 passed). В hosted run
-35480101624 оба native build и packaged smoke прошли; v0.5.11 опубликован в
-GitHub Release и прочитан обратно из публичного R2 Worker. Реальный
-`UpdateClient` увидел `available 0.5.11` с текущей версией 0.5.10 и `current`
-с текущей версией 0.5.11. Автоматический
-release-job всё ещё требует repository secrets CLOUDFLARE_API_TOKEN и
-CLOUDFLARE_ACCOUNT_ID; текущая публикация выполнена локальным авторизованным
-Wrangler без помещения OAuth-токена в GitHub.
+Полное локальное тестирование прошло (532 passed). Hosted run
+[35481243962](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35481243962)
+подтвердил native build, source tests и packaged smoke на Linux и Windows.
+Релиз [v0.5.14](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.14)
+опубликован в GitHub Release; Worker версии `904711fb-1038-49e5-92df-c5ddc09f86d6`
+задеплоен, четыре стабильных R2 object-а загружены и прочитаны обратно.
+Реальный `UpdateClient` на Linux и Windows увидел `available 0.5.14` с текущей
+версией 0.5.13 и `current` с текущей версией 0.5.14. Автоматический
+release-job остановился на deploy Worker из-за отсутствующих repository secrets
+`CLOUDFLARE_API_TOKEN` и `CLOUDFLARE_ACCOUNT_ID`; публикация v0.5.14 завершена
+локальным авторизованным Wrangler и `gh` без помещения OAuth-токена в GitHub.
 
 ## 2026-09-20 — S2 Zone Kit / Steam Workshop catalog discovery
 
