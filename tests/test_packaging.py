@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -18,6 +20,17 @@ def test_resolve_target_rejects_cross_os_build() -> None:
     assert build.resolve_target("windows", host="Windows") == "windows"
     with pytest.raises(build.BuildError, match="не является cross-compiler"):
         build.resolve_target("windows", host="Linux")
+
+
+def test_builder_script_plan_runs_from_repository_root() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "packaging" / "build.py"), "--plan"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert '"cross_compile": false' in result.stdout
 
 
 def test_artifact_names_include_architecture_and_version() -> None:

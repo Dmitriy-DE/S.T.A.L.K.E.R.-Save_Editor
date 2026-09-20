@@ -23,6 +23,12 @@ import zipfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
+# ``python packaging/build.py`` is the documented CI/Make entry point.  Python
+# otherwise puts only ``packaging/`` on ``sys.path`` and cannot see the sibling
+# ``editor`` package.
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from editor.release_artifacts import (
     APP_NAME,
     DEBIAN_NAME,
