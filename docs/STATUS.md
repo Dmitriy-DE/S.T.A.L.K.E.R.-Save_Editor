@@ -1,6 +1,6 @@
 # Состояние и пробелы — 2026-09-20
 
-## v0.5.17 — hardening release candidate — 2026-09-20
+## v0.5.17 — hardening release — 2026-09-20
 
 Cloud upload теперь включается только для native/helper transport, который явно
 подтвердил write capability. Steam web/CDP и локальный cache остаются
@@ -27,10 +27,39 @@ bridge. File picker становится доступен после устан�
 load/re-save остаются внешними evidence gates. Локальная/hosted/release
 верификация фиксируется отдельно в
 [`HARDENING_0.5.17_2026-09-20.md`](evidence/HARDENING_0.5.17_2026-09-20.md).
-Source gate кандидата прошёл локально: Ruff, mypy для Linux и Windows target,
+Source gate релиза прошёл локально: Ruff, mypy для Linux и Windows target,
 generated-file checks, `560 passed` и два Node bootstrap test. Clean-tree Linux
 package build также прошёл: portable diagnostic загрузил bundled decoder,
 native child завершил read-only list, а SHA-256 portable/`.deb` совпали.
+
+Публичная публикация завершена из commit
+`639557bc656e40681b63e4edf848c12fce7068e9`. Hosted source matrix
+[35538975049](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35538975049)
+прошла на Ubuntu 3.11/3.12 и Windows 3.11/3.12. Hosted standalone build
+[35539090000](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35539090000)
+прошёл на Linux и Windows, включая Windows portable, installer и smoke
+установленного приложения.
+
+Автоматический release job остановился на fail-closed проверке отсутствующих
+`CLOUDFLARE_API_TOKEN` и `CLOUDFLARE_ACCOUNT_ID`; он не опубликовал неполный
+релиз. После успешных package jobs тот же проверенный набор был опубликован
+локальным авторизованным Wrangler/`gh`: Worker version
+`e9b23133-910d-4d73-9ab7-8933cbac041a`, шесть R2 объектов и публичный
+read-back совпали по размерам и SHA-256. [GitHub Release v0.5.17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.17)
+содержит четыре обязательных пакета, отдельный Windows installer,
+`latest.json` и `SHA256SUMS`. Манифест содержит source commit
+`639557bc656e40681b63e4edf848c12fce7068e9`.
+
+Финальные hosted assets: Windows portable — 62,019,536 bytes,
+`e62ac213394b817250ede47eec67ca48179189c612f1c7824778e57e1eb31e8b`;
+Windows installer — 38,195,465 bytes,
+`6554147ac2299d2a11edf6d3ac36d118bbe5d8b9015047a86faf46d17aada64b`;
+Linux portable — 89,790,188 bytes,
+`ea1547e591ff78eafc8629c00acaddcae489b7538ea89fdab116c25a5d4c8f4a`;
+Debian — 93,125,120 bytes,
+`863b7d0c3a96a3def35b41ef7fa2ff7b2a1f9831eedf6a518b7bf36b9378e987`.
+Pages deployment `7e3cd3e8` отвечает через canonical URL HTTP 200 и содержит
+раздельные ссылки Windows installer/portable и Linux packages.
 
 ## v0.5.16 — issues #95–#99 continuation — 2026-09-20
 

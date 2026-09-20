@@ -84,6 +84,7 @@ The latest release ships four end-user packages.
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
 Checksums are published with each GitHub release.
+Current stable release: [v0.5.17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.17).
 
 ## Desktop workflow
 

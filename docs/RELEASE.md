@@ -2,7 +2,7 @@
 
 ## v0.5.17 — fail-closed Cloud/update/publication hardening — 2026-09-20
 
-Кандидат v0.5.17 делает write capability явной во всём Steam Cloud flow:
+Релиз v0.5.17 делает write capability явной во всём Steam Cloud flow:
 native/helper допускают upload, а web/CDP/cache используются только для
 list/download. До вызова `WriteFile` отказ однозначный; после потенциальной
 записи ошибка остаётся `uncertain` и не повторяется автоматически.
@@ -22,6 +22,33 @@ S2 condition writer по-прежнему ограничен подтвержд�
 anchor. Weapon/helmet condition, произвольные S2 add/upgrades, Enhanced Edition
 parser, live Steam upload и game load/re-save не объявляются готовыми без
 контролируемых данных.
+
+### Фактическая публикация
+
+Релиз собран и опубликован из чистого commit
+`639557bc656e40681b63e4edf848c12fce7068e9`. Hosted source matrix
+[35538975049](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35538975049)
+прошла на Ubuntu 3.11/3.12 и Windows 3.11/3.12. Hosted package matrix
+[35539090000](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35539090000)
+прошла на Linux и Windows, включая smoke Windows installer.
+
+Финальный release job остановился до публикации на fail-closed проверке:
+GitHub repository не содержит `CLOUDFLARE_API_TOKEN` и
+`CLOUDFLARE_ACCOUNT_ID`. Поэтому публикация сделана после успешных package
+jobs локальным авторизованным Wrangler/`gh` из того же подготовленного набора.
+Worker version — `e9b23133-910d-4d73-9ab7-8933cbac041a`; шесть R2 objects
+прочитаны обратно через публичный Worker и совпали с локальными байтами.
+[GitHub Release v0.5.17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.17)
+содержит Windows portable/installer, Linux portable, `.deb`, `latest.json` и
+`SHA256SUMS`. Pages deployment
+[`7e3cd3e8`](https://7e3cd3e8.stalker-save-editor.pages.dev/) опубликован;
+canonical URL отвечает HTTP 200.
+
+Финальные SHA-256: Windows portable
+`e62ac213394b817250ede47eec67ca48179189c612f1c7824778e57e1eb31e8b`, Windows
+installer `6554147ac2299d2a11edf6d3ac36d118bbe5d8b9015047a86faf46d17aada64b`,
+Linux portable `ea1547e591ff78eafc8629c00acaddcae489b7538ea89fdab116c25a5d4c8f4a`,
+Debian `863b7d0c3a96a3def35b41ef7fa2ff7b2a1f9831eedf6a518b7bf36b9378e987`.
 
 ## v0.5.16 — bounded equipment protocol, release-aware Steam Cloud и UX — 2026-09-20
 
