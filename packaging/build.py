@@ -27,8 +27,8 @@ from editor.release_artifacts import (
     APP_NAME,
     DEBIAN_NAME,
     artifact_names,
-    debian_version as _debian_version,
 )
+from editor.release_artifacts import debian_version as _debian_version
 
 SUPPORTED_TARGETS = frozenset({"linux", "windows"})
 PRIVATE_NAMES = frozenset(

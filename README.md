@@ -195,6 +195,38 @@ actor-owned record и скачать изменённую копию. Capability
 
 ## Standalone-пакеты
 
+### Windows portable, Linux portable и автообновления
+
+Релиз публикует два portable-варианта и системный пакет:
+
+- Windows portable — SaveEditor-windows-x86_64-v*.zip;
+- Linux portable — SaveEditor-linux-x86_64-v*.tar.gz;
+- Linux amd64 .deb — для установки через системный пакетный менеджер.
+
+Portable-архивы не требуют Python и установки: распакуй каталог SaveEditor и
+запусти SaveEditor.exe на Windows или SaveEditor на Linux. Внутри также есть
+отдельный updater, который не заменяет работающий процесс.
+
+Стабильный manifest latest.json публикуется в Cloudflare R2 вместе с теми же
+байтами, которые прикреплены к GitHub Release. В manifest записаны платформа,
+размер и SHA-256. Desktop-сборка проверяет обновления после запуска в фоне и
+имеет ручную кнопку Обновления; при сбое сети приложение продолжает работать.
+Portable ZIP/tar.gz скачиваются, проверяются и применяются после перезапуска.
+Для .deb скачанный пакет открывается системным установщиком с явным
+подтверждением пользователя.
+
+Подготовка локального release-набора без публикации:
+
+    make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+
+Публикация в R2 требует настроенных Wrangler credentials и выполняется только
+явной командой:
+
+    make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+
+Команда загружает stable-файлы и latest.json, затем читает их обратно через
+публичный Worker и сравнивает размер и SHA-256.
+
 В исходном режиме Python нужен только для запуска проекта. Для пользователя
 готового bundle Python и `pip` не нужны: PyInstaller вкладывает интерпретатор,
 PySide6/Qt plugins и native decoder. Core parser/storage остаются на

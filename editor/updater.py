@@ -22,8 +22,8 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from .update_manifest import (
-    DOWNLOAD_HOST,
     DOWNLOAD_BASE_URL,
+    DOWNLOAD_HOST,
     ArtifactSpec,
     ManifestError,
     ReleaseManifest,
@@ -167,7 +167,6 @@ def detect_installation(
         raise ManifestError(f"unsupported update platform: {platform_name or platform.system()}")
     path = Path(executable or sys.executable).expanduser().resolve()
     root = path.parent
-    executable_name = "SaveEditor.exe" if target == "windows" else "SaveEditor"
     manifest_path = root / "BUILD_MANIFEST.json"
     if manifest_path.is_file():
         try:

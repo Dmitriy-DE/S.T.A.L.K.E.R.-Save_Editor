@@ -1,5 +1,37 @@
 # Проверка и выпуск
 
+## Portable-релиз и автообновление — 2026-09-20
+
+В release-контур добавлены Windows portable ZIP и Linux portable tar.gz.
+Linux .deb сохраняется как отдельный системный пакет. GitHub Release и
+Cloudflare R2 получают одинаковые итоговые байты; stable-имена и latest.json
+создаются из фактических файлов после сборки.
+
+latest.json содержит версию, commit, target, размер и SHA-256 каждого файла.
+Приложение проверяет manifest в фоне, показывает ручную кнопку проверки,
+скачивает только разрешённый R2 host и перед заменой сверяет SHA-256. Portable
+обновление применяет отдельный updater после закрытия GUI; .deb открывается
+через системный установщик после подтверждения пользователя. Невалидный
+manifest, сеть, размер или hash не затрагивают текущую установку.
+
+Локальная подготовка:
+
+    make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+
+Публикация и read-back:
+
+    make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+
+В CI tag-triggered job вызывает tools/publish_release.py --publish-r2
+--verify-r2, прикрепляет Windows/Linux portable и .deb к GitHub Release и
+проверяет все четыре R2 object-а через публичный Worker. GitHub Actions source
+test job остаётся без cloud credentials.
+
+На текущем локальном проходе проверены unit/UI/update/publish контракты и
+полный suite; hosted Windows runner, реальный R2 read-back и privileged .deb
+install считаются подтверждёнными только после фактического запуска release
+workflow.
+
 ## Непубликованный continuation — 2026-09-20
 
 Добавлен read-only S2 catalog discovery для loose official/Zone Kit/Steam

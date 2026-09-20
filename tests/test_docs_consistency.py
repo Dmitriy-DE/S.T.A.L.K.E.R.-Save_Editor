@@ -85,6 +85,24 @@ def test_cross_platform_spec_records_equipment_evidence_boundary() -> None:
         assert marker in document
 
 
+def test_release_docs_record_portable_updates_and_r2_contract() -> None:
+    root = render.ROOT
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    release = (root / "docs" / "RELEASE.md").read_text(encoding="utf-8")
+    for document in (readme, release):
+        for marker in (
+            "Windows portable",
+            "Linux portable",
+            "latest.json",
+            "Cloudflare R2",
+            "SHA-256",
+            "автообнов",
+        ):
+            assert marker.casefold() in document.casefold(), marker
+    assert "make release-manifest" in readme
+    assert "--publish-r2" in release
+
+
 def test_browser_catalog_is_compact_official_metadata_only() -> None:
     catalog_path = render.ROOT / "web" / "catalogs.json"
     document = json.loads(catalog_path.read_text(encoding="utf-8"))

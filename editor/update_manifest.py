@@ -90,7 +90,7 @@ class ArtifactSpec:
         *,
         allowed_hosts: frozenset[str] = frozenset({DOWNLOAD_HOST}),
         allowed_schemes: frozenset[str] = frozenset({"https"}),
-    ) -> "ArtifactSpec":
+    ) -> ArtifactSpec:
         if not isinstance(payload, dict):
             raise ManifestError("artifact must be an object")
         target = _require_string(payload.get("target"), "artifact.target")
@@ -172,7 +172,7 @@ class ReleaseManifest:
         *,
         allowed_hosts: frozenset[str] = frozenset({DOWNLOAD_HOST}),
         allowed_schemes: frozenset[str] = frozenset({"https"}),
-    ) -> "ReleaseManifest":
+    ) -> ReleaseManifest:
         try:
             value = json.loads(payload)
         except json.JSONDecodeError as exc:
@@ -241,12 +241,12 @@ class ReleaseManifest:
 
 
 __all__ = [
-    "ArtifactSpec",
     "DOWNLOAD_BASE_URL",
     "DOWNLOAD_HOST",
     "MANIFEST_SCHEMA",
+    "SUPPORTED_ARTIFACTS",
+    "ArtifactSpec",
     "ManifestError",
     "ReleaseManifest",
-    "SUPPORTED_ARTIFACTS",
     "compare_versions",
 ]

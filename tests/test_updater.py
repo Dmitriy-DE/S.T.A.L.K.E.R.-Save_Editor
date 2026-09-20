@@ -4,10 +4,10 @@ import json
 import tarfile
 import threading
 import zipfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 
@@ -29,7 +29,9 @@ class _QuietHandler(SimpleHTTPRequestHandler):
 
 @contextmanager
 def _server(root: Path, manifest_payload: dict[str, object]) -> Iterator[str]:
-    handler = lambda *args, **kwargs: _QuietHandler(*args, directory=str(root), **kwargs)
+    def handler(*args, **kwargs):
+        return _QuietHandler(*args, directory=str(root), **kwargs)
+
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     port = server.server_address[1]
     artifacts = manifest_payload["artifacts"]

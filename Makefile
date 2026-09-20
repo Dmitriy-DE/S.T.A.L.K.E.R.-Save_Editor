@@ -4,7 +4,7 @@ VERSION ?= $(shell sed -n '1p' VERSION)
 ARTIFACT_DIR ?= release-input
 OUTPUT_DIR ?= release-output
 
-.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package
+.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package release-manifest r2-publish
 check: lint typecheck docs-check
 	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
