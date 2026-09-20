@@ -36,6 +36,11 @@ public read-back. [GitHub Release v0.5.16](https://github.com/Dmitriy-DE/S.T.A.L
 contains Windows installer/portable, Linux portable, `.deb`, `latest.json` and
 `SHA256SUMS`.
 
+Pages was redeployed from the release tree as preview
+[fdd869f5](https://fdd869f5.stalker-save-editor.pages.dev/) and the canonical
+[stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev/) responds
+HTTP 200 with separate Windows installer and portable links.
+
 Release/R2 assets: Windows portable 62,013,435 bytes,
 `15a0234fc806ade556a9d630261008bc06a6c0db29d07aad13c502560b2dadd7`;
 Windows installer 38,192,590 bytes,

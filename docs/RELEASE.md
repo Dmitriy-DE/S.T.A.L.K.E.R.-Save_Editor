@@ -26,6 +26,9 @@ Windows installer smoke. Его release-job остановился на Worker d
 Релиз: [GitHub Release v0.5.16](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.16).
 Worker version `b5ba5517-a3a8-45d0-bc9a-a8cace7e64ad`; пять stable R2 объектов
 прочитаны обратно через public Worker и совпали с локальными байтами.
+Pages preview [fdd869f5](https://fdd869f5.stalker-save-editor.pages.dev/) и
+[canonical URL](https://stalker-save-editor.pages.dev/) отвечают HTTP 200;
+страница содержит отдельные Windows installer и portable links.
 
 Фактические размеры и SHA-256: Windows ZIP — 62,013,435 bytes,
 `15a0234fc806ade556a9d630261008bc06a6c0db29d07aad13c502560b2dadd7`;
