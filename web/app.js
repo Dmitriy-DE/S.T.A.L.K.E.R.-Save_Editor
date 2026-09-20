@@ -4,6 +4,8 @@
 // native decoder for S.T.A.L.K.E.R. 2; original X-Ray saves use the bundled
 // pure-Python LZO reader.  Nothing is uploaded: the file stays in this tab.
 
+import { installCatalogs, loadCoreResources } from "./bootstrap.js";
+
 const PYODIDE_VERSION = "0.28.3";
 const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
 const OOZ_URL = "https://cdn.jsdelivr.net/npm/ooz-wasm@2.0.0/index.js";
@@ -26,6 +28,7 @@ const state = {
   detach: new Set(),
   equipmentSelectedHandle: null,
   prepared: null,
+  catalogsReady: null,
 };
 
 function setStatus(text, kind = "") {
@@ -39,20 +42,18 @@ function fail(error) {
 }
 
 async function boot() {
-  setStatus("Загрузка декодера сохранений…", "busy");
-  const ooz = await import(OOZ_URL);
-
-  setStatus("Загрузка Python-ядра (Pyodide)…", "busy");
-  const { loadPyodide } = await import(`${PYODIDE_URL}pyodide.mjs`);
-  const py = await loadPyodide({ indexURL: PYODIDE_URL });
+  setStatus("Параллельная загрузка декодера и Python-ядра…", "busy");
+  const { bridgeSource, bundle, ooz, py } = await loadCoreResources({
+    oozUrl: OOZ_URL,
+    pyodideUrl: PYODIDE_URL,
+  });
 
   setStatus("Установка ядра редактора…", "busy");
-  const bundle = await (await fetch("pysrc.json")).json();
   py.FS.mkdirTree("/core/editor");
   for (const [name, source] of Object.entries(bundle.files)) {
     py.FS.writeFile(`/core/${name}`, source, { encoding: "utf8" });
   }
-  py.FS.writeFile("/core/web_bridge.py", await (await fetch("web_bridge.py")).text(), {
+  py.FS.writeFile("/core/web_bridge.py", bridgeSource, {
     encoding: "utf8",
   });
   py.runPython(`import sys; sys.path.insert(0, "/core")`);
@@ -61,23 +62,33 @@ async function boot() {
   globalThis.__oozDecompress = (stream, size) => ooz.decompress(stream, size);
   const bridge = py.pyimport("web_bridge");
   bridge.install_decoder(globalThis.__oozDecompress);
-  const generatedCatalogs = await (await fetch("catalogs.json")).text();
-  bridge.install_catalogs(generatedCatalogs);
 
   state.py = py;
   state.bridge = bridge;
+  state.catalogsReady = installCatalogs({ bridge });
+  state.catalogsReady.catch(fail);
   el("core-state").textContent = "готово";
   el("footer-build").textContent =
     `Ядро: ${bundle.source_sha256.slice(0, 12)}… · Pyodide ${PYODIDE_VERSION} · ooz-wasm 2.0.0`;
   el("file-input").disabled = false;
-  setStatus("Ядро готово. Открой локальный файл сохранения.");
+  setStatus("Ядро готово; каталог загружается в фоне. Можно выбрать сейв.");
+  state.catalogsReady.then(
+    () => {
+      if (!state.snapshot && !el("file-input").files?.length) {
+        setStatus("Ядро и каталог готовы. Открой локальный файл сохранения.");
+      }
+    },
+    () => {},
+  );
 }
 
 async function openFile(file) {
-  if (!state.bridge) return;
+  if (!state.bridge || !state.catalogsReady) return;
   setStatus(`Чтение ${file.name}…`, "busy");
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    const bytesReady = file.arrayBuffer();
+    await state.catalogsReady;
+    const bytes = new Uint8Array(await bytesReady);
     const t0 = performance.now();
     const snapshot = JSON.parse(state.bridge.analyze(bytes, file.name));
     const ms = Math.round(performance.now() - t0);
