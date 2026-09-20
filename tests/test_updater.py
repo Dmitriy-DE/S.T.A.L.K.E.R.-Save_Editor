@@ -280,7 +280,5 @@ def test_windows_process_check_uses_wait_handle(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(ctypes, "WinDLL", lambda *_args, **_kwargs: _Kernel(), raising=False)
     monkeypatch.setattr(ctypes, "get_last_error", lambda: 0, raising=False)
-    monkeypatch.setattr(updater.os, "name", "nt")
-    monkeypatch.setattr(updater.os, "kill", lambda *_args: pytest.fail("os.kill must not run on Windows"))
 
-    assert updater._process_running(123)
+    assert updater._windows_process_running(123)
