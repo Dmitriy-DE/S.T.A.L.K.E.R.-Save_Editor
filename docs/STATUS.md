@@ -17,6 +17,26 @@ Steam-сессии получил `52` cache-записи S.T.A.L.K.E.R. 2 и п
 его persisted/read-back и загрузка сейва в игре остаются отдельными внешними
 runtime gates и в этой проверке намеренно не запускались.
 
+Standalone package run
+[35638429573](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35638429573)
+прошёл source gate, Linux portable/`.deb` и Windows portable/installer smoke.
+Его release job остановился до внешних мутаций на отсутствующих secrets
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `APT_SIGNING_KEY` и
+`APT_SIGNING_KEY_ID`. Поэтому шесть root-ассетов были вручную опубликованы
+авторизованными `gh` и Wrangler из того же merge commit
+`1adb396b8ddcc4ffb3c4f566c32560726ce5ea55`:
+[GitHub Release v0.5.20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.20)
+и публичный [R2 Worker](https://save-editor-downloads.save-editor.workers.dev/latest.json).
+GitHub download и R2 read-back совпали с локальными файлами побайтно; `latest.json`
+публично сообщает `version: 0.5.20` и тот же `source_commit`. APT-репозиторий
+не изменялся: без исходного приватного signing key его публикация запрещена.
+
+SHA-256 бинарных ассетов v0.5.20: Windows portable
+`f3d21583c8999a8d84283684a5ff45d20b105bc9bf538e59f6d22edee372d3ba`, Windows
+installer `64e1ee9da8622449f42c41aaaadbccfd2722c04df07161c4eac1b5ef537109a5`,
+Linux portable `82b7dfa49d00464a4bf3e5180a1fceafa457176e87d6850861b71ac15a03ede0`,
+Debian `7c6c05f762f9adf2c2fa35f2b9b58c346b119e76eb6adca39b2d8d0a492e97bb`.
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Основной desktop flow упрощён до одной операции: открыть локальный сейв,

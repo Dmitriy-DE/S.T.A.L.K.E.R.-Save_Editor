@@ -58,6 +58,25 @@ read-only smoke on the current Steam session found `52` cache entries and
 reported `writable=True`; a real write to a user slot and in-game load/re-save
 were intentionally not performed, so they remain external runtime gates.
 
+Standalone package run
+[35638429573](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35638429573)
+прошёл source gate, Linux portable/`.deb` и Windows portable/installer smoke.
+Release job остановился до внешних мутаций на отсутствующих secrets
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `APT_SIGNING_KEY` и
+`APT_SIGNING_KEY_ID`. Шесть root-ассетов поэтому вручную опубликованы
+авторизованными `gh` и Wrangler из merge commit
+`1adb396b8ddcc4ffb3c4f566c32560726ce5ea55`:
+[GitHub Release v0.5.20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.20)
+и [R2 latest.json](https://save-editor-downloads.save-editor.workers.dev/latest.json).
+Все GitHub download и R2 read-back совпали с локальными файлами побайтно.
+APT не изменялся из-за отсутствия исходного приватного signing key.
+
+SHA-256 бинарных ассетов: Windows portable
+`f3d21583c8999a8d84283684a5ff45d20b105bc9bf538e59f6d22edee372d3ba`, Windows
+installer `64e1ee9da8622449f42c41aaaadbccfd2722c04df07161c4eac1b5ef537109a5`,
+Linux portable `82b7dfa49d00464a4bf3e5180a1fceafa457176e87d6850861b71ac15a03ede0`,
+Debian `7c6c05f762f9adf2c2fa35f2b9b58c346b119e76eb6adca39b2d8d0a492e97bb`.
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Desktop save теперь сводится к одной понятной операции: после редактирования
