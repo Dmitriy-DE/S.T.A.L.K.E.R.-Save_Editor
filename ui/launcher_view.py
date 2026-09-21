@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 
 from editor.releases import release_by_id
 
+from .formatting import human_size
 from .save_slots_view import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot
 
 _GAME_MENU_TITLES: dict[str, str] = {
@@ -37,15 +38,6 @@ _GAME_MENU_TITLES: dict[str, str] = {
     "clear_sky": "Clear Sky",
     "soc": "Shadow of Chernobyl",
 }
-
-
-def _human_size(size: int) -> str:
-    value = float(size)
-    for unit in ("B", "KB", "MB", "GB"):
-        if value < 1024 or unit == "GB":
-            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
-        value /= 1024
-    return f"{size} B"
 
 
 def _modified_text(modified_ns: int) -> str:
@@ -294,7 +286,7 @@ class LauncherView(QWidget):
                 slot.path.name,
                 slot.game_title if slot.format_id else slot.candidate_game_title,
                 _modified_text(slot.modified_ns),
-                _human_size(slot.size),
+                human_size(slot.size),
                 slot.status_text,
             )
             for column, value in enumerate(values):
