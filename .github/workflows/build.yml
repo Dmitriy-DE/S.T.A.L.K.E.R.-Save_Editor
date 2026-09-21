@@ -102,7 +102,7 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
-            ca-certificates curl git dpkg-dev lintian lsb-release \
+            binutils ca-certificates curl git dpkg-dev lintian lsb-release \
             libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0 \
             libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-render-util0 \

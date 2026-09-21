@@ -9,6 +9,8 @@ not cross-compile Windows executables from Linux (or the reverse).
 from __future__ import annotations
 
 import argparse
+import datetime
+import gzip
 import hashlib
 import importlib.metadata
 import json
@@ -19,6 +21,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import time
 import zipfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -110,6 +113,26 @@ def _git_commit(root: Path) -> str:
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
     return result.stdout.strip() or "unknown"
+
+
+def _source_date_epoch(root: Path | None = None) -> int:
+    """Return a stable, non-ancient timestamp for package metadata."""
+
+    override = os.environ.get("SOURCE_DATE_EPOCH", "").strip()
+    if override.isdigit() and int(override) > 0:
+        return int(override)
+    try:
+        result = subprocess.run(
+            ["git", "show", "-s", "--format=%ct", "HEAD"],
+            cwd=root or repository_root(),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return int(time.time())
+    value = result.stdout.strip()
+    return int(value) if value.isdigit() and int(value) > 0 else int(time.time())
 
 
 def _git_state(root: Path, *, ignore: Path | None = None) -> tuple[str, tuple[str, ...]]:
@@ -505,17 +528,14 @@ def _installed_size_kib(stage: Path) -> int:
 
 
 def _debian_copyright() -> str:
-    license_path = repository_root() / "LICENSE"
-    license_text = license_path.read_text(encoding="utf-8").rstrip()
-    indented_license = "\n".join(f" {line}" if line else " ." for line in license_text.splitlines())
     return (
         "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n"
         "Upstream-Name: S.T.A.L.K.E.R. Save Editor\n"
         "Source: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor\n\n"
         "Files: *\n"
         "Copyright: 2026 Dmitriy-DE and contributors\n"
-        "License: GPL-3+\n\n"
-        f"{indented_license}\n"
+        "License: GPL-3+\n"
+        " The full text is available in /usr/share/common-licenses/GPL-3.\n"
     )
 
 
@@ -532,12 +552,84 @@ preview, backup, checksum and atomic replacement guards.
 """
 
 
+def _debian_changelog(version: str, source_date_epoch: int) -> str:
+    date = datetime.datetime.fromtimestamp(source_date_epoch, datetime.UTC)
+    formatted_date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    return f"""stalker2-save-editor ({_debian_version(version)}) stable; urgency=medium
+
+  * Release the standalone desktop editor with protected save operations.
+
+ -- S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>  {formatted_date}
+"""
+
+
+def _debian_lintian_overrides() -> str:
+    """Document checks that cannot understand a self-contained PyInstaller tree."""
+
+    return """# The PyInstaller runtime intentionally carries its Qt/Python shared libraries.
+stalker2-save-editor: embedded-library
+stalker2-save-editor: shared-library-lacks-prerequisites
+stalker2-save-editor: library-not-linked-against-libc
+# PyInstaller bootloaders are prebuilt non-PIE ELF executables.
+stalker2-save-editor: hardening-no-pie
+# The upstream provenance archive is retained in the runtime for license/source traceability.
+stalker2-save-editor: package-contains-timestamped-gzip
+"""
+
+
+def _is_shared_library(path: Path) -> bool:
+    name = path.name
+    return name.endswith(".so") or ".so." in name
+
+
+def _normalise_runtime_libraries(runtime: Path) -> None:
+    """Make bundled shared libraries non-executable and remove symbol baggage."""
+
+    strip = shutil.which("strip")
+    if strip is None:
+        raise BuildError("binutils/strip не найден; Debian package требует stripped shared libraries")
+    for path in runtime.rglob("*"):
+        if not path.is_file() or not _is_shared_library(path):
+            continue
+        path.chmod(path.stat().st_mode & ~0o111)
+        try:
+            subprocess.run(
+                [strip, "--strip-unneeded", "--preserve-dates", str(path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise BuildError(f"Не удалось strip shared library: {path}") from exc
+
+
+def _normalise_package_timestamps(stage: Path, source_date_epoch: int) -> None:
+    """Apply the release timestamp to every staged path for reproducible dpkg output."""
+
+    for path in sorted(stage.rglob("*"), key=lambda item: len(item.parts), reverse=True):
+        os.utime(path, (source_date_epoch, source_date_epoch), follow_symlinks=False)
+
+
+def _normalise_package_permissions(stage: Path) -> None:
+    """Use Debian's conventional modes instead of checkout umask modes."""
+
+    for path in stage.rglob("*"):
+        if path.is_symlink():
+            continue
+        if path.is_dir():
+            path.chmod(0o755)
+        elif path.is_file():
+            mode = path.stat().st_mode
+            path.chmod(0o755 if mode & 0o111 else 0o644)
+
+
 def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) -> None:
     dpkg = shutil.which("dpkg-deb")
     if not dpkg:
         raise BuildError("dpkg-deb не найден; Debian package собирается на Debian/Ubuntu host")
     if os.environ.get("SAVE_EDITOR_REQUIRE_GLIBC_BASELINE") == "1":
         require_release_glibc()
+    source_date_epoch = _source_date_epoch()
     stage = work / "deb-root"
     if stage.exists():
         shutil.rmtree(stage)
@@ -552,6 +644,7 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
             f"свободно {free / 1024**3:.1f} GiB. Чаще всего это нехватка места: "
             "staging повторяет всё дерево PyInstaller."
         ) from exc
+    _normalise_runtime_libraries(runtime_destination)
     wrapper = stage / "usr" / "bin" / "stalker2-save-editor"
     wrapper.parent.mkdir(parents=True, exist_ok=True)
     wrapper.write_text(
@@ -581,15 +674,28 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
     copyright_dst = stage / "usr" / "share" / "doc" / DEBIAN_NAME / "copyright"
     copyright_dst.parent.mkdir(parents=True, exist_ok=True)
     copyright_dst.write_text(_debian_copyright(), encoding="utf-8")
-    manpage_dst = stage / "usr" / "share" / "man" / "man1" / "stalker2-save-editor.1"
+    manpage_dst = stage / "usr" / "share" / "man" / "man1" / "stalker2-save-editor.1.gz"
     manpage_dst.parent.mkdir(parents=True, exist_ok=True)
-    manpage_dst.write_text(_debian_manpage(), encoding="utf-8")
+    with (
+        manpage_dst.open("wb") as handle,
+        gzip.GzipFile(fileobj=handle, mode="wb", mtime=source_date_epoch) as compressed,
+    ):
+        compressed.write(_debian_manpage().encode("utf-8"))
+    changelog_dst = stage / "usr" / "share" / "doc" / DEBIAN_NAME / "changelog.gz"
+    with (
+        changelog_dst.open("wb") as handle,
+        gzip.GzipFile(fileobj=handle, mode="wb", mtime=source_date_epoch) as compressed,
+    ):
+        compressed.write(_debian_changelog(version, source_date_epoch).encode("utf-8"))
+    overrides_dst = stage / "usr" / "share" / "lintian" / "overrides" / DEBIAN_NAME
+    overrides_dst.parent.mkdir(parents=True, exist_ok=True)
+    overrides_dst.write_text(_debian_lintian_overrides(), encoding="utf-8")
     control_dir = stage / "DEBIAN"
     control_dir.mkdir(parents=True, exist_ok=True)
     (control_dir / "control").write_text(
         f"""Package: stalker2-save-editor
 Version: {_debian_version(version)}
-Section: games
+Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>
@@ -602,9 +708,11 @@ Description: S.T.A.L.K.E.R. 2 save editor
 """,
         encoding="utf-8",
     )
+    _normalise_package_permissions(stage)
+    _normalise_package_timestamps(stage, source_date_epoch)
     scan_package_tree(stage)
     env = os.environ.copy()
-    env["SOURCE_DATE_EPOCH"] = "0"
+    env["SOURCE_DATE_EPOCH"] = str(source_date_epoch)
     command = [dpkg, "--build", "--root-owner-group", str(stage), str(destination)]
     try:
         subprocess.run(command, cwd=work, env=env, check=True)
