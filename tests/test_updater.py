@@ -19,7 +19,9 @@ from editor.updater import (
     UPDATE_USER_AGENT,
     InstallationInfo,
     UpdateClient,
+    build_installer_command,
     detect_installation,
+    launch_installer,
     replace_installation,
     stage_archive,
 )
@@ -295,6 +297,59 @@ def test_detect_installation_reads_windows_installer_marker(tmp_path: Path) -> N
     info = detect_installation(executable=executable, platform_name="windows")
 
     assert info.kind == "installer"
+
+
+def test_detect_installation_prefers_linux_package_root_with_build_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    package_root = tmp_path / "usr" / "lib" / "stalker2-save-editor"
+    package_root.mkdir(parents=True)
+    executable = package_root / "SaveEditor"
+    executable.write_bytes(b"app")
+    (package_root / "BUILD_MANIFEST.json").write_text(
+        json.dumps({"target": "linux", "architecture": "x86_64", "version": "0.5.9"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(updater, "PACKAGE_INSTALL_ROOT", package_root)
+
+    info = detect_installation(executable=executable, platform_name="linux")
+
+    assert info.kind == "package"
+    assert info.root == package_root
+
+
+def test_linux_package_handoff_prefers_pkexec_apt(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    archive = tmp_path / "update.deb"
+    archive.write_bytes(b"verified")
+    installation = InstallationInfo("linux", "x86_64", "package", tmp_path, tmp_path / "SaveEditor")
+    monkeypatch.setattr(updater.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    command = build_installer_command(archive, installation, kind="package", platform_name="linux")
+
+    assert command == ["/usr/bin/pkexec", "/usr/bin/apt-get", "install", "-y", str(archive.resolve())]
+
+
+def test_launch_installer_returns_started_process(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    archive = tmp_path / "setup.exe"
+    archive.write_bytes(b"verified")
+    installation = InstallationInfo("windows", "x86_64", "installer", tmp_path, tmp_path / "SaveEditor.exe")
+    calls: list[list[str]] = []
+
+    class Process:
+        pass
+
+    def fake_popen(command, **kwargs):
+        calls.append(command)
+        assert kwargs["start_new_session"] is True
+        return Process()
+
+    monkeypatch.setattr(updater.subprocess, "Popen", fake_popen)
+
+    result = launch_installer(archive, installation, kind="installer", platform_name="windows")
+
+    assert isinstance(result, Process)
+    assert calls == [[str(archive.resolve())]]
 
 
 def test_stage_archive_rejects_path_traversal(tmp_path: Path) -> None:
