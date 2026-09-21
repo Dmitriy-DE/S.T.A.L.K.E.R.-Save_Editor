@@ -23,9 +23,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            appstream libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0 \
+            appstream libegl1 libgl1 libglib2.0-0 libdbus-1-3 \
+            libatk1.0-0 libcairo2 libfontconfig1 libfreetype6 \
+            libgdk-pixbuf-2.0-0 libgtk-3-0 libharfbuzz0b \
+            libpango-1.0-0 libpangocairo-1.0-0 \
+            libxkbcommon0 \
             libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
-            libxcb-keysyms1 libxcb-render-util0
+            libxcb-keysyms1 libxcb-render-util0 libxcb-glx0 libxcb-shape0
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -103,9 +107,13 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
             binutils ca-certificates curl git dpkg-dev lintian lsb-release \
-            libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0 \
+            libegl1 libgl1 libglib2.0-0 libdbus-1-3 \
+            libatk1.0-0 libcairo2 libfontconfig1 libfreetype6 \
+            libgdk-pixbuf-2.0-0 libgtk-3-0 libharfbuzz0b \
+            libpango-1.0-0 libpangocairo-1.0-0 \
+            libxkbcommon0 \
             libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
-            libxcb-keysyms1 libxcb-render-util0 \
+            libxcb-keysyms1 libxcb-render-util0 libxcb-glx0 libxcb-shape0 \
             python3.11 python3.11-venv libpython3.11
 
       - name: Prepare Python 3.11 virtualenv in the container
