@@ -135,6 +135,22 @@ def test_ci_runs_the_qt_suite_headless() -> None:
         assert "libegl1" in text, f"{path.name} does not install the Qt runtime libraries"
 
 
+def test_workflows_use_node24_action_majors() -> None:
+    """Keep hosted workflows off the deprecated Node 20 action runtimes."""
+
+    expected = {
+        "actions/checkout": "actions/checkout@v7",
+        "actions/setup-python": "actions/setup-python@v7",
+        "actions/upload-artifact": "actions/upload-artifact@v7",
+        "actions/download-artifact": "actions/download-artifact@v8",
+    }
+    for path in (WORKFLOW, BUILD_WORKFLOW):
+        text = path.read_text(encoding="utf-8")
+        for action, reference in expected.items():
+            if action in text:
+                assert reference in text, f"{path.name} uses a stale {action} runtime"
+
+
 def test_python_shell_steps_actually_contain_python() -> None:
     """A `shell: python` step whose body is a shell command dies at runtime.
 

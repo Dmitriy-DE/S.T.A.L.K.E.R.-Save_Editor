@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Qt runtime libraries
         if: runner.os == 'Linux'
@@ -48,7 +48,7 @@ jobs:
             libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload sanitized failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-diagnostics-${{ matrix.os }}-py${{ matrix.python }}
           path: test-results/
