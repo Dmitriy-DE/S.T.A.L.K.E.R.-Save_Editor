@@ -1,5 +1,22 @@
 # Состояние и пробелы — 2026-09-21
 
+## v0.5.20 — native Steam Cloud writer with remote-only listings — 2026-09-21
+
+Исправлен ложный read-only блок upload. Steam `GetFileCount()` перечисляет
+только локально синхронизированные файлы и может вернуть `0`, когда сейвы уже
+видны в Steam Cloud web/cache. Раньше transport смешивал источник списка с
+возможностью записи, поэтому cache/web fallback отключал upload и показывал
+`WriteFile не запускался`. Теперь после успешной native инициализации список
+может оставаться web/cache-источником, а запись идёт через native
+`RemoteStorage::FileWrite`; настоящий web/cache-only transport по-прежнему
+остаётся read-only.
+
+Локальное доказательство: `601 passed`, `make check`; read-only smoke текущей
+Steam-сессии получил `52` cache-записи S.T.A.L.K.E.R. 2 и показал
+`writable=True` с native writer. Реальный `WriteFile` в пользовательский слот,
+его persisted/read-back и загрузка сейва в игре остаются отдельными внешними
+runtime gates и в этой проверке намеренно не запускались.
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Основной desktop flow упрощён до одной операции: открыть локальный сейв,

@@ -29,7 +29,7 @@ The project uses **one Python editing core** across the Qt desktop app, CLI and 
 > the opened local slot; Steam Cloud writes remain explicit and guarded by
 > backup/hash verification.
 
-The current release line is `0.5.19`. A release is published only from a clean
+The current release line is `0.5.20`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -99,12 +99,12 @@ sudo apt update
 sudo apt install stalker2-save-editor
 ```
 
-The current `v0.5.19` assets remain available as direct downloads; the signed
+The current `v0.5.20` assets remain available as direct downloads; the signed
 APT channel is published by the next tag only after its key, package, R2
 read-back and disposable `apt update` gates pass.
 
 Checksums are published with each GitHub release.
-Current stable release: [v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19).
+Current stable release: [v0.5.20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.20).
 
 ## Desktop workflow
 
@@ -138,8 +138,10 @@ its Steam app ID and remote save root into native, helper, cache and CDP paths;
 the UI reports which backend answered. Native calls use bounded subprocesses so a
 stuck Steam call cannot freeze the Qt UI indefinitely. Upload remains explicit,
 backup/hash guarded and reports verified versus uncertain outcomes. Only a native
-or helper backend that explicitly advertises write support can enable upload;
-Steam web/CDP and local-cache discovery remain read-only and explain why. A
+or helper backend that explicitly advertises write support can enable upload.
+Steam web/CDP and local-cache discovery remain read-only as listing/read sources;
+when native RemoteStorage initializes successfully, the same transport may list
+through web/cache and still upload through native `FileWrite`. A
 preflight refusal is a definite no-write result. An exception after `WriteFile`
 may have reached Steam, is reported as uncertain, and is never retried
 automatically.
@@ -190,7 +192,7 @@ Release preparation and R2 read-back use the repository tools:
 
 ```bash
 make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-make apt-repo VERSION=0.5.19 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
+make apt-repo VERSION=0.5.20 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
 make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
 ```
 
