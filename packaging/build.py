@@ -172,7 +172,21 @@ def dependency_manifest(target: str) -> dict[str, str]:
 # host, so a hard-coded minimum silently under-declares the requirement as soon
 # as the builder moves to a newer runner image.  2.35 (Ubuntu 22.04) is only the
 # fallback for hosts where the version cannot be detected.
-FALLBACK_LIBC_VERSION = "2.35"
+SUPPORTED_GLIBC_BASELINE = "2.35"
+FALLBACK_LIBC_VERSION = SUPPORTED_GLIBC_BASELINE
+DESKTOP_ID = "com.github.dmitriyde.stalker2saveeditor"
+DEBIAN_RUNTIME_DEPENDENCIES = (
+    "libegl1",
+    "libglib2.0-0",
+    "libdbus-1-3",
+    "libxkbcommon0",
+    "libxkbcommon-x11-0",
+    "libxcb-cursor0",
+    "libxcb-icccm4",
+    "libxcb-image0",
+    "libxcb-keysyms1",
+    "libxcb-render-util0",
+)
 
 
 def libc_requirement(host_version: str | None = None) -> str:
@@ -184,6 +198,25 @@ def libc_requirement(host_version: str | None = None) -> str:
     if len(parts) >= 2 and all(part.isdigit() for part in parts[:2]):
         return f"{int(parts[0])}.{int(parts[1])}"
     return FALLBACK_LIBC_VERSION
+
+
+def release_libc_requirement() -> str:
+    """Return the glibc floor used by public Linux release builds."""
+
+    return SUPPORTED_GLIBC_BASELINE
+
+
+def require_release_glibc(host_version: str | None = None) -> str:
+    """Fail unless the current build host is the declared release baseline."""
+
+    detected = libc_requirement(host_version)
+    if detected != SUPPORTED_GLIBC_BASELINE:
+        raise BuildError(
+            "Публичный Linux release должен собираться на glibc baseline "
+            f"{SUPPORTED_GLIBC_BASELINE}, обнаружено {detected}; "
+            "используйте Ubuntu 22.04-compatible build environment"
+        )
+    return SUPPORTED_GLIBC_BASELINE
 
 
 def build_manifest(
@@ -448,14 +481,54 @@ def _build_windows_installer(
 
 
 def _desktop_entry() -> str:
-    return """[Desktop Entry]
+    return f"""[Desktop Entry]
 Type=Application
 Name=S.T.A.L.K.E.R. Save Editor
 Comment=Inspect and edit local S.T.A.L.K.E.R. saves
 Exec=stalker2-save-editor
-Icon=stalker2-save-editor
+Icon={DESKTOP_ID}
 Terminal=false
 Categories=Utility;Game;
+Keywords=save;editor;S.T.A.L.K.E.R.;game;
+StartupNotify=true
+"""
+
+
+def _installed_size_kib(stage: Path) -> int:
+    """Return Debian's Installed-Size approximation for the staged payload."""
+
+    total = 0
+    for path in stage.rglob("*"):
+        if path.is_file() and "DEBIAN" not in path.relative_to(stage).parts:
+            total += (path.stat().st_size + 1023) // 1024
+    return max(1, total)
+
+
+def _debian_copyright() -> str:
+    license_path = repository_root() / "LICENSE"
+    license_text = license_path.read_text(encoding="utf-8").rstrip()
+    indented_license = "\n".join(f" {line}" if line else " ." for line in license_text.splitlines())
+    return (
+        "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n"
+        "Upstream-Name: S.T.A.L.K.E.R. Save Editor\n"
+        "Source: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor\n\n"
+        "Files: *\n"
+        "Copyright: 2026 Dmitriy-DE and contributors\n"
+        "License: GPL-3+\n\n"
+        f"{indented_license}\n"
+    )
+
+
+def _debian_manpage() -> str:
+    return r""".TH STALKER2-SAVE-EDITOR 1 "2026-09-21" "S.T.A.L.K.E.R. Save Editor" "User Commands"
+.SH NAME
+stalker2-save-editor \- inspect and edit supported S.T.A.L.K.E.R. save files
+.SH SYNOPSIS
+.B stalker2-save-editor
+.RI [ options ]
+.SH DESCRIPTION
+Launches the desktop S.T.A.L.K.E.R. Save Editor. Save writes are protected by
+preview, backup, checksum and atomic replacement guards.
 """
 
 
@@ -463,6 +536,8 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
     dpkg = shutil.which("dpkg-deb")
     if not dpkg:
         raise BuildError("dpkg-deb не найден; Debian package собирается на Debian/Ubuntu host")
+    if os.environ.get("SAVE_EDITOR_REQUIRE_GLIBC_BASELINE") == "1":
+        require_release_glibc()
     stage = work / "deb-root"
     if stage.exists():
         shutil.rmtree(stage)
@@ -484,18 +559,31 @@ def _build_deb(*, runtime: Path, destination: Path, work: Path, version: str) ->
         encoding="utf-8",
     )
     wrapper.chmod(0o755)
-    desktop = stage / "usr" / "share" / "applications" / "stalker2-save-editor.desktop"
+    desktop = stage / "usr" / "share" / "applications" / f"{DESKTOP_ID}.desktop"
     desktop.parent.mkdir(parents=True, exist_ok=True)
     desktop.write_text(_desktop_entry(), encoding="utf-8")
     for size in (256, 128, 64):
         icon_src = repository_root() / "assets" / f"app_icon_{size}.png"
-        if icon_src.is_file():
-            icon_dst = (
-                stage / "usr" / "share" / "icons" / "hicolor"
-                / f"{size}x{size}" / "apps" / "stalker2-save-editor.png"
-            )
-            icon_dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(icon_src, icon_dst)
+        if not icon_src.is_file():
+            raise BuildError(f"Иконка приложения отсутствует: {icon_src}")
+        icon_dst = (
+            stage / "usr" / "share" / "icons" / "hicolor"
+            / f"{size}x{size}" / "apps" / f"{DESKTOP_ID}.png"
+        )
+        icon_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(icon_src, icon_dst)
+    metainfo_src = repository_root() / "packaging" / f"{DESKTOP_ID}.metainfo.xml"
+    if not metainfo_src.is_file():
+        raise BuildError(f"AppStream metainfo отсутствует: {metainfo_src}")
+    metainfo_dst = stage / "usr" / "share" / "metainfo" / metainfo_src.name
+    metainfo_dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(metainfo_src, metainfo_dst)
+    copyright_dst = stage / "usr" / "share" / "doc" / DEBIAN_NAME / "copyright"
+    copyright_dst.parent.mkdir(parents=True, exist_ok=True)
+    copyright_dst.write_text(_debian_copyright(), encoding="utf-8")
+    manpage_dst = stage / "usr" / "share" / "man" / "man1" / "stalker2-save-editor.1"
+    manpage_dst.parent.mkdir(parents=True, exist_ok=True)
+    manpage_dst.write_text(_debian_manpage(), encoding="utf-8")
     control_dir = stage / "DEBIAN"
     control_dir.mkdir(parents=True, exist_ok=True)
     (control_dir / "control").write_text(
@@ -504,10 +592,13 @@ Version: {_debian_version(version)}
 Section: games
 Priority: optional
 Architecture: amd64
-Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors
-Depends: libc6 (>= {libc_requirement()})
+Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>
+Homepage: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor
+Installed-Size: {_installed_size_kib(stage)}
+Depends: libc6 (>= {libc_requirement()}), {', '.join(DEBIAN_RUNTIME_DEPENDENCIES)}
 Description: S.T.A.L.K.E.R. 2 save editor
- A local Qt editor with safe preview, backup and Steam Cloud workflows.
+ A local Qt editor for S.T.A.L.K.E.R. saves.
+ Safe preview, backup, verification and explicit Steam Cloud workflows.
 """,
         encoding="utf-8",
     )

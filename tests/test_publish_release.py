@@ -23,6 +23,22 @@ def _versioned_artifacts(root: Path, version: str = "0.5.9") -> Path:
     return artifacts
 
 
+def _apt_files(output: Path) -> None:
+    files = (
+        "repository-key.asc",
+        "dists/stable/InRelease",
+        "dists/stable/Release",
+        "dists/stable/Release.gpg",
+        "dists/stable/main/binary-amd64/Packages",
+        "dists/stable/main/binary-amd64/Packages.gz",
+        "pool/main/s/stalker2-save-editor/stalker2-save-editor_0.5.9_amd64.deb",
+    )
+    for relative in files:
+        path = output / "apt" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(relative.encode("utf-8"))
+
+
 def test_publish_release_cli_imports_from_repository_root() -> None:
     result = subprocess.run(
         [sys.executable, str(Path(__file__).parents[1] / "tools" / "publish_release.py"), "--help"],
@@ -102,6 +118,37 @@ def test_publish_r2_uses_stable_keys_and_explicit_wrangler_commands(
     assert any("save-editor-downloads/SaveEditor-windows-x86_64-setup.exe" in command for command in commands)
     assert any("save-editor-downloads/SHA256SUMS" in command for command in commands)
     assert "save-editor-downloads/latest.json" in commands[-1]
+
+
+def test_publish_r2_requires_and_orders_apt_repository_before_indexes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = _versioned_artifacts(tmp_path)
+    output = tmp_path / "release"
+    prepare_release(
+        artifact_dir=artifacts,
+        output_dir=output,
+        version="0.5.9",
+        commit="4" * 40,
+        published_at="2026-09-20T12:00:00Z",
+    )
+    _apt_files(output)
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.publish_release.subprocess.run", fake_run)
+    publish_r2(output, require_apt=True)
+
+    keys = [command[command.index("r2") + 3] for command in commands]
+    pool_key = "save-editor-downloads/apt/pool/main/s/stalker2-save-editor/stalker2-save-editor_0.5.9_amd64.deb"
+    assert keys.index(pool_key) < keys.index("save-editor-downloads/apt/dists/stable/InRelease")
+    assert keys.index("save-editor-downloads/apt/dists/stable/InRelease") < keys.index(
+        "save-editor-downloads/latest.json"
+    )
+    assert keys[-1] == "save-editor-downloads/latest.json"
 
 
 def test_prepared_mode_publishes_without_regenerating_release(

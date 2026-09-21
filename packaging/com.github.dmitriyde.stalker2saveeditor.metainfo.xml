@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.github.dmitriyde.stalker2saveeditor</id>
+  <name>S.T.A.L.K.E.R. Save Editor</name>
+  <summary>Inspect and edit S.T.A.L.K.E.R. save files</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="com.github.dmitriyde">
+    <name>Dmitriy-DE and contributors</name>
+  </developer>
+  <url type="homepage">https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor</url>
+  <url type="bugtracker">https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues</url>
+  <launchable type="desktop-id">com.github.dmitriyde.stalker2saveeditor.desktop</launchable>
+  <provides>
+    <binary>stalker2-save-editor</binary>
+  </provides>
+  <description>
+    <p>Desktop save editor for supported S.T.A.L.K.E.R. PC releases with protected local backups and explicit remote operations.</p>
+    <p>Changes are previewed and protected by backups, checksums and explicit cloud writes.</p>
+  </description>
+  <icon type="stock">com.github.dmitriyde.stalker2saveeditor</icon>
+  <content_rating type="oars-1.1"/>
+  <categories>
+    <category>Utility</category>
+    <category>Game</category>
+  </categories>
+</component>
