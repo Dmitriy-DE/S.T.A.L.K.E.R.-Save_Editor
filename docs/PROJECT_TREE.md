@@ -3,6 +3,7 @@
 ```text
 cli.py / save_format.py / steam_cloud.py           parser, research CLI and Steam helper IPC
 editor/                                            UI-free service, storage, cloud transaction and platform paths
+editor/steam_vdf.py                                dependency-free Steam KeyValues reader
 ui/                                                Qt interface: Zone theme, overview, inventory, changes, backups, Cloud
 packaging/                                         PyInstaller builder for Linux tar.gz/.deb and Windows zip
 web/                                               browser build: same core via Pyodide + ooz-wasm, generated bundle
@@ -10,12 +11,12 @@ tools/                                             maintenance scripts: task ind
 vendor/ooz.abi3.so                                 Linux decoder binary
 tests/selftest_real.py                             private-corpus selftest, never run in CI
 third_party/pyooz/                                 decoder source and provenance
-README.md / AGENTS.md / CODEX_PROMPT.md            entry points for contributors
+README.md / AGENTS.md                              entry points for contributors
 docs/specs/                                       architecture and product requirements
 docs/plans/                                       order and release gates
 docs/tasks/                                       individual execution cards + issue links
 docs/evidence/                                    reproducible result reports
-docs/history/                                     historical project docs
+docs/history/                                     historical project docs and handoffs
 .local/                                           ignored originals, saves and work logs
 packaging/build.py                                stdlib-only standalone builder
 packaging/editor.spec                             PyInstaller onedir spec (GUI + diagnostic + native child)
