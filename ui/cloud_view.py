@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.cloud_capabilities import CloudWriteCapability, cloud_write_capability
-from editor.formats import FormatDetectionError
+from editor.formats import STALKER2_FORMAT, FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
 from editor.service import EditorService
@@ -83,12 +83,7 @@ class CloudSnapshot:
     release_id: str = "stalker2"
     edition: str = "s2"
     capabilities: FormatCapabilities = field(
-        default_factory=lambda: FormatCapabilities(
-            read_inventory=True,
-            edit_money=True,
-            edit_stacks=True,
-            experimental_fields=frozenset({"edit_money"}),
-        )
+        default_factory=lambda: STALKER2_FORMAT.capabilities
     )
 
 

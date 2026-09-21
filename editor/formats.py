@@ -9,7 +9,7 @@ from typing import Protocol
 
 from save_format import SaveError, SaveInfo, inspect_save
 
-from .capabilities import FormatCapabilities, gate_mutations_for_release
+from .capabilities import CapabilitySupport, FormatCapabilities, gate_mutations_for_release
 from .catalog import GameCatalog, ItemCatalog
 from .equipment import equipment_support_for_release
 from .models import EditPlan, PreparedEdit
@@ -120,12 +120,15 @@ class _Stalker2Format:
         release_id,
         FormatCapabilities(
             read_inventory=True,
-            edit_money=True,
-            edit_stacks=True,
-            edit_durability=True,
             catalog=True,
             equipment=equipment_support_for_release("stalker2"),
-            experimental_fields=frozenset({"edit_money", "edit_durability"}),
+            mutation_support={
+                "edit_money": CapabilitySupport("experimental"),
+                "edit_stacks": CapabilitySupport(
+                    "research", "S2 stack writer не подтверждён."
+                ),
+                "edit_durability": CapabilitySupport("experimental"),
+            },
         ),
     )
 
@@ -260,30 +263,23 @@ class _XRayFormat:
             self.release_id,
             FormatCapabilities(
                 read_inventory=True,
-                edit_money=True,
-                edit_stacks=True,
-                add_items=True,
-                remove_items=True,
-                edit_durability=True,
-                edit_upgrades=spec.id in {"stalker-cs", "stalker-cop"},
-                edit_relations=True,
-                edit_player_faction=True,
-                edit_placement=True,
                 catalog=True,
                 equipment=equipment_support_for_release(spec.id),
-                experimental_fields=frozenset(
-                    {
-                        "edit_durability",
-                        "edit_relations",
-                        "edit_player_faction",
-                        "edit_placement",
-                        *(
-                            {"edit_upgrades"}
-                            if spec.id in {"stalker-cs", "stalker-cop"}
-                            else set()
-                        ),
-                    }
-                ),
+                mutation_support={
+                    "edit_money": CapabilitySupport("verified"),
+                    "edit_stacks": CapabilitySupport("verified"),
+                    "add_items": CapabilitySupport("verified"),
+                    "remove_items": CapabilitySupport("verified"),
+                    "edit_durability": CapabilitySupport("experimental"),
+                    "edit_relations": CapabilitySupport("experimental"),
+                    "edit_player_faction": CapabilitySupport("experimental"),
+                    "edit_placement": CapabilitySupport("experimental"),
+                    **(
+                        {"edit_upgrades": CapabilitySupport("experimental")}
+                        if release_by_id(spec.id).family in {"clear_sky", "cop"}
+                        else {}
+                    ),
+                },
             ),
         )
 

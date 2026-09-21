@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from test_xray_durability import _condition_fixture
 
-from editor.capabilities import FormatCapabilities
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.catalog import ItemDefinition, catalog_from_items
 from editor.equipment import (
     equipment_items,
@@ -240,6 +240,9 @@ def test_capability_json_contains_shared_equipment_maturity() -> None:
     payload = FormatCapabilities(
         read_inventory=True,
         equipment=equipment_support_for_release("stalker2"),
+        mutation_support={
+            "edit_durability": CapabilitySupport("experimental"),
+        },
     ).as_dict()
 
     assert payload["equipment"]["durability"]["maturity"] == "experimental"

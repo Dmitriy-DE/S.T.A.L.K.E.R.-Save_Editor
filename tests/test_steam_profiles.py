@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from editor.releases import official_releases
 from editor.steam_profiles import (
     steam_cloud_profile_for_app_id,
     steam_cloud_profile_for_release,
@@ -46,3 +47,17 @@ def test_original_profiles_use_the_actual_auto_cloud_savedgames_root() -> None:
 def test_unknown_app_id_fails_closed() -> None:
     with pytest.raises(KeyError):
         steam_cloud_profile_for_app_id(123)
+
+
+def test_cloud_profiles_are_derived_from_the_release_registry() -> None:
+    releases = official_releases()
+    profiles = steam_cloud_profiles()
+
+    assert [profile.release_id for profile in profiles] == [
+        release.id for release in releases
+    ]
+    for release, profile in zip(releases, profiles, strict=True):
+        assert profile.app_id == release.app_id
+        assert profile.title == release.title
+        assert profile.remote_prefixes == release.cloud_prefixes
+        assert profile.extensions == release.cloud_extensions

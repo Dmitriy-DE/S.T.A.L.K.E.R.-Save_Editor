@@ -44,7 +44,7 @@ def _catalogs(sources: list[Path]):
     """Yield trilogy catalogs, Enhanced Editions first for their HD atlases."""
 
     from editor.platforms import installed_releases
-    from editor.releases import _OFFICIAL_RELEASES, release_by_id
+    from editor.releases import official_releases, release_by_id
     from editor.xray_catalog import XRayCatalogProvider
 
     roots: list[Path] = list(sources)
@@ -60,7 +60,7 @@ def _catalogs(sources: list[Path]):
             release = release_by_id(release_id) if release_id else None
         except KeyError:
             release = None
-        candidates = [release] if release is not None else list(_OFFICIAL_RELEASES)
+        candidates = [release] if release is not None else list(official_releases())
         for candidate in candidates:
             catalog = XRayCatalogProvider().load(
                 candidate, root, allowed_editions=_EDITIONS

@@ -26,7 +26,7 @@ from .catalog import (
     UpgradeCatalog,
     UpgradeDefinition,
 )
-from .releases import ReleaseDescriptor
+from .releases import ReleaseDescriptor, release_by_id
 
 _MOD_PARTS = frozenset(
     {
@@ -71,7 +71,7 @@ _CATEGORY_BY_FILE = {
 _UPGRADE_KEY_RE = re.compile(r"upgrade.*sids?$", re.IGNORECASE)
 _REFKEY_RE = re.compile(r"\brefkey\s*=\s*([^;}]+)", re.IGNORECASE)
 _NUMBER_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
-_S2_APP_ID = 1643320
+_S2_APP_ID = release_by_id("stalker2").app_id
 _ZONE_KIT_ENV_KEYS = ("STALKER2_ZONE_KIT_ROOT", "ZONE_KIT_ROOT")
 _WORKSHOP_ENV_KEYS = ("STALKER2_WORKSHOP_ROOT",)
 

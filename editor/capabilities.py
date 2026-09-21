@@ -2,97 +2,150 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
+from types import MappingProxyType
 
+from .capability_types import CapabilityMaturity, CapabilitySupport
 from .equipment import EquipmentSupport
 
 # The owner accepted the three installed original X-Ray releases after loading
 # the edited copies in each official game and confirming the visible result.
 # S.T.A.L.K.E.R. 2 and Enhanced Editions remain gated until their own local
-# samples exist.  The evidence document records that the owner did not retain
-# a parser read-back hash from a second in-game save; this set is therefore an
-# explicit product acceptance for the installed originals, not a claim that
-# every unobserved release or serializer family is interchangeable.
+# samples exist.  This set is evidence ownership, not a second app/release
+# registry: app IDs and paths stay in editor.releases.
 _GAMEPLAY_VERIFIED_RELEASES: frozenset[str] = frozenset(
     {"stalker-soc", "stalker-cs", "stalker-cop"}
 )
-_MUTATION_CAPABILITY_FIELDS: frozenset[str] = frozenset(
-    {
-        "edit_money",
-        "edit_stacks",
-        "move_items",
-        "add_items",
-        "remove_items",
-        "edit_durability",
-        "edit_upgrades",
-        "edit_relations",
-        "edit_player_faction",
-        "edit_placement",
-    }
+_MUTATION_CAPABILITY_FIELDS = (
+    "edit_money",
+    "edit_stacks",
+    "move_items",
+    "add_items",
+    "remove_items",
+    "edit_durability",
+    "edit_upgrades",
+    "edit_relations",
+    "edit_player_faction",
+    "edit_placement",
 )
+_UNSUPPORTED = CapabilitySupport("unsupported")
 
 
 @dataclass(frozen=True)
 class FormatCapabilities:
-    """Describe edits a format may expose to users.
+    """Describe format edits through one maturity model.
 
-    ``experimental_fields`` keeps source-backed, round-trip-tested edits
-    visibly distinct from fields accepted by a controlled in-game check.
+    The ``edit_*`` attributes are compatibility projections.  They are not
+    stored state and can never disagree with ``mutation_support``: only
+    ``experimental`` and ``verified`` maturity is writable.
     """
 
     read_inventory: bool = False
-    edit_money: bool = False
-    edit_stacks: bool = False
-    move_items: bool = False
-    add_items: bool = False
-    remove_items: bool = False
-    edit_durability: bool = False
-    edit_upgrades: bool = False
     catalog: bool = False
-    edit_relations: bool = False
-    edit_player_faction: bool = False
-    edit_placement: bool = False
     equipment: EquipmentSupport | None = None
-    experimental_fields: frozenset[str] = frozenset()
+    mutation_support: Mapping[str, CapabilitySupport] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        fields = frozenset(self.experimental_fields)
-        unknown = fields - _MUTATION_CAPABILITY_FIELDS
+        raw = dict(self.mutation_support)
+        unknown = set(raw) - set(_MUTATION_CAPABILITY_FIELDS)
         if unknown:
             names = ", ".join(sorted(str(value) for value in unknown))
-            raise ValueError(f"unknown capability in experimental_fields: {names}")
-        inactive = {field for field in fields if not bool(getattr(self, field))}
-        if inactive:
-            names = ", ".join(sorted(inactive))
-            raise ValueError(
-                f"experimental capability must be enabled first: {names}"
-            )
-        object.__setattr__(self, "experimental_fields", fields)
+            raise ValueError(f"unknown capability in mutation_support: {names}")
+        for field_name, support in raw.items():
+            if not isinstance(support, CapabilitySupport):
+                raise TypeError(
+                    f"mutation_support[{field_name!r}] must be CapabilitySupport"
+                )
+        normalized = {
+            field_name: raw.get(field_name, _UNSUPPORTED)
+            for field_name in _MUTATION_CAPABILITY_FIELDS
+        }
+        object.__setattr__(self, "mutation_support", MappingProxyType(normalized))
 
-    def is_experimental(self, field: str) -> bool:
+    def support(self, field_name: str) -> CapabilitySupport:
+        """Return one mutation maturity or reject a misspelled field."""
+
+        if field_name not in _MUTATION_CAPABILITY_FIELDS:
+            raise KeyError(f"unknown mutation capability: {field_name!r}")
+        return self.mutation_support[field_name]
+
+    @property
+    def experimental_fields(self) -> frozenset[str]:
+        """Return experimental fields as a computed compatibility projection."""
+
+        return frozenset(
+            field_name
+            for field_name in _MUTATION_CAPABILITY_FIELDS
+            if self.support(field_name).maturity == "experimental"
+        )
+
+    def is_experimental(self, field_name: str) -> bool:
         """Return whether one enabled edit needs an explicit UI warning."""
 
-        return field in self.experimental_fields
+        return self.support(field_name).maturity == "experimental"
+
+    @property
+    def edit_money(self) -> bool:
+        return self.support("edit_money").writable
+
+    @property
+    def edit_stacks(self) -> bool:
+        return self.support("edit_stacks").writable
+
+    @property
+    def move_items(self) -> bool:
+        return self.support("move_items").writable
+
+    @property
+    def add_items(self) -> bool:
+        return self.support("add_items").writable
+
+    @property
+    def remove_items(self) -> bool:
+        return self.support("remove_items").writable
+
+    @property
+    def edit_durability(self) -> bool:
+        return self.support("edit_durability").writable
+
+    @property
+    def edit_upgrades(self) -> bool:
+        return self.support("edit_upgrades").writable
+
+    @property
+    def edit_relations(self) -> bool:
+        return self.support("edit_relations").writable
+
+    @property
+    def edit_player_faction(self) -> bool:
+        return self.support("edit_player_faction").writable
+
+    @property
+    def edit_placement(self) -> bool:
+        return self.support("edit_placement").writable
 
     def as_dict(self) -> dict[str, object]:
-        """Return the stable JSON-shaped projection shared by Qt and web."""
+        """Return the canonical JSON projection shared by Qt, web and CLI."""
 
-        return {
+        payload: dict[str, object] = {
             "read_inventory": self.read_inventory,
-            "edit_money": self.edit_money,
-            "edit_stacks": self.edit_stacks,
-            "move_items": self.move_items,
-            "add_items": self.add_items,
-            "remove_items": self.remove_items,
-            "edit_durability": self.edit_durability,
-            "edit_upgrades": self.edit_upgrades,
             "catalog": self.catalog,
-            "edit_relations": self.edit_relations,
-            "edit_player_faction": self.edit_player_faction,
-            "edit_placement": self.edit_placement,
             "equipment": self.equipment.as_dict() if self.equipment is not None else None,
+            "mutation_support": {
+                field_name: self.support(field_name).as_dict()
+                for field_name in _MUTATION_CAPABILITY_FIELDS
+            },
+            # Keep the established web/UI contract while deriving every bool.
             "experimental_fields": sorted(self.experimental_fields),
         }
+        payload.update(
+            {
+                field_name: getattr(self, field_name)
+                for field_name in _MUTATION_CAPABILITY_FIELDS
+            }
+        )
+        return payload
 
 
 def gameplay_verified_release_ids() -> frozenset[str]:
@@ -114,31 +167,23 @@ def gate_mutations_for_release(
 
     if release_id in _GAMEPLAY_VERIFIED_RELEASES:
         return capabilities
-    # An unverified release may still expose a narrowly scoped, explicitly
-    # experimental mutation.  Keep every other mutation read-only, and retain
-    # the marker so each UI can show the evidence boundary next to the control.
-    experimental = capabilities.experimental_fields
-    return replace(
-        capabilities,
-        edit_money=capabilities.edit_money and "edit_money" in experimental,
-        edit_stacks=capabilities.edit_stacks and "edit_stacks" in experimental,
-        move_items=capabilities.move_items and "move_items" in experimental,
-        add_items=capabilities.add_items and "add_items" in experimental,
-        remove_items=capabilities.remove_items and "remove_items" in experimental,
-        edit_durability=capabilities.edit_durability
-        and "edit_durability" in experimental,
-        edit_upgrades=capabilities.edit_upgrades and "edit_upgrades" in experimental,
-        edit_relations=capabilities.edit_relations
-        and "edit_relations" in experimental,
-        edit_player_faction=capabilities.edit_player_faction
-        and "edit_player_faction" in experimental,
-        edit_placement=capabilities.edit_placement
-        and "edit_placement" in experimental,
-        experimental_fields=experimental,
-    )
+    downgraded: dict[str, CapabilitySupport] = {}
+    for field_name in _MUTATION_CAPABILITY_FIELDS:
+        support = capabilities.support(field_name)
+        if support.maturity == "verified":
+            downgraded[field_name] = CapabilitySupport(
+                "research",
+                support.reason
+                or "game load/re-save evidence is not accepted for this release",
+            )
+        else:
+            downgraded[field_name] = support
+    return replace(capabilities, mutation_support=downgraded)
 
 
 __all__ = [
+    "CapabilityMaturity",
+    "CapabilitySupport",
     "FormatCapabilities",
     "gameplay_verified_release_ids",
     "gate_mutations_for_release",

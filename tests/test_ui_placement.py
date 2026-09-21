@@ -7,7 +7,7 @@ pytest.importorskip("PySide6")
 from PySide6.QtCore import Qt
 from test_xray_durability import _condition_fixture
 
-from editor.capabilities import FormatCapabilities
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from ui.main_window import LocalSnapshot, MainWindow
@@ -33,8 +33,9 @@ def test_qt_placement_editor_stages_slot_without_mutating_snapshot(qtbot, tmp_pa
             edition="original",
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_placement=True,
-                experimental_fields=frozenset({"edit_placement"}),
+                mutation_support={
+                    "edit_placement": CapabilitySupport("experimental")
+                },
             ),
         )
     )

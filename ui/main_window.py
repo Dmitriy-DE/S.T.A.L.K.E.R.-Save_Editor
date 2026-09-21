@@ -39,9 +39,9 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
-from editor.equipment import EquipmentItem, equipment_items, equipment_support_for_release
+from editor.equipment import EquipmentItem, equipment_items
 from editor.equipment_edits import RepairStageResult, stage_bulk_repair, stage_repair
-from editor.formats import FormatDetectionError
+from editor.formats import STALKER2_FORMAT, FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs, installed_releases
 from editor.service import EditorService
@@ -73,13 +73,7 @@ from .update_dialog import UpdateCheckWorker, UpdateDialog
 
 
 def _default_s2_capabilities() -> FormatCapabilities:
-    return FormatCapabilities(
-        read_inventory=True,
-        edit_money=True,
-        edit_stacks=True,
-        equipment=equipment_support_for_release("stalker2"),
-        experimental_fields=frozenset({"edit_money"}),
-    )
+    return STALKER2_FORMAT.capabilities
 
 
 def _human_size(size: int) -> str:

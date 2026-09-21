@@ -6,7 +6,7 @@ pytest.importorskip("PySide6")
 
 from test_xray_durability import _condition_fixture
 
-from editor.capabilities import FormatCapabilities
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
 from ui.main_window import LocalSnapshot, MainWindow
@@ -34,8 +34,10 @@ def test_qt_delete_button_shows_equipped_blocker_and_does_not_stage(
             edition="original",
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_stacks=True,
-                remove_items=True,
+                mutation_support={
+                    "edit_stacks": CapabilitySupport("verified"),
+                    "remove_items": CapabilitySupport("verified"),
+                },
             ),
         )
     )
