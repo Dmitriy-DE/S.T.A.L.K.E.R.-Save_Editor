@@ -186,8 +186,13 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
 
     workflow = yaml.safe_load(text)
     linux_steps = workflow["jobs"]["package-linux"]["steps"]
-    python_setup = next(step for step in linux_steps if step.get("name") == "Set up Python 3.11")
-    assert "cache" not in python_setup["with"]
+    python_bootstrap = next(
+        step
+        for step in linux_steps
+        if step.get("name") == "Prepare Python 3.11 virtualenv in the container"
+    )
+    assert "python3.11 -m venv .venv" in python_bootstrap["run"]
+    assert not any(step.get("uses") == "actions/setup-python@v5" for step in linux_steps)
 
 
 def test_release_publication_is_atomic_across_r2_and_github() -> None:
