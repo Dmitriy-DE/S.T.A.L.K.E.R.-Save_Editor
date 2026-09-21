@@ -10,7 +10,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 
 from editor.cloud_capabilities import CloudWriteCapability
 
@@ -25,8 +25,10 @@ __all__ = [
     "SAVE_PREFIX",
     "CloudFile",
     "CloudFileFilter",
+    "CloudSource",
     "SteamCloudError",
     "SteamWorker",
+    "cloud_source_label",
     "default_cloud_file_filter",
     "discover_helper",
 ]
@@ -63,6 +65,32 @@ MAX_RESPONSE_BYTES = 256 * 1024 * 1024
 MAX_FILE_BYTES = 64 * 1024 * 1024
 
 CloudFileFilter = Callable[[str], bool]
+CloudSource = Literal[
+    "native_remote_storage",
+    "helper_remote_storage",
+    "web",
+    "steam_cache_local",
+    "steam_cache_metadata",
+    "unknown",
+]
+
+_CLOUD_SOURCE_LABELS: dict[CloudSource, str] = {
+    "native_remote_storage": "Steam RemoteStorage",
+    "helper_remote_storage": "Steam helper",
+    "web": "Steam Cloud web",
+    "steam_cache_local": "Steam cache · локальная копия",
+    "steam_cache_metadata": "Steam cache · метаданные",
+    "unknown": "Неизвестно",
+}
+
+
+def cloud_source_label(source: str) -> str:
+    """Return a short user-facing label for cloud provenance."""
+
+    return _CLOUD_SOURCE_LABELS.get(
+        cast(CloudSource, source),
+        _CLOUD_SOURCE_LABELS["unknown"],
+    )
 
 
 def default_cloud_file_filter(name: str) -> bool:
@@ -101,6 +129,8 @@ class CloudFile:
     # not populate it, so the field stays optional and backwards-compatible.
     download_url: str | None = None
     local_path: Path | None = None
+    # Keep this additive and last so existing positional adapters remain valid.
+    source: CloudSource = "unknown"
 
 
 class SteamWorker:
@@ -340,6 +370,7 @@ class SteamWorker:
                     timestamp=int(f.get("timestamp", 0)),
                     is_persisted=bool(f.get("is_persisted", False)),
                     exists=bool(f.get("exists", True)),
+                    source="helper_remote_storage",
                 )
             )
         out.sort(key=lambda x: x.timestamp, reverse=True)
@@ -362,6 +393,11 @@ class SteamWorker:
             return bytes(data)
         except Exception as exc:
             raise SteamCloudError("ReadFile: некорректный массив байт") from exc
+
+    def read_cloud_file(self, cloud_file: CloudFile) -> bytes:
+        """Read an entry selected from this helper's own file listing."""
+
+        return self.read_file(cloud_file.name)
 
     def write_file(self, filename: str, data: bytes) -> None:
         _refuse_automated_live_session(self.app_id or 0, "WriteFile")

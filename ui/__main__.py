@@ -73,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     if "--help" in arguments or "-h" in arguments:
         print("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений.")
         return 0
+    from editor.diagnostics import configure_logging
+
+    configure_logging()
     try:
         from PySide6.QtWidgets import QApplication
     except ImportError as exc:

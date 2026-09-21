@@ -1,4 +1,31 @@
-# Состояние и пробелы — 2026-09-20
+# Состояние и пробелы — 2026-09-21
+
+## v0.5.18 — Cloud provenance, diagnostics and OTA correction
+
+Steam Cloud cache rows now carry provenance and are read through the source that
+found them. A metadata-only `remotecache.vdf` entry cannot fall through to the
+native `FileRead` call that produced the false “файл отсутствует в облаке” error;
+the UI labels local cache, metadata, web, helper and native sources separately.
+Local cache bytes are accepted only when their size matches Steam metadata, with
+web retry or an explicit read-only/unavailable error otherwise.
+
+The desktop app configures a rotating `save-editor.log` (1 MiB plus three
+backups) under its platform data directory. **Отправить логи** sends a bounded
+redacted gzip to the existing download Worker; the Worker stores random
+`diagnostics/` objects, does not serve them publicly, and removes objects older
+than 30 days during later submissions. No save bytes are collected.
+
+Linux package installation is now detected before the generic build manifest,
+so `/usr/lib/stalker2-save-editor` selects the Debian artifact. Verified `.deb`
+files use `pkexec apt-get` when available and otherwise `xdg-open`; Windows
+installer and portable update paths remain separate. The application reports
+that installation is pending instead of claiming that a package was already
+updated.
+
+Local implementation evidence is recorded in
+[`evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md`](evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md).
+Live Steam Cloud read/write, privileged package installation, Windows GUI smoke,
+Worker deployment and public release read-back remain separate external gates.
 
 ## v0.5.17 — hardening release — 2026-09-20
 

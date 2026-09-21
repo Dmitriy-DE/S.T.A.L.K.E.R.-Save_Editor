@@ -26,7 +26,7 @@ The project uses **one Python editing core** across the Qt desktop app, CLI and 
 
 > **Safety first:** edits are staged and verified before export. Local editing writes a new copy rather than silently replacing the original save. Steam Cloud writes are explicit and guarded by backup/hash verification.
 
-The current release line is `0.5.17`. A release is published only from a clean
+The current release line is `0.5.18`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -84,7 +84,7 @@ The latest release ships four end-user packages.
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
 Checksums are published with each GitHub release.
-Current stable release: [v0.5.17](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.17).
+Current stable release: [v0.5.18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.18).
 
 ## Desktop workflow
 
@@ -116,6 +116,13 @@ preflight refusal is a definite no-write result. An exception after `WriteFile`
 may have reached Steam, is reported as uncertain, and is never retried
 automatically.
 
+Every cloud row also shows its provenance: Steam RemoteStorage, helper, Steam
+Cloud web, local Steam cache, or cache metadata. A cache metadata row is a
+remote listing without downloaded bytes; the app never sends it to native
+`FileRead` by mistake. The **Отправить логи** button collects only bounded,
+rotated technical logs, redacts local home paths and secret-like values, and
+returns an opaque report id. Save bytes are not included.
+
 ## Updates and standalone packages
 
 Each GitHub release publishes separate Windows installer and portable ZIP files,
@@ -127,7 +134,10 @@ Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`:
 - desktop checks `latest.json` in the background and has a manual
   **автообновление** action;
 - portable updates verify size and SHA-256, then replace files only after the
-  application exits; installer and `.deb` updates require explicit confirmation.
+  application exits; Windows installer and Linux `.deb` updates launch the
+  verified system handoff and require explicit confirmation/privilege approval.
+- An installed Linux `.deb` is detected separately from Linux portable, so its
+  update check selects the `.deb` artifact instead of downloading a tarball.
 
 The manifest and binaries are also mirrored to the public Cloudflare R2 download
 worker. Redirect destinations are checked before the updater contacts them.
@@ -139,6 +149,11 @@ Tag publication prepares the stable files once, uploads and reads those exact
 bytes back through the public Worker, and only then attaches the same directory
 to GitHub Release. Missing Cloudflare credentials fail the release job instead
 of silently publishing a split GitHub-only release.
+
+Old v0.5.14 installations do not contain the corrected package detection and
+installer handoff. Install the current `.deb` once from the release page; later
+checks can hand the verified package to `pkexec apt-get` (or the desktop
+installer fallback) automatically.
 
 Release preparation and R2 read-back use the repository tools:
 

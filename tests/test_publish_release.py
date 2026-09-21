@@ -186,3 +186,21 @@ def test_download_worker_treats_manifest_as_json_and_binary_files_as_attachments
     assert 'application/json; charset=utf-8' in worker
     assert 'content-disposition", "inline"' in worker
     assert 'attachment; filename=' in worker
+
+
+def test_download_worker_accepts_bounded_diagnostics_without_public_read_access() -> None:
+    worker = (Path(__file__).parents[1] / "infra" / "downloads-worker" / "worker.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'pathname === "/diagnostics"' in worker
+    assert 'request.method !== "POST"' in worker
+    assert 'application/gzip' in worker
+    assert "MAX_DIAGNOSTIC_BYTES" in worker
+    assert 'diagnostics/${' in worker
+    assert "env.BUCKET.put" in worker
+    assert 'prefix: "diagnostics/"' in worker
+    assert "listing.truncated" in worker
+    assert "listing.cursor" in worker
+    assert "bucket.delete(expired)" in worker
+    assert 'key.startsWith("diagnostics/")' in worker

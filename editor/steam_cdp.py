@@ -128,6 +128,7 @@ def cloud_files_from_rows(
                 exists=cached_file.exists if cached_file is not None else True,
                 download_url=url,
                 local_path=cached_file.local_path if cached_file is not None else None,
+                source="web",
             )
         )
     result.sort(key=lambda item: item.timestamp, reverse=True)
@@ -195,8 +196,12 @@ def discover_cached_cloud_files(
             local_path = remote_root / relative
             try:
                 local_exists = local_path.is_file()
+                local_size = local_path.stat().st_size if local_exists else 0
             except OSError:
                 local_exists = False
+                local_size = 0
+            expected_size = max(0, _as_int(entry.get("size")))
+            local_valid = local_exists and (expected_size <= 0 or local_size == expected_size)
             candidate = CloudFile(
                 name=name,
                 size=max(0, _as_int(entry.get("size"))),
@@ -210,7 +215,8 @@ def discover_cached_cloud_files(
                 ),
                 is_persisted=_as_int(entry.get("syncstate")) == 2,
                 exists=local_exists,
-                local_path=local_path if local_exists else None,
+                local_path=local_path if local_valid else None,
+                source="steam_cache_local" if local_valid else "steam_cache_metadata",
             )
             previous = result.get(name)
             if previous is None or candidate.timestamp >= previous.timestamp:
@@ -658,6 +664,11 @@ class SteamCdpWorker:
                 raise SteamCdpError(f"Steam Cloud файл слишком большой (>{MAX_FILE_BYTES} bytes)")
             return data
         raise SteamCdpError(f"Не удалось скачать Steam Cloud файл: {last_error}") from last_error
+
+    def read_cloud_file(self, cloud_file: CloudFile) -> bytes:
+        """Read an entry selected from the web listing."""
+
+        return self.read_file(cloud_file.name)
 
     @property
     def write_capability(self) -> CloudWriteCapability:

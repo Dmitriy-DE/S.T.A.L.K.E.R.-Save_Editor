@@ -268,6 +268,59 @@ def test_empty_native_list_uses_cdp_cloud_files_for_download(
     assert native_calls == []
 
 
+def test_cache_metadata_read_never_falls_back_to_native_file_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/D639C0F24C64FC164326E8967A8DCCBE.sav"
+    entry = CloudFile(
+        name=name,
+        size=6_400_000,
+        timestamp=1_789_180_304,
+        is_persisted=False,
+        exists=False,
+        source="steam_cache_metadata",
+    )
+    worker = steam_native.SteamNativeSubprocessWorker(
+        cdp_factory=lambda: (_ for _ in ()).throw(SteamCloudError("web unavailable")),
+        cache_finder=lambda *_args, **_kwargs: (),
+    )
+    worker._cached_files = {name: entry}
+    worker.start()
+    worker.app_id = APP_ID
+
+    def fail_native(*_args, **_kwargs):
+        raise AssertionError("metadata-only cache entry must not call native FileRead")
+
+    monkeypatch.setattr(worker, "_run_native", fail_native)
+    with pytest.raises(SteamCloudError, match="metadata|содержим|web"):
+        worker.read_cloud_file(entry)
+
+
+def test_cache_local_read_checks_metadata_size_before_using_bytes(tmp_path: Path) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
+    local = tmp_path / "slot.sav"
+    local.write_bytes(b"bad")
+    entry = CloudFile(
+        name=name,
+        size=4,
+        timestamp=1,
+        is_persisted=True,
+        exists=True,
+        local_path=local,
+        source="steam_cache_local",
+    )
+    worker = steam_native.SteamNativeSubprocessWorker(
+        cdp_factory=lambda: (_ for _ in ()).throw(SteamCloudError("web unavailable")),
+        cache_finder=lambda *_args, **_kwargs: (),
+    )
+    worker._cached_files = {name: entry}
+    worker.start()
+    worker.app_id = APP_ID
+
+    with pytest.raises(SteamCloudError, match="размер|size|cache"):
+        worker.read_cloud_file(entry)
+
+
 def test_native_read_and_write_use_isolated_payload_files(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

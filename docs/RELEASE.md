@@ -1,5 +1,26 @@
 # Проверка и выпуск
 
+## v0.5.18 — Steam Cloud provenance, diagnostics and OTA correction — 2026-09-21
+
+The Cloud tab now preserves the discovery backend for every row. Steam cache
+metadata is never routed into native `FileRead`; a matching local cache copy is
+read locally, available web data is read through CDP, and unavailable metadata
+fails with a precise read-only diagnostic. The table displays the source so
+`Persisted: нет` is not mistaken for “not in Steam Cloud”.
+
+The application writes bounded rotating logs and adds **Отправить логи**. The
+existing R2 Worker accepts only bounded gzip diagnostics, stores them under a
+random key, never exposes a read route, and cleans objects older than 30 days.
+
+The updater checks the Linux package root before the generic manifest, selects
+the `.deb` artifact for installed package builds, and launches an explicit
+`pkexec apt-get`/`xdg-open` handoff after size and SHA-256 verification. Windows
+installer and portable replacement remain separate. A handoff is reported as
+pending until the operating system/package manager completes it.
+
+The implementation and local gate are recorded in
+[`evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md`](evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md).
+
 ## v0.5.17 — fail-closed Cloud/update/publication hardening — 2026-09-20
 
 Релиз v0.5.17 делает write capability явной во всём Steam Cloud flow:

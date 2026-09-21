@@ -243,6 +243,8 @@ def test_cloud_view_filters_non_data_files(
     _wait_cloud_idle(qtbot, view)
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
     assert view.table.rowCount() == 1
+    assert view.table.columnCount() == 5
+    assert view.table.item(0, view.SOURCE_COLUMN).text() == "Неизвестно"
 
 
 def test_cloud_view_profile_switch_filters_the_selected_game_path(

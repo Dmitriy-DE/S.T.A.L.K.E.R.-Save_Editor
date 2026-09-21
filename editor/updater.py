@@ -33,6 +33,7 @@ from .update_manifest import (
 
 DEFAULT_MANIFEST_URL = f"{DOWNLOAD_BASE_URL}/latest.json"
 UPDATE_USER_AGENT = "SaveEditor-updater/1"
+PACKAGE_INSTALL_ROOT = Path("/usr/lib/stalker2-save-editor")
 UpdateState = Literal["current", "available", "unavailable", "invalid"]
 
 
@@ -216,6 +217,8 @@ def detect_installation(
     path = Path(executable or sys.executable).expanduser().resolve()
     root = path.parent
     manifest_path = root / "BUILD_MANIFEST.json"
+    if target == "linux" and root == PACKAGE_INSTALL_ROOT:
+        return InstallationInfo(target, "x86_64", "package", root, path)
     if manifest_path.is_file():
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -230,8 +233,6 @@ def detect_installation(
             else "portable"
         )
         return InstallationInfo(target, architecture, kind, root, path)
-    if target == "linux" and root == Path("/usr/lib/stalker2-save-editor"):
-        return InstallationInfo(target, "x86_64", "package", root, path)
     return InstallationInfo(target, "x86_64", "development", root, path)
 
 
@@ -371,6 +372,54 @@ def build_update_command(
 def launch_update(command: list[str]) -> subprocess.Popen[bytes]:
     """Start the detached updater and return its process handle."""
 
+    return subprocess.Popen(command, start_new_session=True)
+
+
+def build_installer_command(
+    archive: Path,
+    installation: InstallationInfo,
+    *,
+    kind: str | None = None,
+    platform_name: str | None = None,
+) -> list[str]:
+    """Build an explicit OS installer handoff for a verified artifact."""
+
+    archive = Path(archive).resolve()
+    if not archive.is_file():
+        raise ManifestError(f"update installer is missing: {archive}")
+    selected_kind = kind or installation.kind
+    target = (platform_name or installation.target).casefold()
+    if selected_kind == "installer":
+        if target != "windows" or archive.suffix.casefold() != ".exe":
+            raise ManifestError("Windows installer handoff requires a verified .exe")
+        return [str(archive)]
+    if selected_kind != "package" or target != "linux" or archive.suffix.casefold() != ".deb":
+        raise ManifestError("unsupported installer handoff")
+    pkexec = shutil.which("pkexec")
+    apt_get = shutil.which("apt-get")
+    if pkexec and apt_get:
+        return [pkexec, apt_get, "install", "-y", str(archive)]
+    xdg_open = shutil.which("xdg-open")
+    if xdg_open:
+        return [xdg_open, str(archive)]
+    raise ManifestError("Linux package manager handoff is unavailable (pkexec/xdg-open missing)")
+
+
+def launch_installer(
+    archive: Path,
+    installation: InstallationInfo,
+    *,
+    kind: str | None = None,
+    platform_name: str | None = None,
+) -> subprocess.Popen[bytes]:
+    """Start a verified installer/package-manager handoff with user approval."""
+
+    command = build_installer_command(
+        archive,
+        installation,
+        kind=kind,
+        platform_name=platform_name,
+    )
     return subprocess.Popen(command, start_new_session=True)
 
 

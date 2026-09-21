@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import platform
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QObject, Qt, QThread, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -24,8 +24,11 @@ from editor.updater import (
     InstallationInfo,
     UpdateCheckResult,
     build_update_command,
+    launch_installer,
     launch_update,
 )
+
+LOGGER = logging.getLogger("stalker2_save_editor.updater")
 
 
 class UpdateCheckWorker(QThread):
@@ -39,8 +42,10 @@ class UpdateCheckWorker(QThread):
 
     def run(self) -> None:
         try:
+            LOGGER.info("update check start")
             self.result.emit(self.client.check())
         except Exception as exc:  # pragma: no cover - defensive worker boundary
+            LOGGER.exception("update check failed")
             self.result.emit(UpdateCheckResult("unavailable", error=f"{type(exc).__name__}: {exc}"))
 
 
@@ -60,8 +65,14 @@ class UpdateDownloadWorker(QThread):
             f"SaveEditor-update-{os.getpid()}-{self.artifact.file}"
         )
         try:
+            LOGGER.info(
+                "update download start kind=%s file=%s",
+                self.artifact.kind,
+                self.artifact.file,
+            )
             self.completed.emit(self.client.download(self.artifact, destination))
         except Exception as exc:
+            LOGGER.exception("update download failed kind=%s", self.artifact.kind)
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
 
@@ -152,6 +163,11 @@ class UpdateDialog(QDialog):
 
     def _on_downloaded(self, path: Path) -> None:
         self._downloaded_archive = Path(path)
+        LOGGER.info(
+            "update download verified kind=%s file=%s",
+            self.check_result.artifact.kind if self.check_result.artifact else "-",
+            self.check_result.artifact.file if self.check_result.artifact else "-",
+        )
         self.status_label.setText("Файл скачан и проверен; применение ещё не запускалось")
         self.restart_button.setText(
             "Открыть установщик"
@@ -162,6 +178,7 @@ class UpdateDialog(QDialog):
         self.restart_button.setEnabled(True)
 
     def _on_download_failed(self, message: str) -> None:
+        LOGGER.error("update download failed in UI: %s", message)
         self.status_label.setText("Обновление не скачано")
         self.details_label.setText(message)
         self.download_button.setEnabled(True)
@@ -172,14 +189,21 @@ class UpdateDialog(QDialog):
         if archive is None or artifact is None:
             return
         if artifact.kind in {"package", "installer"}:
-            if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(archive))):
-                self.status_label.setText(f"Установщик скачан: {archive}")
+            LOGGER.info("update installer handoff start kind=%s file=%s", artifact.kind, artifact.file)
+            try:
+                launch_installer(archive, self.installation, kind=artifact.kind)
+            except (OSError, ValueError, ManifestError) as exc:
+                LOGGER.exception("update installer handoff rejected kind=%s", artifact.kind)
+                self.status_label.setText(f"Установщик скачан, но не запущен: {exc}")
             else:
-                self.status_label.setText("Установщик открыт; подтверди обновление в системе")
-                if artifact.kind == "installer":
-                    application = QApplication.instance()
-                    if application is not None:
-                        application.quit()
+                LOGGER.info("update installer handoff opened kind=%s", artifact.kind)
+                self.status_label.setText(
+                    "Установщик запущен; подтверди обновление в системе. "
+                    "Приложение закрывается."
+                )
+                application = QApplication.instance()
+                if application is not None:
+                    application.quit()
             return
         updater_name = "SaveEditor-updater.exe" if platform.system().casefold() == "windows" else "SaveEditor-updater"
         updater = self.installation.root / updater_name
@@ -190,8 +214,10 @@ class UpdateDialog(QDialog):
         try:
             launch_update(command)
         except (OSError, ValueError, ManifestError) as exc:
+            LOGGER.exception("portable update handoff failed")
             self.status_label.setText(f"Не удалось запустить обновление: {exc}")
             return
+        LOGGER.info("portable update handoff started")
         self.status_label.setText("Приложение закрывается; updater применит новую версию")
         application = QApplication.instance()
         if application is not None:

@@ -64,6 +64,12 @@ _STEAM_APP_ID_ENV = "SteamAppId"
 _STEAM_GAME_ID_ENV = "SteamGameId"
 
 
+def _cloud_key(name: str) -> str:
+    """Normalize separators for exact cloud-path lookup, never by basename."""
+
+    return str(name).replace("\\", "/").lstrip("/")
+
+
 class SteamNativeUnavailableError(SteamCloudError):
     """Raised when the native backend cannot be used (missing lib / init fail)."""
 
@@ -267,6 +273,7 @@ class SteamNativeWorker:
                     timestamp=int(self._rs_get_timestamp(remote, name_b)),
                     is_persisted=bool(self._rs_file_persisted(remote, name_b)),
                     exists=bool(self._rs_file_exists(remote, name_b)),
+                    source="native_remote_storage",
                 )
             )
         out.sort(key=lambda x: x.timestamp, reverse=True)
@@ -288,6 +295,11 @@ class SteamNativeWorker:
         if read != size:
             raise SteamCloudError(f"ReadFile: прочитано {read} из {size} байт")
         return buf.raw[:size]
+
+    def read_cloud_file(self, cloud_file: CloudFile) -> bytes:
+        """Read a file selected from this native RemoteStorage listing."""
+
+        return self.read_file(cloud_file.name)
 
     def write_file(self, filename: str, data: bytes) -> None:
         _refuse_automated_live_session(self.app_id or 0, "WriteFile")
@@ -564,6 +576,7 @@ class SteamNativeSubprocessWorker:
                         timestamp=int(item["timestamp"]),
                         is_persisted=bool(item["is_persisted"]),
                         exists=bool(item["exists"]),
+                        source="native_remote_storage",
                     )
                 )
             except (KeyError, TypeError, ValueError) as exc:
@@ -619,6 +632,7 @@ class SteamNativeSubprocessWorker:
                 continue
             if files:
                 self._cdp = cdp
+                self._cached_files.clear()
                 self._status_hint = "список и скачивание через Steam Cloud web"
                 return files
             try:
@@ -644,7 +658,7 @@ class SteamNativeSubprocessWorker:
             self.log(f"Steam Cloud cache fallback недоступен: {exc}")
             cached = ()
         if cached:
-            self._cached_files = {item.name: item for item in cached}
+            self._cached_files = {_cloud_key(item.name): item for item in cached}
             self._status_hint = (
                 "список найден в Steam cache; для скачивания открой Steam Cloud web "
                 "или перезапусти Steam с -cef-enable-debugging"
@@ -726,18 +740,59 @@ class SteamNativeSubprocessWorker:
         )
         return []
 
-    def read_file(self, filename: str) -> bytes:
-        if self._cdp is not None:
-            return self._cdp.read_file(filename)
-        cached = self._cached_files.get(filename)
-        if cached is not None and cached.local_path is not None:
+    def _read_cache_entry(self, cloud_file: CloudFile) -> bytes:
+        path = cloud_file.local_path
+        if path is None:
+            raise SteamCloudError(
+                "Steam Cloud metadata найдено, но содержимое отсутствует в локальном cache"
+            )
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            raise SteamCloudError(f"Не удалось прочитать Steam cache файл: {exc}") from exc
+        if cloud_file.size > 0 and len(data) != cloud_file.size:
+            raise SteamCloudError(
+                "Размер локальной Steam cache копии не совпадает с Cloud metadata: "
+                f"{len(data)} != {cloud_file.size}"
+            )
+        return data
+
+    def _read_from_web(self, cloud_file: CloudFile) -> bytes:
+        if self._cdp is None:
+            self._web_or_cache_files()
+        if self._cdp is None:
+            raise SteamCloudError(
+                "Steam Cloud metadata найдено, но содержимое не получено: "
+                "включи Steam Cloud web и обнови список"
+            )
+        return self._cdp.read_file(cloud_file.name)
+
+    def read_cloud_file(self, cloud_file: CloudFile) -> bytes:
+        """Read using the backend that supplied the selected cloud entry."""
+
+        source = cloud_file.source
+        if source == "steam_cache_local":
             try:
-                return cached.local_path.read_bytes()
-            except OSError as exc:
-                raise SteamCloudError(f"Не удалось прочитать Steam cache файл: {exc}") from exc
-        if self._helper is not None:
-            return self._helper.read_file(filename)
-        response, data = self._run_native("read", name=filename, read_output=True)
+                return self._read_cache_entry(cloud_file)
+            except SteamCloudError as cache_error:
+                try:
+                    return self._read_from_web(cloud_file)
+                except SteamCloudError as web_error:
+                    raise SteamCloudError(f"{cache_error}; {web_error}") from web_error
+        if source in {"steam_cache_metadata", "web"}:
+            return self._read_from_web(cloud_file)
+        if source == "helper_remote_storage":
+            if self._helper is None:
+                raise SteamCloudError("Steam helper backend для выбранного файла недоступен")
+            return self._helper.read_file(cloud_file.name)
+        if source == "native_remote_storage":
+            response, data = self._run_native("read", name=cloud_file.name, read_output=True)
+        elif self._cdp is not None:
+            return self._cdp.read_file(cloud_file.name)
+        elif self._helper is not None:
+            return self._helper.read_file(cloud_file.name)
+        else:
+            response, data = self._run_native("read", name=cloud_file.name, read_output=True)
         if response.get("type") != "Ok" or data is None:
             raise SteamCloudError(f"Steam native child вернул неожиданный read response: {response}")
         expected_size = response.get("size")
@@ -746,6 +801,25 @@ class SteamNativeSubprocessWorker:
                 f"Steam native child read size mismatch: {len(data)} != {expected_size}"
             )
         return data
+
+    def read_file(self, filename: str) -> bytes:
+        """Backward-compatible name-only read for upload transactions."""
+
+        cached = self._cached_files.get(_cloud_key(filename))
+        if cached is not None:
+            return self.read_cloud_file(cached)
+        return self.read_cloud_file(
+            CloudFile(
+                name=filename,
+                size=0,
+                timestamp=0,
+                is_persisted=False,
+                exists=True,
+                source=("web" if self._cdp is not None else
+                        "helper_remote_storage" if self._helper is not None else
+                        "native_remote_storage"),
+            )
+        )
 
     def write_file(self, filename: str, data: bytes) -> None:
         capability = self.write_capability
@@ -767,7 +841,7 @@ class SteamNativeSubprocessWorker:
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
         if self._cdp is not None:
             return self._cdp.wait_persisted(filename, expected_size, timeout=timeout)
-        cached = self._cached_files.get(filename)
+        cached = self._cached_files.get(_cloud_key(filename))
         if cached is not None and cached.local_path is not None:
             try:
                 return cached.local_path.stat().st_size == expected_size
