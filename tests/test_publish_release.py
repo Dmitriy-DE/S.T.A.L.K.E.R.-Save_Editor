@@ -199,6 +199,8 @@ def test_download_worker_accepts_bounded_diagnostics_without_public_read_access(
     assert "MAX_DIAGNOSTIC_BYTES" in worker
     assert 'diagnostics/${' in worker
     assert "env.BUCKET.put" in worker
-    assert 'bucket.list({ prefix: "diagnostics/"' in worker
+    assert 'prefix: "diagnostics/"' in worker
+    assert "listing.truncated" in worker
+    assert "listing.cursor" in worker
     assert "bucket.delete(expired)" in worker
     assert 'key.startsWith("diagnostics/")' in worker

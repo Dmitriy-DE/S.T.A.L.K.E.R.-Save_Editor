@@ -16,13 +16,19 @@ function jsonResponse(value, status = 200) {
 
 async function cleanupDiagnostics(bucket) {
   const cutoff = Date.now() - DIAGNOSTIC_RETENTION_MS;
-  const listing = await bucket.list({ prefix: "diagnostics/", limit: 1000 });
-  const expired = listing.objects
-    .filter((object) => object.uploaded && object.uploaded.getTime() < cutoff)
-    .map((object) => object.key);
-  if (expired.length > 0) {
-    await bucket.delete(expired);
-  }
+  let cursor;
+  do {
+    const options = { prefix: "diagnostics/", limit: 1000 };
+    if (cursor) options.cursor = cursor;
+    const listing = await bucket.list(options);
+    const expired = listing.objects
+      .filter((object) => object.uploaded && object.uploaded.getTime() < cutoff)
+      .map((object) => object.key);
+    if (expired.length > 0) {
+      await bucket.delete(expired);
+    }
+    cursor = listing.truncated ? listing.cursor : undefined;
+  } while (cursor);
 }
 
 export default {
