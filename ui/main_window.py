@@ -52,6 +52,7 @@ from save_format import SaveError, SaveInfo
 from .backups_view import BackupView, RestoreWorker
 from .changes_view import ChangesView
 from .cloud_view import CloudSnapshot, CloudView
+from .diagnostics_dialog import DiagnosticsDialog
 from .equipment_view import EquipmentView
 from .faction_view import FactionView
 from .inventory_view import InventoryView
@@ -206,6 +207,7 @@ class MainWindow(QMainWindow):
         self._operation_kind: str | None = None
         self._cloud_busy = False
         self._support_dialog: SupportDialog | None = None
+        self._diagnostics_dialog: DiagnosticsDialog | None = None
         self._update_client = update_client
         self._auto_update_check = auto_update_check
         self._update_thread: UpdateCheckWorker | None = None
@@ -270,6 +272,11 @@ class MainWindow(QMainWindow):
         self.update_button.setToolTip("Проверить новую версию")
         self.update_button.clicked.connect(lambda: self.check_for_updates(manual=True))
         title_layout.addWidget(self.update_button)
+        self.diagnostics_button = QPushButton("Отправить логи")
+        self.diagnostics_button.setObjectName("diagnosticsButton")
+        self.diagnostics_button.setToolTip("Отправить обезличенные технические логи")
+        self.diagnostics_button.clicked.connect(self._show_diagnostics_dialog)
+        title_layout.addWidget(self.diagnostics_button)
         self.support_button = QPushButton("♡ Support project")
         self.support_button.setObjectName("supportButton")
         self.support_button.setToolTip("Поддержать проект")
@@ -456,6 +463,20 @@ class MainWindow(QMainWindow):
         self._support_dialog = dialog
         dialog.finished.connect(lambda _result: self._clear_support_dialog(dialog))
         dialog.open()
+
+    def _show_diagnostics_dialog(self) -> None:
+        if self._diagnostics_dialog is not None and self._diagnostics_dialog.isVisible():
+            self._diagnostics_dialog.raise_()
+            self._diagnostics_dialog.activateWindow()
+            return
+        dialog = DiagnosticsDialog(self)
+        self._diagnostics_dialog = dialog
+        dialog.finished.connect(lambda _result: self._clear_diagnostics_dialog(dialog))
+        dialog.open()
+
+    def _clear_diagnostics_dialog(self, dialog: DiagnosticsDialog) -> None:
+        if self._diagnostics_dialog is dialog:
+            self._diagnostics_dialog = None
 
     def _update_installation_info(self) -> InstallationInfo | None:
         if self._update_installation is not None:
