@@ -25,6 +25,8 @@ from editor.formats import SaveFormat, detect, detect_fast
 from editor.platforms import save_search_paths
 from editor.releases import official_releases, release_by_id
 
+from .formatting import human_size
+
 GAME_TITLES: dict[str, str] = {
     "stalker2": "S.T.A.L.K.E.R. 2: Heart of Chornobyl",
     "cop": "S.T.A.L.K.E.R.: Call of Pripyat",
@@ -37,15 +39,6 @@ RELEASE_TITLES: dict[str, str] = {
     release.id: release.title for release in official_releases()
 }
 SAVE_SUFFIXES = frozenset({".sav", ".scop", ".scs"})
-
-
-def _human_size(size: int) -> str:
-    value = float(size)
-    for unit in ("B", "KB", "MB", "GB"):
-        if value < 1024 or unit == "GB":
-            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
-        value /= 1024
-    return f"{size} B"
 
 
 def _modified_text(modified_ns: int) -> str:
@@ -496,7 +489,7 @@ class SaveSlotsView(QWidget):
         for row, slot in enumerate(self._slots):
             values = (
                 slot.path.name,
-                _human_size(slot.size),
+                human_size(slot.size),
                 _modified_text(slot.modified_ns),
                 slot.status_text,
             )

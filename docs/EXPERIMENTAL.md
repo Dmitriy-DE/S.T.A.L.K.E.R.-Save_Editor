@@ -42,4 +42,5 @@ For each experiment record:
 - whether re-saving succeeded;
 - new cloud/local save for diff.
 
-That evidence should be added to `NOTES_FROM_RESEARCH.md` rather than silently changing offsets.
+That evidence should be added to a dated report under `docs/evidence/` rather
+than silently changing offsets.

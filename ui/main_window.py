@@ -55,6 +55,7 @@ from .cloud_view import CloudSnapshot, CloudView
 from .diagnostics_dialog import DiagnosticsDialog
 from .equipment_view import EquipmentView
 from .faction_view import FactionView
+from .formatting import human_size
 from .inventory_view import InventoryView
 from .launcher_view import LauncherView, _slot_family
 from .operation_worker import OperationWorker
@@ -74,15 +75,6 @@ from .update_dialog import UpdateCheckWorker, UpdateDialog
 
 def _default_s2_capabilities() -> FormatCapabilities:
     return STALKER2_FORMAT.capabilities
-
-
-def _human_size(size: int) -> str:
-    value = float(size)
-    for unit in ("B", "KB", "MB", "GB"):
-        if value < 1024 or unit == "GB":
-            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
-        value /= 1024
-    return f"{size} B"
 
 
 def _version_text() -> str:
@@ -735,7 +727,7 @@ class MainWindow(QMainWindow):
         )
         unresolved = len(info.unresolved_handles)
         common_rows = (
-            ("Файл", snapshot.path.name, _human_size(len(snapshot.data))),
+            ("Файл", snapshot.path.name, human_size(len(snapshot.data))),
             ("Формат", snapshot.format_id, snapshot.format_title),
             (
                 "Релиз",
@@ -745,7 +737,7 @@ class MainWindow(QMainWindow):
             ("SHA-256", info.sha256, "исходный снимок"),
             (
                 "Размер контейнера",
-                f"{_human_size(info.packed_size)} → {_human_size(info.unpacked_size)}",
+                f"{human_size(info.packed_size)} → {human_size(info.unpacked_size)}",
                 "Kraken распакован" if info.crc_present else "LZO1X распакован",
             ),
             ("Баланс купонов", money, money_status),
@@ -1099,14 +1091,14 @@ class MainWindow(QMainWindow):
         source_label = "Steam Cloud" if snapshot.source_kind == "cloud" else "локальный"
         self.source_label.setText(
             f"Сейв: {snapshot.path.name} • {source_label} • Формат {snapshot.format_id} • "
-            f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+            f"{human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
         self.file_source_badge.setText(
             "STEAM CLOUD" if snapshot.source_kind == "cloud" else "ЛОКАЛЬНЫЙ ФАЙЛ"
         )
         self.meta_filename.setText(snapshot.path.name)
         self.meta_details.setText(
-            f"{_human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
+            f"{human_size(len(snapshot.data))} • SHA {info.sha256[:12]}…"
         )
         self.integrity_badge.setText(
             f"CRC-32: {'PASS' if info.crc_ok else 'FAIL'}"
