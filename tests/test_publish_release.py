@@ -199,8 +199,33 @@ def test_download_worker_accepts_bounded_diagnostics_without_public_read_access(
     assert "MAX_DIAGNOSTIC_BYTES" in worker
     assert 'diagnostics/${' in worker
     assert "env.BUCKET.put" in worker
-    assert 'prefix: "diagnostics/"' in worker
-    assert "listing.truncated" in worker
-    assert "listing.cursor" in worker
-    assert "bucket.delete(expired)" in worker
+    assert "DIAGNOSTICS_RATE_LIMITER" in worker
+    assert "cleanupDiagnostics" not in worker
+    assert "bucket.list" not in worker
+    assert "bucket.delete" not in worker
     assert 'key.startsWith("diagnostics/")' in worker
+
+
+def test_download_worker_retention_and_rate_limit_are_declarative() -> None:
+    root = Path(__file__).parents[1]
+    worker = (root / "infra" / "downloads-worker" / "worker.js").read_text(encoding="utf-8")
+    config = (root / "infra" / "downloads-worker" / "wrangler.toml").read_text(encoding="utf-8")
+    lifecycle = json.loads(
+        (root / "infra" / "downloads-worker" / "lifecycle.json").read_text(encoding="utf-8")
+    )
+
+    assert "DIAGNOSTICS_RATE_LIMITER" in worker
+    assert "scheduled" not in worker
+    assert "ctx.waitUntil(cleanupDiagnostics" not in worker
+    assert '[[ratelimits]]' in config
+    assert 'name = "DIAGNOSTICS_RATE_LIMITER"' in config
+    assert lifecycle == {
+        "Rules": [
+            {
+                "ID": "diagnostics-retention",
+                "Status": "Enabled",
+                "Filter": {"Prefix": "diagnostics/"},
+                "Expiration": {"Days": 30},
+            }
+        ]
+    }

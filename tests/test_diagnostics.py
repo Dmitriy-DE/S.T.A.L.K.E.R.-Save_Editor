@@ -45,6 +45,58 @@ def test_collect_log_bundle_redacts_home_secrets_and_ignores_save_files(tmp_path
     assert "slot.sav" in text
 
 
+@pytest.mark.parametrize(
+    ("line", "secrets"),
+    (
+        ("Authorization: Bearer REAL_BEARER_TOKEN", ("REAL_BEARER_TOKEN",)),
+        ("authorization=Bearer REAL_EQUALS_TOKEN", ("REAL_EQUALS_TOKEN",)),
+        (
+            "Cookie: session=REAL_COOKIE_SECRET; auth=REAL_COOKIE_AUTH",
+            ("REAL_COOKIE_SECRET", "REAL_COOKIE_AUTH"),
+        ),
+        ("token=REAL_TOKEN_SECRET", ("REAL_TOKEN_SECRET",)),
+        ("password: REAL_PASSWORD_SECRET", ("REAL_PASSWORD_SECRET",)),
+        (
+            "https://example.invalid/callback?token=URL_TOKEN&access_token=URL_ACCESS&api_key=URL_API",
+            ("URL_TOKEN", "URL_ACCESS", "URL_API"),
+        ),
+    ),
+)
+def test_collect_log_bundle_redacts_complete_credentials(
+    tmp_path: Path,
+    line: str,
+    secrets: tuple[str, ...],
+) -> None:
+    (tmp_path / "save-editor.log").write_text(line, encoding="utf-8")
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    for secret in secrets:
+        assert secret not in text
+    assert "<redacted>" in text
+    assert "Bearer REAL_" not in text
+
+
+@pytest.mark.parametrize(
+    ("line", "private_path"),
+    (
+        (r"path=C:\Users\Dmytro\AppData\Local\Steam\slot.sav", r"C:\Users\Dmytro"),
+        ("path=/home/dmytro/.steam/steam/slot.sav", "/home/dmytro"),
+    ),
+)
+def test_collect_log_bundle_redacts_platform_home_paths(
+    tmp_path: Path,
+    line: str,
+    private_path: str,
+) -> None:
+    (tmp_path / "save-editor.log").write_text(line, encoding="utf-8")
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    assert private_path not in text
+    assert "<home>" in text
+
+
 def test_submit_logs_returns_report_id_without_deleting_local_logs(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

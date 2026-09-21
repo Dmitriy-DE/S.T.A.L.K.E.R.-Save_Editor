@@ -24,8 +24,18 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 DEFAULT_TIMEOUT = 15.0
 DEFAULT_ENDPOINT = "https://save-editor-downloads.save-editor.workers.dev/diagnostics"
 
+_URL_SECRET_RE = re.compile(
+    r"(?ix)\b(?P<key>access_token|api_key|apikey|auth_token|client_secret|refresh_token|token)"
+    r"(?P<separator>\s*=\s*)(?P<value>[^&#\s]+)"
+)
+_HEADER_SECRET_RE = re.compile(
+    r"(?ix)\b(?P<key>authorization|cookie)\b"
+    r"(?P<separator>\s*[:=]\s*)(?P<value>[^\r\n]+)"
+)
 _SECRET_RE = re.compile(
-    r"(?i)\b(token|password|passwd|authorization|cookie|secret)\s*[:=]\s*([^\s,;]+)"
+    r"(?ix)\b(?P<key>token|password|passwd|secret)"
+    r"(?P<separator>\s*[:=]\s*)"
+    r"(?P<value>(?:(?:bearer|basic)\s+)?[^\s,;]+)"
 )
 _WINDOWS_HOME_RE = re.compile(r"(?i)(?:[a-z]:)?[\\/]Users[\\/][^\\/\s]+")
 _POSIX_HOME_RE = re.compile(r"/home/[^/\s]+|/Users/[^/\s]+")
@@ -87,7 +97,9 @@ def _redact(text: str) -> str:
         text = text.replace(home, "<home>")
     text = _WINDOWS_HOME_RE.sub("<home>", text)
     text = _POSIX_HOME_RE.sub("<home>", text)
-    return _SECRET_RE.sub(lambda match: f"{match.group(1)}=<redacted>", text)
+    text = _URL_SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
+    text = _HEADER_SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
+    return _SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
 
 
 def _log_paths(directory: Path) -> list[Path]:

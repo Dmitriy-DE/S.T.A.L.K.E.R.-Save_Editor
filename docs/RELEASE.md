@@ -1,5 +1,26 @@
 # Проверка и выпуск
 
+## Diagnostics infrastructure
+
+`POST /diagnostics` принимает только bounded `application/gzip` payloads. The
+Worker requires its `DIAGNOSTICS_RATE_LIMITER` binding and returns `429` when
+the Cloudflare rate limit is exceeded; it returns `503` rather than accepting
+unbounded traffic when the binding is absent. Diagnostics objects are never
+served through the public download route.
+
+Retention is configured outside the request path with
+[`infra/downloads-worker/lifecycle.json`](../infra/downloads-worker/lifecycle.json):
+objects under `diagnostics/` expire after 30 days. Deploy/update the Worker and
+bucket policy together:
+
+    npx --yes wrangler@4 deploy --config infra/downloads-worker/wrangler.toml
+    npx --yes wrangler@4 r2 bucket lifecycle set save-editor-downloads \
+      --file infra/downloads-worker/lifecycle.json --force
+
+The tag workflow applies both steps before publishing release assets. The
+diagnostics client contains no authentication secret; Cloudflare-side rate
+limiting is the abuse-control boundary.
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Desktop save теперь сводится к одной понятной операции: после редактирования

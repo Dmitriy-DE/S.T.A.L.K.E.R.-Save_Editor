@@ -225,6 +225,10 @@ jobs:
         shell: bash
         run: npx --yes wrangler@4 deploy --config infra/downloads-worker/wrangler.toml
 
+      - name: Apply diagnostics retention policy
+        shell: bash
+        run: npx --yes wrangler@4 r2 bucket lifecycle set save-editor-downloads --file infra/downloads-worker/lifecycle.json --force
+
       - name: Prepare stable release files
         shell: bash
         run: |
