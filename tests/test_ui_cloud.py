@@ -10,6 +10,7 @@ import pytest
 pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
+from PySide6.QtWidgets import QMessageBox
 
 from editor.capabilities import FormatCapabilities
 from editor.cloud_capabilities import CloudWriteCapability
@@ -443,12 +444,17 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
 
 
 def test_main_window_one_click_save_uploads_cloud_snapshot(
-    qtbot, synthetic_save: bytes, tmp_path: Path
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
 ) -> None:
     name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
+    )
     window.cloud_view.service = _ApprovedCloudService()
     window.cloud_view.worker_factory = lambda _path: transport
     window.cloud_view.backup_dir = tmp_path / "backups"

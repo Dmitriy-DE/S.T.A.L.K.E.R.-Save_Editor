@@ -64,7 +64,8 @@ class ChangesView(QWidget):
         self.choose_output_button = QPushButton("Выбрать…")
         self.choose_output_button.clicked.connect(self.choose_output_requested.emit)
         destination_row.addWidget(self.choose_output_button)
-        destination.addRow("Копия", destination_row)
+        self.destination_label = QLabel("Копия")
+        destination.addRow(self.destination_label, destination_row)
         layout.addLayout(destination)
 
         actions = QHBoxLayout()
@@ -101,6 +102,23 @@ class ChangesView(QWidget):
         self.error_label.setStyleSheet("color: #a11;")
         self.error_label.setVisible(False)
         layout.addWidget(self.error_label)
+
+    def set_simple_mode(self, enabled: bool) -> None:
+        """Hide manual save-pipeline controls in the main workbench.
+
+        The table and operation status remain available for diagnostics, while
+        MainWindow owns the one-click confirmation and keeps preview, output
+        selection and apply actions internal.
+        """
+
+        visible = not enabled
+        self.destination_label.setVisible(visible)
+        self.destination_edit.setVisible(visible)
+        self.choose_output_button.setVisible(visible)
+        self.preview_button.setVisible(visible)
+        self.apply_button.setVisible(visible)
+        self.replace_button.setVisible(visible)
+        self.cloud_button.setVisible(visible)
 
     def set_staged(
         self,

@@ -176,7 +176,13 @@ U01: `EditorService.inspect(data: bytes) -> SaveInfo`, `.prepare(data: bytes, pl
 
 Сейчас выбрать простой запрет raw + attach/detach в одной операции; relocatable raw addressing — отдельное будущее расширение, не угадывать новые offsets. RAW хранит expected original context в evidence, не называется durability.
 
-Local: default edited-copy; атомарная замена destination только при явном намерении пользователя, с защитой existing destination. Backup создаётся exclusively и не перезаписывается; before/after hashes в JSON journal. После падения исходник доступен. Не обещать fsync directory на ОС без поддержки; документировать пределы durability.
+Local desktop: после одного явного подтверждения основная кнопка «Сохранить»
+атомарно заменяет открытый слот; до записи создаётся verified backup, а
+preview, CRC/SHA и fresh-source проверки остаются внутренними. Технический
+export новой копии сохраняется в общем service/CLI API, но не является частью
+обычного Qt flow. Backup создаётся exclusively и не перезаписывается; before/
+after hashes в JSON journal. После падения исходник доступен. Не обещать fsync
+directory на ОС без поддержки; документировать пределы durability.
 
 Cloud: перед записью повторно сравнить SHA; один upload за раз. Steam API не даёт нам атомарного compare-and-swap, поэтому остаётся окно внешней записи: GFN должен быть закрыт. Timeout после WriteFile означает «результат неизвестен», не «ничего не записано» и не «успех». Автоповтор upload запрещён. Restore проходит тот же preview/backup/verify pipeline. До WriteFile отмена безопасна; после отправки — продолжить проверку статуса, не обещать rollback.
 
@@ -205,12 +211,18 @@ schema пока не подтверждена и не отображается �
 варианты; неизвестные уже записанные ID явно отмечены и не предлагаются для
 добавления.
 
-[Сбросить изменения]       [Предпросмотр] [Сохранить копию]
+[Сбросить изменения]                         [Сохранить]
 ```
 
 Название неизвестного предмета: «Неизвестный предмет · 0x…»; не выдумывать human names из type-key. Пока нет доказанного SID mapping, каталог доступен как справочник, а Add не активен.
 
-Preview: путь назначения, локально/cloud, поля before→after, рассчитанный размер, backup path, experimental marker. Progress: чтение → backup → проверка → запись → подтверждение; ошибки понятным текстом с раскрываемыми technical details и кнопкой копирования отчёта без credentials/save bytes. Cloud tab требует явного connect/list/analyze; показывает только `Data/*.sav`, закрепляет выбранный remote locator и отображает `verified`/`uncertain` receipt. После `WriteFile` повторная запись из того же preview запрещена.
+Preview, путь назначения, backup path и before→after остаются внутренними
+техническими данными. Пользователь видит один status flow: проверка → backup →
+запись → подтверждение; ошибки понятным текстом с раскрываемыми technical
+details и кнопкой копирования отчёта без credentials/save bytes. Cloud tab
+требует явного connect/list/analyze; показывает только `Data/*.sav`, закрепляет
+выбранный remote locator и отображает `verified`/`uncertain` receipt. После
+`WriteFile` повторная запись из того же preview запрещена.
 
 Experimental lab скрыт по умолчанию за отдельным включением в настройках. Пользователь должен отличать detach от delete. Grid view сначала read-only; drag-and-drop mutation не входит в первую Qt parity beta. Текущие move/detach/attach/raw остаются доступны явно как experimental, CLI сохраняется.
 

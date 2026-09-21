@@ -24,9 +24,12 @@ A cross-platform save editor for the official PC releases of **S.T.A.L.K.E.R. 2*
 
 The project uses **one Python editing core** across the Qt desktop app, CLI and browser build. Local files are analysed offline; unsupported structures stay read-only instead of being guessed.
 
-> **Safety first:** edits are staged and verified before export. Local editing writes a new copy rather than silently replacing the original save. Steam Cloud writes are explicit and guarded by backup/hash verification.
+> **Safety first:** edits are staged and verified before saving. The main desktop
+> **Сохранить** action asks once, creates a verified backup, and atomically updates
+> the opened local slot; Steam Cloud writes remain explicit and guarded by
+> backup/hash verification.
 
-The current release line is `0.5.18`. A release is published only from a clean
+The current release line is `0.5.19`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -84,7 +87,7 @@ The latest release ships four end-user packages.
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
 Checksums are published with each GitHub release.
-Current stable release: [v0.5.18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.18).
+Current stable release: [v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19).
 
 ## Desktop workflow
 
@@ -99,10 +102,18 @@ inspect inventory + metadata
     ↓
 stage supported edits
     ↓
-preview + verify
+click «Сохранить» and confirm once
     ↓
-export new copy
+internal preview + CRC/SHA verification
+    ↓
+verified backup + atomic save
 ```
+
+The preview, backup and write stages are internal to the normal desktop flow;
+the technical change journal remains available for diagnostics, but it is not a
+required extra tab or action. Steam Cloud keeps its separate explicit upload
+confirmation and fail-closed transaction because a remote write can be
+uncertain after Steam accepts it.
 
 The desktop app exposes a release-aware Steam Cloud flow for S.T.A.L.K.E.R. 2,
 the original trilogy and separate Enhanced Edition profiles. Each profile carries

@@ -29,6 +29,14 @@ manifest read-back and the v0.5.18 release are complete. Live Steam Cloud
 read/write, privileged package installation and in-game load/re-save remain
 separate runtime gates.
 
+The desktop save flow is now one action: after staging an edit, **Сохранить**
+asks for one confirmation, then runs preview, fresh SHA/CRC verification,
+verified backup and atomic replacement of the opened local slot internally.
+Manual preview/output/apply controls are hidden from the normal workbench; the
+change journal remains an audit surface and the backup screen remains a
+recovery surface. Steam Cloud keeps its explicit upload confirmation and
+fail-closed transaction boundary.
+
 ## v0.5.17 — hardening release — 2026-09-20
 
 Cloud upload теперь включается только для native/helper transport, который явно
@@ -302,10 +310,9 @@ read/write, game load/re-save и установка системного `.deb` 
 - **Настройки: автопоиск сразу по всем играм.** Добавлена сводка «нашёл (все
   игры)» — выбирать игру для просмотра найденного не нужно.
 
-Известный долг: процесс сохранения (preview → SHA → apply) всё ещё
-многошаговый; упрощение до «одна кнопка + тихий бэкап» — следующий шаг,
-требует подтверждения желаемого потока, чтобы не выкинуть fail-closed
-безопасность.
+Исторический долг о многошаговом сохранении закрыт последующим UX-проходом:
+preview, SHA/CRC, backup и запись теперь запускаются одной кнопкой после
+одного подтверждения, без удаления fail-closed проверок.
 
 
 ## 2026-09-18 — v0.5.0: встроенное облако, автопоиск-подсказки, вёрстка
