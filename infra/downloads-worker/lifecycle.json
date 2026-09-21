@@ -1,0 +1,14 @@
+{
+  "Rules": [
+    {
+      "ID": "diagnostics-retention",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "diagnostics/"
+      },
+      "Expiration": {
+        "Days": 30
+      }
+    }
+  ]
+}

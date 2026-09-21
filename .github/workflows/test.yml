@@ -115,6 +115,9 @@ jobs:
           subprocess.check_call([sys.executable, "-m", "ruff", "check", "."])
           subprocess.check_call([sys.executable, "-m", "mypy"])
 
+      - name: Run JavaScript Worker tests
+        run: node --experimental-default-type=module --test tests/js/*.test.mjs
+
       - name: Run full test suite
         shell: python
         run: |

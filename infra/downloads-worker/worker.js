@@ -2,7 +2,7 @@
 // Serves objects from the R2 bucket bound as BUCKET, so the private code repo
 // stays private while release binaries are publicly downloadable.
 const MAX_DIAGNOSTIC_BYTES = 2 * 1024 * 1024;
-const DIAGNOSTIC_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const DIAGNOSTIC_RATE_LIMIT_KEY = "diagnostics";
 
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -14,25 +14,21 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function cleanupDiagnostics(bucket) {
-  const cutoff = Date.now() - DIAGNOSTIC_RETENTION_MS;
-  let cursor;
-  do {
-    const options = { prefix: "diagnostics/", limit: 1000 };
-    if (cursor) options.cursor = cursor;
-    const listing = await bucket.list(options);
-    const expired = listing.objects
-      .filter((object) => object.uploaded && object.uploaded.getTime() < cutoff)
-      .map((object) => object.key);
-    if (expired.length > 0) {
-      await bucket.delete(expired);
-    }
-    cursor = listing.truncated ? listing.cursor : undefined;
-  } while (cursor);
+async function checkDiagnosticsRateLimit(env) {
+  const limiter = env.DIAGNOSTICS_RATE_LIMITER;
+  if (!limiter || typeof limiter.limit !== "function") {
+    return 503;
+  }
+  try {
+    const result = await limiter.limit({ key: DIAGNOSTIC_RATE_LIMIT_KEY });
+    return result.success ? null : 429;
+  } catch {
+    return 503;
+  }
 }
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/diagnostics") {
@@ -46,6 +42,13 @@ export default {
       }
       if (declaredLength > MAX_DIAGNOSTIC_BYTES) {
         return new Response("Diagnostics payload is too large", { status: 413 });
+      }
+      const rateLimitStatus = await checkDiagnosticsRateLimit(env);
+      if (rateLimitStatus === 429) {
+        return new Response("Diagnostics rate limit exceeded", { status: 429 });
+      }
+      if (rateLimitStatus !== null) {
+        return new Response("Diagnostics service is not configured", { status: 503 });
       }
       const body = await request.arrayBuffer();
       if (body.byteLength === 0 || body.byteLength > MAX_DIAGNOSTIC_BYTES) {
@@ -63,7 +66,6 @@ export default {
           source: "save-editor-desktop",
         },
       });
-      ctx.waitUntil(cleanupDiagnostics(env.BUCKET).catch(() => undefined));
       return jsonResponse({ report_id: reportId }, 201);
     }
 
