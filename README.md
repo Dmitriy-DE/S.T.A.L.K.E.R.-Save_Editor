@@ -86,6 +86,23 @@ The latest release ships four end-user packages.
 | Linux | [Portable (.tar.gz)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-linux-x86_64.tar.gz) |
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
+The next tagged release also publishes a signed APT channel through the same
+R2 download Worker. After importing its public key, Debian/Ubuntu users can
+install and receive later package versions with the normal package manager:
+
+```bash
+curl -fsSL https://save-editor-downloads.save-editor.workers.dev/apt/repository-key.asc \
+  | gpg --dearmor | sudo tee /usr/share/keyrings/stalker2-save-editor.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/stalker2-save-editor.gpg] https://save-editor-downloads.save-editor.workers.dev/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/stalker2-save-editor.list >/dev/null
+sudo apt update
+sudo apt install stalker2-save-editor
+```
+
+The current `v0.5.19` assets remain available as direct downloads; the signed
+APT channel is published by the next tag only after its key, package, R2
+read-back and disposable `apt update` gates pass.
+
 Checksums are published with each GitHub release.
 Current stable release: [v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19).
 
@@ -137,7 +154,8 @@ returns an opaque report id. Save bytes are not included.
 ## Updates and standalone packages
 
 Each GitHub release publishes separate Windows installer and portable ZIP files,
-Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`:
+Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`. The
+signed APT channel mirrors the Debian package and its repository metadata:
 
 - the installer creates the normal Windows installation and shortcut;
 - **Windows portable** ZIP and **Linux portable** tar.gz require neither Python
@@ -149,6 +167,8 @@ Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`:
   verified system handoff and require explicit confirmation/privilege approval.
 - An installed Linux `.deb` is detected separately from Linux portable, so its
   update check selects the `.deb` artifact instead of downloading a tarball.
+- APT installations update through `apt update`/`apt upgrade`; direct `.deb`
+  downloads and Linux portable remain independent fallback installation paths.
 
 The manifest and binaries are also mirrored to the public Cloudflare R2 download
 worker. Redirect destinations are checked before the updater contacts them.
@@ -170,6 +190,7 @@ Release preparation and R2 read-back use the repository tools:
 
 ```bash
 make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
+make apt-repo VERSION=0.5.19 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
 make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
 ```
 

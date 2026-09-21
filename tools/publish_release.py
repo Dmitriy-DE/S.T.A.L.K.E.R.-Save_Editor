@@ -42,6 +42,8 @@ _CONTENT_TYPES = {
     ".gz": "application/gzip",
     ".deb": "application/vnd.debian.binary-package",
     ".json": "application/json; charset=utf-8",
+    ".asc": "application/pgp-keys",
+    ".gpg": "application/octet-stream",
 }
 _RELEASE_USER_AGENT = "SaveEditor-release-verifier/1"
 
@@ -138,10 +140,62 @@ def _content_type(path: Path) -> str:
         return "text/plain; charset=utf-8"
     if path.name.endswith(".tar.gz"):
         return "application/gzip"
+    if path.name in {"Packages", "Release", "InRelease"}:
+        return "text/plain; charset=utf-8"
     return _CONTENT_TYPES.get(path.suffix.casefold(), "application/octet-stream")
 
 
-def _validate_prepared_release(output_dir: Path) -> Path:
+def _apt_files(output_dir: Path) -> tuple[Path, ...]:
+    apt_root = output_dir / "apt"
+    if not apt_root.is_dir():
+        return ()
+    return tuple(sorted(path for path in apt_root.rglob("*") if path.is_file()))
+
+
+def _apt_publication_order(paths: tuple[Path, ...], output_dir: Path) -> tuple[Path, ...]:
+    """Upload package bytes before indexes and the signed index last."""
+
+    def key(path: Path) -> tuple[int, str]:
+        relative = path.relative_to(output_dir).as_posix()
+        if relative.startswith("apt/pool/"):
+            priority = 0
+        elif relative == "apt/repository-key.asc":
+            priority = 1
+        elif relative.endswith("/InRelease"):
+            priority = 4
+        elif relative.endswith("/Release") or relative.endswith("/Release.gpg"):
+            priority = 3
+        else:
+            priority = 2
+        return priority, relative
+
+    return tuple(sorted(paths, key=key))
+
+
+def _publication_files(output_dir: Path, *, require_apt: bool = False) -> tuple[tuple[str, Path], ...]:
+    apt_files = _apt_publication_order(_apt_files(output_dir), output_dir)
+    if require_apt:
+        required = {
+            "apt/repository-key.asc",
+            "apt/dists/stable/InRelease",
+            "apt/dists/stable/Release",
+            "apt/dists/stable/Release.gpg",
+            "apt/dists/stable/main/binary-amd64/Packages",
+            "apt/dists/stable/main/binary-amd64/Packages.gz",
+        }
+        actual = {path.relative_to(output_dir).as_posix() for path in apt_files}
+        if not required.issubset(actual) or not any(path.relative_to(output_dir).as_posix().startswith("apt/pool/") for path in apt_files):
+            raise ValueError("prepared release APT repository is incomplete")
+    ordered: list[tuple[str, Path]] = []
+    for filename in STABLE_FILES:
+        if filename != "latest.json":
+            ordered.append((filename, output_dir / filename))
+    ordered.extend((path.relative_to(output_dir).as_posix(), path) for path in apt_files)
+    ordered.append(("latest.json", output_dir / "latest.json"))
+    return tuple(ordered)
+
+
+def _validate_prepared_release(output_dir: Path, *, require_apt: bool = False) -> Path:
     output_dir = Path(output_dir).expanduser().resolve()
     if not output_dir.is_dir():
         raise ValueError(f"prepared release directory missing: {output_dir}")
@@ -149,6 +203,7 @@ def _validate_prepared_release(output_dir: Path) -> Path:
         path = output_dir / filename
         if not path.is_file():
             raise ValueError(f"prepared release file missing: {path}")
+    _publication_files(output_dir, require_apt=require_apt)
     return output_dir
 
 
@@ -158,14 +213,13 @@ def publish_r2(
     runner: str = "npx",
     wrangler_version: str = "4",
     bucket: str = "save-editor-downloads",
+    require_apt: bool = False,
 ) -> None:
     """Upload stable files; credentials are supplied by Wrangler's environment."""
 
     output_dir = Path(output_dir).resolve()
-    for filename in STABLE_FILES:
-        path = output_dir / filename
-        if not path.is_file():
-            raise ValueError(f"prepared release file missing: {path}")
+    _validate_prepared_release(output_dir, require_apt=require_apt)
+    for filename, path in _publication_files(output_dir, require_apt=require_apt):
         command = [
             runner,
             "--yes",
@@ -180,7 +234,11 @@ def publish_r2(
             "--content-type",
             _content_type(path),
         ]
-        if filename == "latest.json":
+        if (
+            filename == "latest.json"
+            or filename.startswith("apt/dists/")
+            or filename == "apt/repository-key.asc"
+        ):
             command.extend(["--cache-control", "public, max-age=60, must-revalidate"])
         else:
             command.extend(
@@ -188,7 +246,7 @@ def publish_r2(
                     "--cache-control",
                     "public, max-age=31536000, immutable",
                     "--content-disposition",
-                    f'attachment; filename="{filename}"',
+                    f'attachment; filename="{path.name}"',
                 ]
             )
         subprocess.run(command, check=True)
@@ -199,15 +257,14 @@ def verify_public_r2(
     *,
     base_url: str = DOWNLOAD_BASE_URL,
     timeout: float = 30.0,
+    require_apt: bool = False,
 ) -> None:
     """Read every public object back and compare bytes and advertised length."""
 
     output_dir = Path(output_dir).resolve()
     base_url = base_url.rstrip("/")
-    for filename in STABLE_FILES:
-        local = output_dir / filename
-        if not local.is_file():
-            raise ValueError(f"prepared release file missing: {local}")
+    _validate_prepared_release(output_dir, require_apt=require_apt)
+    for filename, local in _publication_files(output_dir, require_apt=require_apt):
         request = Request(
             f"{base_url}/{filename}?readback={int(time.time())}",
             headers={"User-Agent": _RELEASE_USER_AGENT},
@@ -242,13 +299,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--publish-r2", action="store_true")
     parser.add_argument("--verify-r2", action="store_true")
+    parser.add_argument("--require-apt", action="store_true")
     parser.add_argument("--r2-base-url", default=DOWNLOAD_BASE_URL)
     args = parser.parse_args(argv)
     try:
         if args.prepared:
             if args.artifacts is not None or args.version is not None or args.commit is not None:
                 parser.error("--prepared cannot be combined with --artifacts, --version, or --commit")
-            output_dir = _validate_prepared_release(args.output)
+            output_dir = _validate_prepared_release(args.output, require_apt=args.require_apt)
         else:
             missing = [
                 option
@@ -270,9 +328,15 @@ def main(argv: list[str] | None = None) -> int:
             )
             output_dir = args.output.resolve()
         if args.publish_r2:
-            publish_r2(output_dir)
+            if args.require_apt:
+                publish_r2(output_dir, require_apt=True)
+            else:
+                publish_r2(output_dir)
         if args.verify_r2:
-            verify_public_r2(output_dir, base_url=args.r2_base_url)
+            if args.require_apt:
+                verify_public_r2(output_dir, base_url=args.r2_base_url, require_apt=True)
+            else:
+                verify_public_r2(output_dir, base_url=args.r2_base_url)
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         parser.error(str(exc))
     print(output_dir)

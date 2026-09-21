@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -123,6 +124,84 @@ def test_debian_dependency_tracks_the_build_host_libc() -> None:
     manifest = build.build_manifest(root=ROOT, target="linux", version="test")
     assert manifest["libc_minimum"] == build.libc_requirement()
     assert build.build_manifest(root=ROOT, target="windows", version="test")["libc_minimum"] is None
+
+
+def test_public_linux_floor_is_explicit_and_release_gate_rejects_newer_hosts() -> None:
+    assert build.SUPPORTED_GLIBC_BASELINE == "2.35"
+    assert build.release_libc_requirement() == "2.35"
+    with pytest.raises(build.BuildError, match="glibc baseline"):
+        build.require_release_glibc("2.39")
+    assert build.require_release_glibc("2.35.0") == "2.35"
+
+
+def _deb_control(path: Path) -> dict[str, str]:
+    result = subprocess.run(
+        ["dpkg-deb", "-f", str(path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    fields: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        key, separator, value = line.partition(": ")
+        if separator:
+            fields[key] = value
+    return fields
+
+
+@pytest.mark.skipif(shutil.which("dpkg-deb") is None, reason="dpkg-deb is required")
+def test_debian_package_contains_real_desktop_appstream_and_runtime_metadata(tmp_path: Path) -> None:
+    runtime = tmp_path / "SaveEditor"
+    runtime.mkdir()
+    executable = runtime / "SaveEditor"
+    executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    executable.chmod(0o755)
+    destination = tmp_path / "stalker2-save-editor_0.5.19_amd64.deb"
+
+    build._build_deb(
+        runtime=runtime,
+        destination=destination,
+        work=tmp_path / "work",
+        version="0.5.19",
+    )
+
+    fields = _deb_control(destination)
+    assert fields["Maintainer"]
+    assert fields["Homepage"] == "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor"
+    assert fields["Description"].startswith("S.T.A.L.K.E.R. 2 save editor")
+    assert int(fields["Installed-Size"]) > 0
+    assert "libc6 (>= " in fields["Depends"]
+    for dependency in build.DEBIAN_RUNTIME_DEPENDENCIES:
+        assert dependency in fields["Depends"]
+
+    listing = subprocess.run(
+        ["dpkg-deb", "-c", str(destination)],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert f"Icon={build.DESKTOP_ID}" in build._desktop_entry()
+    assert "com.github.dmitriyde.stalker2saveeditor.desktop" in listing
+    assert "com.github.dmitriyde.stalker2saveeditor.metainfo.xml" in listing
+    assert "com.github.dmitriyde.stalker2saveeditor.png" in listing
+    assert "/usr/share/doc/stalker2-save-editor/copyright" in listing
+    assert "/usr/share/man/man1/stalker2-save-editor.1" in listing
+
+
+@pytest.mark.skipif(shutil.which("appstreamcli") is None, reason="appstreamcli is required")
+def test_appstream_metadata_validates_without_network() -> None:
+    subprocess.run(
+        [
+            "appstreamcli",
+            "validate",
+            "--no-net",
+            "--strict",
+            str(ROOT / "packaging" / "com.github.dmitriyde.stalker2saveeditor.metainfo.xml"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_build_refuses_to_start_without_working_space(
