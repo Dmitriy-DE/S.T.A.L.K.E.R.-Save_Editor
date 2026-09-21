@@ -100,6 +100,12 @@ def test_release_packages_run_the_complete_source_gate_before_building() -> None
     linux_package = workflow["jobs"]["package-linux"]
     assert linux_package["needs"] == "source-gate"
     assert linux_package["container"]["image"] == "ubuntu:22.04"
+    install_step = next(
+        step
+        for step in linux_package["steps"]
+        if step.get("name") == "Install baseline build and package dependencies"
+    )
+    assert "libpython3.11" in install_step["run"]
     source_steps = source_gate["steps"]
     body = next(step["run"] for step in source_steps if step.get("name") == "Run complete source gate")
     for required in (
