@@ -220,12 +220,14 @@ def test_download_worker_retention_and_rate_limit_are_declarative() -> None:
     assert '[[ratelimits]]' in config
     assert 'name = "DIAGNOSTICS_RATE_LIMITER"' in config
     assert lifecycle == {
-        "Rules": [
+        "rules": [
             {
-                "ID": "diagnostics-retention",
-                "Status": "Enabled",
-                "Filter": {"Prefix": "diagnostics/"},
-                "Expiration": {"Days": 30},
+                "id": "diagnostics-retention",
+                "enabled": True,
+                "conditions": {"prefix": "diagnostics/"},
+                "deleteObjectsTransition": {
+                    "condition": {"maxAge": 2_592_000, "type": "Age"}
+                },
             }
         ]
     }

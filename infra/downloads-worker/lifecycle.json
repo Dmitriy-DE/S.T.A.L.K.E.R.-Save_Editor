@@ -1,13 +1,16 @@
 {
-  "Rules": [
+  "rules": [
     {
-      "ID": "diagnostics-retention",
-      "Status": "Enabled",
-      "Filter": {
-        "Prefix": "diagnostics/"
+      "id": "diagnostics-retention",
+      "enabled": true,
+      "conditions": {
+        "prefix": "diagnostics/"
       },
-      "Expiration": {
-        "Days": 30
+      "deleteObjectsTransition": {
+        "condition": {
+          "maxAge": 2592000,
+          "type": "Age"
+        }
       }
     }
   ]
