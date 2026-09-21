@@ -105,3 +105,15 @@ def test_summary_text_is_not_clipped(qtbot, synthetic_save: bytes, tmp_path: Pat
     # A wrapped label inside a QFormLayout reports a one-line height hint and
     # renders over its neighbour; the container must reserve the wrapped height.
     assert container.sizeHint().height() >= label.heightForWidth(label.width())
+
+
+def test_main_window_exposes_one_save_action_without_manual_preview_controls(qtbot) -> None:
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+
+    assert window.preview_button.isHidden()
+    assert window.changes_view.preview_button.isHidden()
+    assert window.changes_view.apply_button.isHidden()
+    assert window.changes_view.replace_button.isHidden()
+    assert window.changes_view.destination_edit.isHidden()
+    assert window.changes_view.choose_output_button.isHidden()

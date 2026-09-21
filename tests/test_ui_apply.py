@@ -10,6 +10,7 @@ import pytest
 pytest.importorskip("PySide6")
 
 from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import QMessageBox
 
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
@@ -151,34 +152,111 @@ def test_worker_error_is_reported_and_close_does_not_abort_running_operation(
     assert "injected preview failure" in window.error_label.text()
 
 
-def test_one_click_save_writes_without_manual_preview(
-    qtbot, synthetic_save: bytes, tmp_path: Path
+def test_one_click_save_confirms_once_then_replaces_open_slot_with_backup(
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
 ) -> None:
     source = tmp_path / "fixture.sav"
     source.write_bytes(synthetic_save)
-    exported: list[Path] = []
+    backup_dir = tmp_path / "backups"
+    confirmations: list[tuple[str, str]] = []
+    replaced: list[tuple[Path, Path]] = []
 
     def prepare(data: bytes, plan: EditPlan) -> PreparedEdit:
         return PreparedEdit(plan=plan, data=data, output_sha256=hashlib.sha256(data).hexdigest())
 
-    def export(source_path: Path, output_path: Path, prepared: PreparedEdit, backup: Path):
-        exported.append(output_path)
+    def replace(source_path: Path, prepared: PreparedEdit, backup: Path):
+        replaced.append((source_path, backup))
         return type(
             "Receipt",
             (),
-            {"output_path": output_path, "backup_path": backup / "orig.sav",
+            {"output_path": source_path, "backup_path": backup / "orig.sav",
              "output_sha256": prepared.output_sha256},
         )()
 
-    window = MainWindow(EditorService(prepare_fn=prepare, export_fn=export))
+    def confirm(parent, title, text, buttons, default):
+        confirmations.append((title, text))
+        return QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(QMessageBox, "question", staticmethod(confirm))
+    monkeypatch.setattr("ui.main_window.backup_dirs", lambda: (backup_dir,))
+    window = MainWindow(EditorService(prepare_fn=prepare, replace_fn=replace))
     qtbot.addWidget(window)
     _show_snapshot(window, source, synthetic_save)
     window._stage_stack_change(0x30000001, 3)
 
-    # One click: no manual _start_preview() call. The chain preview->apply
-    # ends with apply_ready.
+    # One click: the user confirms once; preview and replace stay internal.
     with qtbot.waitSignal(window.apply_ready, timeout=UI_TIMEOUT_MS):
         window._save_one_click()
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=UI_TIMEOUT_MS)
 
-    assert len(exported) == 1
+    assert len(confirmations) == 1
+    assert confirmations[0][0] == "Сохранить изменения?"
+    assert "резервная копия" in confirmations[0][1]
+    assert replaced == [(source, backup_dir)]
+
+
+def test_one_click_save_cancel_does_not_start_preview_or_write(
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "fixture.sav"
+    source.write_bytes(synthetic_save)
+    prepare_calls = 0
+    replace_calls = 0
+
+    def prepare(data: bytes, plan: EditPlan) -> PreparedEdit:
+        nonlocal prepare_calls
+        prepare_calls += 1
+        return PreparedEdit(plan=plan, data=data, output_sha256=hashlib.sha256(data).hexdigest())
+
+    def replace(source_path: Path, prepared: PreparedEdit, backup: Path):
+        nonlocal replace_calls
+        replace_calls += 1
+        raise AssertionError("replace must not run after cancel")
+
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.No),
+    )
+    window = MainWindow(EditorService(prepare_fn=prepare, replace_fn=replace))
+    qtbot.addWidget(window)
+    _show_snapshot(window, source, synthetic_save)
+    window._stage_stack_change(0x30000001, 3)
+
+    window._save_one_click()
+
+    assert prepare_calls == 0
+    assert replace_calls == 0
+    assert window._operation_thread is None
+
+
+def test_cloud_save_preview_failure_does_not_leave_upload_queued(
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "cloud-slot.sav"
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
+    )
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=synthetic_save,
+            info=inspect_save(synthetic_save),
+            source_kind="cloud",
+            locator="Stalker2/Saved/STEAM/SaveGames/Data/cloud-slot.sav",
+        )
+    )
+    window._stage_stack_change(0x30000001, 3)
+
+    def broken_plan() -> EditPlan:
+        raise SaveError("injected plan failure")
+
+    monkeypatch.setattr(window, "_build_edit_plan", broken_plan)
+    with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
+        window._save_one_click()
+
+    assert not window._pending_cloud_upload
