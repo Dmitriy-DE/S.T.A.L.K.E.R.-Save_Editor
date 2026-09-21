@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from collections.abc import Callable
@@ -38,7 +39,9 @@ from editor.steam_profiles import (
 )
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
-from steam_cloud import APP_ID, CloudFile, discover_helper
+from steam_cloud import APP_ID, CloudFile, cloud_source_label, discover_helper
+
+LOGGER = logging.getLogger("stalker2_save_editor.cloud")
 
 
 class CloudSession(CloudTransport, Protocol):
@@ -57,6 +60,10 @@ class CloudSession(CloudTransport, Protocol):
     def connect(self, app_id: int) -> None: ...
 
     def close(self) -> None: ...
+
+    def list_files(self) -> list[CloudFile]: ...
+
+    def read_cloud_file(self, cloud_file: CloudFile) -> bytes: ...
 
 
 WorkerFactory = Callable[[Path | None], CloudSession]
@@ -129,6 +136,13 @@ class CloudOperationWorker(QThread):
     def run(self) -> None:
         created_transport = False
         transport = self.transport
+        LOGGER.info(
+            "cloud operation start mode=%s app_id=%s path=%s source=%s",
+            self.mode,
+            self.app_id,
+            self.cloud_file.name if self.cloud_file is not None else "-",
+            self.cloud_file.source if self.cloud_file is not None else "-",
+        )
         try:
             if self.mode == "list":
                 # A helper is optional: the native worker needs no AppImage.
@@ -148,6 +162,7 @@ class CloudOperationWorker(QThread):
                 files = transport.list_files()
                 self.transport_ready.emit(transport)
                 self.completed.emit(files)
+                LOGGER.info("cloud operation complete mode=list files=%s", len(files))
                 return
 
             if transport is None:
@@ -158,7 +173,11 @@ class CloudOperationWorker(QThread):
                 if cloud_file is None:
                     raise SaveError("Cloud save не выбран")
                 self.progress.emit(f"Cloud: скачивание {cloud_file.name}…")
-                data = bytes(transport.read_file(cloud_file.name))
+                reader = getattr(transport, "read_cloud_file", None)
+                if callable(reader):
+                    data = bytes(reader(cloud_file))
+                else:
+                    data = bytes(transport.read_file(cloud_file.name))
                 result = self.service.inspect_result(
                     data,
                     with_inventory=True,
@@ -182,6 +201,7 @@ class CloudOperationWorker(QThread):
                         result.capabilities,
                     )
                 )
+                LOGGER.info("cloud operation complete mode=analyze bytes=%s", len(data))
                 return
 
             if self.mode == "upload":
@@ -196,10 +216,12 @@ class CloudOperationWorker(QThread):
                     on_stage=self.progress.emit,
                 )
                 self.completed.emit(receipt)
+                LOGGER.info("cloud operation complete mode=upload status=%s", receipt.status)
                 return
 
             raise SaveError(f"Неизвестный cloud operation: {self.mode}")
         except FormatDetectionError as exc:
+            LOGGER.exception("cloud operation failed mode=%s", self.mode)
             self.failed.emit(self._diagnostic_message(exc))
         except Exception as exc:
             if created_transport and transport is not None:
@@ -207,6 +229,7 @@ class CloudOperationWorker(QThread):
                     transport.close()
                 except Exception:
                     pass
+            LOGGER.exception("cloud operation failed mode=%s", self.mode)
             self.failed.emit(self._diagnostic_message(exc))
 
     def _diagnostic_message(self, exc: BaseException) -> str:
@@ -258,6 +281,7 @@ class CloudView(QWidget):
     SIZE_COLUMN = 1
     TIMESTAMP_COLUMN = 2
     PERSISTED_COLUMN = 3
+    SOURCE_COLUMN = 4
 
     def __init__(
         self,
@@ -367,8 +391,10 @@ class CloudView(QWidget):
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Data path", "Размер", "Timestamp", "Persisted"])
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(
+            ["Data path", "Размер", "Timestamp", "Persisted", "Источник"]
+        )
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -623,6 +649,7 @@ class CloudView(QWidget):
                 f"{cloud_file.size} B",
                 str(cloud_file.timestamp),
                 "да" if cloud_file.is_persisted else "нет",
+                cloud_source_label(cloud_file.source),
             )
             for column, value in enumerate(values):
                 self.table.setItem(row, column, QTableWidgetItem(value))

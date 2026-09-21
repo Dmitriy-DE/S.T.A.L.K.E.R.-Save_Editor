@@ -44,6 +44,8 @@ def test_discover_cached_cloud_files_reads_steam_remotecache(tmp_path: Path) -> 
     assert files[0].size == 1234
     assert files[0].timestamp == 1700000000
     assert files[0].is_persisted is False
+    assert files[0].source == "steam_cache_metadata"
+    assert files[0].local_path is None
 
 
 def test_cloud_files_from_cdp_rows_builds_full_data_paths_and_download_urls() -> None:
@@ -64,6 +66,71 @@ def test_cloud_files_from_cdp_rows_builds_full_data_paths_and_download_urls() ->
     assert files[0].size == 6_400_000
     assert files[0].download_url == "https://steamusercontent-a.akamaihd.net/file"
     assert files[0].is_persisted is True
+    assert files[0].source == "web"
+
+
+def test_discover_cached_cloud_files_marks_size_matching_remote_copy_local(
+    tmp_path: Path,
+) -> None:
+    steam = tmp_path / ".local" / "share" / "Steam"
+    cache_dir = steam / "userdata" / "765" / "1643320"
+    remote = cache_dir / "remote" / "Stalker2" / "Saved" / "STEAM" / "SaveGames" / "Data"
+    remote.mkdir(parents=True)
+    (remote / "slot.sav").write_bytes(b"save")
+    (cache_dir / "remotecache.vdf").write_text(
+        '''"1643320"
+{
+    "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
+    {
+        "size" "4"
+        "time" "1700000000"
+        "syncstate" "2"
+    }
+}
+''',
+        encoding="utf-8",
+    )
+
+    files = discover_cached_cloud_files(
+        1643320,
+        system="Linux",
+        environ={},
+        home=tmp_path,
+    )
+
+    assert files[0].source == "steam_cache_local"
+    assert files[0].local_path == remote / "slot.sav"
+
+
+def test_discover_cached_cloud_files_rejects_mismatched_local_copy(tmp_path: Path) -> None:
+    steam = tmp_path / ".local" / "share" / "Steam"
+    cache_dir = steam / "userdata" / "765" / "1643320"
+    remote = cache_dir / "remote" / "Stalker2" / "Saved" / "STEAM" / "SaveGames" / "Data"
+    remote.mkdir(parents=True)
+    (remote / "slot.sav").write_bytes(b"bad")
+    (cache_dir / "remotecache.vdf").write_text(
+        '''"1643320"
+{
+    "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
+    {
+        "size" "4"
+        "time" "1700000000"
+        "syncstate" "2"
+    }
+}
+''',
+        encoding="utf-8",
+    )
+
+    files = discover_cached_cloud_files(
+        1643320,
+        system="Linux",
+        environ={},
+        home=tmp_path,
+    )
+
+    assert files[0].source == "steam_cache_metadata"
+    assert files[0].local_path is None
 
 
 def test_cloud_files_from_cdp_rows_accepts_original_savedgames_paths() -> None:
