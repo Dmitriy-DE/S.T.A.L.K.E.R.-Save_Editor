@@ -1,5 +1,40 @@
 # Состояние и пробелы — 2026-09-21
 
+## v0.5.19 — one-click desktop save flow — 2026-09-21
+
+Основной desktop flow упрощён до одной операции: открыть локальный сейв,
+изменить данные и нажать **Сохранить**. Приложение задаёт одно подтверждение,
+после чего само выполняет preview, fresh SHA/CRC-проверку, проверенный backup и
+atomic replacement открытого слота. Ручные destination/preview/apply/replace
+контролы убраны из обычной вкладки; журнал изменений и резервные копии остались
+доступны как технические поверхности аудита и восстановления. Steam Cloud
+сохраняет отдельное подтверждение upload и fail-closed границу.
+
+Локальный gate: `575 passed`, `make check`. Hosted source matrix
+[35587937545](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35587937545)
+прошла на Ubuntu/Windows для Python 3.11/3.12. Hosted standalone package run
+[35588193488](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35588193488)
+прошёл Linux и Windows package/smoke jobs; его release job остановился
+fail-closed на отсутствующих GitHub secrets `CLOUDFLARE_API_TOKEN` и
+`CLOUDFLARE_ACCOUNT_ID`.
+
+После успешных package jobs тот же набор байтов опубликован вручную
+авторизованным Wrangler и `gh` из merge commit
+`f44377d12da5d78c24c1afb3b5acf78e8b906a74`. Worker version
+`52856335-1c63-450f-9183-50a1a7ee8e56`; все шесть R2 объектов прочитаны через
+публичный Worker и совпали с локальными SHA-256. [GitHub Release v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19)
+содержит Windows installer/portable, Linux portable, `.deb`, `latest.json` и
+`SHA256SUMS`.
+
+Фактические assets: Windows portable — 62,299,765 bytes,
+`9d7182bd354a09757cf7096845dfa9c6f5e83ac709ba59b7f0149cc4197da8ec`;
+Windows installer — 38,267,474 bytes,
+`8ee10072e074813dc0a584137ab3824b99c505c01ca54b7a0b5dae8ad1445860`;
+Linux portable — 90,071,322 bytes,
+`eec9dec13e410aa21b2e4eea110b1494539a9440ab41db5142f546263ac78dbb`;
+Debian — 93,186,904 bytes,
+`27e6c25541e351a30cc2ed7e446e1b70b1c7b258861035757038f4ab8d8009c7`.
+
 ## v0.5.18 — Cloud provenance, diagnostics and OTA correction
 
 Steam Cloud cache rows now carry provenance and are read through the source that

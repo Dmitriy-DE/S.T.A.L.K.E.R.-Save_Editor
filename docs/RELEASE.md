@@ -1,5 +1,40 @@
 # Проверка и выпуск
 
+## v0.5.19 — one-click desktop save flow — 2026-09-21
+
+Desktop save теперь сводится к одной понятной операции: после редактирования
+нажать **Сохранить**, подтвердить один popup, и приложение само делает
+внутренний preview, проверяет fresh SHA/CRC, создаёт verified backup и атомарно
+заменяет открытый локальный слот. Три ручные вкладки/этапа больше не требуются;
+журнал изменений и backups сохранены для аудита и восстановления. Steam Cloud
+остаётся отдельным явным upload flow с теми же safety checks.
+
+PR [#104](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/104)
+слит в `main`. Локальная проверка — `575 passed` и `make check`. Source matrix
+[35587937545](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35587937545)
+прошла на Ubuntu/Windows для Python 3.11/3.12. Standalone package run
+[35588193488](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35588193488)
+прошёл Linux/Windows сборку и smoke; его release job корректно остановился до
+публикации из-за отсутствующих repository secrets Cloudflare.
+
+Релиз опубликован из merge commit
+`f44377d12da5d78c24c1afb3b5acf78e8b906a74`: [GitHub Release v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19).
+Worker version — `52856335-1c63-450f-9183-50a1a7ee8e56`; R2 objects загружены
+авторизованным Wrangler, затем все шесть файлов прочитаны через публичный Worker
+и сравнены побайтно. `latest.json` указывает версию `0.5.19`, source commit и
+раздельные Windows installer/portable targets.
+
+SHA-256 и размеры release/R2 assets:
+
+- Windows portable — 62,299,765 bytes,
+  `9d7182bd354a09757cf7096845dfa9c6f5e83ac709ba59b7f0149cc4197da8ec`;
+- Windows installer — 38,267,474 bytes,
+  `8ee10072e074813dc0a584137ab3824b99c505c01ca54b7a0b5dae8ad1445860`;
+- Linux portable — 90,071,322 bytes,
+  `eec9dec13e410aa21b2e4eea110b1494539a9440ab41db5142f546263ac78dbb`;
+- Debian — 93,186,904 bytes,
+  `27e6c25541e351a30cc2ed7e446e1b70b1c7b258861035757038f4ab8d8009c7`.
+
 ## v0.5.18 — Steam Cloud provenance, diagnostics and OTA correction — 2026-09-21
 
 The Cloud tab now preserves the discovery backend for every row. Steam cache
