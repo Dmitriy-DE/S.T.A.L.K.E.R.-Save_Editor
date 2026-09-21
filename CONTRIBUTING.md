@@ -47,7 +47,7 @@ ephemeral test key or an explicitly controlled local key:
 
 ```bash
 make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-make apt-repo VERSION=0.5.19 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
+make apt-repo VERSION=0.5.20 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
 ```
 
 Never commit the private key or the generated release directory.

@@ -43,6 +43,21 @@ Direct Windows installer/portable, Linux portable and `.deb` assets remain
 available; APT is an additional Linux installation/update channel. The exact
 commands and secret names are maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
+## v0.5.20 — native writer for remote-only Steam Cloud listings — 2026-09-21
+
+Steam `GetFileCount()` returns the files currently synchronized into the local
+RemoteStorage view; it is not a complete remote web listing. When that count is
+zero, the desktop transport may still obtain the selected `Data/*.sav` from
+Steam Cloud web or `remotecache.vdf`, while retaining the successfully
+initialized native `FileWrite` capability for upload. A transport with only web
+or cache access and no native/helper writer remains read-only.
+
+The regression is covered by native subprocess tests for both web and cache
+listings. Local verification passed with `601 passed` and `make check`. A live
+read-only smoke on the current Steam session found `52` cache entries and
+reported `writable=True`; a real write to a user slot and in-game load/re-save
+were intentionally not performed, so they remain external runtime gates.
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Desktop save теперь сводится к одной понятной операции: после редактирования

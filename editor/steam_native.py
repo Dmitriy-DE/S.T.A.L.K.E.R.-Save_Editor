@@ -369,6 +369,11 @@ class SteamNativeSubprocessWorker:
         self._helper: SteamWorker | None = None
         self._cdp: Any | None = None
         self._cached_files: dict[str, CloudFile] = {}
+        # ``GetFileCount`` enumerates only files currently synchronized to the
+        # local Steam RemoteStorage view.  It may legitimately be zero while
+        # ``FileWrite`` is still able to create/overwrite a cloud file selected
+        # from the web or Steam cache.
+        self._native_writer_ready = False
         self._status_hint = ""
         self._closed = False
         self._process_lock = threading.Lock()
@@ -583,6 +588,7 @@ class SteamNativeSubprocessWorker:
                 raise SteamCloudError(
                     f"Steam native child вернул некорректные поля файла: {item}"
                 ) from exc
+        self._native_writer_ready = True
         return files
 
     @property
@@ -593,6 +599,24 @@ class SteamNativeSubprocessWorker:
 
     @property
     def write_capability(self) -> CloudWriteCapability:
+        if self._helper is not None:
+            capability = cloud_write_capability(self._helper)
+            if capability.writable:
+                return capability
+        if self._native_writer_ready:
+            if self._cdp is not None:
+                reason = (
+                    "Steam RemoteStorage writer готов; список и скачивание через "
+                    "Steam Cloud web"
+                )
+            elif self._cached_files:
+                reason = (
+                    "Steam RemoteStorage writer готов; список через Steam cache "
+                    "(GetFileCount перечисляет только локальные файлы)"
+                )
+            else:
+                reason = "Steam RemoteStorage writer готов"
+            return CloudWriteCapability(True, reason)
         if self._cdp is not None:
             return CloudWriteCapability(
                 False,
@@ -634,6 +658,10 @@ class SteamNativeSubprocessWorker:
                 self._cdp = cdp
                 self._cached_files.clear()
                 self._status_hint = "список и скачивание через Steam Cloud web"
+                if self._native_writer_ready:
+                    self._status_hint += (
+                        "; native RemoteStorage writer готов, локальный список пуст"
+                    )
                 return files
             try:
                 cdp.close()
@@ -663,6 +691,10 @@ class SteamNativeSubprocessWorker:
                 "список найден в Steam cache; для скачивания открой Steam Cloud web "
                 "или перезапусти Steam с -cef-enable-debugging"
             )
+            if self._native_writer_ready:
+                self._status_hint += (
+                    "; native RemoteStorage writer готов, локальный список пуст"
+                )
             return list(cached)
         return None
 
@@ -697,6 +729,11 @@ class SteamNativeSubprocessWorker:
             )
             if files:
                 return files
+            self._status_hint += "; локальный список пуст, writer остаётся доступен"
+            self.log(
+                "Steam Cloud: native RemoteStorage list пуст; "
+                "сохраняю native FileWrite и использую web/cache для списка"
+            )
         except SteamCloudError as error:
             native_error = error
             if self.helper_path is not None:

@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 import editor.steam_native as steam_native
-from editor.cloud_capabilities import CloudWriteNotAttemptedError
 from editor.steam_profiles import steam_cloud_profile_for_release
 from steam_cloud import APP_ID, CloudFile, SteamCloudError
 
@@ -254,18 +253,54 @@ def test_empty_native_list_uses_cdp_cloud_files_for_download(
         "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav"
     ]
     assert worker.read_file(files[0].name) == b"save"
-    assert worker.write_capability.writable is False
+    assert worker.write_capability.writable is True
 
-    native_calls: list[str] = []
 
-    def forbid_native_write(operation: str, **_kwargs):
-        native_calls.append(operation)
-        raise AssertionError("read-only fallback must not invoke native write")
+def test_empty_native_list_keeps_native_writer_for_cache_listing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cache listing may still upload through a successful native API probe."""
 
-    monkeypatch.setattr(worker, "_run_native", forbid_native_write)
-    with pytest.raises(CloudWriteNotAttemptedError, match="web"):
-        worker.write_file(files[0].name, b"edited")
-    assert native_calls == []
+    native_operations: list[str] = []
+
+    def fake_popen(command, **_kwargs):
+        operation = command[command.index("--steam-native-op") + 1]
+        native_operations.append(operation)
+        response = {"type": "Files", "files": []}
+        if operation == "write":
+            response = {"type": "Ok"}
+        return _FakeProcess(command, stdout=json.dumps(response) + "\n")
+
+    class FakeCdp:
+        def start(self):
+            raise SteamCloudError("web unavailable")
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    worker = steam_native.SteamNativeSubprocessWorker(
+        cdp_factory=FakeCdp,
+        cache_finder=lambda _app_id: (
+            CloudFile(
+                "Stalker2/Saved/STEAM/SaveGames/Data/slot.sav",
+                4,
+                1,
+                True,
+                True,
+                source="steam_cache_metadata",
+            ),
+        ),
+    )
+    worker.start()
+    worker.app_id = 123
+
+    files = worker.list_files()
+
+    assert len(files) == 1
+    assert worker.write_capability.writable is True
+    worker.write_file(files[0].name, b"edited")
+    assert native_operations == ["list", "write"]
 
 
 def test_cache_metadata_read_never_falls_back_to_native_file_read(
