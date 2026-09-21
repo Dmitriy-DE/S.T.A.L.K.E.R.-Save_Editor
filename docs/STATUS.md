@@ -26,14 +26,21 @@ fail-closed на отсутствующих GitHub secrets `CLOUDFLARE_API_TOKEN
 содержит Windows installer/portable, Linux portable, `.deb`, `latest.json` и
 `SHA256SUMS`.
 
-Фактические assets: Windows portable — 62,299,765 bytes,
-`9d7182bd354a09757cf7096845dfa9c6f5e83ac709ba59b7f0149cc4197da8ec`;
-Windows installer — 38,267,474 bytes,
-`8ee10072e074813dc0a584137ab3824b99c505c01ca54b7a0b5dae8ad1445860`;
-Linux portable — 90,071,322 bytes,
-`eec9dec13e410aa21b2e4eea110b1494539a9440ab41db5142f546263ac78dbb`;
-Debian — 93,186,904 bytes,
-`27e6c25541e351a30cc2ed7e446e1b70b1c7b258861035757038f4ab8d8009c7`.
+После финального standalone run
+[35623997966](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35623997966)
+из commit `e11f469a8bc6df8b2980db765f635cb53fe4ac3c` эти шесть файлов вручную
+заменены одновременно в R2 и GitHub Release авторизованными Wrangler/`gh`;
+R2 read-back и GitHub download совпали побайтно. Тег `v0.5.19` не переписывался.
+APT-индексы не трогались из-за отсутствия исходного приватного signing key.
+
+Фактические assets после refresh: Windows portable — 62,315,347 bytes,
+`77989c6696c220744ada8afb4c0d57a6ecf8f698c5bbab4c7fb5c1a13014b3f8`;
+Windows installer — 38,264,578 bytes,
+`66c9feef9c1e806b0a0e3145dd8fe8f678827fe884c5381054346f46c5cbfccf`;
+Linux portable — 79,239,602 bytes,
+`9e1633d771da6c724cdd55bb383264e589d2c68613b01385e2ae22674af1a157`;
+Debian — 85,215,576 bytes,
+`d2c29f987a6b96e0dbf605850a84db09e96a285fce0ee8ea2a270dbe10e2456b`.
 
 ## v0.5.18 — Cloud provenance, diagnostics and OTA correction
 

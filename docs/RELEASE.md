@@ -67,16 +67,24 @@ Worker version — `52856335-1c63-450f-9183-50a1a7ee8e56`; R2 objects загру
 и сравнены побайтно. `latest.json` указывает версию `0.5.19`, source commit и
 раздельные Windows installer/portable targets.
 
+После финальной проверки `main` (`e11f469a8bc6df8b2980db765f635cb53fe4ac3c`)
+тот же `v0.5.19` был вручную обновлён из standalone run
+[35623997966](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35623997966):
+шесть root-assets заменены в R2 авторизованным Wrangler и в GitHub Release
+через `gh`. Тег не переписывался; `latest.json` явно содержит source commit
+этого проверенного набора. APT-репозиторий не изменялся: для его публикации
+нужен исходный приватный signing key.
+
 SHA-256 и размеры release/R2 assets:
 
-- Windows portable — 62,299,765 bytes,
-  `9d7182bd354a09757cf7096845dfa9c6f5e83ac709ba59b7f0149cc4197da8ec`;
-- Windows installer — 38,267,474 bytes,
-  `8ee10072e074813dc0a584137ab3824b99c505c01ca54b7a0b5dae8ad1445860`;
-- Linux portable — 90,071,322 bytes,
-  `eec9dec13e410aa21b2e4eea110b1494539a9440ab41db5142f546263ac78dbb`;
-- Debian — 93,186,904 bytes,
-  `27e6c25541e351a30cc2ed7e446e1b70b1c7b258861035757038f4ab8d8009c7`.
+- Windows portable — 62,315,347 bytes,
+  `77989c6696c220744ada8afb4c0d57a6ecf8f698c5bbab4c7fb5c1a13014b3f8`;
+- Windows installer — 38,264,578 bytes,
+  `66c9feef9c1e806b0a0e3145dd8fe8f678827fe884c5381054346f46c5cbfccf`;
+- Linux portable — 79,239,602 bytes,
+  `9e1633d771da6c724cdd55bb383264e589d2c68613b01385e2ae22674af1a157`;
+- Debian — 85,215,576 bytes,
+  `d2c29f987a6b96e0dbf605850a84db09e96a285fce0ee8ea2a270dbe10e2456b`.
 
 ## v0.5.18 — Steam Cloud provenance, diagnostics and OTA correction — 2026-09-21
 
