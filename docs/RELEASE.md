@@ -21,6 +21,28 @@ The tag workflow applies both steps before publishing release assets. The
 diagnostics client contains no authentication secret; Cloudflare-side rate
 limiting is the abuse-control boundary.
 
+## Current next-tag distribution contract
+
+The next public tag uses one source gate followed by native Linux and Windows
+package jobs. Linux packaging runs in an Ubuntu 22.04-compatible container and
+must pass the declared glibc 2.35 floor; the Debian package is checked by
+`dpkg-deb`, strict offline AppStream validation and lintian. Lintian `E:` and
+`W:` findings block the job, while `I:` and `P:` findings are reported as
+non-fatal informational output.
+
+The release job requires Cloudflare credentials and an APT signing key before
+it deploys the Worker or writes R2. It prepares the stable root assets once,
+builds `release-output/apt/` with `dists/stable`, `pool/`, `Packages.gz`,
+`InRelease`, `Release.gpg` and `repository-key.asc`, then uploads package bytes
+before indexes and the signed `InRelease` before `latest.json`. Every root and
+APT object is read back through the public Worker. A disposable source then
+runs `apt update`, discovers the tagged package and downloads that exact
+version. Only after those checks does the workflow create/update GitHub Release.
+
+Direct Windows installer/portable, Linux portable and `.deb` assets remain
+available; APT is an additional Linux installation/update channel. The exact
+commands and secret names are maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
 ## v0.5.19 — one-click desktop save flow — 2026-09-21
 
 Desktop save теперь сводится к одной понятной операции: после редактирования
@@ -184,9 +206,9 @@ Linux portable — 89,804,743 bytes,
 Debian — 93,129,042 bytes,
 `cb492a4cb94f1848cc9de9de33780ce011f374a36b2857c48077a15eacc34937`.
 
-Для будущих tag releases workflow сначала создаёт GitHub assets, а Worker/R2
-публикует только при наличии обоих secrets и иначе выдаёт явное warning; это не
-теряет уже собранный GitHub Release из-за внешней Cloudflare credentials.
+В историческом v0.5.16 release-job мог остановиться на отсутствующих
+Cloudflare credentials до публикации; текущий tag-контракт выше fail-closed
+проверяет Cloudflare и APT credentials до любых внешних mutations.
 
 ## v0.5.15: Windows installer + portable и автообновление — 2026-09-20
 

@@ -3,8 +3,10 @@ SAVE ?=
 VERSION ?= $(shell sed -n '1p' VERSION)
 ARTIFACT_DIR ?= release-input
 OUTPUT_DIR ?= release-output
+APT_SIGNING_KEY ?=
+APT_GPG_HOME ?= /tmp/save-editor-apt-gnupg
 
-.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package release-manifest r2-publish
+.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package release-manifest apt-repo r2-publish
 check: lint typecheck docs-check
 	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
@@ -65,6 +67,10 @@ package:
 
 release-manifest:
 	$(PYTHON) tools/publish_release.py --artifacts $(ARTIFACT_DIR) --version $(VERSION) --commit $$(git rev-parse HEAD) --output $(OUTPUT_DIR)
+
+apt-repo:
+	@test -n "$(APT_SIGNING_KEY)" || (echo 'usage: make apt-repo APT_SIGNING_KEY=<key-id>' && exit 2)
+	$(PYTHON) tools/build_apt_repo.py --package $(OUTPUT_DIR)/stalker2-save-editor_$(VERSION)_amd64.deb --output $(OUTPUT_DIR)/apt --signing-key $(APT_SIGNING_KEY) --gpg-home $(APT_GPG_HOME)
 
 r2-publish:
 	$(PYTHON) tools/publish_release.py --artifacts $(ARTIFACT_DIR) --version $(VERSION) --commit $$(git rev-parse HEAD) --output $(OUTPUT_DIR) --publish-r2 --verify-r2

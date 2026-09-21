@@ -18,13 +18,17 @@ SUPPORTED_RUNNER_LABELS = frozenset(
     }
 )
 RETIRED_RUNNER_LABELS = frozenset({"ubuntu-20.04", "ubuntu-22.04", "windows-2019", "windows-2022"})
-_RUNNER_LABEL_RE = re.compile(r"^\s*-?\s*os:\s*(\S+)\s*$", re.MULTILINE)
+_RUNNER_LABEL_RE = re.compile(
+    r"^\s*(?:-\s*)?(?:os|runs-on):\s*(?:\$\{\{[^}]+\}\}|[\"']?([^\"'\s]+)[\"']?)\s*$",
+    re.MULTILINE,
+)
 
 
 def _declared_runner_labels(path: Path) -> set[str]:
     return {
         match.group(1)
         for match in _RUNNER_LABEL_RE.finditer(path.read_text(encoding="utf-8"))
+        if match.group(1)
     }
 
 
@@ -92,13 +96,12 @@ def test_release_packages_run_the_complete_source_gate_before_building() -> None
     import yaml
 
     workflow = yaml.safe_load(BUILD_WORKFLOW.read_text(encoding="utf-8"))
-    steps = workflow["jobs"]["package"]["steps"]
-    names = [step.get("name") for step in steps]
-    gate_index = names.index("Run complete source gate")
-    build_index = names.index("Build standalone artifacts")
-    assert gate_index < build_index
-
-    body = steps[gate_index]["run"]
+    source_gate = workflow["jobs"]["source-gate"]
+    linux_package = workflow["jobs"]["package-linux"]
+    assert linux_package["needs"] == "source-gate"
+    assert linux_package["container"]["image"] == "ubuntu:22.04"
+    source_steps = source_gate["steps"]
+    body = next(step["run"] for step in source_steps if step.get("name") == "Run complete source gate")
     for required in (
         '"ruff", "check", "."',
         '"mypy"',
@@ -109,6 +112,10 @@ def test_release_packages_run_the_complete_source_gate_before_building() -> None
         '"pytest", "tests", "-q"',
     ):
         assert required in body
+    assert any(
+        step.get("name") == "Build Linux artifacts against the declared glibc floor"
+        for step in linux_package["steps"]
+    )
 
 
 def test_ci_runs_the_qt_suite_headless() -> None:
@@ -167,6 +174,12 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
     assert "Install Windows installer tool" in text
     assert "Smoke Windows installer" in text
     assert "SaveEditor-windows-x86_64-setup.exe" in text
+    assert "appstreamcli validate --no-net --strict" in text
+    assert "lintian --no-tag-display-limit --pedantic" in text
+    assert "^[EW]:" in text
+    assert "SAVE_EDITOR_REQUIRE_GLIBC_BASELINE" in text
+    assert "tools/build_apt_repo.py" in text
+    assert "tools/verify_apt_repo.py" in text
 
 
 def test_release_publication_is_atomic_across_r2_and_github() -> None:
@@ -178,24 +191,29 @@ def test_release_publication_is_atomic_across_r2_and_github() -> None:
     steps = workflow["jobs"]["release"]["steps"]
     names = [step.get("name") for step in steps]
 
-    credentials_index = names.index("Validate Cloudflare release credentials")
+    credentials_index = names.index("Validate release credentials before external mutations")
     worker_index = names.index("Deploy download Worker")
     prepare_index = names.index("Prepare stable release files")
+    apt_index = names.index("Build signed APT repository")
     r2_index = names.index("Publish stable R2 objects and verify read-back")
+    apt_verify_index = names.index("Verify public APT update and package discovery")
     github_index = names.index("Create or update GitHub Release")
-    assert credentials_index < worker_index < prepare_index < r2_index < github_index
+    assert credentials_index < prepare_index < apt_index < worker_index < r2_index < apt_verify_index < github_index
     assert names.count("Prepare stable release files") == 1
     assert "Warn when R2 credentials are unavailable" not in names
 
     credential_body = steps[credentials_index]["run"]
     assert "CLOUDFLARE_API_TOKEN" in credential_body
     assert "CLOUDFLARE_ACCOUNT_ID" in credential_body
+    assert "APT_SIGNING_KEY" in credential_body
+    assert "APT_SIGNING_KEY_ID" in credential_body
     assert ":?" in credential_body
     assert "if" not in steps[worker_index]
     assert "if" not in steps[r2_index]
 
     r2_body = steps[r2_index]["run"]
     assert "--prepared" in r2_body
+    assert "--require-apt" in r2_body
     assert "--artifacts" not in r2_body
     assert "--version" not in r2_body
     assert "--commit" not in r2_body
