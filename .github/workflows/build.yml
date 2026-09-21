@@ -17,7 +17,7 @@ jobs:
       QT_QPA_PLATFORM: offscreen
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Qt runtime dependencies
         run: |
@@ -32,7 +32,7 @@ jobs:
             libxcb-keysyms1 libxcb-render-util0 libxcb-glx0 libxcb-shape0
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -100,7 +100,7 @@ jobs:
       SAVE_EDITOR_REQUIRE_GLIBC_BASELINE: "1"
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install baseline build and package dependencies
         run: |
@@ -188,7 +188,7 @@ jobs:
           NATIVE_OUTPUT="$native_output" python -c 'import json, os; response=json.loads(os.environ["NATIVE_OUTPUT"]); assert response["type"] in {"Files", "Unavailable", "Error"}, response'
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SaveEditor-linux-${{ github.sha }}
           path: artifacts/
@@ -202,10 +202,10 @@ jobs:
       QT_QPA_PLATFORM: offscreen
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -273,7 +273,7 @@ jobs:
           & "$installRoot/SaveEditor-diagnostic.exe" --diagnostic
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SaveEditor-windows-${{ github.sha }}
           path: artifacts/
@@ -304,12 +304,12 @@ jobs:
           : "${APT_SIGNING_KEY_ID:?APT_SIGNING_KEY_ID secret is required}"
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Download native build outputs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: SaveEditor-*-${{ github.sha }}
           path: release-input
@@ -321,7 +321,7 @@ jobs:
           sudo apt-get install --yes --no-install-recommends dpkg-dev gnupg apt
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
