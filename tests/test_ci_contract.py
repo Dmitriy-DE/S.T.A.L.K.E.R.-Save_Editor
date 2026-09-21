@@ -105,7 +105,8 @@ def test_release_packages_run_the_complete_source_gate_before_building() -> None
         for step in linux_package["steps"]
         if step.get("name") == "Install baseline build and package dependencies"
     )
-    assert "libpython3.11" in install_step["run"]
+    for required_library in ("libgl1", "libfontconfig1", "libfreetype6", "libpython3.11"):
+        assert required_library in install_step["run"]
     source_steps = source_gate["steps"]
     body = next(step["run"] for step in source_steps if step.get("name") == "Run complete source gate")
     for required in (
