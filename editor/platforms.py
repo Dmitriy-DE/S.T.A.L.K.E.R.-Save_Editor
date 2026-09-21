@@ -16,9 +16,9 @@ import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
 
 from .releases import official_releases, release_by_app_id, release_by_id
+from .steam_vdf import library_paths, parse_vdf, read_text
 
 LOGGER = logging.getLogger(__name__)
 
@@ -136,9 +136,6 @@ _XRAY_SAVE_DIRS: dict[str, tuple[str, ...]] = {
 }
 
 _STALKER2_PACKAGE = "GSCGameWorld.S.T.A.L.K.E.R.2HeartofChornobyl_6fr1t1rwfarwt"
-
-_VdfValue: TypeAlias = str | dict[str, "_VdfValue"]
-
 
 def _effective_root(
     filesystem_root: Path | None,
@@ -580,18 +577,6 @@ def _existing_directories(paths: Sequence[Path]) -> tuple[Path, ...]:
     return tuple(result)
 
 
-def _read_text(path: Path) -> str | None:
-    try:
-        return path.read_text(encoding="utf-8-sig")
-    except UnicodeDecodeError:
-        try:
-            return path.read_text(encoding="cp1251")
-        except (OSError, UnicodeDecodeError):
-            return None
-    except OSError:
-        return None
-
-
 def _registry_steam_path() -> str | None:
     try:
         import winreg
@@ -678,111 +663,6 @@ def steam_roots(
     )
 
 
-def _tokenize_vdf(text: str) -> list[str]:
-    tokens: list[str] = []
-    index = 0
-    length = len(text)
-    while index < length:
-        character = text[index]
-        if character.isspace():
-            index += 1
-            continue
-        if text.startswith("//", index):
-            newline = text.find("\n", index + 2)
-            index = length if newline < 0 else newline + 1
-            continue
-        if character in "{}":
-            tokens.append(character)
-            index += 1
-            continue
-        if character == '"':
-            index += 1
-            value: list[str] = []
-            while index < length:
-                character = text[index]
-                if character == '"':
-                    index += 1
-                    break
-                if character == "\\" and index + 1 < length:
-                    escaped = text[index + 1]
-                    if escaped in ('\\', '"'):
-                        value.append(escaped)
-                        index += 2
-                    else:
-                        # Windows VDF files commonly contain single
-                        # backslashes in paths (for example ``C:\\Games``),
-                        # while doubled backslashes and escaped quotes still
-                        # use the normal KeyValues escape rule.
-                        value.append("\\")
-                        index += 1
-                    continue
-                value.append(character)
-                index += 1
-            else:
-                raise ValueError("unterminated quoted VDF string")
-            tokens.append("".join(value))
-            continue
-
-        start = index
-        while index < length and not text[index].isspace() and text[index] not in "{}":
-            index += 1
-        if start == index:
-            raise ValueError("empty VDF token")
-        tokens.append(text[start:index])
-    return tokens
-
-
-def _parse_vdf(text: str) -> dict[str, _VdfValue]:
-    tokens = _tokenize_vdf(text)
-    position = 0
-
-    def parse_object(*, closing: bool) -> dict[str, _VdfValue]:
-        nonlocal position
-        result: dict[str, _VdfValue] = {}
-        while position < len(tokens):
-            if tokens[position] == "}":
-                if not closing:
-                    raise ValueError("unexpected closing VDF brace")
-                position += 1
-                return result
-            key = tokens[position]
-            if key == "{":
-                raise ValueError("VDF object is missing a key")
-            position += 1
-            if position >= len(tokens):
-                raise ValueError("VDF key is missing a value")
-            value = tokens[position]
-            position += 1
-            if value == "{":
-                result[key] = parse_object(closing=True)
-            elif value == "}":
-                raise ValueError("VDF key is missing a value")
-            else:
-                result[key] = value
-        if closing:
-            raise ValueError("unterminated VDF object")
-        return result
-
-    result = parse_object(closing=False)
-    if position != len(tokens):
-        raise ValueError("trailing VDF tokens")
-    return result
-
-
-def _vdf_library_paths(value: _VdfValue | None) -> tuple[str, ...]:
-    if not isinstance(value, dict):
-        return ()
-    paths: list[str] = []
-    for entry in value.values():
-        if isinstance(entry, str):
-            paths.append(entry)
-        elif isinstance(entry, dict):
-            path = entry.get("path")
-            if isinstance(path, str) and path.strip():
-                paths.append(path)
-    return tuple(paths)
-
-
 def steam_libraries(
     *,
     system: str | None = None,
@@ -841,16 +721,16 @@ def steam_libraries(
         library_file = steam_root / "steamapps" / "libraryfolders.vdf"
         if not library_file.is_file():
             continue
-        text = _read_text(library_file)
+        text = read_text(library_file)
         if text is None:
             LOGGER.warning("Skipping unreadable Steam library file %s", library_file)
             continue
         try:
-            parsed = _parse_vdf(text)
+            parsed = parse_vdf(text)
         except ValueError as error:
             LOGGER.warning("Skipping malformed Steam library file %s: %s", library_file, error)
             continue
-        for value in _vdf_library_paths(parsed.get("libraryfolders")):
+        for value in library_paths(parsed.get("libraryfolders")):
             library = _path_value(
                 value,
                 home=home_path,
@@ -967,12 +847,12 @@ def _manifest_install_dir(
     environ: Mapping[str, str],
     filesystem_root: Path | None,
 ) -> Path | None:
-    text = _read_text(manifest)
+    text = read_text(manifest)
     if text is None:
         LOGGER.warning("Skipping unreadable Steam manifest %s", manifest)
         return None
     try:
-        parsed = _parse_vdf(text)
+        parsed = parse_vdf(text)
     except ValueError as error:
         LOGGER.warning("Skipping malformed Steam manifest %s: %s", manifest, error)
         return None
@@ -1282,7 +1162,7 @@ def _fsgame_save_directory(
         config = install_dir / name
         if not config.is_file():
             continue
-        text = _read_text(config)
+        text = read_text(config)
         if text is None:
             continue
         definitions = _fsgame_definitions(text)

@@ -36,7 +36,8 @@ from steam_cloud import (
 )
 
 from .cloud_capabilities import CloudWriteCapability, CloudWriteNotAttemptedError
-from .platforms import _parse_vdf, _read_text, steam_roots
+from .platforms import steam_roots
+from .steam_vdf import parse_vdf, read_text
 
 
 class SteamCdpError(SteamCloudError):
@@ -176,11 +177,11 @@ def discover_cached_cloud_files(
         environ=environ,
         home=home,
     ):
-        text = _read_text(cache_path)
+        text = read_text(cache_path)
         if text is None:
             continue
         try:
-            parsed = _parse_vdf(text)
+            parsed = parse_vdf(text)
         except ValueError:
             continue
         app_value = parsed.get(str(app_id))
