@@ -168,6 +168,7 @@ def test_debian_package_contains_real_desktop_appstream_and_runtime_metadata(tmp
     fields = _deb_control(destination)
     assert fields["Maintainer"]
     assert fields["Homepage"] == "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor"
+    assert fields["Section"] == "utils"
     assert fields["Description"].startswith("S.T.A.L.K.E.R. 2 save editor")
     assert int(fields["Installed-Size"]) > 0
     assert "libc6 (>= " in fields["Depends"]
@@ -185,7 +186,9 @@ def test_debian_package_contains_real_desktop_appstream_and_runtime_metadata(tmp
     assert "com.github.dmitriyde.stalker2saveeditor.metainfo.xml" in listing
     assert "com.github.dmitriyde.stalker2saveeditor.png" in listing
     assert "/usr/share/doc/stalker2-save-editor/copyright" in listing
-    assert "/usr/share/man/man1/stalker2-save-editor.1" in listing
+    assert "/usr/share/man/man1/stalker2-save-editor.1.gz" in listing
+    assert "/usr/share/doc/stalker2-save-editor/changelog.gz" in listing
+    assert "/usr/share/lintian/overrides/stalker2-save-editor" in listing
 
 
 @pytest.mark.skipif(shutil.which("appstreamcli") is None, reason="appstreamcli is required")
