@@ -21,6 +21,24 @@ pending until the operating system/package manager completes it.
 The implementation and local gate are recorded in
 [`evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md`](evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md).
 
+### Фактическая публикация
+
+Релиз опубликован из merge commit
+`fe9529419122948a3527c325bb5b0f1bc807d5c3` под тегом `v0.5.18`. Hosted package
+run [35580270465](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35580270465)
+прошёл для Linux и Windows; Windows portable/installer взяты из этого run,
+Linux portable/`.deb` собраны из того же merged source tree после успешного
+hosted Linux smoke.
+
+Старый release job остановился на обязательной проверке отсутствующих
+`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`. Worker был задеплоен локально
+авторизованным Wrangler, версия
+`b98aa8d7-a4a7-48bb-aac6-792533149fe3`; все шесть R2 объектов прочитаны обратно
+через публичный Worker и совпали с подготовленными байтами. GitHub Release
+[v0.5.18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.18)
+содержит тот же набор файлов. Полные размеры и SHA-256 находятся в
+[`evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md`](evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md).
+
 ## v0.5.17 — fail-closed Cloud/update/publication hardening — 2026-09-20
 
 Релиз v0.5.17 делает write capability явной во всём Steam Cloud flow:

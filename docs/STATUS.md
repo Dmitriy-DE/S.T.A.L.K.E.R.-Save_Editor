@@ -24,8 +24,10 @@ updated.
 
 Local implementation evidence is recorded in
 [`evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md`](evidence/CLOUD_DIAGNOSTICS_OTA_2026-09-21.md).
-Live Steam Cloud read/write, privileged package installation, Windows GUI smoke,
-Worker deployment and public release read-back remain separate external gates.
+Hosted package smoke, Worker deployment, diagnostics intake policy, public
+manifest read-back and the v0.5.18 release are complete. Live Steam Cloud
+read/write, privileged package installation and in-game load/re-save remain
+separate runtime gates.
 
 ## v0.5.17 — hardening release — 2026-09-20
 
