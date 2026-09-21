@@ -25,6 +25,7 @@ from test_xray_save import _fixture  # noqa: E402
 
 import editor.codec as codec  # noqa: E402
 from editor.capabilities import FormatCapabilities  # noqa: E402
+from editor.formats import by_id  # noqa: E402
 
 
 def test_analyze_reports_the_same_numbers_as_the_parser(synthetic_save: bytes) -> None:
@@ -57,6 +58,7 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["capabilities"]["edit_stacks"] is False
     assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["catalog_available"] is False
+    assert snapshot["capabilities"] == by_id("stalker2").capabilities.as_dict()
 
 
 def test_web_snapshot_gates_editable_rows_with_format_capabilities(

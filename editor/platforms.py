@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeAlias
 
-from .releases import ReleaseDescriptor, official_releases
+from .releases import official_releases, release_by_app_id, release_by_id
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,60 +51,11 @@ class InstalledGame:
     def release_id(self) -> str:
         """Return the canonical official release represented by ``app_id``."""
 
-        return _RELEASE_ID_BY_APP_ID.get(self.app_id, self.game_id)
+        try:
+            return release_by_app_id(self.app_id).id
+        except KeyError:
+            return self.game_id
 
-
-@dataclass(frozen=True)
-class _Release:
-    game_id: str
-    app_id: int
-    edition: str
-    install_dirs: tuple[str, ...]
-
-
-_RELEASES: tuple[_Release, ...] = (
-    _Release(
-        "stalker2",
-        1643320,
-        "stalker2",
-        (
-            "S.T.A.L.K.E.R. 2 Heart of Chornobyl",
-            "STALKER 2 Heart of Chornobyl",
-            "S.T.A.L.K.E.R. 2",
-        ),
-    ),
-    _Release(
-        "soc",
-        4500,
-        "original",
-        ("STALKER Shadow of Chernobyl", "STALKER Shadow of Chornobyl"),
-    ),
-    _Release("clear_sky", 20510, "original", ("STALKER Clear Sky",)),
-    _Release(
-        "cop",
-        41700,
-        "original",
-        ("Stalker Call of Pripyat", "STALKER Call of Pripyat"),
-    ),
-    _Release(
-        "soc",
-        2427410,
-        "enhanced",
-        ("STALKER Shadow of Chornobyl - Enhanced Edition",),
-    ),
-    _Release(
-        "clear_sky",
-        2427420,
-        "enhanced",
-        ("STALKER Clear Sky - Enhanced Edition",),
-    ),
-    _Release(
-        "cop",
-        2427430,
-        "enhanced",
-        ("STALKER Call of Prypiat - Enhanced Edition",),
-    ),
-)
 
 _GAME_ALIASES = {
     "stalker2": "stalker2",
@@ -125,22 +76,12 @@ _GAME_ALIASES = {
     "call-of-prypiat": "cop",
 }
 
-_RELEASES_BY_ID: dict[str, ReleaseDescriptor] = {
-    release.id: release for release in official_releases()
-}
-_RELEASE_ID_BY_APP_ID: dict[int, str] = {
-    app_id: release.id
-    for release in official_releases()
-    for app_id in release.app_ids
-}
-
-
 def _release_selector(value: str) -> tuple[str, str | None, str | None]:
     """Return ``(family, edition, release_id)`` for a family or release key."""
 
     selector = value.strip().casefold()
-    for release_id, descriptor in _RELEASES_BY_ID.items():
-        if selector == release_id.casefold():
+    for descriptor in official_releases():
+        if selector == descriptor.id.casefold():
             return descriptor.family, descriptor.edition, descriptor.id
     family = _GAME_ALIASES.get(selector)
     if family is None:
@@ -1099,7 +1040,7 @@ def installed_games(
         steam_library_roots=steam_library_roots,
     )
     games: list[InstalledGame] = []
-    for release in _RELEASES:
+    for release in official_releases():
         for library in libraries:
             manifest = library / "steamapps" / f"appmanifest_{release.app_id}.acf"
             if not manifest.is_file():
@@ -1122,7 +1063,7 @@ def installed_games(
                 continue
             games.append(
                 InstalledGame(
-                    game_id=release.game_id,
+                    game_id=release.family,
                     app_id=release.app_id,
                     edition=release.edition,
                     library_root=library,
@@ -1371,7 +1312,7 @@ def _stalker2_proton_save_directories(library_root: Path) -> tuple[Path, ...]:
     """Return S2 Proton save roots even when Steam has no app manifest.
 
     Cloud downloads and older Proton prefixes can exist without a current
-    ``appmanifest_1643320.acf``. Wine/Proton has used both the modern
+    ``appmanifest_<app-id>.acf``. Wine/Proton has used both the modern
     ``AppData/Local`` spelling and the legacy ``Local Settings/Application
     Data`` spelling, so discovery must cover both.
     """
@@ -1380,7 +1321,7 @@ def _stalker2_proton_save_directories(library_root: Path) -> tuple[Path, ...]:
         Path(library_root)
         / "steamapps"
         / "compatdata"
-        / "1643320"
+        / str(release_by_id("stalker2").app_id)
         / "pfx"
         / "drive_c"
     )
@@ -1646,12 +1587,12 @@ def _save_directory_candidates(
             registry_reader=registry_reader,
             steam_library_roots=steam_library_roots,
         )
-        for release in _RELEASES:
-            if release.game_id != key or release.edition != "original":
+        for release in official_releases():
+            if release.family != key or release.edition != "original":
                 continue
             if (
                 selected_release_id is not None
-                and _RELEASE_ID_BY_APP_ID.get(release.app_id) != selected_release_id
+                and release.id != selected_release_id
             ):
                 continue
             for library in libraries:
@@ -1864,12 +1805,12 @@ def manual_save_search_paths(
     # installs too. A missing manifest must not hide the documented
     # ``steamapps/common/<game>/_appdata_/savedgames`` folders.
     if key != "stalker2":
-        for release in _RELEASES:
-            if release.game_id != key or release.edition != "original":
+        for release in official_releases():
+            if release.family != key or release.edition != "original":
                 continue
             if (
                 selected_release_id is not None
-                and _RELEASE_ID_BY_APP_ID.get(release.app_id) != selected_release_id
+                and release.id != selected_release_id
             ):
                 continue
             common = selected_steam_root / "steamapps" / "common"

@@ -27,8 +27,9 @@ Every equipment operation is described by release-scoped metadata:
 - `verified`: the mutation has a release-specific game load/re-save result.
 
 The shared metadata covers durability, upgrades, placement, add, and remove.
-Boolean capability fields remain for compatibility with the existing service,
-but the Equipment surface uses maturity and reason fields for each operation.
+The legacy boolean capability fields remain as computed compatibility
+projections for the existing service; they are never stored separately. The
+Equipment surface uses the same maturity and reason model for each operation.
 
 ## Equipment behavior
 

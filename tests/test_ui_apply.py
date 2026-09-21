@@ -12,6 +12,7 @@ pytest.importorskip("PySide6")
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QMessageBox
 
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 from save_format import SaveError, inspect_save
@@ -24,7 +25,18 @@ UI_TIMEOUT_MS = 30_000
 
 def _show_snapshot(window: MainWindow, source: Path, data: bytes) -> None:
     window._render_snapshot(
-        LocalSnapshot(path=source, data=data, info=inspect_save(data, with_inventory=True))
+        LocalSnapshot(
+            path=source,
+            data=data,
+            info=inspect_save(data, with_inventory=True),
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
+            ),
+        )
     )
 
 

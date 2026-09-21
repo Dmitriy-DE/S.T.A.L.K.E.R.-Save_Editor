@@ -12,7 +12,7 @@ pytest.importorskip("pytestqt")
 
 from PySide6.QtWidgets import QMessageBox
 
-from editor.capabilities import FormatCapabilities
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.cloud_capabilities import CloudWriteCapability
 from editor.formats import FormatInspection
 from editor.models import EditPlan, PreparedEdit, SourceRef
@@ -48,8 +48,10 @@ class _ApprovedCloudService(EditorService):
             result,
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_money=True,
-                edit_stacks=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
             ),
         )
 

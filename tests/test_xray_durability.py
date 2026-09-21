@@ -224,7 +224,7 @@ def test_qt_condition_editor_stages_percentage_without_mutating_snapshot(qtbot, 
     pytest.importorskip("PySide6")
     from PySide6.QtCore import Qt
 
-    from editor.capabilities import FormatCapabilities
+    from editor.capabilities import CapabilitySupport, FormatCapabilities
     from editor.service import EditorService
     from editor.xray_save import inspect_xray
     from ui.main_window import LocalSnapshot, MainWindow
@@ -244,8 +244,9 @@ def test_qt_condition_editor_stages_percentage_without_mutating_snapshot(qtbot, 
             edition="original",
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_durability=True,
-                experimental_fields=frozenset({"edit_durability"}),
+                mutation_support={
+                    "edit_durability": CapabilitySupport("experimental")
+                },
             ),
         )
     )

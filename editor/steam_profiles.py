@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .releases import ReleaseDescriptor, official_releases, release_by_app_id, release_by_id
+
 
 @dataclass(frozen=True)
 class SteamCloudProfile:
@@ -51,57 +53,19 @@ class SteamCloudProfile:
         return f"{self.title} saves"
 
 
-_PROFILES = (
-    SteamCloudProfile(
-        "stalker2",
-        1643320,
-        "S.T.A.L.K.E.R. 2: Heart of Chornobyl",
-        ("Stalker2/Saved/STEAM/SaveGames/Data/",),
-        frozenset({".sav"}),
-    ),
-    SteamCloudProfile(
-        "stalker-soc",
-        4500,
-        "S.T.A.L.K.E.R.: Shadow of Chernobyl",
-        ("_appdata_/savedgames/",),
-        frozenset(),
-    ),
-    SteamCloudProfile(
-        "stalker-cs",
-        20510,
-        "S.T.A.L.K.E.R.: Clear Sky",
-        ("_appdata_/savedgames/",),
-        frozenset(),
-    ),
-    SteamCloudProfile(
-        "stalker-cop",
-        41700,
-        "S.T.A.L.K.E.R.: Call of Pripyat",
-        ("_appdata_/savedgames/",),
-        frozenset(),
-    ),
-    SteamCloudProfile(
-        "stalker-soc-ee",
-        2427410,
-        "S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition",
-        ("STALKER Shadow of Chornobyl - EE/STEAM/savedgames/",),
-        frozenset(),
-    ),
-    SteamCloudProfile(
-        "stalker-cs-ee",
-        2427420,
-        "S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition",
-        ("STALKER Clear Sky - EE/STEAM/savedgames/",),
-        frozenset(),
-    ),
-    SteamCloudProfile(
-        "stalker-cop-ee",
-        2427430,
-        "S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition",
-        ("STALKER Call of Prypiat - EE/STEAM/savedgames/",),
-        frozenset(),
-    ),
-)
+def _profile_for_release(release: ReleaseDescriptor) -> SteamCloudProfile:
+    """Project one registry descriptor into the Cloud path contract."""
+
+    return SteamCloudProfile(
+        release.id,
+        release.app_id,
+        release.title,
+        release.cloud_prefixes,
+        release.cloud_extensions,
+    )
+
+
+_PROFILES = tuple(_profile_for_release(release) for release in official_releases())
 _BY_RELEASE = {profile.release_id: profile for profile in _PROFILES}
 _BY_APP_ID = {profile.app_id: profile for profile in _PROFILES}
 
@@ -116,7 +80,8 @@ def steam_cloud_profile_for_release(release_id: str) -> SteamCloudProfile:
     """Resolve a release or fail rather than guessing a cloud path."""
 
     try:
-        return _BY_RELEASE[release_id]
+        release = release_by_id(release_id)
+        return _BY_RELEASE[release.id]
     except KeyError as exc:
         raise KeyError(f"Unknown Steam Cloud release: {release_id!r}") from exc
 
@@ -125,7 +90,8 @@ def steam_cloud_profile_for_app_id(app_id: int) -> SteamCloudProfile:
     """Resolve a Steam app ID or fail closed for an unsupported game."""
 
     try:
-        return _BY_APP_ID[int(app_id)]
+        release = release_by_app_id(app_id)
+        return _BY_APP_ID[release.app_id]
     except (KeyError, TypeError, ValueError) as exc:
         raise KeyError(f"Unsupported Steam Cloud app_id: {app_id!r}") from exc
 

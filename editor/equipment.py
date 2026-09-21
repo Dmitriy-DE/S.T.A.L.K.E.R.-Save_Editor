@@ -13,47 +13,16 @@ from typing import Literal
 
 from save_format import InventoryItem
 
+from .capability_types import CapabilityMaturity, CapabilitySupport
 from .catalog import ItemCatalog, ItemDefinition
+from .releases import release_by_id
 
 EquipmentCategory = Literal["weapon", "armor", "helmet", "other"]
 EquipmentLocation = Literal["equipped", "inventory", "belt", "unknown"]
-SupportMaturity = Literal["unsupported", "research", "experimental", "verified"]
+SupportMaturity = CapabilityMaturity
+FeatureSupport = CapabilitySupport
 
 _FEATURE_NAMES = ("durability", "upgrades", "placement", "add", "remove")
-_ORIGINAL_RELEASES = frozenset({"stalker-soc", "stalker-cs", "stalker-cop"})
-_EE_RELEASES = frozenset(
-    {"stalker-soc-ee", "stalker-cs-ee", "stalker-cop-ee"}
-)
-_SEPARATE_HELMET_RELEASES = frozenset({"stalker-cop", "stalker2"})
-
-
-@dataclass(frozen=True)
-class FeatureSupport:
-    """Evidence maturity and user-facing reason for one operation."""
-
-    maturity: SupportMaturity
-    reason: str | None = None
-
-    def __post_init__(self) -> None:
-        if self.maturity not in {
-            "unsupported",
-            "research",
-            "experimental",
-            "verified",
-        }:
-            raise ValueError(f"unsupported maturity: {self.maturity!r}")
-        if self.reason is not None:
-            normalized = str(self.reason).strip()
-            object.__setattr__(self, "reason", normalized or None)
-
-    @property
-    def writable(self) -> bool:
-        """Return whether a source-backed writer may stage this operation."""
-
-        return self.maturity in {"experimental", "verified"}
-
-    def as_dict(self) -> dict[str, str | None]:
-        return {"maturity": self.maturity, "reason": self.reason}
 
 
 @dataclass(frozen=True)
@@ -312,7 +281,13 @@ def equipment_items(
 def helmet_category_supported(release_id: str) -> bool:
     """Return whether this release has a separate helmet product category."""
 
-    return release_id in _SEPARATE_HELMET_RELEASES
+    try:
+        release = release_by_id(release_id)
+    except KeyError:
+        return False
+    return release.family == "stalker2" or (
+        release.family == "cop" and release.edition == "original"
+    )
 
 
 def _unsupported(reason: str) -> FeatureSupport:
@@ -322,30 +297,14 @@ def _unsupported(reason: str) -> FeatureSupport:
 def equipment_support_for_release(release_id: str) -> EquipmentSupport:
     """Return explicit maturity metadata for every official release profile."""
 
-    if release_id in _ORIGINAL_RELEASES:
-        durability = FeatureSupport(
-            "experimental",
-            "X-Ray STATE/UPDATE condition anchors подтверждены структурно; game load/re-save ещё не принят.",
+    try:
+        release = release_by_id(release_id)
+    except KeyError:
+        unsupported = _unsupported(f"Релиз {release_id!r} не зарегистрирован.")
+        return EquipmentSupport(
+            unsupported, unsupported, unsupported, unsupported, unsupported
         )
-        upgrades = (
-            FeatureSupport(
-                "experimental",
-                "m_upgrades vector подтверждён структурно для Clear Sky/Call of Pripyat; game load/re-save ещё не принят.",
-            )
-            if release_id in {"stalker-cs", "stalker-cop"}
-            else _unsupported("m_upgrades writer не подтверждён для этого релиза.")
-        )
-        placement = FeatureSupport(
-            "experimental",
-            "SInvItemPlace anchor подтверждён структурно; game load/re-save ещё не принят.",
-        )
-        structural = FeatureSupport(
-            "experimental",
-            "Структурный writer существует; принятие игрой требует отдельного load/re-save evidence.",
-        )
-        return EquipmentSupport(durability, upgrades, placement, structural, structural)
-
-    if release_id == "stalker2":
+    if release.family == "stalker2":
         return EquipmentSupport(
             FeatureSupport(
                 "experimental",
@@ -360,7 +319,30 @@ def equipment_support_for_release(release_id: str) -> EquipmentSupport:
             _unsupported("S2 safe remove/reference graph не подтверждён."),
         )
 
-    if release_id in _EE_RELEASES:
+    if release.edition == "original":
+        durability = FeatureSupport(
+            "experimental",
+            "X-Ray STATE/UPDATE condition anchors подтверждены структурно; game load/re-save ещё не принят.",
+        )
+        upgrades = (
+            FeatureSupport(
+                "experimental",
+                "m_upgrades vector подтверждён структурно для Clear Sky/Call of Pripyat; game load/re-save ещё не принят.",
+            )
+            if release.family in {"clear_sky", "cop"}
+            else _unsupported("m_upgrades writer не подтверждён для этого релиза.")
+        )
+        placement = FeatureSupport(
+            "experimental",
+            "SInvItemPlace anchor подтверждён структурно; game load/re-save ещё не принят.",
+        )
+        structural = FeatureSupport(
+            "experimental",
+            "Структурный writer существует; принятие игрой требует отдельного load/re-save evidence.",
+        )
+        return EquipmentSupport(durability, upgrades, placement, structural, structural)
+
+    if release.edition == "enhanced":
         reason = "Для Enhanced Edition нет принятого parser/equipment format sample."
         unsupported = _unsupported(reason)
         return EquipmentSupport(unsupported, unsupported, unsupported, unsupported, unsupported)

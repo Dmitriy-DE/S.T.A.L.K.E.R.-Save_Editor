@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
 from test_xray_save import _fixture
 
-from editor.capabilities import FormatCapabilities
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.catalog import ItemDefinition, catalog_from_items
 from editor.service import EditorService
 from editor.xray_save import COP_FORMAT, inspect_xray
@@ -56,7 +56,20 @@ def test_inventory_table_stages_by_handle_after_filter_and_sort(
     info = inspect_save(synthetic_save, with_inventory=True)
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
-    window._render_snapshot(LocalSnapshot(path=source, data=synthetic_save, info=info))
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=synthetic_save,
+            info=info,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
+            ),
+        )
+    )
 
     view = window.inventory_view
     stack_handle = 0x30000001
@@ -95,7 +108,20 @@ def test_count_one_is_read_only_and_invalid_count_never_stages(
     info = inspect_save(synthetic_save, with_inventory=True)
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
-    window._render_snapshot(LocalSnapshot(path=source, data=synthetic_save, info=info))
+    window._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=synthetic_save,
+            info=info,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
+            ),
+        )
+    )
 
     view = window.inventory_view
     single_handle = 0x30000002
@@ -211,8 +237,9 @@ def test_unknown_condition_shows_dash_instead_of_false_zero(
             info=info,
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_durability=True,
-                experimental_fields=frozenset({"edit_durability"}),
+                mutation_support={
+                    "edit_durability": CapabilitySupport("experimental")
+                },
             ),
         )
     )
@@ -241,8 +268,9 @@ def test_confirmed_s2_armor_condition_is_editable(
             info=info,
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_durability=True,
-                experimental_fields=frozenset({"edit_durability"}),
+                mutation_support={
+                    "edit_durability": CapabilitySupport("experimental")
+                },
             ),
         )
     )
@@ -329,10 +357,12 @@ def test_original_xray_inventory_stages_catalog_add_and_registry_remove(
             edition="original",
             capabilities=FormatCapabilities(
                 read_inventory=True,
-                edit_money=True,
-                edit_stacks=True,
-                add_items=True,
-                remove_items=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("verified"),
+                    "edit_stacks": CapabilitySupport("verified"),
+                    "add_items": CapabilitySupport("verified"),
+                    "remove_items": CapabilitySupport("verified"),
+                },
                 catalog=True,
             ),
             catalog=catalog,

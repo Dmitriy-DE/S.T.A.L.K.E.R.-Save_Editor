@@ -10,6 +10,7 @@ pytest.importorskip("pytestqt")
 
 from PySide6.QtCore import Qt
 
+from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 from save_format import inspect_save
@@ -66,7 +67,18 @@ def test_main_window_replaces_the_selected_local_slot_after_preview(
     )
     qtbot.addWidget(window)
     window._render_snapshot(
-        LocalSnapshot(path=source, data=synthetic_save, info=inspect_save(synthetic_save))
+        LocalSnapshot(
+            path=source,
+            data=synthetic_save,
+            info=inspect_save(synthetic_save),
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
+            ),
+        )
     )
     window._stage_stack_change(0x30000001, 3)
     window._start_preview()
