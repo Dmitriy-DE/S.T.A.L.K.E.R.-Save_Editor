@@ -178,6 +178,7 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
     assert "lintian --no-tag-display-limit --pedantic" in text
     assert "^[EW]:" in text
     assert "SAVE_EDITOR_REQUIRE_GLIBC_BASELINE" in text
+    assert "lsb-release" in text
     assert "tools/build_apt_repo.py" in text
     assert "tools/verify_apt_repo.py" in text
 
