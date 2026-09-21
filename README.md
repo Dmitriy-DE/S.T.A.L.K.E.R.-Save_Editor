@@ -29,7 +29,7 @@ The project uses **one Python editing core** across the Qt desktop app, CLI and 
 > the opened local slot; Steam Cloud writes remain explicit and guarded by
 > backup/hash verification.
 
-The current release line is `0.5.18`. A release is published only from a clean
+The current release line is `0.5.19`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -87,7 +87,7 @@ The latest release ships four end-user packages.
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
 Checksums are published with each GitHub release.
-Current stable release: [v0.5.18](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.18).
+Current stable release: [v0.5.19](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.19).
 
 ## Desktop workflow
 
