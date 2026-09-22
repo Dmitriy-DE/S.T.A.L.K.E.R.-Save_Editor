@@ -104,6 +104,15 @@ def test_collect_log_bundle_reads_only_the_bounded_log_tail(tmp_path: Path) -> N
     assert "old-secret-line" not in text
 
 
+def test_collect_log_bundle_normalizes_platform_newlines(tmp_path: Path) -> None:
+    (tmp_path / "save-editor.log").write_bytes(b"first\r\nsecond\r\n")
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    assert "first\nsecond\n" in text
+    assert "\r" not in text
+
+
 def test_export_log_bundle_writes_redacted_payload_without_deleting_logs(
     tmp_path: Path,
 ) -> None:

@@ -220,7 +220,10 @@ def _read_log_tail(path: Path, max_bytes: int) -> str:
         size = handle.tell()
         handle.seek(max(0, size - max_bytes))
         data = handle.read(max_bytes)
-    return data.decode("utf-8", errors="replace")
+    # FileHandler uses the platform newline convention.  Normalize it before
+    # bundling so diagnostics have one stable wire format on Linux and Windows
+    # and callers do not need platform-specific assertions/parsers.
+    return data.decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
 
 
 def collect_log_bundle(directory: Path | None = None, *, max_bytes: int = MAX_BUNDLE_BYTES) -> bytes:
