@@ -33,7 +33,7 @@ Tagged workflow
   actor-owned weapon rows с точным anchor; названия Kharod/Lavina/Skif в
   evidence — наблюдаемые примеры, а не ограничительный список.
 
-Local source gate after the final fixes: `668 passed`, 9 Node tests, Ruff,
+Local source gate after the final fixes: `669 passed`, 9 Node tests, Ruff,
 mypy, generated web/theme checks and `git diff --check` pass. The packaged
 artifacts were built by the tagged workflow from the exact release commit;
 the local dirty checkout was not used as a release source.
