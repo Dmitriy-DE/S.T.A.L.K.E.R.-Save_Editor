@@ -19,6 +19,7 @@ from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
 from steam_cloud import CloudFile
 from ui.cloud_view import CloudView
+from ui.diagnostics_dialog import DiagnosticsDialog
 from ui.main_window import MainWindow
 
 # These cases drive real QThreads end to end.  Five seconds was enough on a
@@ -145,6 +146,49 @@ def _prepared(data: bytes, name: str) -> PreparedEdit:
     return EditorService().prepare(data, plan)
 
 
+def test_diagnostics_dialog_previews_before_sending_and_reports_success(
+    qtbot, monkeypatch
+) -> None:
+    started = threading.Event()
+
+    def fake_submit_logs() -> str:
+        started.set()
+        return "report-123"
+
+    monkeypatch.setattr("ui.diagnostics_dialog.submit_logs", fake_submit_logs)
+    dialog = DiagnosticsDialog()
+    qtbot.addWidget(dialog)
+
+    dialog._send()
+
+    assert started.wait(2)
+    qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
+    assert "Предпросмотр" in dialog.preview_label.text()
+    assert "report-123" in dialog.status_label.text()
+
+
+def test_diagnostics_dialog_exports_in_a_worker_and_keeps_send_available(
+    qtbot, monkeypatch, tmp_path: Path
+) -> None:
+    export_path = tmp_path / "diagnostics.log.gz"
+    monkeypatch.setattr(
+        "ui.diagnostics_dialog.QFileDialog.getSaveFileName",
+        staticmethod(lambda *args, **kwargs: (str(export_path), "Gzip logs (*.log.gz)")),
+    )
+    monkeypatch.setattr(
+        "ui.diagnostics_dialog.export_log_bundle",
+        lambda destination: Path(destination).write_bytes(b"redacted") or Path(destination),
+    )
+    dialog = DiagnosticsDialog()
+    qtbot.addWidget(dialog)
+
+    dialog._export()
+
+    qtbot.waitUntil(lambda: dialog._export_worker is None, timeout=SIGNAL_TIMEOUT_MS)
+    assert export_path.read_bytes() == b"redacted"
+    assert dialog.send_button.isEnabled()
+
+
 def test_cloud_view_does_not_connect_on_construction(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     created: list[FakeCloudTransport] = []
 
@@ -164,6 +208,21 @@ def test_cloud_view_does_not_connect_on_construction(qtbot, synthetic_save: byte
     # Mere construction never connects; the auto-connect fires on showEvent.
     assert created == []
     assert not view.upload_button.isEnabled()
+
+
+def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: FakeCloudTransport(synthetic_save, writable=False),
+        backup_dir=tmp_path / "backups",
+    )
+    qtbot.addWidget(view)
+
+    assert "Сохранить" in view.intro_label.text()
+    assert "только для чтения" in view.intro_label.text()
+    assert "Загрузить в облако" not in view.intro_label.text()
 
 
 def test_cloud_view_connects_without_a_helper(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
@@ -248,6 +307,31 @@ def test_cloud_view_filters_non_data_files(
     assert view.table.rowCount() == 1
     assert view.table.columnCount() == 5
     assert view.table.item(0, view.SOURCE_COLUMN).text() == "Неизвестно"
+
+
+def test_cloud_view_hides_editor_artifacts_and_explains_why(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    data_name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    artifact_name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a-edited.sav"
+    transport = FakeCloudTransport(
+        synthetic_save,
+        files=[_cloud_file(data_name), _cloud_file(artifact_name)],
+    )
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_path=tmp_path / "helper",
+    )
+    qtbot.addWidget(view)
+
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+    _wait_cloud_idle(qtbot, view)
+
+    assert [cloud_file.name for cloud_file in view.files] == [data_name]
+    assert view._hidden_editor_artifacts == 1
+    assert "скрыто 1" in view.status_label.text()
 
 
 def test_cloud_view_profile_switch_filters_the_selected_game_path(
@@ -391,6 +475,39 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
         assert "verified" in view.result_label.text().lower()
     else:
         assert "uncertain" in view.result_label.text().lower()
+
+
+def test_cloud_upload_log_contains_target_size_and_result(
+    synthetic_save: bytes, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
+    prepared = _prepared(synthetic_save, name)
+    from ui import cloud_view
+    from ui.cloud_view import CloudOperationWorker
+
+    worker = CloudOperationWorker(
+        EditorService(),
+        mode="upload",
+        transport=transport,
+        prepared=prepared,
+        backup_dir=tmp_path / "backups",
+    )
+
+    records: list[str] = []
+
+    def record(message: str, *args: object, **_kwargs: object) -> None:
+        records.append(message % args if args else message)
+
+    monkeypatch.setattr(cloud_view.LOGGER, "info", record)
+    worker.run()
+
+    text = "\n".join(records)
+    assert f"path={name}" in text
+    assert f"expected_bytes={len(prepared.data)}" in text
+    assert "mode=upload" in text
+    assert "status=verified" in text
+    assert f"sha256={prepared.output_sha256}" in text
 
 
 def test_main_window_routes_cloud_snapshot_preview_to_upload(

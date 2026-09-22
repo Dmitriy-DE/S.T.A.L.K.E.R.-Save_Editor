@@ -259,6 +259,7 @@ def build_manifest(
         "runtime_policy": {
             "core": "Python standard library",
             "decoder": "bundled pyooz==0.0.8 or Linux vendor fallback",
+            "encoder": "bundled native ooz_encoder; required for changed compressed saves",
             "ui": "bundled PySide6==6.11.2",
             "steam_helper": "external executable; never bundled",
         },
@@ -307,7 +308,9 @@ def _copy_metadata(runtime: Path, manifest: Mapping[str, object]) -> None:
     )
 
 
-def _run_pyinstaller(*, root: Path, target: str, work: Path, runtime_dist: Path) -> None:
+def _run_pyinstaller(
+    *, root: Path, target: str, work: Path, runtime_dist: Path, encoder_dir: Path
+) -> None:
     spec = root / "packaging" / "editor.spec"
     if not spec.is_file():
         raise BuildError(f"PyInstaller spec отсутствует: {spec}")
@@ -318,9 +321,14 @@ def _run_pyinstaller(*, root: Path, target: str, work: Path, runtime_dist: Path)
         {
             "SAVE_EDITOR_ROOT": str(root),
             "SAVE_EDITOR_TARGET": target,
+            "SAVE_EDITOR_ENCODER_DIR": str(encoder_dir),
             "PYTHONHASHSEED": "0",
         }
     )
+    pythonpath = [str(encoder_dir), str(root)]
+    if env.get("PYTHONPATH"):
+        pythonpath.append(env["PYTHONPATH"])
+    env["PYTHONPATH"] = os.pathsep.join(pythonpath)
     command = [
         sys.executable,
         "-m",
@@ -559,7 +567,7 @@ def _debian_changelog(version: str, source_date_epoch: int) -> str:
 
   * Release the standalone desktop editor with protected save operations.
 
- -- S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>  {formatted_date}
+ -- S.T.A.L.K.E.R. Save Editor contributors <save-editor@users.noreply.github.com>  {formatted_date}
 """
 
 
@@ -698,12 +706,12 @@ Version: {_debian_version(version)}
 Section: utils
 Priority: optional
 Architecture: amd64
-Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>
+Maintainer: S.T.A.L.K.E.R. Save Editor contributors <save-editor@users.noreply.github.com>
 Homepage: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor
 Installed-Size: {_installed_size_kib(stage)}
 Depends: libc6 (>= {libc_requirement()}), {', '.join(DEBIAN_RUNTIME_DEPENDENCIES)}
-Description: S.T.A.L.K.E.R. 2 save editor
- A local Qt editor for S.T.A.L.K.E.R. saves.
+Description: S.T.A.L.K.E.R. save editor
+ A local Qt editor for supported S.T.A.L.K.E.R. saves.
  Safe preview, backup, verification and explicit Steam Cloud workflows.
 """,
         encoding="utf-8",
@@ -789,7 +797,30 @@ def build(
         shutil.rmtree(work)
     runtime_dist.mkdir(parents=True, exist_ok=True)
 
-    _run_pyinstaller(root=root, target=target, work=work, runtime_dist=runtime_dist)
+    encoder_dir = work / "ooz_encoder"
+    try:
+        subprocess.run(
+            [
+                sys.executable,
+                str(root / "tools" / "build_ooz_encoder.py"),
+                "--root",
+                str(root),
+                "--output-dir",
+                str(encoder_dir),
+            ],
+            cwd=root,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"Не удалось собрать обязательный ooz_encoder: {exc}") from exc
+
+    _run_pyinstaller(
+        root=root,
+        target=target,
+        work=work,
+        runtime_dist=runtime_dist,
+        encoder_dir=encoder_dir,
+    )
     runtime = runtime_dist / APP_NAME
     executable = runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
     if not executable.is_file():

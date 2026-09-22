@@ -1,10 +1,10 @@
 """Python side of the browser build.
 
-This module is the only web-specific Python in the project.  It installs the
-WASM decoder needed by the S.T.A.L.K.E.R. 2 path and turns the same multi-format
-registry results the desktop app uses into plain dictionaries the page can
-render.  Any editing rule that lived here would be a second implementation,
-which is exactly what this build avoids.
+This module is the only web-specific Python in the project. It installs the
+WASM decoder needed by the compressed-save path and turns the same
+multi-format registry results the desktop app uses into plain dictionaries the
+page can render. Any editing rule that lived here would be a second
+implementation, which is exactly what this build avoids.
 """
 
 from __future__ import annotations
@@ -221,6 +221,7 @@ def analyze(data: bytes, name: str) -> str:
         release_id=format_.release_id,
         catalog=catalog,
     )
+    equipment_by_handle = {row.handle: row for row in equipment_rows}
 
     return json.dumps(
         {
@@ -348,6 +349,12 @@ def analyze(data: bytes, name: str) -> str:
                     "condition": item.condition,
                     "condition_editable": bool(item.condition_editable),
                     "storage": item.storage,
+                    "observation_source": item.observation_source,
+                    "device_subtype": (
+                        equipment_by_handle[item.handle].device_subtype
+                        if item.handle in equipment_by_handle
+                        else None
+                    ),
                     "placement_type": item.placement_type,
                     "placement_slot": item.placement_slot,
                     "placement_base_slot": item.placement_base_slot,
@@ -357,6 +364,7 @@ def analyze(data: bytes, name: str) -> str:
                     ),
                     "remove_reason": item.remove_reason,
                     **_catalog_icon_fields(catalog, item.type_key),
+                    "modules": None if item.modules is None else list(item.modules),
                     "upgrades": None if item.upgrades is None else list(item.upgrades),
                     "upgrade_editable": bool(
                         format_.capabilities.edit_upgrades

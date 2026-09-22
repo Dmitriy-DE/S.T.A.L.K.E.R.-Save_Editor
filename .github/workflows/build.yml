@@ -183,7 +183,7 @@ jobs:
           archive="artifacts/SaveEditor-linux-x86_64-v${VERSION}.tar.gz"
           mkdir -p smoke
           tar -xzf "$archive" -C smoke
-          smoke/SaveEditor/SaveEditor-diagnostic --diagnostic
+          smoke/SaveEditor/SaveEditor-diagnostic --diagnostic --encoder-smoke
           native_output="$(timeout 30s smoke/SaveEditor/SaveEditor-native --steam-native-op list)"
           NATIVE_OUTPUT="$native_output" python -c 'import json, os; response=json.loads(os.environ["NATIVE_OUTPUT"]); assert response["type"] in {"Files", "Unavailable", "Error"}, response'
 
@@ -256,7 +256,7 @@ jobs:
           $archive = "artifacts/SaveEditor-windows-x86_64-v$env:VERSION.zip"
           New-Item -ItemType Directory -Force smoke | Out-Null
           Expand-Archive -Path $archive -DestinationPath smoke -Force
-          & smoke/SaveEditor/SaveEditor-diagnostic.exe --diagnostic
+          & smoke/SaveEditor/SaveEditor-diagnostic.exe --diagnostic --encoder-smoke
           $nativeOutput = & smoke/SaveEditor/SaveEditor-native.exe --steam-native-op list
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $response = ($nativeOutput -join "`n") | ConvertFrom-Json
@@ -270,7 +270,7 @@ jobs:
           if (-not (Test-Path $installer)) { throw "Windows installer artifact is missing: $installer" }
           $process = Start-Process -FilePath $installer -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installRoot" -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Windows installer failed with exit code $($process.ExitCode)" }
-          & "$installRoot/SaveEditor-diagnostic.exe" --diagnostic
+          & "$installRoot/SaveEditor-diagnostic.exe" --diagnostic --encoder-smoke
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7

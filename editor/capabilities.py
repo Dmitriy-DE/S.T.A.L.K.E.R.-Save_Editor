@@ -11,9 +11,11 @@ from .equipment import EquipmentSupport
 
 # The owner accepted the three installed original X-Ray releases after loading
 # the edited copies in each official game and confirming the visible result.
-# S.T.A.L.K.E.R. 2 and Enhanced Editions remain gated until their own local
-# samples exist.  This set is evidence ownership, not a second app/release
-# registry: app IDs and paths stay in editor.releases.
+# S.T.A.L.K.E.R. 2 and Enhanced Editions remain gated for game acceptance.
+# Source-backed S2 condition edits may be exposed as experimental, while
+# Enhanced Editions stay read-only until their own samples exist. This set is
+# evidence ownership, not a second app/release registry: app IDs and paths
+# stay in editor.releases.
 _GAMEPLAY_VERIFIED_RELEASES: frozenset[str] = frozenset(
     {"stalker-soc", "stalker-cs", "stalker-cop"}
 )

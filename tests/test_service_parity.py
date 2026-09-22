@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
+from test_s2_equipment_inventory import WEAPON_HANDLE, _save_with_grid_weapon
+
 import save_format as sf
+from editor.equipment import equipment_items, equipment_support_for_release
+from editor.formats import STALKER2_FORMAT
 from editor.models import EditPlan, SourceRef
 from editor.service import EditorService
+from web import web_bridge
 
 
 def _plan(data: bytes) -> EditPlan:
@@ -125,3 +131,24 @@ def test_service_module_has_no_ui_imports() -> None:
     assert "tkinter" not in text
     assert "PySide" not in text
     assert "PyQt" not in text
+
+
+def test_web_and_desktop_use_the_same_release_equipment_projection(
+    synthetic_save: bytes,
+) -> None:
+    data = _save_with_grid_weapon(synthetic_save)
+    snapshot = json.loads(web_bridge.analyze(data, "weapon.sav"))
+    info = STALKER2_FORMAT.inspect(data)
+
+    desktop_rows = [
+        row.as_dict()
+        for row in equipment_items(info.inventory, release_id="stalker2")
+    ]
+
+    assert snapshot["equipment"] == desktop_rows
+    assert snapshot["capabilities"]["equipment"] == equipment_support_for_release(
+        "stalker2"
+    ).as_dict()
+    weapon = next(row for row in desktop_rows if row["handle"] == WEAPON_HANDLE)
+    assert weapon["category"] == "weapon"
+    assert weapon["modules"] == ["GunKharod_MagDefault", "HP_Laser_1"]

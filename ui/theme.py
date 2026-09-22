@@ -1,4 +1,4 @@
-"""Small, dependency-free Qt theme for the Zone inspired desktop shell.
+"""Tokenized, dependency-free Qt theme for the S.T.A.L.K.E.R. Save Editor.
 
 The palette is kept in this module so the visual layer can evolve without
 leaking presentation rules into the parser or editor service.  It uses only
@@ -33,9 +33,8 @@ def _chrome_url(name: str) -> str | None:
     return path.as_posix() if path.is_file() else None
 
 
-COLORS = {
-    # Deep "bunker" grounds with a warm brass accent and an olive PDA green,
-    # matching the trilogy's menu palette rather than a cool grey-green shell.
+PALETTE = {
+    # Industrial S2-like grounds with an amber operational accent.
     "bg_base": "#0C0D0A",
     "bg_panel": "#15170F",
     "bg_elevated": "#1E2016",
@@ -53,8 +52,20 @@ COLORS = {
     "success": "#7E8F3E",
     "text": "#D8D2BE",
     "text_secondary": "#8E8974",
-    "text_disabled": "#BEB397",
+    "text_disabled": "#AAA28E",
+    "text_read_only": "#C2BBA8",
+    "warning_surface": "#2C2516",
+    "error_surface": "#2A1B1A",
 }
+
+# Widget code consumes these semantic tokens instead of local visual constants.
+COLORS = PALETTE
+TYPOGRAPHY = {
+    "body": '"Segoe UI", "Noto Sans", sans-serif',
+    "heading": '"DejaVu Sans Condensed", "Arial Narrow", sans-serif',
+    "mono": '"JetBrains Mono", "Cascadia Mono", monospace',
+}
+SPACING = {"xs": 4, "sm": 8, "md": 12, "lg": 18}
 
 
 def stylesheet() -> str:
@@ -65,11 +76,13 @@ def stylesheet() -> str:
 
 
 def _base_stylesheet(c: dict[str, str]) -> str:
+    t = TYPOGRAPHY
+    s = SPACING
     return f"""
     QWidget {{
         background: {c['bg_base']};
         color: {c['text']};
-        font-family: "Segoe UI", "Noto Sans", sans-serif;
+        font-family: {t['body']};
         font-size: 13px;
     }}
     QMainWindow, QWidget#appRoot {{ background: {c['bg_base']}; }}
@@ -207,9 +220,10 @@ def _base_stylesheet(c: dict[str, str]) -> str:
     }}
     QLabel#metaDetails, QLabel#sourceLabel {{
         background: transparent;
-        color: {c['text_secondary']};
+        color: {c['text']};
         font-family: "JetBrains Mono", "Cascadia Mono", monospace;
         font-size: 11px;
+        selection-background-color: {c['olive_dim']};
     }}
     QFrame#sidebar {{
         background: {c['bg_panel']};
@@ -290,8 +304,8 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         padding: 6px 9px;
     }}
-    QLabel#errorLabel {{
-        background: #2A1B1A;
+    QLabel#errorLabel, QLabel#cloudErrorLabel {{
+        background: {c['error_surface']};
         border: 1px solid {c['error']};
         border-radius: 4px;
         color: #F0B0A4;
@@ -305,8 +319,21 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         padding: 7px 12px;
     }}
     QPushButton:hover {{ background: {c['bg_hover']}; border-color: {c['border_focus']}; }}
+    QPushButton:focus {{ border: 2px solid {c['border_focus']}; }}
     QPushButton:pressed {{ background: {c['olive_dim']}; color: {c['bg_base']}; }}
     QPushButton:disabled {{ background: {c['bg_panel']}; color: {c['text_disabled']}; border-color: {c['border_subtle']}; }}
+    QPushButton#primarySaveButton {{
+        background: {c['olive']};
+        border-color: {c['olive']};
+        color: {c['bg_base']};
+        font-weight: 700;
+        padding: {s['sm']}px {s['lg']}px;
+    }}
+    QPushButton#primarySaveButton:disabled {{
+        background: {c['bg_elevated']};
+        color: {c['text_disabled']};
+        border-color: {c['border_subtle']};
+    }}
     QPushButton#supportButton {{
         background: {c['bg_elevated']};
         border: 1px solid {c['rust']};
@@ -369,7 +396,19 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         padding: 6px 8px;
         selection-background-color: {c['olive_dim']};
     }}
-    QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{ border-color: {c['border_focus']}; }}
+    QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{ border: 2px solid {c['border_focus']}; }}
+    QLineEdit[readOnly="true"], QLabel[readOnly="true"] {{
+        background: {c['bg_elevated']};
+        border: 1px solid {c['border_subtle']};
+        color: {c['text_read_only']};
+        padding: {s['sm'] - 1}px {s['sm']}px;
+    }}
+    QLabel#warningLabel {{
+        background: {c['warning_surface']};
+        border: 1px solid {c['warning']};
+        color: {c['text']};
+        padding: {s['sm'] - 1}px {s['sm']}px;
+    }}
     QTableView, QTableWidget, QListView {{
         background: {c['bg_base']};
         alternate-background-color: {c['bg_panel']};
@@ -513,11 +552,11 @@ def _chrome_stylesheet(c: dict[str, str]) -> str:
 
 
 def apply_theme(app: QApplication | None) -> None:
-    """Apply the Zone palette to an existing QApplication instance."""
+    """Apply the S2-like industrial palette to an existing QApplication."""
 
     if app is None:
         return
-    if bool(app.property("_save_editor_zone_theme_applied")):
+    if bool(app.property("_save_editor_theme_applied")):
         return
     app.setStyle("Fusion")
     palette = QPalette()
@@ -532,7 +571,7 @@ def apply_theme(app: QApplication | None) -> None:
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor(COLORS["text"]))
     app.setPalette(palette)
     app.setStyleSheet(stylesheet())
-    app.setProperty("_save_editor_zone_theme_applied", True)
+    app.setProperty("_save_editor_theme_applied", True)
 
 
-__all__ = ["COLORS", "apply_theme", "stylesheet"]
+__all__ = ["COLORS", "PALETTE", "SPACING", "TYPOGRAPHY", "apply_theme", "stylesheet"]

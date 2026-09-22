@@ -212,6 +212,11 @@ table.grid td:nth-child(10) { min-width: 190px; }
 .zone-item-glyph::before, .zone-item-glyph::after { content: ""; position: absolute; display: block; }
 .zone-item-glyph-weapon::before { width: 19px; left: 4px; top: 13px; border-top: 2px solid #d99b62; transform: rotate(-25deg); }
 .zone-item-glyph-weapon::after { width: 7px; left: 3px; top: 17px; border-top: 2px solid #d99b62; transform: rotate(15deg); }
+.zone-item-glyph-armor::before, .zone-item-glyph-helmet::before { inset: 5px 6px; border: 2px solid #aeb9a8; clip-path: polygon(35% 0, 65% 0, 100% 28%, 84% 100%, 16% 100%, 0 28%); }
+.zone-item-glyph-module::before { inset: 6px; border: 2px solid #c5a56a; }
+.zone-item-glyph-module::after { width: 11px; height: 11px; left: 8px; top: 8px; border: 1px solid #c5a56a; transform: rotate(45deg); }
+.zone-item-glyph-device::before { inset: 5px; border: 2px solid #83b8b0; border-radius: 5px; }
+.zone-item-glyph-device::after { width: 6px; height: 6px; left: 10px; top: 10px; border: 2px solid #83b8b0; border-radius: 50%; }
 .zone-item-glyph-ammo::before { inset: 6px 5px; border: 2px solid #e5c36a; }
 .zone-item-glyph-ammo::after { left: 7px; right: 7px; top: 12px; border-top: 1px solid #e5c36a; box-shadow: 0 5px #e5c36a; }
 .zone-item-glyph-outfit::before { inset: 5px 6px; background: #aeb9a8; clip-path: polygon(35% 0, 65% 0, 100% 28%, 84% 100%, 16% 100%, 0 28%); }
@@ -219,6 +224,8 @@ table.grid td:nth-child(10) { min-width: 190px; }
 .zone-item-glyph-artifact::after { width: 14px; left: 6px; top: 12px; border-top: 1px solid #7fc0b5; box-shadow: 0 -5px #7fc0b5, 0 5px #7fc0b5; }
 .zone-item-glyph-consumable::before { inset: 7px 5px; border: 2px solid #d58b73; border-radius: 7px; }
 .zone-item-glyph-consumable::after { left: 8px; right: 8px; top: 13px; border-top: 2px solid #d58b73; }
+.zone-item-glyph-quest::before { inset: 5px; border: 2px solid #b9a77a; border-radius: 2px; }
+.zone-item-glyph-quest::after { width: 10px; left: 8px; top: 13px; border-top: 1px solid #b9a77a; box-shadow: 0 -4px #b9a77a, 0 4px #b9a77a; }
 .zone-item-glyph-grenade::before { width: 15px; height: 15px; left: 5px; top: 7px; border: 2px solid #b5ad78; border-radius: 50%; }
 .zone-item-glyph-grenade::after { width: 6px; left: 13px; top: 4px; border-top: 2px solid #b5ad78; transform: rotate(-25deg); }
 .zone-item-glyph-item::before { inset: 6px; border: 2px solid #c0b9a6; }

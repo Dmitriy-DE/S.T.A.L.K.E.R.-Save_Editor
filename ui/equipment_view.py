@@ -66,6 +66,12 @@ class EquipmentView(QWidget):
             ("Оружие", "weapon"),
             ("Броня", "armor"),
             ("Шлемы", "helmet"),
+            ("Модули", "module"),
+            ("Устройства", "device"),
+            ("Расходники", "consumable"),
+            ("Боеприпасы", "ammo"),
+            ("Артефакты", "artifact"),
+            ("Квестовые предметы", "quest"),
             ("Экипировано", "equipped"),
             ("Рюкзак", "inventory"),
             ("Повреждено", "damaged"),
@@ -197,7 +203,21 @@ class EquipmentView(QWidget):
         self.status_label.setText(message)
 
     def _icon_for_item(self, item: EquipmentItem):
-        category = "outfit" if item.category in {"armor", "helmet"} else item.category
+        category = (
+            "outfit"
+            if item.category in {"armor", "helmet"}
+            else item.category
+            if item.category in {
+                "weapon",
+                "module",
+                "device",
+                "consumable",
+                "ammo",
+                "artifact",
+                "quest",
+            }
+            else "other"
+        )
         return self._resolver.icon_for_item(
             item.type_key,
             item.name,
@@ -220,14 +240,21 @@ class EquipmentView(QWidget):
         self.repair_button.setEnabled(writable)
         self.repair_full_button.setEnabled(writable)
         self.reset_button.setEnabled(item is not None and item.handle in self._staged)
-        for button in (
-            self.bulk_damaged_button,
-            self.bulk_equipped_button,
-            self.bulk_weapon_button,
-            self.bulk_armor_button,
-            self.bulk_helmet_button,
-        ):
-            button.setEnabled(bool(self._items))
+        bulk_buttons = {
+            "damaged": self.bulk_damaged_button,
+            "equipped": self.bulk_equipped_button,
+            "weapon": self.bulk_weapon_button,
+            "armor": self.bulk_armor_button,
+            "helmet": self.bulk_helmet_button,
+        }
+        for filter_name, button in bulk_buttons.items():
+            button.setEnabled(
+                any(
+                    candidate.durability_editable
+                    and self._matches_bulk_filter(candidate, filter_name)
+                    for candidate in self._items
+                )
+            )
         if item is None:
             self.selected_label.setText("Строка не выбрана")
             self.status_label.setText(
@@ -251,6 +278,14 @@ class EquipmentView(QWidget):
             self.status_label.setText(
                 f"Только чтение ({item.durability.maturity}): {reason}"
             )
+
+    @staticmethod
+    def _matches_bulk_filter(item: EquipmentItem, filter_name: str) -> bool:
+        if filter_name == "damaged":
+            return item.damaged
+        if filter_name == "equipped":
+            return item.location == "equipped"
+        return item.category == filter_name
 
     def _repair_selected(self) -> None:
         if self.selected_handle is not None:

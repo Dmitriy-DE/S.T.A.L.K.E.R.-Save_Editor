@@ -8,6 +8,7 @@ window empty.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -94,6 +95,18 @@ def test_navigation_counters_follow_inventory_and_staged_edits(
     assert window.nav_buttons[2].text().endswith("1")
 
 
+def test_s2_snapshot_hides_unconfirmed_xray_faction_editor(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    snapshot = replace(_snapshot(synthetic_save, tmp_path), release_id="stalker2")
+
+    window._render_snapshot(snapshot)
+
+    assert window.faction_view.isHidden()
+
+
 def test_summary_text_is_not_clipped(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
@@ -117,3 +130,14 @@ def test_main_window_exposes_one_save_action_without_manual_preview_controls(qtb
     assert window.changes_view.replace_button.isHidden()
     assert window.changes_view.destination_edit.isHidden()
     assert window.changes_view.choose_output_button.isHidden()
+
+
+def test_primary_navigation_keeps_advanced_recovery_surfaces_secondary(qtbot) -> None:
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+
+    assert window.save_copy_button.objectName() == "primarySaveButton"
+    assert window.nav_buttons[0].property("navigationTier") == "primary"
+    assert window.nav_buttons[2].property("navigationTier") == "advanced"
+    assert window.nav_buttons[3].property("navigationTier") == "advanced"
+    assert window.advanced_navigation_label.text() == "ДОПОЛНИТЕЛЬНО"

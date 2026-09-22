@@ -17,7 +17,19 @@ from ui.equipment_view import EquipmentView
 from ui.main_window import LocalSnapshot, MainWindow
 
 
-def _item(handle: int, key: str, category: str, storage: str | None, condition: float | None, editable: bool) -> InventoryItem:
+def _item(
+    handle: int,
+    key: str,
+    category: str,
+    storage: str | None,
+    condition: float | None,
+    editable: bool,
+    *,
+    kind_code: int = 1,
+    display_name: str | None = None,
+    modules: tuple[str, ...] | None = None,
+    upgrades: tuple[str, ...] | None = None,
+) -> InventoryItem:
     return InventoryItem(
         handle=handle,
         x=None,
@@ -28,17 +40,19 @@ def _item(handle: int, key: str, category: str, storage: str | None, condition: 
         count=1,
         total_weight=None,
         unit_weight=None,
-        kind_code=1,
+        kind_code=kind_code,
         category=category,
         record_offset=0,
         record_end_guess=64,
         fingerprint="f" * 64,
         type_key=key,
         editable_count=False,
-        display_name=key,
+        display_name=display_name or key,
         condition=condition,
         condition_editable=editable,
         storage=storage,  # type: ignore[arg-type]
+        modules=modules,
+        upgrades=upgrades,
     )
 
 
@@ -70,6 +84,74 @@ def test_equipment_model_filters_by_product_category_and_location() -> None:
     assert [row.handle for row in model.visible_items()] == [1, 2, 3]
 
 
+def test_equipment_model_filters_all_shared_product_categories() -> None:
+    model = EquipmentTableModel()
+    model.set_items(
+        equipment_items(
+            (
+                _item(10, "ammo_9x39", "Боеприпасы", "inventory", None, False),
+                _item(11, "artifact_blood", "Артефакт", "inventory", None, False),
+                _item(12, "quest_key", "Квестовый предмет", "inventory", None, False),
+            ),
+            release_id="stalker2",
+        )
+    )
+
+    for category, handle in (("ammo", 10), ("artifact", 11), ("quest", 12)):
+        model.set_filter(category)
+        assert [row.handle for row in model.visible_items()] == [handle]
+
+
+def test_equipment_model_shows_s2_modules_and_device_category(qtbot) -> None:
+    model = EquipmentTableModel()
+    model.set_items(
+        equipment_items(
+            (
+                _item(
+                    10,
+                    "057601",
+                    "Устройство",
+                    "inventory",
+                    None,
+                    False,
+                    display_name="NVG_NPC_Gen3",
+                ),
+                _item(
+                    11,
+                    "041a01",
+                    "Оружие",
+                    "equipped",
+                    0.9,
+                    True,
+                    kind_code=0,
+                    display_name="GunKharod_ST",
+                    modules=("GunKharod_MagDefault", "HP_Laser_1"),
+                    upgrades=("GunKharod_Upgrade_Stock_1",),
+                ),
+            ),
+            release_id="stalker2",
+        )
+    )
+
+    model.set_filter("device")
+    assert [item.handle for item in model.visible_items()] == [10]
+    model.set_filter("all")
+    module_text = model.data(
+        model.index(0, EquipmentTableModel.UPGRADES_COLUMN),
+        Qt.ItemDataRole.DisplayRole,
+    )
+    assert "GunKharod_MagDefault" in model.data(
+        model.index(1, EquipmentTableModel.UPGRADES_COLUMN),
+        Qt.ItemDataRole.DisplayRole,
+    )
+    assert module_text in {"—", "Модули: —"}
+    tooltip = model.data(
+        model.index(0, EquipmentTableModel.NAME_COLUMN),
+        Qt.ItemDataRole.ToolTipRole,
+    )
+    assert "Источник: actor inventory" in tooltip
+
+
 def test_equipment_view_emits_individual_and_bulk_repair_requests(qtbot) -> None:
     view = EquipmentView()
     qtbot.addWidget(view)
@@ -92,7 +174,17 @@ def test_equipment_view_disables_read_only_repair_with_reason(qtbot) -> None:
     qtbot.addWidget(view)
     view.set_items(
         equipment_items(
-            (_item(8, "weapon_s2", "Оружие", "inventory", 0.5, True),),
+            (
+                _item(
+                    8,
+                    "weapon_s2",
+                    "Оружие",
+                    "inventory",
+                    0.5,
+                    False,
+                    kind_code=0,
+                ),
+            ),
             release_id="stalker2",
         )
     )
@@ -101,6 +193,33 @@ def test_equipment_view_disables_read_only_repair_with_reason(qtbot) -> None:
 
     assert not view.repair_button.isEnabled()
     assert "research" in view.status_label.text()
+    assert not view.bulk_weapon_button.isEnabled()
+
+
+def test_equipment_view_does_not_offer_bulk_repair_for_devices(qtbot) -> None:
+    view = EquipmentView()
+    qtbot.addWidget(view)
+    view.set_items(
+        equipment_items(
+            (
+                _item(
+                    9,
+                    "NVG_NPC_Gen3",
+                    "Устройство",
+                    "inventory",
+                    None,
+                    False,
+                    kind_code=4,
+                ),
+            ),
+            release_id="stalker2",
+        )
+    )
+
+    assert not view.bulk_damaged_button.isEnabled()
+    assert not view.bulk_equipped_button.isEnabled()
+    assert not view.bulk_weapon_button.isEnabled()
+    assert not view.bulk_armor_button.isEnabled()
 
 
 def test_equipment_view_hides_helmet_controls_for_releases_without_them(qtbot) -> None:

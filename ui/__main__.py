@@ -21,12 +21,17 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="probe the bundled decoder and print JSON",
     )
+    parser.add_argument(
+        "--encoder-smoke",
+        action="store_true",
+        help="encode and decode a small Kraken payload, then print JSON",
+    )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    if not args.diagnostic:
+    if not args.diagnostic and not args.encoder_smoke:
         parser.print_help()
         return 0
 
-    from editor.codec import CodecError, load_decoder
+    from editor.codec import CodecError, compress, decompress, load_decoder, load_encoder
     from editor.platforms import discover_helper
 
     helper = discover_helper()
@@ -54,6 +59,27 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
             "decoder_path": str(getattr(decoder, "__file__", "<embedded>")),
         }
     )
+    if args.encoder_smoke:
+        try:
+            encoder = load_encoder()
+            raw = b"SaveEditor Kraken encoder smoke\x00" * 8192
+            packed = compress(raw, encoder=encoder, level=5)
+            round_trip = decompress(packed, len(raw), decoder=decoder)
+            if round_trip != raw:
+                raise CodecError("Kraken encoder smoke round-trip изменил raw payload")
+        except CodecError as exc:
+            report.update({"encoder": "error", "encoder_error": str(exc)})
+            print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+            return 3
+        report.update(
+            {
+                "encoder": "loaded",
+                "encoder_path": str(getattr(encoder, "__file__", "<embedded>")),
+                "encoder_raw_bytes": len(raw),
+                "encoder_packed_bytes": len(packed),
+                "encoder_round_trip": True,
+            }
+        )
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 

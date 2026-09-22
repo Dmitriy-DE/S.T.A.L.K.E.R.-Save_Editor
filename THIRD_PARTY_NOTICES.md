@@ -56,6 +56,15 @@ The pinned build input is recorded in `requirements-build.txt` and
 
 The upstream pyooz 0.0.8 source distribution and file hashes are retained in [third_party/pyooz](third_party/pyooz/README.md). The bundled Linux decoder matches the supplied wheel; a byte-identical source rebuild has not been performed. The Windows wheel is provenance-checked but is not bundled in this source checkout; packaged builds must include its actual dependency and notices.
 
+## pyooz Kraken encoder sources
+
+Portable and installer builds compile `third_party/pyooz/encoder_bindings.cpp`
+against the compressor sources from the vendored `pyooz-0.0.8` source archive.
+The upstream compressor files contain their own educational-use notice and are
+kept byte-for-byte in that provenance archive; redistribution of a build must
+follow those upstream terms. Source-only/browser environments keep the safe
+stored-block fallback when this optional native encoder is unavailable.
+
 ## ooz-wasm (веб-версия)
 
 Веб-сборка загружает `ooz-wasm` 2.0.0 с CDN — WebAssembly-биндинг к

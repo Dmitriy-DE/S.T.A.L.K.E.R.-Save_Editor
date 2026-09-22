@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import json
 import logging
+import os
 from pathlib import Path
 from urllib.error import URLError
 
@@ -26,6 +27,127 @@ def test_configure_logging_rotates_with_bounded_backups(tmp_path: Path) -> None:
     assert len(files) <= 3
     assert logger == tmp_path / "save-editor.log"
     assert all(path.stat().st_size <= 256 for path in files)
+
+
+def test_cleanup_logs_enforces_age_and_total_budget_without_touching_other_files(
+    tmp_path: Path,
+) -> None:
+    now = 1_800_000_000.0
+    current = tmp_path / "save-editor.log"
+    recent_backup = tmp_path / "save-editor.log.1"
+    old_backup = tmp_path / "save-editor.log.2"
+    unrelated_backup = tmp_path / "save-backup.sav"
+    current.write_bytes(b"c" * 60)
+    recent_backup.write_bytes(b"r" * 50)
+    old_backup.write_bytes(b"o" * 40)
+    unrelated_backup.write_bytes(b"keep")
+    os.utime(current, (now, now))
+    os.utime(recent_backup, (now - 10, now - 10))
+    os.utime(old_backup, (now - 120, now - 120))
+
+    removed = diagnostics.cleanup_logs(
+        tmp_path,
+        max_age_seconds=60,
+        max_total_bytes=100,
+        now=now,
+    )
+
+    assert old_backup in removed
+    assert not old_backup.exists()
+    assert unrelated_backup.exists()
+    assert sum(path.stat().st_size for path in tmp_path.glob("save-editor.log*")) <= 100
+
+
+def test_collect_log_bundle_redacts_steam_ids_and_file_contents_but_keeps_safe_metadata(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "save-editor.log").write_text(
+        "operation=cloud backend=web release=v0.5.20 size=42 sha256=abc123 "
+        "exception=TimeoutError steam_id=76561198012345678 "
+        "save_bytes=deadbeef contents=PRIVATE SAVE CONTENT operation=cloud\n",
+        encoding="utf-8",
+    )
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    assert "operation=cloud" in text
+    assert "backend=web" in text
+    assert "release=v0.5.20" in text
+    assert "size=42" in text
+    assert "sha256=abc123" in text
+    assert "exception=TimeoutError" in text
+    assert "76561198012345678" not in text
+    assert "deadbeef" not in text
+    assert "PRIVATE_SAVE_CONTENT" not in text
+    assert "PRIVATE SAVE CONTENT" not in text
+
+
+def test_collect_log_bundle_is_empty_when_log_directory_does_not_exist(
+    tmp_path: Path,
+) -> None:
+    payload = diagnostics.collect_log_bundle(tmp_path / "missing")
+
+    assert gzip.decompress(payload) == b""
+
+
+def test_collect_log_bundle_reads_only_the_bounded_log_tail(tmp_path: Path) -> None:
+    (tmp_path / "save-editor.log").write_text(
+        "old-secret-line\n" + "x" * 10000 + "latest-safe-line\n",
+        encoding="utf-8",
+    )
+
+    text = gzip.decompress(
+        diagnostics.collect_log_bundle(tmp_path, max_bytes=128)
+    ).decode("utf-8")
+
+    assert "latest-safe-line" in text
+    assert "old-secret-line" not in text
+
+
+def test_collect_log_bundle_normalizes_platform_newlines(tmp_path: Path) -> None:
+    (tmp_path / "save-editor.log").write_bytes(b"first\r\nsecond\r\n")
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    assert "first\nsecond\n" in text
+    assert "\r" not in text
+
+
+def test_export_log_bundle_writes_redacted_payload_without_deleting_logs(
+    tmp_path: Path,
+) -> None:
+    log_path = tmp_path / "save-editor.log"
+    export_path = tmp_path / "manual" / "diagnostics.log.gz"
+    log_path.write_text("token=SECRET operation=cloud\n", encoding="utf-8")
+
+    result = diagnostics.export_log_bundle(export_path, directory=tmp_path)
+
+    assert result == export_path
+    assert gzip.decompress(export_path.read_bytes()).find(b"SECRET") == -1
+    assert log_path.is_file()
+
+
+def test_submit_logs_rejects_oversized_payload_before_network(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    called = False
+
+    def fake_urlopen(*_args, **_kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("network must not receive an oversized bundle")
+
+    monkeypatch.setattr(diagnostics, "collect_log_bundle", lambda *_args, **_kwargs: b"x" * (diagnostics.MAX_UPLOAD_BYTES + 1))
+    monkeypatch.setattr(diagnostics.urllib.request, "urlopen", fake_urlopen)
+
+    with pytest.raises(diagnostics.DiagnosticsError, match="слишком большие"):
+        diagnostics.submit_logs(
+            endpoint="https://save-editor-downloads.save-editor.workers.dev/diagnostics",
+            directory=tmp_path,
+        )
+
+    assert called is False
 
 
 def test_collect_log_bundle_redacts_home_secrets_and_ignores_save_files(tmp_path: Path) -> None:
@@ -75,6 +197,19 @@ def test_collect_log_bundle_redacts_complete_credentials(
         assert secret not in text
     assert "<redacted>" in text
     assert "Bearer REAL_" not in text
+
+
+def test_collect_log_bundle_redacts_quoted_json_credentials(tmp_path: Path) -> None:
+    (tmp_path / "save-editor.log").write_text(
+        '{"token":"JSON_TOKEN", "authorization": "Bearer JSON_AUTH"}',
+        encoding="utf-8",
+    )
+
+    text = gzip.decompress(diagnostics.collect_log_bundle(tmp_path)).decode("utf-8")
+
+    assert "JSON_TOKEN" not in text
+    assert "JSON_AUTH" not in text
+    assert '"token":"<redacted>"' in text
 
 
 @pytest.mark.parametrize(

@@ -105,6 +105,34 @@ def test_xray_icon_resolver_reads_loose_icon_by_unique_display_name(
     assert icon.pixmap(24, 24).toImage().pixelColor(12, 12).red() > 150
 
 
+def test_xray_icon_resolver_reads_s2_unreal_texture_path(tmp_path: Path, qtbot) -> None:
+    root = tmp_path / "stalker2"
+    image_path = root / "Content" / "GameLite" / "UI" / "Icons" / "Armor.png"
+    image_path.parent.mkdir(parents=True)
+    image = QImage(12, 12, QImage.Format.Format_RGBA8888)
+    image.fill(QColor("#4a9bd4"))
+    assert image.save(str(image_path))
+    definition = ItemDefinition(
+        key="Armor_Test",
+        display_name="Armor Test",
+        category="outfit",
+        unit_weight=None,
+        width=None,
+        height=None,
+        max_stack=None,
+        slots=(),
+        prototype=None,
+        source="Content/GameLite/GameData/ItemPrototypes/Armor.cfg#Armor_Test",
+        icon_texture="Texture2D'/Game/GameLite/UI/Icons/Armor.Armor'",
+    )
+    catalog = catalog_from_items("stalker2", (definition,), source_root=root)
+
+    icon = XRayIconResolver(catalog).icon_for(definition, size=24)
+
+    assert not icon.isNull()
+    assert icon.pixmap(24, 24).toImage().pixelColor(12, 12).blue() > 150
+
+
 def test_inventory_model_exposes_a_zone_icon_for_each_item(synthetic_save: bytes, qtbot) -> None:
     model = InventoryTableModel()
     model.set_icon_provider(lambda _item: category_icon("weapon", size=24))

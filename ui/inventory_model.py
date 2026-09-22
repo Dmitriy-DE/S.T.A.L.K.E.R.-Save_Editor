@@ -19,6 +19,7 @@ from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 # stubs are installed.
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
 IconProvider: TypeAlias = Callable[[InventoryItem], QIcon | None]
+NameProvider: TypeAlias = Callable[[InventoryItem], str | None]
 
 
 class InventoryTableModel(QAbstractTableModel):
@@ -65,6 +66,7 @@ class InventoryTableModel(QAbstractTableModel):
         self._staged_durability: dict[int, float] = {}
         self._staged_placements: dict[int, tuple[str, int | None]] = {}
         self._icon_provider: IconProvider | None = None
+        self._name_provider: NameProvider | None = None
         self._sort_column = self.POSITION_COLUMN
         self._sort_order = Qt.SortOrder.AscendingOrder
 
@@ -123,6 +125,12 @@ class InventoryTableModel(QAbstractTableModel):
         """
 
         self._icon_provider = provider
+        self._rebuild()
+
+    def set_name_provider(self, provider: NameProvider | None) -> None:
+        """Set a presentation-only catalog/localization name resolver."""
+
+        self._name_provider = provider
         self._rebuild()
 
     def set_search(self, text: str) -> None:
@@ -221,7 +229,7 @@ class InventoryTableModel(QAbstractTableModel):
             return True
         haystack = " ".join(
             (
-                item.display_name or "Неизвестный объект",
+                self._display_name(item),
                 item.category,
                 item.position,
                 item.size_text,
@@ -255,7 +263,7 @@ class InventoryTableModel(QAbstractTableModel):
             staged_condition if staged_condition is not None else item.condition
         )
         values = {
-            self.NAME_COLUMN: (item.display_name or "неизвестный объект").casefold(),
+            self.NAME_COLUMN: self._display_name(item).casefold(),
             self.CATEGORY_COLUMN: item.category.casefold(),
             self.POSITION_COLUMN: position,
             self.SIZE_COLUMN: size,
@@ -293,7 +301,7 @@ class InventoryTableModel(QAbstractTableModel):
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
         if column == self.NAME_COLUMN:
-            return item.display_name or "Неизвестный объект"
+            return self._display_name(item)
         if column == self.CATEGORY_COLUMN:
             return item.category
         if column == self.POSITION_COLUMN:
@@ -330,6 +338,7 @@ class InventoryTableModel(QAbstractTableModel):
 
     def _tooltip(self, item: InventoryItem, column: int) -> str:
         if column == self.NAME_COLUMN:
+            display_name = self._display_name(item)
             type_key = (
                 item.type_key
                 if item.display_name is not None
@@ -337,11 +346,13 @@ class InventoryTableModel(QAbstractTableModel):
             )
             return (
                 (
-                    "Сериализованное имя section key; каталог/перевод не загружен. "
+                    "Имя получено из каталога/локализации; сохраняется исходный type-key. "
+                    if self._name_provider is not None and display_name != item.display_name
+                    else "Сериализованное имя section key; каталог/перевод не загружен. "
                     if item.display_name is not None
                     else "Имя не определено: каталог SID/type-key ещё не подтверждён. "
                 )
-                + f"Type-key: {type_key}"
+                + f"{display_name} · Type-key: {type_key}"
             )
         if column == self.HANDLE_COLUMN:
             return f"Стабильный идентификатор: {item.handle_hex}"
@@ -378,6 +389,16 @@ class InventoryTableModel(QAbstractTableModel):
         if item.condition is None:
             return "неизвестно"
         return f"{item.condition * 100.0:.1f}%"
+
+    def _display_name(self, item: InventoryItem) -> str:
+        if self._name_provider is not None:
+            try:
+                resolved = self._name_provider(item)
+            except Exception:
+                resolved = None
+            if resolved and str(resolved).strip():
+                return str(resolved).strip()
+        return item.display_name or "Неизвестный объект"
 
 
 __all__ = ["InventoryTableModel"]

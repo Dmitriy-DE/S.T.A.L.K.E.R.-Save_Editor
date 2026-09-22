@@ -1,13 +1,186 @@
-"""Official S.T.A.L.K.E.R. release descriptors.
+"""Official S.T.A.L.K.E.R. release descriptors and equipment registry.
 
-The descriptors are identification and path-search metadata only.  A release
-does not become parser-supported until a matching format profile is registered
-and its evidence row is accepted.
+The descriptors own release/edition identity, paths and the canonical
+equipment vocabulary consumed by parser, catalog and UI projections. A
+release does not become parser-supported until a matching format profile is
+registered and its evidence row is accepted.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Literal, cast
+
+from .capability_types import CapabilitySupport
+
+EquipmentFeature = Literal["durability", "upgrades", "placement", "add", "remove"]
+_EQUIPMENT_FEATURES: tuple[EquipmentFeature, ...] = (
+    "durability",
+    "upgrades",
+    "placement",
+    "add",
+    "remove",
+)
+
+
+@dataclass(frozen=True)
+class EquipmentRegistry:
+    """Canonical equipment vocabulary and maturity for one release.
+
+    Keeping this beside the release descriptor prevents parser, catalog, UI
+    and Cloud code from silently growing separate game/edition registries.
+    Format-specific binary writers still live in their own modules.
+    """
+
+    categories: tuple[str, ...]
+    device_subtypes: tuple[str, ...]
+    icon_source: str
+    feature_support: Mapping[EquipmentFeature, CapabilitySupport]
+
+    def __post_init__(self) -> None:
+        categories = tuple(dict.fromkeys(str(value) for value in self.categories))
+        subtypes = tuple(dict.fromkeys(str(value) for value in self.device_subtypes))
+        support = dict(self.feature_support)
+        unknown = set(support) - set(_EQUIPMENT_FEATURES)
+        missing = set(_EQUIPMENT_FEATURES) - set(support)
+        if unknown:
+            raise ValueError(f"unknown equipment feature: {sorted(unknown)!r}")
+        if missing:
+            raise ValueError(f"missing equipment feature: {sorted(missing)!r}")
+        if not categories or "other" not in categories:
+            raise ValueError("equipment registry must include an other fallback")
+        if not self.icon_source.strip():
+            raise ValueError("equipment registry requires icon_source")
+        normalized = cast(
+            Mapping[EquipmentFeature, CapabilitySupport],
+            {feature: support[feature] for feature in _EQUIPMENT_FEATURES},
+        )
+        object.__setattr__(self, "categories", categories)
+        object.__setattr__(self, "device_subtypes", subtypes)
+        object.__setattr__(self, "feature_support", MappingProxyType(normalized))
+
+    def support(self, feature: EquipmentFeature) -> CapabilitySupport:
+        if feature not in _EQUIPMENT_FEATURES:
+            raise KeyError(f"unknown equipment feature: {feature!r}")
+        return self.feature_support[feature]
+
+
+def _support(**values: CapabilitySupport) -> Mapping[EquipmentFeature, CapabilitySupport]:
+    return cast(Mapping[EquipmentFeature, CapabilitySupport], values)
+
+
+_XRAY_CATEGORIES = (
+    "weapon",
+    "armor",
+    "module",
+    "device",
+    "consumable",
+    "ammo",
+    "artifact",
+    "quest",
+    "other",
+)
+_S2_CATEGORIES = (
+    "weapon",
+    "armor",
+    "helmet",
+    "module",
+    "device",
+    "consumable",
+    "ammo",
+    "artifact",
+    "quest",
+    "other",
+)
+_XRAY_DEVICE_SUBTYPES = ("detector", "other", "unknown")
+_S2_DEVICE_SUBTYPES = ("nvg", "binocular", "detector", "other", "unknown")
+
+_S2_EQUIPMENT = EquipmentRegistry(
+    categories=_S2_CATEGORIES,
+    device_subtypes=_S2_DEVICE_SUBTYPES,
+    icon_source=(
+        "official loose CFG/localization; selected Zone Kit/Workshop "
+        "is presentation-only"
+    ),
+    feature_support=_support(
+        durability=CapabilitySupport(
+            "experimental",
+            "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet.",
+        ),
+        upgrades=CapabilitySupport(
+            "research",
+            "S2 module/upgrade vectors are observed but installed/current state is not proven.",
+        ),
+        placement=CapabilitySupport(
+            "unsupported", "S2 placement serialization is not confirmed."
+        ),
+        add=CapabilitySupport("unsupported", "S2 add/clone constructor is not confirmed."),
+        remove=CapabilitySupport("unsupported", "S2 safe remove/reference graph is not confirmed."),
+    ),
+)
+
+
+def _xray_equipment(
+    *,
+    upgrades: CapabilitySupport,
+    categories: tuple[str, ...] = _XRAY_CATEGORIES,
+) -> EquipmentRegistry:
+    return EquipmentRegistry(
+        categories=categories,
+        device_subtypes=_XRAY_DEVICE_SUBTYPES,
+        icon_source="official X-Ray game resources",
+        feature_support=_support(
+            durability=CapabilitySupport(
+                "experimental",
+                "X-Ray condition writer requires game load/re-save evidence.",
+            ),
+            upgrades=upgrades,
+            placement=CapabilitySupport(
+                "experimental",
+                "X-Ray placement anchor requires game load/re-save evidence.",
+            ),
+            add=CapabilitySupport(
+                "experimental",
+                "X-Ray structural add writer requires game load/re-save evidence.",
+            ),
+            remove=CapabilitySupport(
+                "experimental",
+                "X-Ray structural remove writer requires game load/re-save evidence.",
+            ),
+        ),
+    )
+
+
+_COP_EQUIPMENT = _xray_equipment(
+    categories=(*_XRAY_CATEGORIES[:-1], "helmet", "other"),
+    upgrades=CapabilitySupport(
+        "experimental", "m_upgrades vector requires game load/re-save evidence."
+    ),
+)
+_EE_EQUIPMENT = EquipmentRegistry(
+    categories=_XRAY_CATEGORIES,
+    device_subtypes=_XRAY_DEVICE_SUBTYPES,
+    icon_source="unavailable until an Enhanced Edition resource sample is accepted",
+    feature_support=_support(
+        durability=CapabilitySupport(
+            "unsupported", "Enhanced Edition parser/equipment sample is not accepted."
+        ),
+        upgrades=CapabilitySupport(
+            "unsupported", "Enhanced Edition parser/equipment sample is not accepted."
+        ),
+        placement=CapabilitySupport(
+            "unsupported", "Enhanced Edition parser/equipment sample is not accepted."
+        ),
+        add=CapabilitySupport(
+            "unsupported", "Enhanced Edition parser/equipment sample is not accepted."
+        ),
+        remove=CapabilitySupport(
+            "unsupported", "Enhanced Edition parser/equipment sample is not accepted."
+        ),
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -23,6 +196,7 @@ class ReleaseDescriptor:
     install_dirs: tuple[str, ...] = ()
     cloud_prefixes: tuple[str, ...] = ()
     cloud_extensions: frozenset[str] = frozenset()
+    equipment: EquipmentRegistry | None = None
 
     @property
     def app_id(self) -> int:
@@ -50,6 +224,7 @@ _OFFICIAL_RELEASES = (
         ),
         cloud_prefixes=("Stalker2/Saved/STEAM/SaveGames/Data/",),
         cloud_extensions=frozenset({".sav"}),
+        equipment=_S2_EQUIPMENT,
     ),
     ReleaseDescriptor(
         id="stalker-soc",
@@ -60,6 +235,9 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".sav"}),
         install_dirs=("STALKER Shadow of Chernobyl", "STALKER Shadow of Chornobyl"),
         cloud_prefixes=("_appdata_/savedgames/",),
+        equipment=_xray_equipment(
+            upgrades=CapabilitySupport("unsupported", "SoC upgrade writer is not confirmed.")
+        ),
     ),
     ReleaseDescriptor(
         id="stalker-cs",
@@ -70,6 +248,11 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".sav"}),
         install_dirs=("STALKER Clear Sky",),
         cloud_prefixes=("_appdata_/savedgames/",),
+        equipment=_xray_equipment(
+            upgrades=CapabilitySupport(
+                "experimental", "m_upgrades vector requires game load/re-save evidence."
+            )
+        ),
     ),
     ReleaseDescriptor(
         id="stalker-cop",
@@ -80,6 +263,7 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".scop", ".sav"}),
         install_dirs=("Stalker Call of Pripyat", "STALKER Call of Pripyat"),
         cloud_prefixes=("_appdata_/savedgames/",),
+        equipment=_COP_EQUIPMENT,
     ),
     ReleaseDescriptor(
         id="stalker-soc-ee",
@@ -90,6 +274,7 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".sav", ".dds", ".info"}),
         install_dirs=("STALKER Shadow of Chornobyl - Enhanced Edition",),
         cloud_prefixes=("STALKER Shadow of Chornobyl - EE/STEAM/savedgames/",),
+        equipment=_EE_EQUIPMENT,
     ),
     ReleaseDescriptor(
         id="stalker-cs-ee",
@@ -103,6 +288,7 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".sav", ".scop", ".scs", ".dds", ".info"}),
         install_dirs=("STALKER Clear Sky - Enhanced Edition",),
         cloud_prefixes=("STALKER Clear Sky - EE/STEAM/savedgames/",),
+        equipment=_EE_EQUIPMENT,
     ),
     ReleaseDescriptor(
         id="stalker-cop-ee",
@@ -113,6 +299,7 @@ _OFFICIAL_RELEASES = (
         extensions=frozenset({".sav", ".scop", ".scs", ".dds", ".info"}),
         install_dirs=("STALKER Call of Prypiat - Enhanced Edition",),
         cloud_prefixes=("STALKER Call of Prypiat - EE/STEAM/savedgames/",),
+        equipment=_EE_EQUIPMENT,
     ),
 )
 _BY_ID = {release.id: release for release in _OFFICIAL_RELEASES}
@@ -135,6 +322,8 @@ def _validate_registry() -> None:
             raise ValueError(f"release {release.id!r} must own one positive app ID")
         if not release.install_dirs or not release.cloud_prefixes:
             raise ValueError(f"release {release.id!r} lacks platform metadata")
+        if release.equipment is None:
+            raise ValueError(f"release {release.id!r} lacks equipment metadata")
 
 
 _validate_registry()
@@ -165,6 +354,8 @@ def release_by_app_id(app_id: int) -> ReleaseDescriptor:
 
 
 __all__ = [
+    "EquipmentFeature",
+    "EquipmentRegistry",
     "ReleaseDescriptor",
     "official_releases",
     "release_by_app_id",

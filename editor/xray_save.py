@@ -692,6 +692,8 @@ def _category_for_name(name: str) -> tuple[int, str]:
         return 1, "Броня/экипировка"
     if lowered.startswith(("af_", "artifact_")):
         return 2, "Артефакт"
+    if lowered.startswith(("device_", "detector_")):
+        return 8, "Устройство"
     if lowered.startswith(("grenade", "rgd", "f1_")):
         return 7, "Гранаты/стак"
     if lowered.startswith(
@@ -867,6 +869,9 @@ def _inventory_items(
                 condition=obj.condition,
                 condition_editable=condition_editable,
                 storage=obj.storage,
+                observation_source=(
+                    "equipped" if obj.storage == "equipped" else "actor_inventory"
+                ),
                 upgrades=obj.upgrades,
                 upgrades_editable=obj.upgrades is not None,
                 placement_type=obj.placement_type,

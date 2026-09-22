@@ -112,20 +112,37 @@ class InspectWorker(QThread):
     completed = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, service: EditorService, path: Path, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        service: EditorService,
+        path: Path,
+        parent: QWidget | None = None,
+        *,
+        catalog_roots: tuple[Path, ...] = (),
+    ) -> None:
         super().__init__(parent)
         self.service = service
         self.path = path
+        self.catalog_roots = tuple(catalog_roots)
 
     def run(self) -> None:
         try:
             data = self.path.read_bytes()
-            result = self.service.inspect_result(
-                data,
-                with_inventory=True,
-                source_name=self.path.name,
-                catalog_source=self.path,
-            )
+            if self.catalog_roots:
+                result = self.service.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=self.path.name,
+                    catalog_source=self.path,
+                    catalog_roots=self.catalog_roots,
+                )
+            else:
+                result = self.service.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=self.path.name,
+                    catalog_source=self.path,
+                )
             self.completed.emit(
                 LocalSnapshot(
                     path=self.path,
@@ -246,10 +263,10 @@ class MainWindow(QMainWindow):
         self.version_badge.setObjectName("versionBadge")
         title_layout.addWidget(self.version_badge)
         title_layout.addStretch(1)
-        ui_hint = QLabel("ZONE / SAVE WORKBENCH")
-        ui_hint.setObjectName("sidebarStatus")
-        title_layout.addWidget(ui_hint)
-        self.launcher_button = QPushButton("← ЗОНА")
+        self.ui_hint = QLabel("S2 / SAVE WORKBENCH")
+        self.ui_hint.setObjectName("sidebarStatus")
+        title_layout.addWidget(self.ui_hint)
+        self.launcher_button = QPushButton("← БИБЛИОТЕКА")
         self.launcher_button.setObjectName("launcherBackButton")
         self.launcher_button.setToolTip("Вернуться к библиотеке игр и сохранений")
         self.launcher_button.clicked.connect(self._show_launcher)
@@ -372,8 +389,15 @@ class MainWindow(QMainWindow):
             "Оборудование",
         )
         for index, label in enumerate(self.nav_labels):
+            if index == 2:
+                self.advanced_navigation_label = QLabel("ДОПОЛНИТЕЛЬНО")
+                self.advanced_navigation_label.setObjectName("sidebarStatus")
+                sidebar_layout.addWidget(self.advanced_navigation_label)
             button = QPushButton(label)
             button.setObjectName("navButton")
+            button.setProperty(
+                "navigationTier", "advanced" if index in (2, 3) else "primary"
+            )
             button.setCheckable(True)
             button.setAutoExclusive(True)
             button.clicked.connect(lambda _checked=False, i=index: self._select_tab(i))
@@ -401,6 +425,7 @@ class MainWindow(QMainWindow):
         self.preview_button.clicked.connect(self._start_preview)
         actions.addWidget(self.preview_button)
         self.save_copy_button = QPushButton("Сохранить")
+        self.save_copy_button.setObjectName("primarySaveButton")
         self.save_copy_button.setEnabled(False)
         self.save_copy_button.setToolTip(
             "Проверяет и сохраняет одним нажатием; бэкап исходного файла делается сам"
@@ -926,7 +951,13 @@ class MainWindow(QMainWindow):
         return self.backups_view
 
     def _build_cloud_tab(self) -> QWidget:
-        self.cloud_view = CloudView(self.service, backup_dir=backup_dirs()[0], parent=self)
+        catalog_root = self.settings.catalog_root("stalker2")
+        self.cloud_view = CloudView(
+            self.service,
+            backup_dir=backup_dirs()[0],
+            catalog_roots=(catalog_root,) if catalog_root is not None else (),
+            parent=self,
+        )
         self.cloud_view.snapshot_ready.connect(self._on_cloud_snapshot_ready)
         self.cloud_view.upload_ready.connect(self._on_cloud_upload_ready)
         self.cloud_view.operation_failed.connect(self._on_cloud_operation_failed)
@@ -967,6 +998,10 @@ class MainWindow(QMainWindow):
 
     def _on_settings_changed(self, settings: PathSettings) -> None:
         self.settings = settings
+        catalog_root = settings.catalog_root("stalker2")
+        self.cloud_view.set_catalog_roots(
+            (catalog_root,) if catalog_root is not None else ()
+        )
         self.status_label.setText("Настройки обновлены; обновляю список сохранений…")
         self.save_slots_view.refresh()
 
@@ -1023,7 +1058,13 @@ class MainWindow(QMainWindow):
         self.error_label.clear()
         self.error_label.setVisible(False)
 
-        thread = InspectWorker(self.service, path, self)
+        catalog_root = self.settings.catalog_root("stalker2")
+        thread = InspectWorker(
+            self.service,
+            path,
+            self,
+            catalog_roots=(catalog_root,) if catalog_root is not None else (),
+        )
         thread.completed.connect(self._on_analysis_ready)
         thread.failed.connect(self._on_analysis_failed)
         thread.finished.connect(self._on_inspect_thread_finished)
@@ -1235,7 +1276,7 @@ class MainWindow(QMainWindow):
                 "Только чтение: правка прочности не подтверждена для этого релиза"
                 if capabilities is not None and not capabilities.edit_durability
                 else (
-                    "Экспериментально: S2 STATE f32 armor anchor; backup обязателен"
+                    "Экспериментально: S2 STATE f32 condition anchor для подтверждённых оружия/брони; backup обязателен"
                     if self.snapshot is not None
                     and self.snapshot.format_id == "stalker2"
                     else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"
@@ -1304,10 +1345,22 @@ class MainWindow(QMainWindow):
         self.equipment_view.set_staged_durability(self.staged_durability)
 
     def _render_factions(self, info: SaveInfo) -> None:
-        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        snapshot = self.snapshot
+        release_id = (
+            (snapshot.release_id or snapshot.format_id).casefold()
+            if snapshot is not None
+            else ""
+        )
+        if release_id == "stalker2":
+            # S2 has no confirmed relation parser/writer. Keeping the X-Ray
+            # panel visible suggests that its empty state is an S2 feature.
+            self.faction_view.setVisible(False)
+            return
+        self.faction_view.setVisible(True)
+        capabilities = snapshot.capabilities if snapshot is not None else None
         catalog = (
-            self.snapshot.game_catalog.factions
-            if self.snapshot is not None and self.snapshot.game_catalog is not None
+            snapshot.game_catalog.factions
+            if snapshot is not None and snapshot.game_catalog is not None
             else None
         )
         self.faction_view.set_catalog(
@@ -2377,6 +2430,8 @@ class MainWindow(QMainWindow):
             release_id=snapshot.release_id,
             edition=snapshot.edition,
             capabilities=snapshot.capabilities,
+            catalog=snapshot.catalog,
+            game_catalog=snapshot.game_catalog,
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 from pathlib import Path, PurePath
 
 from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
@@ -12,6 +13,10 @@ from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
 _root_from_env = os.environ.get("SAVE_EDITOR_ROOT")
 ROOT = Path(_root_from_env or Path.cwd()).resolve()
 TARGET = os.environ.get("SAVE_EDITOR_TARGET", "linux").strip().lower()
+_encoder_dir_text = os.environ.get("SAVE_EDITOR_ENCODER_DIR", "").strip()
+ENCODER_DIR = Path(_encoder_dir_text).resolve() if _encoder_dir_text else None
+if ENCODER_DIR is not None and ENCODER_DIR.is_dir():
+    sys.path.insert(0, str(ENCODER_DIR))
 
 datas: list[tuple[str, str]] = []
 for filename in ("README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "VERSION"):
@@ -47,6 +52,11 @@ if TARGET == "linux" and (ROOT / "vendor").is_dir():
     datas.append((str(ROOT / "vendor"), "vendor"))
 
 hiddenimports = ["ooz"] if importlib.util.find_spec("ooz") is not None else []
+if ENCODER_DIR is not None and importlib.util.find_spec("ooz_encoder") is not None:
+    hiddenimports.append("ooz_encoder")
+pathex = [str(ROOT)]
+if ENCODER_DIR is not None:
+    pathex.append(str(ENCODER_DIR))
 
 a = Analysis(
     [
@@ -55,7 +65,7 @@ a = Analysis(
         str(ROOT / "packaging" / "native_entry.py"),
         str(ROOT / "packaging" / "updater_entry.py"),
     ],
-    pathex=[str(ROOT)],
+    pathex=pathex,
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,

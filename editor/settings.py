@@ -58,11 +58,13 @@ class PathSettings:
     steam_root: Path | None = None
     game_roots: tuple[tuple[str, Path], ...] = ()
     save_roots: tuple[tuple[str, Path], ...] = ()
+    catalog_roots: tuple[tuple[str, Path], ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "steam_root", _normalise_path(self.steam_root))
         object.__setattr__(self, "game_roots", _normalise_entries(self.game_roots))
         object.__setattr__(self, "save_roots", _normalise_entries(self.save_roots))
+        object.__setattr__(self, "catalog_roots", _normalise_entries(self.catalog_roots))
 
     @staticmethod
     def _lookup(
@@ -84,8 +86,23 @@ class PathSettings:
     def save_root(self, game_id: str) -> Path | None:
         return self._lookup(self.save_roots, game_id)
 
+    def catalog_root(self, game_id: str) -> Path | None:
+        """Return an explicit loose-resource root for catalog-only metadata.
+
+        This is intentionally separate from ``game_roots``: a Zone Kit or a
+        Workshop item is a valid metadata source but is not a game install and
+        must never become the source of save writes.
+        """
+
+        return self._lookup(self.catalog_roots, game_id)
+
     def with_steam_root(self, value: PathValue | None) -> PathSettings:
-        return PathSettings(_normalise_path(value), self.game_roots, self.save_roots)
+        return PathSettings(
+            _normalise_path(value),
+            self.game_roots,
+            self.save_roots,
+            self.catalog_roots,
+        )
 
     def with_game_root(self, game_id: str, value: PathValue | None) -> PathSettings:
         values = dict(self.game_roots)
@@ -96,7 +113,12 @@ class PathSettings:
             if path is None:
                 raise ValueError(f"path for {game_id!r} must not be null")
             values[game_id] = path
-        return PathSettings(self.steam_root, tuple(values.items()), self.save_roots)
+        return PathSettings(
+            self.steam_root,
+            tuple(values.items()),
+            self.save_roots,
+            self.catalog_roots,
+        )
 
     def with_save_root(self, game_id: str, value: PathValue | None) -> PathSettings:
         values = dict(self.save_roots)
@@ -107,7 +129,28 @@ class PathSettings:
             if path is None:
                 raise ValueError(f"path for {game_id!r} must not be null")
             values[game_id] = path
-        return PathSettings(self.steam_root, self.game_roots, tuple(values.items()))
+        return PathSettings(
+            self.steam_root,
+            self.game_roots,
+            tuple(values.items()),
+            self.catalog_roots,
+        )
+
+    def with_catalog_root(self, game_id: str, value: PathValue | None) -> PathSettings:
+        values = dict(self.catalog_roots)
+        if value is None:
+            values.pop(game_id, None)
+        else:
+            path = _normalise_path(value)
+            if path is None:
+                raise ValueError(f"path for {game_id!r} must not be null")
+            values[game_id] = path
+        return PathSettings(
+            self.steam_root,
+            self.game_roots,
+            self.save_roots,
+            tuple(values.items()),
+        )
 
     def manual_paths(self) -> tuple[Path, ...]:
         values: list[Path] = []
@@ -115,6 +158,7 @@ class PathSettings:
             values.append(self.steam_root)
         values.extend(path for _game_id, path in self.game_roots)
         values.extend(path for _game_id, path in self.save_roots)
+        values.extend(path for _game_id, path in self.catalog_roots)
         result: list[Path] = []
         seen: set[Path] = set()
         for path in values:
@@ -196,6 +240,7 @@ def _decode_settings(payload: object) -> PathSettings:
         steam_root=_json_path(payload.get("steam_root"), "steam_root"),
         game_roots=_json_entries(payload.get("game_roots"), "game_roots"),
         save_roots=_json_entries(payload.get("save_roots"), "save_roots"),
+        catalog_roots=_json_entries(payload.get("catalog_roots"), "catalog_roots"),
     )
 
 
@@ -237,6 +282,9 @@ def _encode_settings(settings: PathSettings) -> bytes:
         "steam_root": str(settings.steam_root) if settings.steam_root is not None else None,
         "game_roots": {game_id: str(path) for game_id, path in settings.game_roots},
         "save_roots": {game_id: str(path) for game_id, path in settings.save_roots},
+        "catalog_roots": {
+            game_id: str(path) for game_id, path in settings.catalog_roots
+        },
     }
     return (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode(
         "utf-8"

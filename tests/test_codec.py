@@ -20,6 +20,16 @@ class _Decoder:
         return self.payload
 
 
+class _Encoder:
+    def __init__(self, payload: bytes = b"encoded") -> None:
+        self.payload = payload
+        self.calls: list[tuple[bytes, int]] = []
+
+    def compress(self, raw: bytes, level: int) -> bytes:
+        self.calls.append((bytes(raw), level))
+        return self.payload
+
+
 def test_decompress_uses_injected_decoder() -> None:
     decoder = _Decoder(b"decoded")
 
@@ -41,6 +51,24 @@ def test_decompress_wraps_native_error() -> None:
 def test_decompress_rejects_wrong_output_size() -> None:
     with pytest.raises(codec.CodecError, match="размер"):
         codec.decompress(b"packed", 7, decoder=_Decoder(b"short"))
+
+
+def test_compress_uses_injected_encoder_and_validates_bytes() -> None:
+    encoder = _Encoder()
+
+    result = codec.compress(b"raw", encoder=encoder, level=5)
+
+    assert result == b"encoded"
+    assert encoder.calls == [(b"raw", 5)]
+
+
+def test_load_encoder_reports_missing_optional_build_input() -> None:
+    def importer(name: str):
+        assert name == "ooz_encoder"
+        raise ImportError("encoder is not built")
+
+    with pytest.raises(codec.CodecError, match="encoder"):
+        codec.load_encoder(importer=importer)
 
 
 def test_load_decoder_prefers_platform_installed_module() -> None:

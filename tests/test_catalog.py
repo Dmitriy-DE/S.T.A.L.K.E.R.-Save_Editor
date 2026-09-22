@@ -23,7 +23,10 @@ def test_item_definition_and_catalog_are_immutable_and_resolvable(tmp_path: Path
     catalog = ItemCatalog("stalker-cs", tmp_path, (item,))
 
     assert catalog.resolve("ammo_test") == item
+    assert catalog.resolve_key_or_display_name("ammo_test") == item
+    assert catalog.resolve_key_or_display_name("Test ammunition") == item
     assert catalog.resolve("missing") is None
+    assert catalog.resolve_key_or_display_name("missing") is None
     assert catalog.source_root == tmp_path
     with pytest.raises(AttributeError):
         item.key = "other"  # type: ignore[misc]
@@ -45,4 +48,3 @@ def test_catalog_rejects_duplicate_keys() -> None:
 
     with pytest.raises(ValueError, match="duplicate"):
         ItemCatalog("stalker-cop", None, (item, item))
-

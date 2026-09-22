@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 
 import pytest
 from test_xray_catalog import _write_unpacked_fixture
@@ -86,6 +87,36 @@ def test_service_inspection_preserves_parser_result_and_format_metadata(
     assert result.format_id == "stalker2"
     assert result.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
     assert result.info == sf.inspect_save(synthetic_save)
+
+
+def test_service_passes_explicit_s2_catalog_root_to_cloud_style_source(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    from editor.service import EditorService
+
+    item_root = tmp_path / "Content" / "GameLite" / "GameData" / "ItemPrototypes"
+    item_root.mkdir(parents=True)
+    (item_root / "Items.cfg").write_text(
+        """
+Bandage : struct.begin
+    SID = Bandage
+    Type = EItemPrototypeType::Consumable
+    DisplayName = UI_Item_Bandage
+struct.end
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = EditorService().inspect_result(
+        synthetic_save,
+        source_name="Stalker2/Saved/STEAM/SaveGames/Data/slot.sav",
+        catalog_roots=(tmp_path,),
+    )
+
+    assert result.catalog is not None
+    assert result.catalog.source_root == tmp_path
+    assert result.catalog.resolve("Bandage") is not None
 
 
 def test_service_inspection_projects_common_release_capabilities(

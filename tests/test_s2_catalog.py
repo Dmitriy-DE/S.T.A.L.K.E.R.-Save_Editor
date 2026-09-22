@@ -137,6 +137,24 @@ def test_s2_catalog_reads_official_cfg_metadata_without_save_mapping(tmp_path: P
     assert bundle.items.resolve_display_name("UI_Item_Bandage") == bandage
 
 
+def test_s2_catalog_resolves_zonekit_localization_json(tmp_path: Path) -> None:
+    _write_s2_resources(tmp_path)
+    localization = tmp_path / "Content" / "Localization" / "en"
+    localization.mkdir(parents=True)
+    (localization / "Items.json").write_text(
+        '{"UI_Item_Bandage": "Bandage", "UI_Upgrade_GunAKU_Attachment": "Rail mount"}\n',
+        encoding="utf-8",
+    )
+
+    bundle = S2CatalogProvider().load_bundle(release_by_id("stalker2"), tmp_path)
+
+    assert bundle is not None
+    assert bundle.items.resolve("Bandage").display_name == "Bandage"  # type: ignore[union-attr]
+    upgrade = bundle.upgrades.resolve("GunAKU_Upgrade_Attachment")  # type: ignore[union-attr]
+    assert upgrade is not None
+    assert upgrade.display_name == "Rail mount"
+
+
 def test_s2_provider_walks_from_save_path_but_never_enables_save_writer(
     tmp_path: Path,
 ) -> None:
@@ -151,6 +169,34 @@ def test_s2_provider_walks_from_save_path_but_never_enables_save_writer(
     assert catalog.resolve("Bandage") is not None
     assert STALKER2_FORMAT.capabilities.catalog is True
     assert STALKER2_FORMAT.capabilities.add_items is False
+
+
+def test_s2_format_reuses_one_catalog_scan_for_items_and_bundle(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_s2_resources(tmp_path)
+    save_path = tmp_path / "Saved" / "slot.sav"
+    save_path.parent.mkdir()
+    save_path.write_bytes(b"placeholder")
+
+    provider_type = S2CatalogProvider
+    original = provider_type.load_bundle
+    calls = 0
+
+    def counted(self, release, game_root=None):
+        nonlocal calls
+        calls += 1
+        return original(self, release, game_root)
+
+    monkeypatch.setattr(provider_type, "load_bundle", counted)
+    catalog = STALKER2_FORMAT.catalog_for_source(str(save_path))
+    first_calls = calls
+    bundle = STALKER2_FORMAT.game_catalog_for_source(str(save_path))
+
+    assert catalog is not None
+    assert bundle is not None
+    assert first_calls > 0
+    assert calls == first_calls
 
 
 def test_s2_format_discovers_installed_loose_resources_without_save_path(
@@ -252,6 +298,24 @@ def test_s2_catalog_source_discovery_accepts_explicit_workshop_item_root(
     assert any(source.root == workshop_item and source.kind == "workshop" for source in sources)
 
 
+def test_s2_catalog_source_discovery_prioritises_explicit_catalog_root(
+    tmp_path: Path,
+) -> None:
+    save_path = tmp_path / "remote" / "slot.sav"
+    save_path.parent.mkdir()
+    save_path.write_bytes(b"placeholder")
+    zonekit_root = tmp_path / "Zone Kit export"
+    zonekit_root.mkdir()
+
+    sources = discover_s2_catalog_sources(
+        str(save_path),
+        catalog_roots=(zonekit_root,),
+    )
+
+    assert sources[0].root == zonekit_root
+    assert sources[0].kind == "zonekit"
+
+
 def test_s2_format_uses_loose_workshop_catalog_when_official_tree_is_missing(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -259,6 +323,12 @@ def test_s2_format_uses_loose_workshop_catalog_when_official_tree_is_missing(
     workshop_item = library / "steamapps" / "workshop" / "content" / "1643320" / "123456"
     mod_root = workshop_item / "Stalker2" / "Mods" / "FixtureMod"
     _write_s2_resources(mod_root)
+    localization = mod_root / "Content" / "Localization" / "en"
+    localization.mkdir(parents=True)
+    (localization / "Items.json").write_text(
+        '{"UI_Item_Bandage": "Bandage"}\n',
+        encoding="utf-8",
+    )
     workshop_item.mkdir(parents=True, exist_ok=True)
 
     from editor import platforms
@@ -270,7 +340,9 @@ def test_s2_format_uses_loose_workshop_catalog_when_official_tree_is_missing(
 
     assert bundle is not None
     assert bundle.items.source_root == mod_root
-    assert bundle.items.resolve("Bandage") is not None
+    bandage = bundle.items.resolve("Bandage")
+    assert bandage is not None
+    assert bandage.display_name == "Bandage"
 
 
 def test_format_registry_points_at_s2_adapter() -> None:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export the Zone palette so the desktop and browser builds share one source.
+"""Export the shared palette so the desktop and browser builds share one source.
 
 `ui/theme.py` owns the colours.  The web build reads them from the generated
 `web/theme.css`; regenerating is cheap and `--check` keeps the two from drifting
@@ -23,7 +23,7 @@ HEADER = (
 
 
 def read_palette() -> dict[str, str]:
-    """Read COLORS out of ui/theme.py without importing Qt.
+    """Read the canonical palette out of ui/theme.py without importing Qt.
 
     `import ui.theme` pulls in the whole Qt package; a colour export has no
     business requiring PySide6 to be installed.
@@ -34,12 +34,16 @@ def read_palette() -> dict[str, str]:
         if not isinstance(node, ast.Assign):
             continue
         targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        if "COLORS" in targets:
+        if "PALETTE" not in targets:
+            continue
+        try:
             value = ast.literal_eval(node.value)
-            if not isinstance(value, dict):
-                raise SystemExit("ui/theme.py: COLORS is not a dict literal")
-            return {str(k): str(v) for k, v in value.items()}
-    raise SystemExit("ui/theme.py: COLORS assignment not found")
+        except (ValueError, TypeError) as exc:
+            raise SystemExit("ui/theme.py: PALETTE must be a dict literal") from exc
+        if not isinstance(value, dict):
+            raise SystemExit("ui/theme.py: PALETTE is not a dict literal")
+        return {str(k): str(v) for k, v in value.items()}
+    raise SystemExit("ui/theme.py: PALETTE assignment not found")
 
 
 def render() -> str:

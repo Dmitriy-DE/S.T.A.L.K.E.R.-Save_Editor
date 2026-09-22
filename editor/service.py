@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from save_format import SaveInfo
@@ -71,6 +71,7 @@ class EditorService:
         with_inventory: bool = True,
         source_name: str | None = None,
         catalog_source: str | Path | None = None,
+        catalog_roots: Sequence[Path] = (),
     ) -> FormatInspection:
         """Return parser data together with the selected format metadata."""
 
@@ -83,10 +84,14 @@ class EditorService:
         catalog_loader = getattr(format_, "catalog_for_source", None)
         if callable(catalog_loader):
             selected_source = catalog_source if catalog_source is not None else source_name
-            catalog = catalog_loader(str(selected_source) if selected_source is not None else None)
+            catalog = catalog_loader(
+                str(selected_source) if selected_source is not None else None,
+                catalog_roots=tuple(catalog_roots),
+            )
             if callable(game_catalog_loader):
                 game_catalog = game_catalog_loader(
-                    str(selected_source) if selected_source is not None else None
+                    str(selected_source) if selected_source is not None else None,
+                    catalog_roots=tuple(catalog_roots),
                 )
         return FormatInspection(
             format_id=format_.id,
@@ -106,6 +111,7 @@ class EditorService:
         with_inventory: bool = True,
         source_name: str | None = None,
         catalog_source: str | Path | None = None,
+        catalog_roots: Sequence[Path] = (),
     ) -> SaveInfo:
         """Return the read-only save snapshot used by every front end."""
 
@@ -116,6 +122,7 @@ class EditorService:
             with_inventory=with_inventory,
             source_name=source_name,
             catalog_source=catalog_source,
+            catalog_roots=catalog_roots,
         ).info
 
     def prepare(

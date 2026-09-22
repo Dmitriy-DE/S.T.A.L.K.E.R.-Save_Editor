@@ -1,4 +1,4 @@
-"""Read-only X-Ray atlas access for the desktop inventory view.
+"""Read-only game-resource atlas access for the desktop inventory view.
 
 The editor never bundles GSC or mod textures.  When an official installation
 has an unpacked ``gamedata`` tree, this module reads its own icon atlas and
@@ -21,6 +21,7 @@ from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
 _ICON_CELL_SIZE = 50
+_LOOSE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds")
 
 
 def _bundled_icon_dir() -> Path:
@@ -40,8 +41,13 @@ _CATEGORY_COLORS = {
     "ammo": QColor("#e5c36a"),
     "weapon": QColor("#d99b62"),
     "outfit": QColor("#aeb9a8"),
+    "armor": QColor("#aeb9a8"),
+    "helmet": QColor("#aeb9a8"),
+    "module": QColor("#c5a56a"),
+    "device": QColor("#83b8b0"),
     "artifact": QColor("#7fc0b5"),
     "consumable": QColor("#d58b73"),
+    "quest": QColor("#b9a77a"),
     "grenade": QColor("#b5ad78"),
     "item": QColor("#c0b9a6"),
 }
@@ -203,7 +209,7 @@ def decode_dds(data: bytes) -> QImage:
 
 
 def category_icon(category: str | None, size: int = 28) -> QIcon:
-    """Draw a small repository-owned fallback glyph in the Zone palette."""
+    """Draw a small repository-owned fallback glyph for an unknown icon."""
 
     canvas = QPixmap(size, size)
     canvas.fill(Qt.GlobalColor.transparent)
@@ -223,7 +229,7 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
         painter.drawRect(rect)
         painter.drawLine(margin + 3, margin + 5, size - margin - 3, margin + 5)
         painter.drawLine(margin + 3, size // 2, size - margin - 3, size // 2)
-    elif normalized == "outfit":
+    elif normalized in {"outfit", "armor"}:
         path = QPainterPath()
         path.moveTo(size // 2, margin)
         path.lineTo(size - margin, margin + 7)
@@ -232,6 +238,16 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
         path.lineTo(margin, margin + 7)
         path.closeSubpath()
         painter.drawPath(path)
+    elif normalized == "helmet":
+        painter.drawArc(rect, 0, 180 * 16)
+        painter.drawLine(margin + 2, size // 2, size - margin - 2, size // 2)
+    elif normalized == "module":
+        painter.drawRect(rect)
+        painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+        painter.drawLine(size // 2, margin + 4, size // 2, size - margin - 4)
+    elif normalized == "device":
+        painter.drawRoundedRect(rect, size / 5, size / 5)
+        painter.drawEllipse(QRect(size // 2 - 3, size // 2 - 3, 6, 6))
     elif normalized == "artifact":
         painter.drawEllipse(rect)
         painter.drawLine(size // 2, margin + 3, size // 2, size - margin - 3)
@@ -239,6 +255,11 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
     elif normalized == "consumable":
         painter.drawRoundedRect(rect, size / 4, size / 4)
         painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+    elif normalized == "quest":
+        painter.drawRoundedRect(rect, 2, 2)
+        painter.drawLine(margin + 4, size // 2 - 4, size - margin - 4, size // 2 - 4)
+        painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+        painter.drawLine(margin + 4, size // 2 + 4, size - margin - 4, size // 2 + 4)
     elif normalized == "grenade":
         painter.drawEllipse(rect)
         painter.drawLine(size // 2, margin, size // 2 + 4, margin - 2)
@@ -247,6 +268,37 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
         painter.drawPoint(size // 2, size // 2)
     painter.end()
     return QIcon(canvas)
+
+
+def _unreal_texture_variants(texture: str) -> tuple[Path, ...]:
+    """Turn an Unreal object reference into safe loose-file candidates."""
+
+    value = texture.strip().replace("\\", "/")
+    if "'" in value:
+        quoted = value.split("'", 1)
+        if len(quoted) == 2 and "'" in quoted[1]:
+            value = quoted[1].rsplit("'", 1)[0]
+    value = value.strip("\"'")
+    for prefix in ("/Game/", "/Engine/", "Game/", "Engine/", "Content/"):
+        if value.casefold().startswith(prefix.casefold()):
+            value = value[len(prefix) :]
+            break
+    value = value.lstrip("/")
+    if not value:
+        return ()
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        return ()
+    variants: list[Path] = [relative]
+    suffix = relative.suffix.casefold()
+    if suffix not in _LOOSE_IMAGE_SUFFIXES:
+        # Unreal references usually end in ``.ObjectName``. Remove that object
+        # suffix before trying exported PNG/DDS files with the same asset path.
+        if suffix:
+            relative = relative.with_suffix("")
+        variants = [relative]
+        variants.extend(relative.with_suffix(extension) for extension in _LOOSE_IMAGE_SUFFIXES)
+    return tuple(dict.fromkeys(variants))
 
 
 class XRayIconResolver:
@@ -332,9 +384,13 @@ class XRayIconResolver:
     ) -> QIcon:
         """Resolve an exact key, then one unique catalog display name."""
 
-        definition = self.catalog.resolve(key) if self.catalog is not None else None
+        definition = (
+            self.catalog.resolve_key_or_display_name(key)
+            if self.catalog is not None
+            else None
+        )
         if definition is None and self.catalog is not None and display_name:
-            definition = self.catalog.resolve_display_name(display_name)
+            definition = self.catalog.resolve_key_or_display_name(display_name)
         if definition is not None:
             return self.icon_for(definition, size=size)
         for candidate in (key, display_name or ""):
@@ -363,7 +419,7 @@ class XRayIconResolver:
 
         if self.catalog is None:
             return None
-        definition = self.catalog.resolve(key)
+        definition = self.catalog.resolve_key_or_display_name(key)
         if definition is None:
             return None
         return self._atlas_icon(definition, size=size)
@@ -436,28 +492,12 @@ class XRayIconResolver:
         texture = (definition.icon_texture or "").strip().replace("\\", "/")
         if source_root is None or not texture:
             return None
-        relative = Path(texture.lstrip("/"))
-        if relative.is_absolute() or ".." in relative.parts:
+        variants = _unreal_texture_variants(texture)
+        if not variants:
             return None
-        image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
-        if relative.suffix and relative.suffix.casefold() not in image_suffixes:
-            return None
-        cache_key = (source_root, relative.as_posix().casefold(), size)
+        cache_key = (source_root, texture.casefold(), size)
         if cache_key in self._direct_image_cache:
             return self._direct_image_cache[cache_key]
-        relative_variants = [relative]
-        parts = relative.parts
-        if parts and parts[0].casefold() == "game":
-            relative_variants.append(Path(*parts[1:]))
-        if parts and parts[0].casefold() == "gamelite":
-            relative_variants.append(Path(*parts[1:]))
-        file_variants: list[Path] = []
-        for variant in relative_variants:
-            if not variant.parts:
-                continue
-            file_variants.append(variant)
-            if not variant.suffix:
-                file_variants.extend(variant.with_suffix(suffix) for suffix in sorted(image_suffixes))
         candidates = tuple(
             root / variant
             for root in (
@@ -466,13 +506,20 @@ class XRayIconResolver:
                 source_root / "Content" / "GameLite",
                 source_root / "Content" / "GameLite" / "GameData",
             )
-            for variant in file_variants
+            for variant in variants
         )
         icon: QIcon | None = None
         for path in candidates:
             if not path.is_file():
                 continue
-            image = QImage(str(path))
+            try:
+                image = (
+                    decode_dds(path.read_bytes())
+                    if path.suffix.casefold() == ".dds"
+                    else QImage(str(path))
+                )
+            except (OSError, ValueError, struct.error):
+                continue
             if image.isNull():
                 continue
             icon = QIcon(

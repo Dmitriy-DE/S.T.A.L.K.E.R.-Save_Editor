@@ -858,6 +858,29 @@ class SteamNativeSubprocessWorker:
             )
         )
 
+    @staticmethod
+    def _native_read_result(response: dict[str, Any], data: bytes | None) -> bytes:
+        if response.get("type") != "Ok" or data is None:
+            raise SteamCloudError(
+                f"Steam native child вернул неожиданный read response: {response}"
+            )
+        expected_size = response.get("size")
+        if expected_size is not None and int(expected_size) != len(data):
+            raise SteamCloudError(
+                f"Steam native child read size mismatch: {len(data)} != {expected_size}"
+            )
+        return data
+
+    def readback_file(self, filename: str) -> bytes:
+        """Read post-write bytes from the writer backend, never stale web data."""
+
+        if self._helper is not None:
+            return self._helper.read_file(filename)
+        if self._native_writer_ready:
+            response, data = self._run_native("read", name=filename, read_output=True)
+            return self._native_read_result(response, data)
+        return self.read_file(filename)
+
     def write_file(self, filename: str, data: bytes) -> None:
         capability = self.write_capability
         if not capability.writable:
@@ -876,28 +899,49 @@ class SteamNativeSubprocessWorker:
         # The child pumps callbacks after FileWrite and shuts down immediately.
 
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
-        if self._cdp is not None:
-            return self._cdp.wait_persisted(filename, expected_size, timeout=timeout)
-        cached = self._cached_files.get(_cloud_key(filename))
-        if cached is not None and cached.local_path is not None:
-            try:
-                return cached.local_path.stat().st_size == expected_size
-            except OSError:
-                return False
         if self._helper is not None:
             return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
+        if not self._native_writer_ready:
+            if self._cdp is not None:
+                return self._cdp.wait_persisted(filename, expected_size, timeout=timeout)
+            cached = self._cached_files.get(_cloud_key(filename))
+            if cached is not None and cached.local_path is not None:
+                try:
+                    return (
+                        cached.local_path.stat().st_size == expected_size
+                        and cached.is_persisted
+                    )
+                except OSError:
+                    return False
+
+        def matches(files: list[CloudFile]) -> bool:
+            return any(
+                item.name == filename
+                and item.size == expected_size
+                and item.is_persisted
+                for item in files
+            )
+
         deadline = time.monotonic() + timeout
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return False
-            if any(
-                item.name == filename
-                and item.size == expected_size
-                and item.is_persisted
-                for item in self._native_list(timeout=remaining)
-            ):
-                return True
+            try:
+                if matches(self._native_list(timeout=remaining)):
+                    return True
+            except SteamCloudError as exc:
+                self.log(f"Steam native persistence readback недоступен: {exc}")
+
+            # Web/cache may be the only listing of a newly-created file. Use an
+            # exact refreshed name+size match, never a stale generic row.
+            if self._cdp is not None:
+                try:
+                    self._configure_backend(self._cdp)
+                    if matches(list(self._cdp.list_files())):
+                        return True
+                except Exception as exc:
+                    self.log(f"Steam Cloud web persistence check недоступен: {exc}")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return False

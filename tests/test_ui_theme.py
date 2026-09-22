@@ -12,8 +12,9 @@ from PySide6.QtWidgets import QApplication
 
 from editor.service import EditorService
 from save_format import inspect_save
+from ui import theme
 from ui.main_window import LocalSnapshot, MainWindow
-from ui.theme import COLORS, apply_theme
+from ui.theme import COLORS, apply_theme, stylesheet
 
 
 def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None:
@@ -21,6 +22,8 @@ def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None
     qtbot.addWidget(window)
 
     assert window.app_title.text() == "S.T.A.L.K.E.R. Save Editor"
+    assert window.ui_hint.text() == "S2 / SAVE WORKBENCH"
+    assert window.launcher_button.text() == "← БИБЛИОТЕКА"
     assert window.version_badge.text().startswith("v")
     assert window.file_source_badge.text() == "ФАЙЛ НЕ ВЫБРАН"
     assert window.meta_filename.text() == "Сейв не выбран"
@@ -100,3 +103,14 @@ def test_apply_theme_does_not_reconfigure_the_application_twice() -> None:
     assert app.styles == ["Fusion"]
     assert len(app.palettes) == 1
     assert len(app.stylesheets) == 1
+
+
+def test_theme_exposes_semantic_tokens_for_read_only_focus_and_feedback() -> None:
+    css = stylesheet()
+
+    assert {"sm", "md", "lg"} <= theme.SPACING.keys()
+    assert {"body", "mono", "heading"} <= theme.TYPOGRAPHY.keys()
+    assert {"text_read_only", "warning", "error", "border_focus"} <= COLORS.keys()
+    assert 'QLabel[readOnly="true"]' in css
+    assert "QPushButton:focus" in css
+    assert "QLabel#cloudErrorLabel" in css

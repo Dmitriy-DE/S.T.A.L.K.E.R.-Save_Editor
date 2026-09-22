@@ -24,7 +24,11 @@ def test_profiles_cover_all_official_apps_without_sidecars() -> None:
 
     s2 = steam_cloud_profile_for_release("stalker2")
     assert s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/slot.sav")
+    assert not s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/slot-edited.sav")
+    assert not s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/slot.EDITED.SAV")
     assert not s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/slot.dds")
+    assert not s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/nested/slot.sav")
+    assert not s2.accepts("Stalker2/Saved/STEAM/SaveGames/Data/../slot.sav")
 
     ee = steam_cloud_profile_for_release("stalker-cs-ee")
     assert ee.accepts("STALKER Clear Sky - EE/STEAM/savedgames/slot.scop")

@@ -1,5 +1,35 @@
 # Проверка и выпуск
 
+## v0.5.21 candidate — S2 catalog/UI and Cloud target correction — 2026-09-22
+
+Рабочая ветка после v0.5.20 исправляет ручной сценарий пользователя без
+подмены результата за публичный релиз:
+
+- S2 больше не показывает неподтверждённый X-Ray faction editor;
+- отдельный каталог Zone Kit/Workshop подключается через Settings или
+  автопоиск, показывает локализованные CFG names и loose icons, но остаётся
+  read-only и не разрешает добавление предметов по неподтверждённому SID;
+- Cloud upload сохраняет исходный Steam `Data/<slot>.sav` locator и отклоняет
+  `-edited.sav`/`.edited.sav` artifacts;
+- изменённый compact S2 payload повторно кодируется обязательным bundled
+  Kraken encoder и проверяется CRC, decompression и round-trip до `WriteFile`;
+- при отсутствии encoder операция сохранения завершается с ошибкой и не создаёт
+  раздутый stored-block fallback вместо compact сейва;
+- rotating diagnostics уже отправляются через существующий R2 endpoint, но
+  этот проход не публикует новый tag и не выполняет live write в Steam.
+- S2 weapon condition использует общий структурный codec для всех принятых
+  actor-owned weapon rows с точным anchor; названия Kharod/Lavina/Skif в
+  evidence — наблюдаемые примеры, а не ограничительный список.
+
+Local source gate: `663 passed`, `make PYTHON=.venv/bin/python check` and the
+9 JavaScript tests pass. The dirty-tree Linux candidate also produced separate
+portable `.tar.gz` and Debian `.deb` files; packaged diagnostic/encoder smoke
+passed. Its manifest is explicitly marked `source_dirty=true`, so these files
+are local smoke artifacts, not a public release. Windows installer/portable
+must still be built and smoked on the Windows runner. Package/release
+publication is a separate gate and must use the exact new commit and freshly
+read-back assets.
+
 ## Diagnostics infrastructure
 
 `POST /diagnostics` принимает только bounded `application/gzip` payloads. The

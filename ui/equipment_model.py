@@ -18,6 +18,12 @@ _CATEGORY_LABELS = {
     "weapon": "Оружие",
     "armor": "Броня",
     "helmet": "Шлем",
+    "module": "Модуль",
+    "device": "Устройство",
+    "consumable": "Расходник",
+    "ammo": "Боеприпасы",
+    "artifact": "Артефакт",
+    "quest": "Квестовый предмет",
     "other": "Другое",
 }
 _LOCATION_LABELS = {
@@ -25,6 +31,11 @@ _LOCATION_LABELS = {
     "inventory": "Рюкзак",
     "belt": "Пояс",
     "unknown": "Не определено",
+}
+_OBSERVATION_SOURCE_LABELS = {
+    "actor_inventory": "actor inventory",
+    "grid": "grid",
+    "equipped": "equipped-owned",
 }
 _MATURITY_LABELS = {
     "unsupported": "Недоступно",
@@ -102,6 +113,12 @@ class EquipmentTableModel(QAbstractTableModel):
             "weapon",
             "armor",
             "helmet",
+            "module",
+            "device",
+            "consumable",
+            "ammo",
+            "artifact",
+            "quest",
             "equipped",
             "inventory",
             "damaged",
@@ -156,7 +173,17 @@ class EquipmentTableModel(QAbstractTableModel):
         return None
 
     def _matches(self, item: EquipmentItem) -> bool:
-        if self._filter in {"weapon", "armor", "helmet"} and item.category != self._filter:
+        if self._filter in {
+            "weapon",
+            "armor",
+            "helmet",
+            "module",
+            "device",
+            "consumable",
+            "ammo",
+            "artifact",
+            "quest",
+        } and item.category != self._filter:
             return False
         if self._filter == "equipped" and item.location != "equipped":
             return False
@@ -176,6 +203,8 @@ class EquipmentTableModel(QAbstractTableModel):
                 item.location,
                 item.durability.maturity,
                 item.durability.reason or "",
+                " ".join(item.modules or ()),
+                " ".join(item.upgrades or ()),
                 item.handle_hex,
             )
         ).casefold()
@@ -189,7 +218,10 @@ class EquipmentTableModel(QAbstractTableModel):
             self.LOCATION_COLUMN: item.location,
             self.CONDITION_COLUMN: (condition is None, condition or 0.0),
             self.SUPPORT_COLUMN: item.durability.maturity,
-            self.UPGRADES_COLUMN: tuple(item.upgrades or ()),
+            self.UPGRADES_COLUMN: (
+                tuple(item.modules or ()),
+                tuple(item.upgrades or ()),
+            ),
             self.HANDLE_COLUMN: item.handle,
         }
         return values[self._sort_column], item.handle
@@ -209,9 +241,24 @@ class EquipmentTableModel(QAbstractTableModel):
         if column == self.SUPPORT_COLUMN:
             return _MATURITY_LABELS[item.durability.maturity]
         if column == self.UPGRADES_COLUMN:
-            if item.upgrades is None:
+            sections: list[str] = []
+            if item.modules is not None:
+                module_text = ", ".join(item.modules) or "нет"
+                if item.module_states and any(
+                    state == "unknown" for _key, state in item.module_states
+                ):
+                    module_text += " (состояние не подтверждено)"
+                sections.append("Модули: " + module_text)
+            if item.upgrades is not None:
+                upgrade_text = ", ".join(item.upgrades) or "нет"
+                if item.upgrade_states and any(
+                    state == "unknown" for _key, state in item.upgrade_states
+                ):
+                    upgrade_text += " (состояние не подтверждено)"
+                sections.append("Улучшения: " + upgrade_text)
+            if not sections:
                 return "—"
-            return ", ".join(item.upgrades) or "нет"
+            return "; ".join(sections)
         if column == self.HANDLE_COLUMN:
             return item.handle_hex
         return ""
@@ -221,9 +268,24 @@ class EquipmentTableModel(QAbstractTableModel):
             return item.durability.reason or _MATURITY_LABELS[item.durability.maturity]
         if column == self.NAME_COLUMN:
             family = item.serializer_family or "не определено"
-            return f"Type-key: {item.type_key}\nSerializer family: {family}"
-        if column == self.UPGRADES_COLUMN and item.upgrades is None:
-            return "Улучшения для этого предмета не прочитаны"
+            source = _OBSERVATION_SOURCE_LABELS.get(
+                item.observation_source,
+                item.observation_source,
+            )
+            device = (
+                f"\nУстройство: {item.device_subtype}"
+                if item.device_subtype is not None
+                else ""
+            )
+            return (
+                f"Type-key: {item.type_key}\n"
+                f"Serializer family: {family}\n"
+                f"Источник: {source}{device}"
+            )
+        if column == self.UPGRADES_COLUMN:
+            if item.modules is None and item.upgrades is None:
+                return "Модули и улучшения для этого предмета не прочитаны"
+            return self._display(item, column)
         if column == self.CONDITION_COLUMN and item.condition is None:
             return item.durability.reason or "Прочность отсутствует"
         return self._display(item, column)
