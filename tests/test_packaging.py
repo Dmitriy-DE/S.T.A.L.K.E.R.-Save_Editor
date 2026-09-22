@@ -104,6 +104,14 @@ def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) 
     assert "source/pyooz-0.0.8" in script
 
 
+def test_encoder_binding_imports_standard_math_for_msvc() -> None:
+    binding = (ROOT / "third_party" / "pyooz" / "encoder_bindings.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    assert "#include <cmath>" in binding
+
+
 def test_scan_package_tree_rejects_private_inputs(tmp_path: Path) -> None:
     safe = tmp_path / "safe.txt"
     safe.write_text("ok", encoding="utf-8")
