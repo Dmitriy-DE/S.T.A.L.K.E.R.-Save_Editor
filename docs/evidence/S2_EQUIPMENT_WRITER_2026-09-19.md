@@ -43,18 +43,29 @@ display-name/icon metadata, когда установленная игра пр�
 запрошенное значение и отклоняет transaction при расхождении. Preview не
 меняет исходные bytes, а capability помечена как experimental.
 
+## Текущее состояние после corpus-проверки 2026-09-22
+
+В `editor/s2_item_state.py` добавлен отдельный weapon codec. Он принимает
+только kind `0` с тем же handle, локальным record boundary, компактным
+upgrade-vector из известных name-table ключей и подтверждённым direct-module
+run; случайный `f32`, модуль, ПНВ или бинокль anchor-ом не становятся.
+Condition оружия проходит тот же immutable `EditPlan`/repack/round-trip guard,
+что и броня. Текущий статус — `experimental`: game load/re-save ещё не
+проверен. Наблюдаемые Kharod/Lavina/Skif anchors и модульные границы описаны
+в [S2 weapon/module corpus](S2_WEAPON_MODULE_CORPUS_2026-09-22.md).
+
 ## Что намеренно остаётся read-only
 
 | Возможность | Граница | Что нужно до включения |
 |---|---|---|
-| Condition оружия | В текущем corpus нет принятого differential anchor для weapon writer | Контролируемая пара «один weapon повреждён/починен» с однозначным handle, полем и game read-back |
+| Condition оружия | Source-backed read/write только для подтверждённой shape; game acceptance не подтверждён | Контролируемая пара «один weapon повреждён/починен» с однозначным handle, полем и game read-back для расширения охвата |
 | Upgrades экипировки | Наблюдаемые upgrade-key arrays не разделены надёжно на installed/current и available/applicable | Пара с ровно одной установленной игрой upgrade и подтверждённым сериализатором всех affected references |
 | Выдать предмет из каталога | Official CFG/SID описывает prototype metadata, но не является доказанным constructor для `.sav` object registry | Пара с ровно одним pickup, allocator/handle, owner/grid/stack/reference edges и game read-back |
 
-Поэтому S2 capability открывает только экспериментальную condition-правку
-подтверждённой брони. `add_items`, S2 upgrades и неподтверждённая weapon
-condition остаются выключенными; неизвестные records не превращаются в
-предметы только из-за похожего имени или соседнего `f32`.
+Поэтому S2 capability открывает экспериментальную condition-правку
+подтверждённых оружия/брони. `add_items`, S2 upgrades и неподтверждённые
+device/module records остаются выключенными; неизвестные records не
+превращаются в предметы только из-за похожего имени или соседнего `f32`.
 
 ## Controlled-pair protocol
 

@@ -15,5 +15,8 @@
   --success: #7E8F3E;
   --text: #D8D2BE;
   --text-secondary: #8E8974;
-  --text-disabled: #BEB397;
+  --text-disabled: #AAA28E;
+  --text-read-only: #C2BBA8;
+  --warning-surface: #2C2516;
+  --error-surface: #2A1B1A;
 }

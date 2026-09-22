@@ -3,7 +3,8 @@
 ## Implemented surface
 
 The shared projection in `editor/equipment.py` separates the product category
-(`weapon`, `armor`, `helmet`, `other`) from the serializer family and exposes
+(`weapon`, `armor`, `helmet`, `module`, `device`, `consumable`, `ammo`,
+`artifact`, `quest`, `other`) from the serializer family and exposes
 `equipped`, `inventory`, `belt`, or `unknown` placement. Exact catalog definitions
 provide names and icon coordinates; an absent definition never creates a
 fabricated name or icon.
@@ -20,7 +21,7 @@ the immutable `EditPlan.durability` path and reports every skipped item.
 | SoC Original | experimental X-Ray condition anchors | unsupported | experimental structural gates |
 | Clear Sky Original | experimental X-Ray condition anchors | experimental structural gate | experimental structural gates |
 | Call of Pripyat Original | experimental X-Ray condition anchors | experimental structural gate | experimental structural gates |
-| S.T.A.L.K.E.R. 2 | experimental for confirmed equipped armor; research/read-only otherwise | research/read-only | unsupported |
+| S.T.A.L.K.E.R. 2 | experimental for source-backed weapon/armor anchors; game acceptance pending | research/read-only | unsupported |
 | SoC Enhanced Edition | unsupported | unsupported | unsupported |
 | Clear Sky Enhanced Edition | unsupported | unsupported | unsupported |
 | Call of Pripyat Enhanced Edition | unsupported | unsupported | unsupported |
@@ -41,8 +42,8 @@ SHA-256, release id, observed categories/locations, condition rows, and
 concrete blockers. It does not write save bytes. At least three controlled
 same-handle weapon/armor/helmet states plus A/B game diffs and game
 load/re-save evidence is still required before the narrow S2 armor durability
-writer can be promoted beyond `experimental`; weapon, helmet, grid, and
-unknown rows remain `research`/read-only.
+writer can be promoted beyond `experimental`; devices, modules, unresolved
+rows and unproven upgrade vectors remain read-only.
 
 Example:
 
@@ -53,7 +54,7 @@ python3 tools/research_equipment.py --json \
 
 The report is observational. A scalar candidate, catalog prototype SID, or
 structural binary round-trip does not broaden S2 writing beyond the exact
-equipped-armor anchor.
+source-backed weapon/armor anchors.
 
 ## Verification
 

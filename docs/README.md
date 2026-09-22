@@ -3,6 +3,7 @@
 ## Актуальные документы
 
 - [STATUS](STATUS.md): проверенный baseline, ограничения и привязка к задачам.
+- [Canonical execution plan](superpowers/plans/2026-09-22-equipment-cloud-release-consolidated.md): единый план оборудования, S2 evidence, Steam Cloud, UI, portable-релизов и финальных gates; старые планы ниже остаются справочными подзадачами.
 - [Спецификация](specs/CROSS_PLATFORM_EDITOR.md): продукт, платформы, архитектура, UI.
 - [ROADMAP](plans/ROADMAP.md): очередность и release gates.
 - [Задачи](tasks/INDEX.md): отдельный файл и GitHub issue на каждый результат.
@@ -12,6 +13,8 @@
 - [SAVE_FORMAT](SAVE_FORMAT.md): известные поля; применимость ограничена контрольными сейвами.
 - [EXPERIMENTAL](EXPERIMENTAL.md): смысл операций, не доказанный игровой результат.
 - [Evidence baseline](evidence/BASELINE_2026-09-13.md): текущая проверка.
+- [S2 weapon/module evidence](evidence/S2_WEAPON_MODULE_CORPUS_2026-09-22.md): контрольные Kharod/Lavina наблюдения, модули и границы D-12/ПНВ.
+- [Equipment support matrix](evidence/EQUIPMENT_SUPPORT_MATRIX_2026-09-22.md): release/edition-specific categories, devices and writable maturity.
 - [UI design evidence](evidence/UI_DESIGN_2026-09-13.md): разбор приложенных
   макетов, хэши входных архивов и проверка U07.
 

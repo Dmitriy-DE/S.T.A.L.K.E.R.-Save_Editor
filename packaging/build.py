@@ -259,6 +259,7 @@ def build_manifest(
         "runtime_policy": {
             "core": "Python standard library",
             "decoder": "bundled pyooz==0.0.8 or Linux vendor fallback",
+            "encoder": "bundled native ooz_encoder; required for changed compressed saves",
             "ui": "bundled PySide6==6.11.2",
             "steam_helper": "external executable; never bundled",
         },
@@ -566,7 +567,7 @@ def _debian_changelog(version: str, source_date_epoch: int) -> str:
 
   * Release the standalone desktop editor with protected save operations.
 
- -- S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>  {formatted_date}
+ -- S.T.A.L.K.E.R. Save Editor contributors <save-editor@users.noreply.github.com>  {formatted_date}
 """
 
 
@@ -705,12 +706,12 @@ Version: {_debian_version(version)}
 Section: utils
 Priority: optional
 Architecture: amd64
-Maintainer: S.T.A.L.K.E.R. 2 Save Editor contributors <save-editor@users.noreply.github.com>
+Maintainer: S.T.A.L.K.E.R. Save Editor contributors <save-editor@users.noreply.github.com>
 Homepage: https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor
 Installed-Size: {_installed_size_kib(stage)}
 Depends: libc6 (>= {libc_requirement()}), {', '.join(DEBIAN_RUNTIME_DEPENDENCIES)}
-Description: S.T.A.L.K.E.R. 2 save editor
- A local Qt editor for S.T.A.L.K.E.R. saves.
+Description: S.T.A.L.K.E.R. save editor
+ A local Qt editor for supported S.T.A.L.K.E.R. saves.
  Safe preview, backup, verification and explicit Steam Cloud workflows.
 """,
         encoding="utf-8",

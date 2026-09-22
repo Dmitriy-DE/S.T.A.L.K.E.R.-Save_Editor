@@ -22,6 +22,10 @@ def _item(
     condition_editable: bool = False,
     placement_type: str | None = None,
     display_name: str | None = None,
+    modules: tuple[str, ...] | None = None,
+    upgrades: tuple[str, ...] | None = None,
+    observation_source: str = "actor_inventory",
+    kind_code: int = 1,
 ) -> InventoryItem:
     return InventoryItem(
         handle=0x1000 + len(type_key),
@@ -33,7 +37,7 @@ def _item(
         count=1,
         total_weight=None,
         unit_weight=None,
-        kind_code=1,
+        kind_code=kind_code,
         category=category,
         record_offset=0,
         record_end_guess=64,
@@ -45,6 +49,9 @@ def _item(
         condition_editable=condition_editable,
         storage=storage,  # type: ignore[arg-type]
         placement_type=placement_type,  # type: ignore[arg-type]
+        modules=modules,
+        upgrades=upgrades,
+        observation_source=observation_source,  # type: ignore[arg-type]
     )
 
 
@@ -144,9 +151,174 @@ def test_s2_equipment_uses_save_names_instead_of_opaque_kind_codes() -> None:
         release_id="stalker2",
     )
 
-    assert [row.category for row in rows] == ["armor", "helmet", "other", "other"]
+    assert [row.category for row in rows] == ["armor", "helmet", "other", "module"]
     assert rows[2].durability_editable is False
     assert rows[2].durability.maturity == "research"
+    assert rows[3].durability_editable is False
+    assert rows[3].condition is None
+
+
+def test_s2_armor_perk_rows_are_modules_even_when_kind_code_looks_like_weapon() -> None:
+    rows = equipment_items(
+        (
+            _item(
+                "05d000",
+                "Разное",
+                storage="equipped",
+                display_name="Exoskeleton_Monolith_Armor_rad_container_Left_2_1",
+                kind_code=0,
+            ),
+            _item(
+                "05ce00",
+                "Разное",
+                storage="equipped",
+                display_name="Exoskeleton_Monolith_Armor_protectionElectrical_Left_2_2",
+                kind_code=0,
+            ),
+        ),
+        release_id="stalker2",
+    )
+
+    assert [row.category for row in rows] == ["module", "module"]
+    assert all(row.durability_editable is False for row in rows)
+
+
+def test_s2_devices_and_weapon_modules_keep_separate_product_semantics() -> None:
+    rows = equipment_items(
+        (
+            _item(
+                "057601",
+                "Устройство",
+                storage="inventory",
+                display_name="NVG_NPC_Gen3",
+            ),
+            _item(
+                "041a01",
+                "Оружие",
+                storage="equipped",
+                condition=0.92,
+                condition_editable=True,
+                display_name="GunKharod_ST",
+                modules=("GunKharod_MagDefault", "HP_Laser_1"),
+                upgrades=("GunKharod_Upgrade_Stock_1",),
+                kind_code=0,
+            ),
+        ),
+        release_id="stalker2",
+    )
+
+    assert [row.category for row in rows] == ["device", "weapon"]
+    assert rows[0].condition is None
+    assert rows[0].durability_editable is False
+    assert rows[1].modules == ("GunKharod_MagDefault", "HP_Laser_1")
+    assert rows[1].upgrades == ("GunKharod_Upgrade_Stock_1",)
+    assert rows[1].durability_editable is True
+
+
+def test_shared_projection_keeps_full_category_and_device_state_vocabulary() -> None:
+    rows = equipment_items(
+        (
+            _item(
+                "ammo_9x39",
+                "Боеприпасы",
+                storage="inventory",
+                display_name="Ammo_9x39",
+            ),
+            _item(
+                "artifact_blood",
+                "Артефакт",
+                storage="inventory",
+                display_name="Artifact_Blood",
+            ),
+            _item(
+                "quest_key",
+                "Квестовый предмет",
+                storage="inventory",
+                display_name="Quest_Key",
+            ),
+            _item(
+                "057601",
+                "Устройство",
+                storage="inventory",
+                display_name="Binoculars_NPC",
+            ),
+        ),
+        release_id="stalker2",
+    )
+
+    assert [row.category for row in rows] == ["ammo", "artifact", "quest", "device"]
+    assert rows[3].device_subtype == "binocular"
+    assert rows[3].provenance == "owned"
+    assert rows[3].condition is None
+    assert rows[3].durability_editable is False
+    assert rows[3].as_dict()["device_subtype"] == "binocular"
+
+
+def test_localized_s2_device_labels_keep_their_subtype() -> None:
+    row = equipment_items(
+        (_item("057601", "Устройство", display_name="ПНВ (3-е поколение)"),),
+        release_id="stalker2",
+    )[0]
+
+    assert row.category == "device"
+    assert row.device_subtype == "nvg"
+    assert row.durability_editable is False
+
+
+def test_projection_preserves_parser_observation_source_for_ui_diagnostics() -> None:
+    rows = equipment_items(
+        (
+            _item(
+                "057601",
+                "Устройство",
+                storage="equipped",
+                display_name="NVG_NPC_Gen3",
+                observation_source="equipped",
+            ),
+            _item(
+                "ammo_9x39",
+                "Боеприпасы",
+                storage="inventory",
+                display_name="Ammo_9x39",
+                observation_source="grid",
+            ),
+        ),
+        release_id="stalker2",
+    )
+
+    assert [row.observation_source for row in rows] == ["equipped", "grid"]
+    assert rows[0].as_dict()["observation_source"] == "equipped"
+    assert rows[1].as_dict()["observation_source"] == "grid"
+
+
+def test_observed_s2_modules_and_upgrades_are_explicitly_unclassified() -> None:
+    row = equipment_items(
+        (
+            _item(
+                "041a01",
+                "Оружие",
+                storage="equipped",
+                condition=0.92,
+                condition_editable=True,
+                display_name="GunKharod_ST",
+                modules=("GunKharod_MagDefault", "HP_Laser_1"),
+                upgrades=("GunKharod_Upgrade_Stock_1",),
+                kind_code=0,
+            ),
+        ),
+        release_id="stalker2",
+    )[0]
+
+    assert row.module_states == (
+        ("GunKharod_MagDefault", "unknown"),
+        ("HP_Laser_1", "unknown"),
+    )
+    assert row.upgrade_states == (("GunKharod_Upgrade_Stock_1", "unknown"),)
+    assert row.upgrades_editable is False
+    assert row.as_dict()["module_states"] == [
+        {"key": "GunKharod_MagDefault", "state": "unknown"},
+        {"key": "HP_Laser_1", "state": "unknown"},
+    ]
 
 
 
@@ -198,6 +370,19 @@ def test_xray_helmet_keeps_outfit_serializer_family() -> None:
     assert row.serializer_family == "outfit"
     assert row.condition == 0.25
     assert row.durability_editable is True
+
+
+def test_xray_devices_have_a_category_but_never_a_condition_editor() -> None:
+    parsed = parse_xray(
+        _condition_fixture(version=128, outer=6, name="device_pda"),
+        COP_FORMAT,
+    )
+    row = equipment_items(parsed.inventory, release_id="stalker-cop")[0]
+
+    assert row.category == "device"
+    assert row.device_subtype == "other"
+    assert row.condition is None
+    assert row.durability_editable is False
 
 
 def test_separate_helmet_taxonomy_is_release_scoped() -> None:

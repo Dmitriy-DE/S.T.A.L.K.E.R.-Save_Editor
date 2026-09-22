@@ -17,13 +17,19 @@ from editor.kraken_blocks import (
     KrakenBlocksError,
     RebuildMode,
     compact_rebuild_stream,
+    parse_kraken_stream,
 )
 from editor.s2_item_state import (
     S2_EQUIPMENT_KIND_CODES,
+    S2ConditionAnchor,
+    S2WeaponConditionAnchor,
     has_s2_equipment_shape,
     patch_s2_armor_condition,
+    patch_s2_weapon_condition,
     read_s2_armor_condition,
+    read_s2_weapon_condition,
 )
+from editor.s2_presentation import s2_presentation_name
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -102,6 +108,7 @@ class InventoryItem:
     condition: float | None = None
     condition_editable: bool = False
     storage: Literal["equipped", "inventory"] | None = None
+    modules: tuple[str, ...] | None = None
     upgrades: tuple[str, ...] | None = None
     upgrades_editable: bool = False
     placement_type: Literal["slot", "belt", "ruck"] | None = None
@@ -110,6 +117,11 @@ class InventoryItem:
     placement_editable: bool = False
     remove_editable: bool = False
     remove_reason: str | None = None
+    # Name-table/catalog records never become InventoryItem rows. This
+    # provenance identifies which owned storage observation produced a row.
+    observation_source: Literal["actor_inventory", "grid", "equipped"] = (
+        "actor_inventory"
+    )
 
     @property
     def handle_hex(self) -> str:
@@ -266,6 +278,12 @@ def _s2_category_name(kind: int, display_name: str | None) -> str:
     """Use save-local names instead of treating a serialization kind as class."""
 
     normalized = (display_name or "").strip().casefold()
+    if normalized.startswith(
+        ("nvg_", "binocular", "binoculars", "пнв", "бинокль", "бинокл")
+    ):
+        return "Устройство"
+    if "_upgrade_" in normalized or "_attachment_" in normalized:
+        return "Модуль/улучшение"
     if _s2_armor_name(display_name) or normalized.endswith("_helmet"):
         return "Броня/экипировка"
     if "_armor_" in normalized or "_helmet_" in normalized:
@@ -529,7 +547,7 @@ def _s2_display_name(
     index = type_key[1] | (type_key[2] << 8)
     if not (0 <= index < len(name_table)):
         return None
-    return name_table[index] or None
+    return s2_presentation_name(name_table[index])
 
 
 def _inventory_details(
@@ -585,6 +603,24 @@ def _inventory_details(
         # table is present; neither field is claimed to be a public SID/hash.
         type_key = raw[rec_off + 8 : rec_off + 11].hex()
         display_name = _s2_display_name(name_table, raw[rec_off + 8 : rec_off + 11])
+        condition = None
+        condition_editable = False
+        modules = None
+        upgrades = None
+        if kind == 0 and name_table is not None:
+            weapon_anchor = read_s2_weapon_condition(
+                raw,
+                handle=handle,
+                record_offset=rec_off,
+                record_end=ends.get(handle),
+                kind_code=kind,
+                name_table=name_table,
+            )
+            if weapon_anchor is not None:
+                condition = weapon_anchor.value
+                condition_editable = True
+                modules = weapon_anchor.modules
+                upgrades = weapon_anchor.upgrades
         items.append(
             InventoryItem(
                 handle=handle,
@@ -604,6 +640,12 @@ def _inventory_details(
                 type_key=type_key,
                 editable_count=editable,
                 display_name=display_name,
+                condition=condition,
+                condition_editable=condition_editable,
+                storage="inventory",
+                observation_source="grid",
+                modules=modules,
+                upgrades=upgrades,
             )
         )
     # Equipped items are actor-owned but intentionally absent from the grid.
@@ -628,6 +670,8 @@ def _inventory_details(
         display_name = _s2_display_name(name_table, type_key_bytes)
         condition = None
         condition_editable = False
+        modules = None
+        upgrades = None
         if kind == 1:
             condition_anchor = read_s2_armor_condition(
                 raw,
@@ -642,6 +686,20 @@ def _inventory_details(
                 warnings.append(
                     f"Equipped handle 0x{handle:08X}: S2 armor condition не подтверждён"
                 )
+        elif kind == 0 and name_table is not None:
+            weapon_anchor = read_s2_weapon_condition(
+                raw,
+                handle=handle,
+                record_offset=rec_off,
+                record_end=ends.get(handle),
+                kind_code=kind,
+                name_table=name_table,
+            )
+            if weapon_anchor is not None:
+                condition = weapon_anchor.value
+                condition_editable = True
+                modules = weapon_anchor.modules
+                upgrades = weapon_anchor.upgrades
         items.append(
             InventoryItem(
                 handle=handle,
@@ -667,6 +725,9 @@ def _inventory_details(
                 condition=condition,
                 condition_editable=condition_editable,
                 storage="equipped",
+                observation_source="equipped",
+                modules=modules,
+                upgrades=upgrades,
             )
         )
     items.sort(key=lambda it: (it.y is None, it.y or 0, it.x is None, it.x or 0, it.handle))
@@ -802,8 +863,11 @@ def rebuild_compact(
 
     Source blocks remain the safe metadata decision.  Changed payloads are
     re-encoded as one valid Kraken stream when ``ooz_encoder`` is available;
-    source-only/browser environments retain the conservative stored ``CC06``
-    fallback and report that choice in the rebuild reason.
+    an edited compressed source is rejected when the encoder is unavailable.
+    Keeping that old source-only/browser fallback for a compressed save would
+    silently produce the 15--18 MB stored-block artifact that Steam/game
+    loading may reject.  Already-uncompressed fixtures remain supported without
+    an encoder.
     """
 
     stored, computed, ok = validate_crc(source_data)
@@ -831,7 +895,24 @@ def rebuild_compact(
         try:
             stream = codec_compress(after, level=5)
         except CodecError as exc:
-            reason = f"{reason}; native Kraken encoder unavailable: {exc}"
+            try:
+                source_layout = parse_kraken_stream(source_data[4:-4], len(before))
+            except KrakenBlocksError:
+                raise SaveError(
+                    "Сохранение изменено, но compact Kraken encoder недоступен, "
+                    "а исходный поток не удалось доказанно разобрать; "
+                    "раздутая CC06-пересборка запрещена"
+                ) from exc
+            if any(not block.uncompressed for block in source_layout.blocks):
+                raise SaveError(
+                    "Сохранение изменено, но compact Kraken encoder недоступен; "
+                    "раздутая CC06-пересборка запрещена. Установите/используйте "
+                    "desktop build с ooz_encoder."
+                ) from exc
+            reason = (
+                f"{reason}; native Kraken encoder unavailable ({exc}); "
+                "исходный поток уже состоит из uncompressed CC06 blocks"
+            )
         else:
             reason = (
                 f"{reason}; changed payload re-encoded with native Kraken encoder"
@@ -1002,16 +1083,12 @@ def _patch_s2_durability_in_raw(
     handle: int,
     condition: float,
 ) -> None:
-    """Patch one actor-owned S2 armor condition at its exact nested anchor."""
+    """Patch one confirmed S2 armor/weapon condition at its exact anchor."""
 
     layout = locate_inventory_layout(bytes(raw))
     if handle not in layout.owned_handles or handle in layout.unresolved_handles:
         raise SaveError(
             f"S2 armor handle 0x{handle:08X} не является однозначным actor-owned item"
-        )
-    if any(cell.handle == handle for cell in layout.grid_cells):
-        raise SaveError(
-            f"S2 armor condition handle 0x{handle:08X} находится в grid; writer принимает только equipped state"
         )
     items, _unresolved, _warnings = _inventory_details(bytes(raw), layout)
     confirmed = next(
@@ -1020,33 +1097,59 @@ def _patch_s2_durability_in_raw(
     )
     if confirmed is None:
         raise SaveError(
-            f"S2 armor condition для handle 0x{handle:08X} не подтверждён parser-ом"
-        )
-    if not _s2_armor_name(confirmed.display_name):
-        raise SaveError(
-            f"S2 armor condition для handle 0x{handle:08X} не подтверждён exact armor name"
+            f"S2 condition для handle 0x{handle:08X} не подтверждён parser-ом"
         )
     record_offset = confirmed.record_offset
     kind = confirmed.kind_code
-    if not has_s2_equipment_shape(
-        raw,
-        handle=handle,
-        record_offset=record_offset,
-        kind_code=kind,
-    ):
-        raise SaveError(
-            f"S2 armor condition для handle 0x{handle:08X} не имеет подтверждённой формы"
-        )
     try:
-        patch_s2_armor_condition(
-            raw,
-            handle=handle,
-            record_offset=record_offset,
-            kind_code=kind,
-            value=condition,
+        if kind == 1:
+            if not _s2_armor_name(confirmed.display_name):
+                raise SaveError(
+                    f"S2 armor condition для handle 0x{handle:08X} не подтверждён exact armor name"
+                )
+            if not has_s2_equipment_shape(
+                raw,
+                handle=handle,
+                record_offset=record_offset,
+                kind_code=kind,
+            ):
+                raise SaveError(
+                    f"S2 armor condition для handle 0x{handle:08X} не имеет подтверждённой формы"
+                )
+            patch_s2_armor_condition(
+                raw,
+                handle=handle,
+                record_offset=record_offset,
+                kind_code=kind,
+                value=condition,
+            )
+            return
+        if kind == 0:
+            raw_bytes = bytes(raw)
+            starts = _record_start_map(raw_bytes, layout.owned_handles)
+            name_table = locate_s2_item_name_table(
+                raw_bytes,
+                tuple(raw_bytes[offset + 8 : offset + 11] for offset in starts.values()),
+            )
+            if name_table is None:
+                raise SaveError(
+                    f"S2 weapon condition для handle 0x{handle:08X}: name table не подтверждена"
+                )
+            patch_s2_weapon_condition(
+                raw,
+                handle=handle,
+                record_offset=record_offset,
+                record_end=confirmed.record_end_guess,
+                kind_code=kind,
+                name_table=name_table,
+                value=condition,
+            )
+            return
+        raise SaveError(
+            f"S2 condition для handle 0x{handle:08X}: kind={kind} не является оружием или бронёй"
         )
     except ValueError as exc:
-        raise SaveError(f"S2 armor condition для 0x{handle:08X} не разобран: {exc}") from exc
+        raise SaveError(f"S2 condition для 0x{handle:08X} не разобран: {exc}") from exc
 
 
 def _encode_raw_patch(patch: RawPatch) -> bytes:
@@ -1248,12 +1351,30 @@ def patch_save(
             raise SaveError(f"После round-trip attach 0x{handle:08X} cells={cells}, ожидалось {expected}")
     for handle, condition in durability.items():
         record_offset, _count, _weight, kind = locate_object_record(roundtrip, handle)
-        anchor = read_s2_armor_condition(
-            roundtrip,
-            handle=handle,
-            record_offset=record_offset,
-            kind_code=kind,
-        )
+        checked_item = verify_items.get(handle)
+        anchor: S2ConditionAnchor | S2WeaponConditionAnchor | None = None
+        if kind == 1:
+            anchor = read_s2_armor_condition(
+                roundtrip,
+                handle=handle,
+                record_offset=record_offset,
+                kind_code=kind,
+            )
+        elif kind == 0 and checked_item is not None:
+            starts = _record_start_map(roundtrip, verify_layout.owned_handles)
+            name_table = locate_s2_item_name_table(
+                roundtrip,
+                tuple(roundtrip[offset + 8 : offset + 11] for offset in starts.values()),
+            )
+            if name_table is not None:
+                anchor = read_s2_weapon_condition(
+                    roundtrip,
+                    handle=handle,
+                    record_offset=record_offset,
+                    record_end=checked_item.record_end_guess,
+                    kind_code=kind,
+                    name_table=name_table,
+                )
         if anchor is None or not math.isclose(
             anchor.value,
             condition,
@@ -1261,7 +1382,7 @@ def patch_save(
             abs_tol=1e-6,
         ):
             raise SaveError(
-                f"После round-trip S2 armor condition 0x{handle:08X} "
+                f"После round-trip S2 condition 0x{handle:08X} "
                 f"не совпал с {condition}"
             )
 

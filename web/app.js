@@ -148,7 +148,7 @@ function renderSnapshot(s) {
     caps.edit_stacks ? "количество подтверждённых стаков" : "stack count read-only",
     caps.add_items && s.catalog_available ? "добавление из каталога" : "добавление read-only",
     caps.remove_items ? "удаление предметов" : "удаление read-only",
-    caps.edit_durability ? "прочность подтверждённой брони (experimental)" : "прочность read-only",
+    caps.edit_durability ? "прочность подтверждённых оружия/брони (experimental)" : "прочность read-only",
     caps.edit_upgrades && s.upgrade_catalog_available ? "улучшения оружия/экипировки (experimental)" : "улучшения read-only",
     caps.edit_placement ? "размещение предметов (experimental)" : "размещение read-only",
     caps.edit_relations && s.faction_catalog_available ? "отношения с группировками (experimental)" : "отношения read-only",
@@ -333,10 +333,15 @@ function visibleItems() {
 
 const ITEM_GLYPH_CATEGORIES = new Set([
   "weapon",
+  "armor",
+  "helmet",
+  "module",
+  "device",
   "ammo",
   "outfit",
   "artifact",
   "consumable",
+  "quest",
   "grenade",
   "item",
 ]);
@@ -346,9 +351,13 @@ function itemGlyphCategory(category) {
   if (value.includes("оруж") || value.includes("weapon")) return "weapon";
   if (value.includes("патрон") || value.includes("ammo")) return "ammo";
   if (value.includes("брон") || value.includes("экип") || value.includes("outfit")) return "outfit";
+  if (value.includes("шлем") || value.includes("helmet")) return "helmet";
+  if (value.includes("модул") || value.includes("module")) return "module";
+  if (value.includes("устрой") || value.includes("device")) return "device";
   if (value.includes("артеф") || value.includes("artifact")) return "artifact";
   if (value.includes("гранат") || value.includes("grenade")) return "grenade";
   if (value.includes("расход") || value.includes("consum")) return "consumable";
+  if (value.includes("квест") || value.includes("quest")) return "quest";
   return ITEM_GLYPH_CATEGORIES.has(value) ? value : "item";
 }
 
@@ -404,15 +413,25 @@ function upgradeDefinitionsFor(item) {
 }
 
 function renderUpgradeEditor(item, cell) {
+  if (Array.isArray(item.modules)) {
+    const modules = document.createElement("div");
+    modules.className = "muted mono";
+    modules.textContent = `Модули: ${item.modules.length ? item.modules.join(", ") : "нет"}`;
+    cell.append(modules);
+  }
   if (!Array.isArray(item.upgrades)) {
-    cell.textContent = "только чтение";
-    cell.className = "muted";
+    if (!Array.isArray(item.modules)) {
+      cell.textContent = "только чтение";
+      cell.className = "muted";
+    }
     return;
   }
   const caps = state.snapshot?.capabilities ?? {};
   if (!item.upgrade_editable || !caps.edit_upgrades || !state.snapshot.upgrade_catalog_available) {
-    cell.textContent = item.upgrades.length ? item.upgrades.join(", ") : "нет";
-    cell.className = "muted mono";
+    const upgrades = document.createElement("div");
+    upgrades.textContent = `Улучшения: ${item.upgrades.length ? item.upgrades.join(", ") : "нет"}`;
+    upgrades.className = "muted mono";
+    cell.append(upgrades);
     return;
   }
 
@@ -639,13 +658,25 @@ const EQUIPMENT_LOCATION_LABELS = {
   belt: "пояс",
   unknown: "неизвестно",
 };
+const EQUIPMENT_SOURCE_LABELS = {
+  actor_inventory: "actor inventory",
+  grid: "grid",
+  equipped: "equipped-owned",
+};
+
+function equipmentPlacementText(item) {
+  const location = EQUIPMENT_LOCATION_LABELS[item.location] ?? item.location;
+  const source = EQUIPMENT_SOURCE_LABELS[item.observation_source];
+  const device = item.device_subtype ? ` · ${item.device_subtype}` : "";
+  return `${location}${source ? ` · ${source}` : ""}${device}`;
+}
 
 function equipmentFilterMatches(item, filter) {
   if (filter === "staged") return state.durability.has(item.handle);
   if (filter === "damaged") return item.damaged === true;
   if (filter === "equipped") return item.location === "equipped";
   if (filter === "inventory") return item.location === "inventory" || item.location === "belt";
-  if (filter === "weapon" || filter === "armor" || filter === "helmet") return item.category === filter;
+  if (["weapon", "armor", "helmet", "module", "device", "consumable", "ammo", "artifact", "quest"].includes(filter)) return item.category === filter;
   return true;
 }
 
@@ -655,7 +686,17 @@ function visibleEquipment() {
   return (state.snapshot?.equipment ?? []).filter((item) => {
     if (!equipmentFilterMatches(item, filter)) return false;
     if (!query) return true;
-    return [item.name, item.category, item.location, item.type_key, item.handle_hex]
+    return [
+      item.name,
+      item.category,
+      item.location,
+      item.observation_source,
+      item.device_subtype,
+      item.type_key,
+      item.handle_hex,
+      ...(item.modules ?? []),
+      ...(item.upgrades ?? []),
+    ]
       .join(" ")
       .toLowerCase()
       .includes(query);
@@ -746,7 +787,7 @@ function renderEquipment() {
     for (const value of [
       item.name,
       item.category,
-      EQUIPMENT_LOCATION_LABELS[item.location] ?? item.location,
+      equipmentPlacementText(item),
     ]) {
       const td = document.createElement("td");
       td.textContent = value;
@@ -788,9 +829,17 @@ function renderEquipment() {
     tr.append(support);
 
     const upgrades = document.createElement("td");
-    upgrades.textContent = item.upgrades === null
-      ? "неизвестно"
-      : item.upgrades.length ? item.upgrades.join(", ") : "нет";
+    const moduleText = Array.isArray(item.modules)
+      ? `Модули: ${item.modules.length ? item.modules.join(", ") : "нет"}`
+      : null;
+    const upgradeText = item.upgrades === null
+      ? "Улучшения: неизвестно"
+      : `Улучшения: ${item.upgrades.length ? item.upgrades.join(", ") : "нет"}`;
+    const stateUnknown = (item.module_states ?? []).some((entry) => entry.state === "unknown") ||
+      (item.upgrade_states ?? []).some((entry) => entry.state === "unknown");
+    upgrades.textContent = [moduleText, upgradeText, stateUnknown ? "состояние не подтверждено" : null]
+      .filter(Boolean)
+      .join(" · ");
     upgrades.className = item.upgrades_editable ? "" : "muted";
     tr.append(upgrades);
 

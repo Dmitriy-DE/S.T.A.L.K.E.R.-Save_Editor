@@ -7,6 +7,7 @@ import json
 import logging
 import logging.handlers
 import re
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,8 @@ LOGGER_NAME = "stalker2_save_editor"
 LOG_FILENAME = "save-editor.log"
 MAX_LOG_BYTES = 1 * 1024 * 1024
 LOG_BACKUP_COUNT = 3
+LOG_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+LOG_MAX_TOTAL_BYTES = MAX_LOG_BYTES * (LOG_BACKUP_COUNT + 1)
 MAX_BUNDLE_BYTES = 1_500_000
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 DEFAULT_TIMEOUT = 15.0
@@ -37,8 +40,23 @@ _SECRET_RE = re.compile(
     r"(?P<separator>\s*[:=]\s*)"
     r"(?P<value>(?:(?:bearer|basic)\s+)?[^\s,;]+)"
 )
+_QUOTED_SECRET_RE = re.compile(
+    r'(?ix)(?P<prefix>["\'](?:access_token|api_key|apikey|authorization|client_secret|cookie|refresh_token|token|password|passwd|secret)'
+    r'["\']\s*:\s*["\'])(?:\\.|[^"\\\r\n])*(?P<suffix>["\'])'
+)
+_ACCOUNT_ID_RE = re.compile(
+    r"(?ix)\b(?P<key>steam(?:_?account)?(?:_?id)?|steamid|owner_?id|account_?id)"
+    r"(?P<separator>\s*[:=]\s*)(?P<value>\d{6,20})"
+)
+_FILE_CONTENT_RE = re.compile(
+    r"(?ix)\b(?P<key>save_(?:bytes|data|payload)|raw_(?:bytes|data)|"
+    r"file_contents|contents|payload|content)"
+    r"(?P<separator>\s*[:=]\s*)(?P<value>.*?)(?=\s+[a-z][\w-]*\s*[:=]|$)"
+)
 _WINDOWS_HOME_RE = re.compile(r"(?i)(?:[a-z]:)?[\\/]Users[\\/][^\\/\s]+")
 _POSIX_HOME_RE = re.compile(r"/home/[^/\s]+|/Users/[^/\s]+")
+_STEAM_USERDATA_RE = re.compile(r"(?i)([\\/]userdata[\\/])\d{6,20}")
+_LOG_PATH_RE = re.compile(rf"^{re.escape(LOG_FILENAME)}(?:\.\d+)?$")
 
 
 class DiagnosticsError(RuntimeError):
@@ -56,6 +74,8 @@ def configure_logging(
     *,
     max_bytes: int = MAX_LOG_BYTES,
     backup_count: int = LOG_BACKUP_COUNT,
+    max_age_seconds: int = LOG_MAX_AGE_SECONDS,
+    max_total_bytes: int | None = None,
 ) -> Path:
     """Install one idempotent rotating file handler and return its path."""
 
@@ -63,6 +83,15 @@ def configure_logging(
         raise ValueError("diagnostic log bounds must be non-negative and non-zero")
     target_dir = Path(directory).expanduser() if directory is not None else log_directory()
     target_dir.mkdir(parents=True, exist_ok=True)
+    cleanup_logs(
+        target_dir,
+        max_age_seconds=max_age_seconds,
+        max_total_bytes=(
+            max_total_bytes
+            if max_total_bytes is not None
+            else max_bytes * (backup_count + 1)
+        ),
+    )
     target = target_dir / LOG_FILENAME
     logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(logging.INFO)
@@ -71,6 +100,9 @@ def configure_logging(
         if not getattr(handler, "_save_editor_diagnostics", False):
             continue
         if Path(getattr(handler, "baseFilename", "")).resolve() == target.resolve():
+            if isinstance(handler, logging.handlers.RotatingFileHandler):
+                handler.maxBytes = max_bytes
+                handler.backupCount = backup_count
             return target
         logger.removeHandler(handler)
         handler.close()
@@ -97,17 +129,98 @@ def _redact(text: str) -> str:
         text = text.replace(home, "<home>")
     text = _WINDOWS_HOME_RE.sub("<home>", text)
     text = _POSIX_HOME_RE.sub("<home>", text)
+    text = _STEAM_USERDATA_RE.sub(r"\1<redacted>", text)
     text = _URL_SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
     text = _HEADER_SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
-    return _SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
+    text = _QUOTED_SECRET_RE.sub(
+        lambda match: f"{match.group('prefix')}<redacted>{match.group('suffix')}",
+        text,
+    )
+    text = _SECRET_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
+    text = _ACCOUNT_ID_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
+    return _FILE_CONTENT_RE.sub(lambda match: f"{match.group('key')}=<redacted>", text)
 
 
 def _log_paths(directory: Path) -> list[Path]:
-    return sorted(
-        (path for path in directory.glob(f"{LOG_FILENAME}*") if path.is_file()),
-        key=lambda path: path.stat().st_mtime_ns,
-        reverse=True,
-    )
+    try:
+        if not directory.is_dir():
+            return []
+        paths = [
+            path
+            for path in directory.iterdir()
+            if path.is_file() and _LOG_PATH_RE.fullmatch(path.name)
+        ]
+    except OSError:
+        return []
+    def mtime_ns(path: Path) -> int:
+        try:
+            return path.stat().st_mtime_ns
+        except OSError:
+            # Rotation can replace a file between iterdir() and stat(). Keep
+            # the vanished path in the bounded read list; callers already
+            # handle the subsequent read/unlink race without failing logging.
+            return -1
+
+    return sorted(paths, key=mtime_ns, reverse=True)
+
+
+def cleanup_logs(
+    directory: Path | None = None,
+    *,
+    max_age_seconds: int = LOG_MAX_AGE_SECONDS,
+    max_total_bytes: int = LOG_MAX_TOTAL_BYTES,
+    now: float | None = None,
+) -> list[Path]:
+    """Delete only rotated diagnostics logs outside the age/total budget."""
+
+    if max_age_seconds < 0 or max_total_bytes <= 0:
+        raise ValueError("diagnostic cleanup bounds must be non-negative and positive")
+    source_dir = Path(directory).expanduser() if directory is not None else log_directory()
+    if not source_dir.is_dir():
+        return []
+    current_time = time.time() if now is None else now
+    paths = _log_paths(source_dir)
+    removed: list[Path] = []
+    cutoff = current_time - max_age_seconds
+    for path in paths[1:]:
+        try:
+            if path.stat().st_mtime < cutoff:
+                path.unlink()
+                removed.append(path)
+        except OSError:
+            continue
+    sized_paths: list[tuple[Path, int]] = []
+    for path in paths:
+        if path in removed:
+            continue
+        try:
+            sized_paths.append((path, path.stat().st_size))
+        except OSError:
+            continue
+    total_bytes = sum(size for _path, size in sized_paths)
+    for path, size in reversed(sized_paths[1:]):
+        if total_bytes <= max_total_bytes:
+            break
+        try:
+            total_bytes -= size
+            path.unlink()
+            removed.append(path)
+        except OSError:
+            continue
+    return removed
+
+
+def _read_log_tail(path: Path, max_bytes: int) -> str:
+    """Read at most the newest ``max_bytes`` from one log file."""
+
+    if max_bytes <= 0:
+        return ""
+    with path.open("rb") as handle:
+        handle.seek(0, 2)
+        size = handle.tell()
+        handle.seek(max(0, size - max_bytes))
+        data = handle.read(max_bytes)
+    return data.decode("utf-8", errors="replace")
 
 
 def collect_log_bundle(directory: Path | None = None, *, max_bytes: int = MAX_BUNDLE_BYTES) -> bytes:
@@ -122,7 +235,7 @@ def collect_log_bundle(directory: Path | None = None, *, max_bytes: int = MAX_BU
         if remaining <= 0:
             break
         try:
-            text = _redact(path.read_text(encoding="utf-8", errors="replace"))
+            text = _redact(_read_log_tail(path, remaining))
         except OSError:
             continue
         block = f"--- {path.name} ---\n{text}\n"
@@ -136,6 +249,28 @@ def collect_log_bundle(directory: Path | None = None, *, max_bytes: int = MAX_BU
     if len(payload) > MAX_UPLOAD_BYTES:
         raise DiagnosticsError("Логи слишком большие для отправки")
     return payload
+
+
+def export_log_bundle(
+    destination: Path,
+    directory: Path | None = None,
+    *,
+    max_bytes: int = MAX_BUNDLE_BYTES,
+) -> Path:
+    """Write the same redacted bounded bundle used for upload to a local path."""
+
+    destination = Path(destination).expanduser()
+    if destination.exists() and destination.is_dir():
+        raise DiagnosticsError("Путь экспорта логов является каталогом")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    payload = collect_log_bundle(directory, max_bytes=max_bytes)
+    if len(payload) > MAX_UPLOAD_BYTES:
+        raise DiagnosticsError("Логи слишком большие для отправки")
+    try:
+        destination.write_bytes(payload)
+    except OSError as exc:
+        raise DiagnosticsError(f"Не удалось сохранить экспорт логов: {exc}") from exc
+    return destination
 
 
 def _response_payload(response: Any) -> dict[str, object]:
@@ -171,6 +306,8 @@ def submit_logs(
     if parsed.scheme != "https" or not parsed.hostname:
         raise DiagnosticsError("Сервер логов должен использовать HTTPS")
     payload = collect_log_bundle(source_dir)
+    if len(payload) > MAX_UPLOAD_BYTES:
+        raise DiagnosticsError("Логи слишком большие для отправки")
     request = urllib.request.Request(
         endpoint,
         data=payload,
@@ -193,8 +330,10 @@ __all__ = [
     "DEFAULT_ENDPOINT",
     "DEFAULT_TIMEOUT",
     "DiagnosticsError",
+    "cleanup_logs",
     "collect_log_bundle",
     "configure_logging",
+    "export_log_bundle",
     "log_directory",
     "submit_logs",
 ]

@@ -1,4 +1,4 @@
-"""Build the optional native Kraken encoder from the vendored pyooz source."""
+"""Build the native Kraken encoder required for changed compact saves."""
 
 from __future__ import annotations
 

@@ -112,23 +112,28 @@ class FormatDetectionError(SaveError):
         )
 
 
+_S2_RELEASE = release_by_id("stalker2")
+
+
 class _Stalker2Format:
-    id = "stalker2"
-    title = "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
-    release_id = "stalker2"
-    edition = "s2"
+    id = _S2_RELEASE.id
+    title = _S2_RELEASE.title
+    release_id = _S2_RELEASE.id
+    edition = _S2_RELEASE.edition
     capabilities = gate_mutations_for_release(
         release_id,
         FormatCapabilities(
             read_inventory=True,
             catalog=True,
-            equipment=equipment_support_for_release("stalker2"),
+            equipment=equipment_support_for_release(_S2_RELEASE.id),
             mutation_support={
                 "edit_money": CapabilitySupport("experimental"),
                 "edit_stacks": CapabilitySupport(
                     "research", "S2 stack writer не подтверждён."
                 ),
-                "edit_durability": CapabilitySupport("experimental"),
+                "edit_durability": _S2_RELEASE.equipment.support("durability")
+                if _S2_RELEASE.equipment is not None
+                else CapabilitySupport("unsupported"),
             },
         ),
     )
@@ -268,7 +273,11 @@ class _XRayFormat:
         self.id = spec.id
         self.title = spec.title
         self.release_id = spec.id
-        self.edition = "original"
+        release = release_by_id(spec.id)
+        self.edition = release.edition
+        equipment = release.equipment
+        if equipment is None:
+            raise ValueError(f"release {spec.id!r} lacks equipment metadata")
         self.capabilities = gate_mutations_for_release(
             self.release_id,
             FormatCapabilities(
@@ -280,13 +289,13 @@ class _XRayFormat:
                     "edit_stacks": CapabilitySupport("verified"),
                     "add_items": CapabilitySupport("verified"),
                     "remove_items": CapabilitySupport("verified"),
-                    "edit_durability": CapabilitySupport("experimental"),
+                    "edit_durability": equipment.support("durability"),
                     "edit_relations": CapabilitySupport("experimental"),
                     "edit_player_faction": CapabilitySupport("experimental"),
-                    "edit_placement": CapabilitySupport("experimental"),
+                    "edit_placement": equipment.support("placement"),
                     **(
-                        {"edit_upgrades": CapabilitySupport("experimental")}
-                        if release_by_id(spec.id).family in {"clear_sky", "cop"}
+                        {"edit_upgrades": equipment.support("upgrades")}
+                        if equipment.support("upgrades").writable
                         else {}
                     ),
                 },

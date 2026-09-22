@@ -106,6 +106,7 @@ def test_manifest_is_machine_readable_and_declares_runtime_policy(tmp_path: Path
     loaded = json.loads(path.read_text(encoding="utf-8"))
     assert loaded["architecture"] == "x86_64"
     assert loaded["runtime_policy"]["core"] == "Python standard library"
+    assert "required for changed compressed saves" in loaded["runtime_policy"]["encoder"]
     assert loaded["runtime_policy"]["steam_helper"] == "external executable; never bundled"
 
 
@@ -169,7 +170,7 @@ def test_debian_package_contains_real_desktop_appstream_and_runtime_metadata(tmp
     assert fields["Maintainer"]
     assert fields["Homepage"] == "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor"
     assert fields["Section"] == "utils"
-    assert fields["Description"].startswith("S.T.A.L.K.E.R. 2 save editor")
+    assert fields["Description"].startswith("S.T.A.L.K.E.R. save editor")
     assert int(fields["Installed-Size"]) > 0
     assert "libc6 (>= " in fields["Depends"]
     for dependency in build.DEBIAN_RUNTIME_DEPENDENCIES:

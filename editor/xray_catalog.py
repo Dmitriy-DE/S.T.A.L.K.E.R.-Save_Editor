@@ -417,6 +417,10 @@ def _category(name: str, values: Mapping[str, str]) -> str | None:
         return "weapon"
     if class_name.startswith("G_") or lowered.startswith(("grenade", "rgd", "f1_")):
         return "grenade"
+    if class_name in {"DETECTOR", "DEVICE"} or lowered.startswith(
+        ("device_", "detector_")
+    ):
+        return "device"
     if lowered.startswith(("outfit_", "scientific_", "helm_", "armor_")):
         return "outfit"
     if lowered.startswith(("af_", "artifact_")):

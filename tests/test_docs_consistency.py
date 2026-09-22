@@ -60,6 +60,8 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
 
     assert "editor/capabilities.py" in bundle.MODULES
     assert "editor/equipment.py" in bundle.MODULES
+    assert "editor/equipment_matrix.py" in bundle.MODULES
+    assert "editor/s2_presentation.py" in bundle.MODULES
     assert "editor/xray_delete.py" in bundle.MODULES
     assert bundle.main(["--check"]) == 0, (
         "web/pysrc.json is stale; run python3 tools/build_web_bundle.py"
@@ -67,6 +69,15 @@ def test_web_bundle_and_theme_are_generated_from_the_sources() -> None:
     assert theme.main(["--check"]) == 0, (
         "web/theme.css is stale; run python3 tools/export_theme.py"
     )
+
+
+def test_theme_export_reads_the_canonical_palette_assignment() -> None:
+    import tools.export_theme as theme
+
+    palette = theme.read_palette()
+
+    assert palette["bg_base"] == "#0C0D0A"
+    assert palette["text"] == "#D8D2BE"
 
 
 def test_cross_platform_spec_records_equipment_evidence_boundary() -> None:
@@ -101,6 +112,19 @@ def test_release_docs_record_portable_updates_and_r2_contract() -> None:
             assert marker.casefold() in document.casefold(), marker
     assert "make release-manifest" in readme
     assert "--publish-r2" in release
+
+
+def test_equipment_matrix_is_linked_and_keeps_enhanced_editions_fail_closed() -> None:
+    root = Path(__file__).parents[1]
+    readme = (root / "docs" / "README.md").read_text(encoding="utf-8")
+    matrix = (root / "docs" / "evidence" / "EQUIPMENT_SUPPORT_MATRIX_2026-09-22.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "EQUIPMENT_SUPPORT_MATRIX_2026-09-22.md" in readme
+    assert "Enhanced Edition" in matrix
+    assert "unsupported" in matrix
+    assert "NVG" in matrix and "binocular" in matrix
 
 
 def test_download_page_exposes_separate_windows_installer_and_portable_links() -> None:

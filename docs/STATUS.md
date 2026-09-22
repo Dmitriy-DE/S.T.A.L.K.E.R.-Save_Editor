@@ -1,9 +1,14 @@
-# Состояние и пробелы — 2026-09-21
+# Состояние и пробелы — 2026-09-22
 
-## Unreleased — S2 catalog/UI and Cloud target correction — 2026-09-22
+## v0.5.21 candidate — S2 catalog/UI and Cloud target correction — 2026-09-22
 
-Текущая рабочая ветка `fix/cloud-repack-s2-ui` закрывает дефекты из ручной
-проверки v0.5.20:
+Текущая рабочая ветка `fix/cloud-repack-s2-ui` закрывает ручной план по
+оборудованию, Cloud, UI и диагностике:
+
+База проверки: branch `fix/cloud-repack-s2-ui`, HEAD
+`a7312aa4ad887ceca300858697cdf1272ae1a9b7`; рабочее дерево намеренно dirty
+только из-за перечисленных ниже изменений и сгенерированных web/package
+артефактов.
 
 - панель отношений/группировок больше не показывается для S.T.A.L.K.E.R. 2;
 - CFG-каталог S2 принимает отдельный путь Zone Kit/Workshop, распознаёт
@@ -15,13 +20,38 @@
   неоднозначный `WriteFile`;
 - изменённый S2 stream пересобирается bundled native Kraken encoder вместо
   15 MB stored-block fallback, с CRC/decompression/round-trip проверками.
+- единая equipment-модель теперь различает weapon/armor/helmet/module/device/
+  consumable/ammo/artifact/quest/other, хранит provenance и source observation;
+  ПНВ и бинокль не получают выдуманную прочность;
+- S2 Data-корпус отдельно показывает source-backed condition через один
+  структурный codec для всех принятых actor-owned weapon rows с точным anchor
+  (Kharod/Lavina/Skif — примеры текущего корпуса, не allow-list); direct
+  modules и upgrade vectors остаются read-only, а наблюдаемые
+  `NVG_NPC_Gen3`/бинокль — device без repair control;
+- для известных save-local S2 IDs добавлены безопасные презентационные названия
+  (Kharod, «Лавина», Сайга Д-12, ПНВ, бинокль). Official loose CFG/localization,
+  Zone Kit и явно выбранный Workshop по-прежнему дают реальные names/icons;
+  при отсутствии ресурса показывается category glyph, а не пустая ячейка;
+- X-Ray matrix теперь отдельно описывает модули и устройства SoC/CS/CoP;
+  Enhanced Editions остаются честно unsupported до реального sample;
+- локальные diagnostics ограничены rotation/age/total-size, редактируют только
+  redacted bundle, экспортируются и отправляются в отдельный R2 diagnostics
+  prefix с rate-limit/lifecycle guard.
 
-Локальный gate после этих изменений: `619 passed` (один одиночный Qt timeout
-при параллельном запуске с `make check` воспроизведён отдельно как `1 passed`),
-`ruff`, `mypy`, generated web bundle/theme checks и `py_compile` проходят.
-Это ещё не публичный релиз: `VERSION` и стабильные v0.5.20 assets не
-перезаписывались, live Steam `WriteFile` и загрузка изменённого слота игрой
-остаются внешними runtime-gates.
+Локальный gate после этих изменений: `663 passed`, `make
+PYTHON=.venv/bin/python check` и JavaScript tests (`9 passed`) проходят. Linux
+portable `.tar.gz` и `.deb` собраны локально из dirty checkout с
+`--allow-dirty`; packaged diagnostic/encoder smoke прошёл, а native Steam
+smoke корректно вернул понятную ошибку при не запущенном Steam.
+Текущие SHA-256: Linux portable
+`f31c00eeb907c3e8c0caaa259af9311b6a4da2f1a570c13fecec6f7420761f07`, Debian
+`edf2e9a95047d1649d736191a2b59bc98dfebef8e9ed3c6ca024c2c9a4471560`.
+
+Это кандидат для `v0.5.21`, который публикуется только после чистого merge/tag и
+всех native package/release gates.
+Windows installer/portable на Linux не выдаются за локально проверенные,
+GitHub/R2/Pages/APT/OTA не публиковались, live Steam `WriteFile`/read-back и
+загрузка изменённого слота игрой остаются внешними runtime-gates.
 
 ## v0.5.20 — native Steam Cloud writer with remote-only listings — 2026-09-21
 
@@ -567,11 +597,11 @@ runtime, живой game load/re-save, Steam/GFN или GitHub Pages.
 | Удобный UI | Qt и CLI используют общий service; Zone shell, metadata badges, summary cards, inventory search/filter, отдельный Equipment Editor с category/location filters и staged bulk repair, preview/apply, backup browser/restore и Cloud tab работают локально. U02–U07 приняты; открыт только native DPI/Steam smoke | B02 |
 | Восстановление | U05 показывает journal/hash status и восстанавливает verified backup в новую копию; in-place replacement и cloud restore не реализованы | новая карточка (не заведена) |
 | Названия и каталог | Оригинальные metadata-каталоги загружаются desktop/web; S2 embedded save-local name table разрешает текущие inventory keys, loose official CFG catalog читается read-only; переносимый prototype SID/локализация не доказаны | R01–R02, M21, M25 |
-| Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors и узкого S2 armor anchor; S2 weapon anchor и game load/re-save не выполнены | R03–R04, M12, S2 evidence |
+| Прочность | Experimental condition read/write добавлен для подтверждённых X-Ray weapon/outfit anchors и наблюдаемых S2 armor/weapon anchors; game load/re-save не выполнены | R03–R04, M12, S2 evidence |
 | Новые предметы/clone | Для оригинальной трилогии работают catalog key + same-family registry template; S2 и неизвестные families запрещены | R05–R07 |
 | Позиция предмета | Experimental `SInvItemPlace` read/write для actor-owned original SoC/CS/CoP; неизвестный anchor read-only, game load/re-save не выполнен | M20 |
 | Настоящее удаление | X-Ray deep removal и Qt/web staging блокируют известные direct dependents, explicit equipped и unresolved targets; полный reference graph и game load/re-save не доказаны | M23–M24, R08 |
-| Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; X-Ray addon flags/config compatibility mapped read-only, controlled attach/detach и game read-back отсутствуют; SoC/S2/Enhanced остаются read-only | M17, R09–R10 |
+| Attachments/upgrades | `m_upgrades` подтверждён структурно для CS/CoP и доступен experimental; S2 direct modules и upgrade vectors показываются read-only, controlled attach/detach и game read-back отсутствуют; SoC/S2/Enhanced mutations остаются read-only | M17, R09–R10 |
 | Размер output | X-Ray edit использует безопасный literal-only LZO writer; output может быть больше исходного | R11 |
 
 Count=1 остаётся read-only в текущем stack editor. Нельзя просто разрешить все count=1: оружие/броня/квестовые объекты требуют отдельных правил и evidence. Полная поддержка других кампаний/версий игры также не доказана: MONEY_ANCHOR привязан к изученным сейвам.

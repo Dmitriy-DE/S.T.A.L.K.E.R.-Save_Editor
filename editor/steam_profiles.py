@@ -38,20 +38,27 @@ class SteamCloudProfile:
 
         normalized = str(name or "").replace("\\", "/").lstrip("/")
         folded = normalized.casefold()
+        parts = normalized.split("/")
+        if not normalized or any(part in {"", ".", ".."} for part in parts):
+            return False
         if is_editor_cloud_artifact(normalized):
             return False
-        if not any(
-            folded.startswith(prefix.casefold().lstrip("/"))
-            for prefix in self.remote_prefixes
-        ):
-            return False
-        # Steam's original and Enhanced UFS entries use pattern ``*`` under
-        # the savedgames directory.  Keep the directory boundary as the
-        # authoritative allow-list and let the format detector reject
-        # thumbnails/foreign bytes later; do not hide extensionless saves.
-        return not self.extensions or any(
-            folded.endswith(extension.casefold()) for extension in self.extensions
-        )
+        for prefix in self.remote_prefixes:
+            normalized_prefix = prefix.casefold().lstrip("/")
+            if not folded.startswith(normalized_prefix):
+                continue
+            leaf = normalized[len(normalized_prefix) :]
+            if not leaf or "/" in leaf:
+                continue
+            # Steam's original and Enhanced UFS entries use pattern ``*``
+            # under the savedgames directory.  Keep the directory boundary
+            # authoritative and let the format detector reject foreign bytes.
+            if not self.extensions or any(
+                leaf.casefold().endswith(extension.casefold())
+                for extension in self.extensions
+            ):
+                return True
+        return False
 
     @property
     def save_label(self) -> str:

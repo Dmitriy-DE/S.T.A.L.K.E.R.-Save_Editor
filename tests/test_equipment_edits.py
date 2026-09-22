@@ -101,8 +101,18 @@ def test_bulk_repair_reports_unsafe_and_unknown_items_instead_of_staging() -> No
     assert "not found" in result.skipped[1].reason
 
 
-def test_s2_research_rows_are_never_writable_from_bulk_repair() -> None:
+def test_s2_weapon_anchor_can_be_staged_when_parser_marks_it_editable() -> None:
     item = _item(7, "weapon_candidate", "Оружие", storage="inventory", condition=0.5, editable=True)
+    row = equipment_items((item,), release_id="stalker2")[0]
+
+    result = stage_repair((row,), (7,), 100)
+
+    assert result.changes == ((7, 1.0),)
+    assert result.skipped == ()
+
+
+def test_s2_ambiguous_weapon_rows_remain_read_only() -> None:
+    item = _item(7, "weapon_candidate", "Оружие", storage="inventory", condition=0.5, editable=False)
     row = equipment_items((item,), release_id="stalker2")[0]
 
     result = stage_repair((row,), (7,), 100)

@@ -15,7 +15,7 @@
     <span class="badge badge-version" id="version">web</span>
   </div>
   <div class="topbar-actions">
-    <div class="brand-right">ZONE / SAVE WORKBENCH</div>
+    <div class="brand-right">SAVE WORKBENCH</div>
     <button class="button support-button" id="support-button" type="button">♡ Support project</button>
   </div>
 </header>
@@ -116,7 +116,7 @@
       <table class="grid" id="inventory">
         <thead><tr>
           <th>Иконка</th><th>Имя</th><th>Категория</th><th>Позиция</th><th>Размер</th><th>Type-key</th>
-          <th>Количество</th><th>Вес</th><th>Прочность</th><th>Улучшения</th><th>Handle</th><th>Изменить / удалить</th>
+          <th>Количество</th><th>Вес</th><th>Прочность</th><th>Модули / улучшения</th><th>Handle</th><th>Изменить / удалить</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -137,8 +137,8 @@
     <div class="panel" id="panel-equipment" hidden>
       <div class="card block">
         <div class="card-caption">ЕДИНАЯ КАРТОЧКА ОБОРУДОВАНИЯ</div>
-        <p id="equipment-status">Открой сейв для загрузки оружия, брони и шлемов.</p>
-        <p class="muted">Категория и способ сериализации показываются отдельно. Прочность можно менять только там, где для конкретного релиза и предмета есть source-backed anchor.</p>
+        <p id="equipment-status">Открой сейв для загрузки оружия, брони, устройств и модулей.</p>
+        <p class="muted">Категория, прочность, установленные модули и доступные улучшения показываются отдельно. ПНВ и бинокли не получают выдуманную прочность; запись доступна только там, где для конкретного релиза и предмета есть source-backed anchor.</p>
       </div>
       <div class="row">
         <input id="equipment-search" type="search" placeholder="Поиск по имени, type-key, категории, handle…">
@@ -147,6 +147,12 @@
           <option value="weapon">Оружие</option>
           <option value="armor">Броня</option>
           <option value="helmet" hidden>Шлемы</option>
+          <option value="module">Модули</option>
+          <option value="device">Устройства</option>
+          <option value="consumable">Расходники</option>
+          <option value="ammo">Боеприпасы</option>
+          <option value="artifact">Артефакты</option>
+          <option value="quest">Квестовые предметы</option>
           <option value="equipped">Экипировано</option>
           <option value="inventory">В инвентаре</option>
           <option value="damaged">Не 100%</option>
@@ -169,7 +175,7 @@
       <table class="grid" id="equipment">
         <thead><tr>
           <th>Иконка</th><th>Название</th><th>Категория</th><th>Где</th>
-          <th>Прочность</th><th>Поддержка</th><th>Улучшения</th><th>Type-key</th><th>Handle</th><th>Действие</th>
+          <th>Прочность</th><th>Поддержка</th><th>Модули / улучшения</th><th>Type-key</th><th>Handle</th><th>Действие</th>
         </tr></thead>
         <tbody></tbody>
       </table>

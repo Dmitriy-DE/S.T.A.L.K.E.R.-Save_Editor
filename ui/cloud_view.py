@@ -394,12 +394,14 @@ class CloudView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        intro = QLabel(
-            "Облако Steam подключается само в фоне. Выбери сейв в списке, "
-            "отредактируй во вкладках и нажми «Загрузить в облако»."
+        self.intro_label = QLabel(
+            "Steam Cloud подключается в фоне. Выбери Data-сейв, внеси изменения "
+            "и нажми «Сохранить» в главной панели. Если backend доступен только "
+            "для чтения, Cloud остаётся только для чтения и запись не выполняется."
         )
-        intro.setWordWrap(True)
-        layout.addWidget(intro)
+        self.intro_label.setObjectName("cloudIntroLabel")
+        self.intro_label.setWordWrap(True)
+        layout.addWidget(self.intro_label)
 
         profile_row = QHBoxLayout()
         profile_row.addWidget(QLabel("Игра в Steam Cloud:"))
@@ -456,6 +458,7 @@ class CloudView(QWidget):
         layout.addWidget(self.table, 1)
 
         self.result_label = QLabel("")
+        self.result_label.setObjectName("cloudResultLabel")
         self.result_label.setWordWrap(True)
         self.result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.result_label)
@@ -463,8 +466,8 @@ class CloudView(QWidget):
         self.progress_label.setWordWrap(True)
         layout.addWidget(self.progress_label)
         self.error_label = QLabel("")
+        self.error_label.setObjectName("cloudErrorLabel")
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet("color: #a11;")
         self.error_label.setVisible(False)
         layout.addWidget(self.error_label)
 

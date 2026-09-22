@@ -21,7 +21,11 @@ from .cloud_capabilities import (
     cloud_write_capability,
 )
 from .models import CloudReceipt, PreparedEdit
-from .steam_profiles import is_editor_cloud_artifact
+from .steam_profiles import (
+    is_editor_cloud_artifact,
+    steam_cloud_profile_for_app_id,
+    steam_cloud_profiles,
+)
 
 
 class CloudTransactionError(RuntimeError):
@@ -111,6 +115,42 @@ def _uncertain(
     )
 
 
+def _validate_cloud_target(worker: CloudTransport, remote_path: str) -> None:
+    """Enforce the release path contract at the transaction boundary."""
+
+    if is_editor_cloud_artifact(remote_path):
+        raise CloudTransactionError(
+            f"Cloud upload запрещён для editor recovery artifact: {remote_path}"
+        )
+    accepted = tuple(
+        profile for profile in steam_cloud_profiles() if profile.accepts(remote_path)
+    )
+    if not accepted:
+        raise CloudTransactionError(
+            "Cloud upload запрещён: remote path не относится к сохранению "
+            "поддержанного Steam Cloud профиля"
+        )
+
+    # Real Steam workers expose the connected app id.  Match it here so a
+    # valid-looking path from another game cannot be written merely because
+    # the UI selected it.  Injectable test transports may omit app_id and are
+    # still covered by the profile allow-list above.
+    app_id = getattr(worker, "app_id", None)
+    if app_id is None:
+        return
+    try:
+        profile = steam_cloud_profile_for_app_id(int(app_id))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise CloudTransactionError(
+            f"Cloud upload запрещён: неизвестный Steam app_id={app_id!r}"
+        ) from exc
+    if not profile.accepts(remote_path):
+        raise CloudTransactionError(
+            f"Cloud upload запрещён: path не принадлежит подключённой игре "
+            f"{profile.release_id!r}: {remote_path}"
+        )
+
+
 def upload_cloud(
     worker: CloudTransport,
     prepared: PreparedEdit,
@@ -130,10 +170,7 @@ def upload_cloud(
     if source.kind != "cloud":
         raise CloudTransactionError("Cloud upload требует source kind=cloud")
     remote_path = source.locator
-    if is_editor_cloud_artifact(remote_path):
-        raise CloudTransactionError(
-            f"Cloud upload запрещён для editor recovery artifact: {remote_path}"
-        )
+    _validate_cloud_target(worker, remote_path)
     edited = bytes(prepared.data)
     output_sha256 = _sha256(edited)
     if output_sha256 != prepared.output_sha256:

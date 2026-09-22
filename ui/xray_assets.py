@@ -1,4 +1,4 @@
-"""Read-only X-Ray atlas access for the desktop inventory view.
+"""Read-only game-resource atlas access for the desktop inventory view.
 
 The editor never bundles GSC or mod textures.  When an official installation
 has an unpacked ``gamedata`` tree, this module reads its own icon atlas and
@@ -41,8 +41,13 @@ _CATEGORY_COLORS = {
     "ammo": QColor("#e5c36a"),
     "weapon": QColor("#d99b62"),
     "outfit": QColor("#aeb9a8"),
+    "armor": QColor("#aeb9a8"),
+    "helmet": QColor("#aeb9a8"),
+    "module": QColor("#c5a56a"),
+    "device": QColor("#83b8b0"),
     "artifact": QColor("#7fc0b5"),
     "consumable": QColor("#d58b73"),
+    "quest": QColor("#b9a77a"),
     "grenade": QColor("#b5ad78"),
     "item": QColor("#c0b9a6"),
 }
@@ -204,7 +209,7 @@ def decode_dds(data: bytes) -> QImage:
 
 
 def category_icon(category: str | None, size: int = 28) -> QIcon:
-    """Draw a small repository-owned fallback glyph in the Zone palette."""
+    """Draw a small repository-owned fallback glyph for an unknown icon."""
 
     canvas = QPixmap(size, size)
     canvas.fill(Qt.GlobalColor.transparent)
@@ -224,7 +229,7 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
         painter.drawRect(rect)
         painter.drawLine(margin + 3, margin + 5, size - margin - 3, margin + 5)
         painter.drawLine(margin + 3, size // 2, size - margin - 3, size // 2)
-    elif normalized == "outfit":
+    elif normalized in {"outfit", "armor"}:
         path = QPainterPath()
         path.moveTo(size // 2, margin)
         path.lineTo(size - margin, margin + 7)
@@ -233,6 +238,16 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
         path.lineTo(margin, margin + 7)
         path.closeSubpath()
         painter.drawPath(path)
+    elif normalized == "helmet":
+        painter.drawArc(rect, 0, 180 * 16)
+        painter.drawLine(margin + 2, size // 2, size - margin - 2, size // 2)
+    elif normalized == "module":
+        painter.drawRect(rect)
+        painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+        painter.drawLine(size // 2, margin + 4, size // 2, size - margin - 4)
+    elif normalized == "device":
+        painter.drawRoundedRect(rect, size / 5, size / 5)
+        painter.drawEllipse(QRect(size // 2 - 3, size // 2 - 3, 6, 6))
     elif normalized == "artifact":
         painter.drawEllipse(rect)
         painter.drawLine(size // 2, margin + 3, size // 2, size - margin - 3)
@@ -240,6 +255,11 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
     elif normalized == "consumable":
         painter.drawRoundedRect(rect, size / 4, size / 4)
         painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+    elif normalized == "quest":
+        painter.drawRoundedRect(rect, 2, 2)
+        painter.drawLine(margin + 4, size // 2 - 4, size - margin - 4, size // 2 - 4)
+        painter.drawLine(margin + 4, size // 2, size - margin - 4, size // 2)
+        painter.drawLine(margin + 4, size // 2 + 4, size - margin - 4, size // 2 + 4)
     elif normalized == "grenade":
         painter.drawEllipse(rect)
         painter.drawLine(size // 2, margin, size // 2 + 4, margin - 2)

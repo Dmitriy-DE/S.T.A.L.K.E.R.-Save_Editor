@@ -116,6 +116,38 @@ def test_wrong_slot_is_rejected_before_write(synthetic_save: bytes, tmp_path: Pa
     assert worker.write_calls == []
 
 
+def test_cloud_target_must_match_profile_and_connected_app(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    prepared = _prepared(synthetic_save)
+    worker = FakeCloud(synthetic_save)
+    worker.app_id = 4500
+
+    with pytest.raises(CloudTransactionError, match="подключённой игре"):
+        upload_cloud(worker, prepared, tmp_path)
+
+    assert worker.read_calls == []
+    assert worker.write_calls == []
+
+
+def test_cloud_target_rejects_nested_or_traversal_paths(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    source = SourceRef(
+        kind="cloud",
+        locator="Stalker2/Saved/STEAM/SaveGames/Data/../slot.sav",
+        sha256=hashlib.sha256(synthetic_save).hexdigest(),
+    )
+    prepared = prepare_edit(synthetic_save, EditPlan(source=source, money=900_000))
+    worker = FakeCloud(synthetic_save)
+
+    with pytest.raises(CloudTransactionError, match="remote path"):
+        upload_cloud(worker, prepared, tmp_path)
+
+    assert worker.read_calls == []
+    assert worker.write_calls == []
+
+
 def test_editor_recovery_artifact_is_rejected_before_any_cloud_io(
     synthetic_save: bytes, tmp_path: Path
 ) -> None:

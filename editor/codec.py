@@ -181,7 +181,7 @@ def decompress(
 
 
 def load_encoder(*, importer: EncoderImporter | None = None) -> Any:
-    """Load the optional native Kraken encoder bundled with desktop builds."""
+    """Load the native Kraken encoder bundled with desktop builds."""
 
     import_module = importer or importlib.import_module
     try:

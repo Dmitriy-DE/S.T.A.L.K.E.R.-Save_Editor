@@ -101,16 +101,27 @@ def test_compact_rebuild_unsupported_decoder_uses_full_fallback() -> None:
     assert result.stream == b"\xCC\x06changed"
 
 
-def test_save_rebuild_unsupported_stream_returns_valid_full_container() -> None:
+def test_save_rebuild_unsupported_compressed_stream_fails_closed() -> None:
     raw = b"payload"
     source = _container(raw, (_stored_quantum(raw, decoder=10),))
-    rebuilt, decision = sf.rebuild_compact(
-        source, b"changed", original_raw=raw,
-    )
 
-    assert decision.mode == "full-fallback"
-    assert sf.validate_crc(rebuilt)[2] is True
-    assert sf.decompress_save(rebuilt) == b"changed"
+    with pytest.raises(sf.SaveError, match="encoder|сжат|Kraken"):
+        sf.rebuild_compact(source, b"changed", original_raw=raw)
+
+
+def test_save_rebuild_refuses_inflated_fallback_when_encoder_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw = b"payload"
+    source = _container(raw, (_stored_quantum(raw),))
+
+    def missing_encoder(value: bytes, *, level: int) -> bytes:
+        raise sf.CodecError("encoder is not packaged")
+
+    monkeypatch.setattr(sf, "codec_compress", missing_encoder)
+
+    with pytest.raises(sf.SaveError, match="encoder|сжат|Kraken"):
+        sf.rebuild_compact(source, b"changed", original_raw=raw)
 
 
 def test_save_rebuild_uses_real_encoder_when_available(monkeypatch: pytest.MonkeyPatch) -> None:

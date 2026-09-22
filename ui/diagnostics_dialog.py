@@ -3,18 +3,42 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QThread, Signal
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+)
 
-from editor.diagnostics import submit_logs
+from editor.diagnostics import collect_log_bundle, export_log_bundle, submit_logs
 
 
 class DiagnosticsWorker(QThread):
+    previewed = Signal(int)
     completed = Signal(str)
     failed = Signal(str)
 
     def run(self) -> None:
         try:
+            self.previewed.emit(len(collect_log_bundle()))
             self.completed.emit(submit_logs())
+        except Exception as exc:  # pragma: no cover - defensive thread boundary
+            self.failed.emit(f"{type(exc).__name__}: {exc}")
+
+
+class DiagnosticsExportWorker(QThread):
+    completed = Signal(str)
+    failed = Signal(str)
+
+    def __init__(self, destination, parent=None) -> None:
+        super().__init__(parent)
+        self.destination = destination
+
+    def run(self) -> None:
+        try:
+            self.completed.emit(str(export_log_bundle(self.destination)))
         except Exception as exc:  # pragma: no cover - defensive thread boundary
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -27,6 +51,7 @@ class DiagnosticsDialog(QDialog):
         self.setWindowTitle("Диагностика Save Editor")
         self.setModal(True)
         self._worker: DiagnosticsWorker | None = None
+        self._export_worker: DiagnosticsExportWorker | None = None
 
         layout = QVBoxLayout(self)
         description = QLabel(
@@ -35,12 +60,21 @@ class DiagnosticsDialog(QDialog):
         )
         description.setWordWrap(True)
         layout.addWidget(description)
+        self.preview_label = QLabel(
+            "Предпросмотр: будет отправлен только обезличенный gzip-архив "
+            "ограниченного размера."
+        )
+        self.preview_label.setWordWrap(True)
+        layout.addWidget(self.preview_label)
         self.status_label = QLabel("Готово к отправке")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
         self.send_button = QPushButton("Отправить логи")
         self.send_button.clicked.connect(self._send)
         layout.addWidget(self.send_button)
+        self.export_button = QPushButton("Экспортировать обезличенные логи")
+        self.export_button.clicked.connect(self._export)
+        layout.addWidget(self.export_button)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -53,14 +87,45 @@ class DiagnosticsDialog(QDialog):
         worker = DiagnosticsWorker(self)
         worker.completed.connect(self._on_completed)
         worker.failed.connect(self._on_failed)
+        worker.previewed.connect(self._on_previewed)
         worker.finished.connect(lambda: self._clear_worker(worker))
         worker.finished.connect(worker.deleteLater)
         self._worker = worker
         worker.start()
 
+    def _export(self) -> None:
+        if self._export_worker is not None and self._export_worker.isRunning():
+            return
+        filename, _filter = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт обезличенных логов",
+            "save-editor-diagnostics.log.gz",
+            "Gzip logs (*.log.gz)",
+        )
+        if not filename:
+            return
+        self.export_button.setEnabled(False)
+        self.status_label.setText("Сохраняю локальный экспорт логов…")
+        worker = DiagnosticsExportWorker(filename, self)
+        worker.completed.connect(self._on_export_completed)
+        worker.failed.connect(self._on_export_failed)
+        worker.finished.connect(lambda: self._clear_export_worker(worker))
+        worker.finished.connect(worker.deleteLater)
+        self._export_worker = worker
+        worker.start()
+
     def _clear_worker(self, worker: DiagnosticsWorker) -> None:
         if self._worker is worker:
             self._worker = None
+
+    def _clear_export_worker(self, worker: DiagnosticsExportWorker) -> None:
+        if self._export_worker is worker:
+            self._export_worker = None
+
+    def _on_previewed(self, size: int) -> None:
+        self.preview_label.setText(
+            f"Предпросмотр: обезличенный архив подготовлен ({size:,} байт)."
+        )
 
     def _on_completed(self, report_id: str) -> None:
         self.status_label.setText(f"Логи отправлены. Номер отчёта: {report_id}")
@@ -70,5 +135,13 @@ class DiagnosticsDialog(QDialog):
         self.status_label.setText(f"Логи не отправлены: {message}")
         self.send_button.setEnabled(True)
 
+    def _on_export_completed(self, path: str) -> None:
+        self.status_label.setText(f"Экспорт сохранён: {path}")
+        self.export_button.setEnabled(True)
 
-__all__ = ["DiagnosticsDialog", "DiagnosticsWorker"]
+    def _on_export_failed(self, message: str) -> None:
+        self.status_label.setText(f"Экспорт не сохранён: {message}")
+        self.export_button.setEnabled(True)
+
+
+__all__ = ["DiagnosticsDialog", "DiagnosticsExportWorker", "DiagnosticsWorker"]

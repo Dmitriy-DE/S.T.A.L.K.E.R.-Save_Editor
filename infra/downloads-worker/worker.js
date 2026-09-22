@@ -4,6 +4,42 @@
 const MAX_DIAGNOSTIC_BYTES = 2 * 1024 * 1024;
 const DIAGNOSTIC_RATE_LIMIT_KEY = "diagnostics";
 
+async function readLimitedBody(request, maxBytes) {
+  if (!request.body) {
+    const body = await request.arrayBuffer();
+    return body.byteLength <= maxBytes ? body : null;
+  }
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      total += chunk.byteLength;
+      if (total > maxBytes) {
+        try {
+          await reader.cancel();
+        } catch {
+          // The body is already rejected; cancellation is only best effort.
+        }
+        return null;
+      }
+      chunks.push(chunk);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body.buffer;
+}
+
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
@@ -12,6 +48,10 @@ function jsonResponse(value, status = 200) {
       "cache-control": "no-store",
     },
   });
+}
+
+function diagnosticsError(message, status) {
+  return jsonResponse({ error: message }, status);
 }
 
 async function checkDiagnosticsRateLimit(env) {
@@ -33,39 +73,55 @@ export default {
 
     if (url.pathname === "/diagnostics") {
       if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+        return diagnosticsError("Method Not Allowed", 405);
       }
       const contentType = (request.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
-      const declaredLength = Number(request.headers.get("content-length") || "0");
+      const declaredLengthHeader = request.headers.get("content-length");
+      const declaredLength = Number(declaredLengthHeader || "0");
+      if (
+        declaredLengthHeader !== null &&
+        (!Number.isSafeInteger(declaredLength) || declaredLength < 0)
+      ) {
+        return diagnosticsError("Diagnostics content length is invalid", 400);
+      }
       if (contentType !== "application/gzip") {
-        return new Response("Diagnostics payload must be application/gzip", { status: 415 });
+        return diagnosticsError("Diagnostics payload must be application/gzip", 415);
       }
       if (declaredLength > MAX_DIAGNOSTIC_BYTES) {
-        return new Response("Diagnostics payload is too large", { status: 413 });
+        return diagnosticsError("Diagnostics payload is too large", 413);
       }
       const rateLimitStatus = await checkDiagnosticsRateLimit(env);
       if (rateLimitStatus === 429) {
-        return new Response("Diagnostics rate limit exceeded", { status: 429 });
+        return diagnosticsError("Diagnostics rate limit exceeded", 429);
       }
       if (rateLimitStatus !== null) {
-        return new Response("Diagnostics service is not configured", { status: 503 });
+        return diagnosticsError("Diagnostics service is not configured", 503);
       }
-      const body = await request.arrayBuffer();
-      if (body.byteLength === 0 || body.byteLength > MAX_DIAGNOSTIC_BYTES) {
-        return new Response("Diagnostics payload is too large or empty", { status: 413 });
+      let body;
+      try {
+        body = await readLimitedBody(request, MAX_DIAGNOSTIC_BYTES);
+      } catch {
+        return diagnosticsError("Diagnostics payload could not be read", 400);
+      }
+      if (body === null || body.byteLength === 0) {
+        return diagnosticsError("Diagnostics payload is too large or empty", 413);
       }
       const reportId = crypto.randomUUID();
       const key = `diagnostics/${new Date().toISOString().replace(/[:.]/g, "-")}-${reportId}.log.gz`;
-      await env.BUCKET.put(key, body, {
-        httpMetadata: {
-          contentType: "application/gzip",
-          cacheControl: "private, no-store",
-        },
-        customMetadata: {
-          reportId,
-          source: "save-editor-desktop",
-        },
-      });
+      try {
+        await env.BUCKET.put(key, body, {
+          httpMetadata: {
+            contentType: "application/gzip",
+            cacheControl: "private, no-store",
+          },
+          customMetadata: {
+            reportId,
+            source: "save-editor-desktop",
+          },
+        });
+      } catch {
+        return diagnosticsError("Diagnostics storage unavailable", 503);
+      }
       return jsonResponse({ report_id: reportId }, 201);
     }
 
@@ -79,7 +135,7 @@ export default {
       });
     }
     if (key.startsWith("diagnostics/")) {
-      return new Response("Not found", { status: 404 });
+      return diagnosticsError("Not found", 404);
     }
     const object = await env.BUCKET.get(key);
     if (object === null) {

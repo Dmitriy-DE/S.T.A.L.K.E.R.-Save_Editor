@@ -65,6 +65,9 @@ def test_registry_owns_unique_app_ids_and_cross_surface_traits() -> None:
     )
     assert stalker2.cloud_extensions == frozenset({".sav"})
     assert release_by_app_id(1643320) is stalker2
+    assert stalker2.equipment is not None
+    assert "binocular" in stalker2.equipment.device_subtypes
+    assert stalker2.equipment.support("durability").maturity == "experimental"
 
 
 def test_platform_and_catalog_modules_do_not_redeclare_official_app_ids() -> None:

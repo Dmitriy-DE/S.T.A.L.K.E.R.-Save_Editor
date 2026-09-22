@@ -1,4 +1,4 @@
-"""Zone-style launcher for the local save library.
+"""Unified launcher for the local S.T.A.L.K.E.R. save library.
 
 The launcher is deliberately a view over :mod:`ui.save_slots_view`.  It does
 not infer an installed game from a folder name and it never writes to a game

@@ -263,10 +263,10 @@ class MainWindow(QMainWindow):
         self.version_badge.setObjectName("versionBadge")
         title_layout.addWidget(self.version_badge)
         title_layout.addStretch(1)
-        ui_hint = QLabel("ZONE / SAVE WORKBENCH")
-        ui_hint.setObjectName("sidebarStatus")
-        title_layout.addWidget(ui_hint)
-        self.launcher_button = QPushButton("← ЗОНА")
+        self.ui_hint = QLabel("S2 / SAVE WORKBENCH")
+        self.ui_hint.setObjectName("sidebarStatus")
+        title_layout.addWidget(self.ui_hint)
+        self.launcher_button = QPushButton("← БИБЛИОТЕКА")
         self.launcher_button.setObjectName("launcherBackButton")
         self.launcher_button.setToolTip("Вернуться к библиотеке игр и сохранений")
         self.launcher_button.clicked.connect(self._show_launcher)
@@ -389,8 +389,15 @@ class MainWindow(QMainWindow):
             "Оборудование",
         )
         for index, label in enumerate(self.nav_labels):
+            if index == 2:
+                self.advanced_navigation_label = QLabel("ДОПОЛНИТЕЛЬНО")
+                self.advanced_navigation_label.setObjectName("sidebarStatus")
+                sidebar_layout.addWidget(self.advanced_navigation_label)
             button = QPushButton(label)
             button.setObjectName("navButton")
+            button.setProperty(
+                "navigationTier", "advanced" if index in (2, 3) else "primary"
+            )
             button.setCheckable(True)
             button.setAutoExclusive(True)
             button.clicked.connect(lambda _checked=False, i=index: self._select_tab(i))
@@ -418,6 +425,7 @@ class MainWindow(QMainWindow):
         self.preview_button.clicked.connect(self._start_preview)
         actions.addWidget(self.preview_button)
         self.save_copy_button = QPushButton("Сохранить")
+        self.save_copy_button.setObjectName("primarySaveButton")
         self.save_copy_button.setEnabled(False)
         self.save_copy_button.setToolTip(
             "Проверяет и сохраняет одним нажатием; бэкап исходного файла делается сам"
@@ -1268,7 +1276,7 @@ class MainWindow(QMainWindow):
                 "Только чтение: правка прочности не подтверждена для этого релиза"
                 if capabilities is not None and not capabilities.edit_durability
                 else (
-                    "Экспериментально: S2 STATE f32 armor anchor; backup обязателен"
+                    "Экспериментально: S2 STATE f32 condition anchor для подтверждённых оружия/брони; backup обязателен"
                     if self.snapshot is not None
                     and self.snapshot.format_id == "stalker2"
                     else "Экспериментально: STATE/UPDATE/client-data mirrors; backup обязателен"

@@ -1,4 +1,4 @@
-"""Small local support dialog shared by the desktop Zone shell."""
+"""Small local support dialog shared by the desktop editor shell."""
 
 from __future__ import annotations
 

@@ -3,7 +3,12 @@ from __future__ import annotations
 import hashlib
 
 import pytest
-from test_s2_equipment_inventory import EQUIPPED_HANDLE, _save_with_equipped_armor
+from test_s2_equipment_inventory import (
+    EQUIPPED_HANDLE,
+    WEAPON_HANDLE,
+    _save_with_equipped_armor,
+    _save_with_grid_weapon,
+)
 
 import save_format as sf
 from editor.models import EditPlan, SourceRef
@@ -65,6 +70,38 @@ def test_s2_prepare_edit_can_combine_money_and_armor_condition(
     edited = next(item for item in after.inventory if item.handle == EQUIPPED_HANDLE)
     assert after.money == 900_000
     assert edited.condition == pytest.approx(1.0)
+
+
+def test_s2_prepare_edit_round_trips_grid_weapon_condition_without_touching_modules(
+    synthetic_save: bytes,
+) -> None:
+    data = _save_with_grid_weapon(synthetic_save, condition=0.75)
+    before_raw = sf.decompress_save(data)
+    before = sf.inspect_save(data)
+    item = next(item for item in before.inventory if item.handle == WEAPON_HANDLE)
+
+    prepared = prepare_edit(
+        data,
+        EditPlan(source=_source(data), durability=((WEAPON_HANDLE, 0.9),)),
+    )
+
+    after_raw = sf.decompress_save(prepared.data)
+    after = sf.inspect_save(prepared.data)
+    edited = next(item for item in after.inventory if item.handle == WEAPON_HANDLE)
+    changed = {
+        index
+        for index, (left, right) in enumerate(zip(before_raw, after_raw, strict=True))
+        if left != right
+    }
+    expected = set(
+        range(item.record_offset + 0x80, item.record_offset + 0x84)
+    )
+    assert changed <= expected
+    assert changed
+    assert edited.condition == pytest.approx(0.9)
+    assert edited.modules == item.modules
+    assert edited.upgrades == item.upgrades
+    assert after.crc_ok is True
 
 
 def test_s2_prepare_edit_rejects_non_armor_condition(synthetic_save: bytes) -> None:

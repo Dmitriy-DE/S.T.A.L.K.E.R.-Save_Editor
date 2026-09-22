@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "web"))
 
 import web_bridge  # noqa: E402
+from test_s2_equipment_inventory import WEAPON_HANDLE, _save_with_grid_weapon  # noqa: E402
 from test_xray_durability import _condition_fixture  # noqa: E402
 
 
@@ -36,6 +37,25 @@ def test_web_snapshot_exposes_s2_experimental_capability_but_keeps_unconfirmed_r
 
     assert snapshot["capabilities"]["equipment"]["durability"]["maturity"] == "experimental"
     assert all(row["durability_editable"] is False for row in snapshot["equipment"])
+
+
+def test_web_snapshot_exposes_s2_weapon_condition_and_read_only_modules(
+    synthetic_save: bytes,
+) -> None:
+    snapshot = json.loads(
+        web_bridge.analyze(_save_with_grid_weapon(synthetic_save), "weapon.sav")
+    )
+
+    inventory = next(row for row in snapshot["inventory"] if row["handle"] == WEAPON_HANDLE)
+    equipment = next(row for row in snapshot["equipment"] if row["handle"] == WEAPON_HANDLE)
+    assert inventory["condition"] == 0.75
+    assert inventory["condition_editable"] is True
+    assert inventory["modules"] == ["GunKharod_MagDefault", "HP_Laser_1"]
+    assert equipment["category"] == "weapon"
+    assert equipment["modules"] == ["GunKharod_MagDefault", "HP_Laser_1"]
+    assert equipment["durability_editable"] is True
+    assert equipment["observation_source"] == "grid"
+    assert inventory["observation_source"] == "grid"
 
 
 def test_web_snapshot_does_not_expose_soc_helmet_category() -> None:
@@ -67,11 +87,20 @@ def test_web_equipment_panel_contains_filters_and_bulk_repair_controls() -> None
         'id="equipment-repair-equipped"',
     ):
         assert marker in html
+    for option in (
+        'value="consumable"',
+        'value="ammo"',
+        'value="artifact"',
+        'value="quest"',
+    ):
+        assert option in html
     for marker in (
         "function renderEquipment",
         "stageEquipmentRepair",
         'el("equipment-repair-damaged")',
         'el("equipment-filter")',
         'helmet_category_supported',
+        '"quest"].includes(filter)',
+        'value.includes("квест")',
     ):
         assert marker in app

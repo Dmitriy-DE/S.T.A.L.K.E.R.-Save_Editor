@@ -20,7 +20,7 @@
 
 # S.T.A.L.K.E.R. Save Editor
 
-A cross-platform save editor for the official PC releases of **S.T.A.L.K.E.R. 2** and the original **Shadow of Chernobyl / Clear Sky / Call of Pripyat** trilogy.
+A cross-platform **S.T.A.L.K.E.R. Save Editor** for the official PC releases of **S.T.A.L.K.E.R. 2** and the original **Shadow of Chernobyl / Clear Sky / Call of Pripyat** trilogy.
 
 The project uses **one Python editing core** across the Qt desktop app, CLI and browser build. Local files are analysed offline; unsupported structures stay read-only instead of being guessed.
 
@@ -29,7 +29,7 @@ The project uses **one Python editing core** across the Qt desktop app, CLI and 
 > the opened local slot; Steam Cloud writes remain explicit and guarded by
 > backup/hash verification.
 
-The current release line is `0.5.20`. A release is published only from a clean
+The current release line is `0.5.21`. A release is published only from a clean
 tagged commit after the Linux and Windows packaged gates pass.
 
 <p align="center">
@@ -55,7 +55,7 @@ tagged commit after the Linux and Windows packaged gates pass.
 
 | Game | Status | Editing surface |
 |---|---|---|
-| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported | money, confirmed stack edits, CFG/localization-backed inventory names and icons when a loose game/Zone Kit/Workshop catalog is available; experimental condition editing for confirmed equipped armour; desktop Steam Cloud |
+| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported / experimental equipment writers | money, confirmed stack edits, catalog names/icons, source-backed weapon and armor condition editing where the exact owned-row anchor is present, read-only weapon modules/devices/upgrades, desktop Steam Cloud |
 | **Shadow of Chernobyl — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations and confirmed equipment fields |
 | **Clear Sky — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; experimental equipment/upgrades where the exact format anchor is proven |
 | **Call of Pripyat — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; helmet/equipment/upgrades where the exact format anchor is proven |
@@ -69,7 +69,7 @@ The project intentionally does **not** pretend that every visible catalogue entr
 Still read-only / research-gated in S2:
 
 - arbitrary item creation from SID;
-- general weapon condition editing;
+- weapon condition editing for unsupported/ambiguous serializers;
 - weapon/equipment upgrade mutation without a proven serializer path;
 - unknown GVAS inventory structures;
 - unsupported Enhanced Edition containers.
@@ -106,17 +106,18 @@ sudo apt update
 sudo apt install stalker2-save-editor
 ```
 
-The current `v0.5.20` assets remain available as direct downloads; the signed
+The previous `v0.5.20` assets remain available as direct downloads; the signed
 APT channel is published by the next tag only after its key, package, R2
 read-back and disposable `apt update` gates pass.
 
-Checksums are published with each GitHub release.
+Checksums are published with each GitHub release. The `v0.5.21` candidate is
+published only after the clean tagged build and public read-back gates pass.
 Current stable release: [v0.5.20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.20).
 
 ## Desktop workflow
 
 ```text
-Zone library
+Библиотека сейвов
     ↓
 choose / import save
     ↓
@@ -163,9 +164,9 @@ returns an opaque report id. Save bytes are not included.
 Cloud upload keeps the selected original `Data/<slot>.sav` locator. Old
 editor-generated `-edited.sav`/`.edited.sav` entries are hidden from the
 picker and rejected as upload targets; the app does not delete them remotely.
-Changed S2 payloads are re-encoded with the bundled Kraken encoder when the
-desktop build has it, so the old 15 MB stored-block fallback is not used by a
-current packaged build.
+Changed S2 payloads are re-encoded with the bundled Kraken encoder. Desktop
+packages fail closed if that encoder is missing, so the old 15 MB stored-block
+fallback cannot be uploaded as a replacement save.
 
 ## Updates and standalone packages
 
@@ -206,7 +207,7 @@ Release preparation and R2 read-back use the repository tools:
 
 ```bash
 make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-make apt-repo VERSION=0.5.20 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
+make apt-repo VERSION=0.5.21 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
 make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
 ```
 
