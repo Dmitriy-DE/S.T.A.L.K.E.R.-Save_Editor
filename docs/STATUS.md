@@ -1,14 +1,23 @@
 # Состояние и пробелы — 2026-09-22
 
-## v0.5.21 candidate — S2 catalog/UI and Cloud target correction — 2026-09-22
+## v0.5.21 — published root release; APT pending key recovery — 2026-09-22
 
-Текущая рабочая ветка `fix/cloud-repack-s2-ui` закрывает ручной план по
-оборудованию, Cloud, UI и диагностике:
+Публичный root-релиз завершён из чистого `main` commit
+`86cd76e3fb44c93249cb31f2da59ad204d4660e5` после PR
+[#121](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/121),
+[#122](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/122),
+[#123](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/123) и
+[#124](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/124).
+Финальный tagged workflow
+[#35787422476](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35787422476)
+прошёл source gate, Windows portable/installer smoke и Linux portable/`.deb`
+smoke. Windows build корректно собран в CI, а Linux package собран на glibc
+2.35 baseline.
 
-База проверки: branch `fix/cloud-repack-s2-ui`, HEAD
-`a7312aa4ad887ceca300858697cdf1272ae1a9b7`; рабочее дерево намеренно dirty
-только из-за перечисленных ниже изменений и сгенерированных web/package
-артефактов.
+База проверки: tagged source commit
+`86cd76e3fb44c93249cb31f2da59ad204d4660e5`; опубликованные пакеты собраны из
+этого CI source tree. Документационные изменения ниже не входят в байты
+`v0.5.21` и публикуются отдельным docs-only merge.
 
 - панель отношений/группировок больше не показывается для S.T.A.L.K.E.R. 2;
 - CFG-каталог S2 принимает отдельный путь Zone Kit/Workshop, распознаёт
@@ -38,20 +47,29 @@
   redacted bundle, экспортируются и отправляются в отдельный R2 diagnostics
   prefix с rate-limit/lifecycle guard.
 
-Локальный gate после этих изменений: `663 passed`, `make
-PYTHON=.venv/bin/python check` и JavaScript tests (`9 passed`) проходят. Linux
-portable `.tar.gz` и `.deb` собраны локально из dirty checkout с
-`--allow-dirty`; packaged diagnostic/encoder smoke прошёл, а native Steam
-smoke корректно вернул понятную ошибку при не запущенном Steam.
-Текущие SHA-256: Linux portable
-`f31c00eeb907c3e8c0caaa259af9311b6a4da2f1a570c13fecec6f7420761f07`, Debian
-`edf2e9a95047d1649d736191a2b59bc98dfebef8e9ed3c6ca024c2c9a4471560`.
+Локальный source gate после финальных исправлений: `668 passed`, 9 Node tests,
+Ruff, mypy, generated web/theme checks и `git diff --check` проходят. Публичные
+артефакты подготовлены из CI, а не из локального dirty checkout:
 
-Это кандидат для `v0.5.21`, который публикуется только после чистого merge/tag и
-всех native package/release gates.
-Windows installer/portable на Linux не выдаются за локально проверенные,
-GitHub/R2/Pages/APT/OTA не публиковались, live Steam `WriteFile`/read-back и
-загрузка изменённого слота игрой остаются внешними runtime-gates.
+| Артефакт | Размер | SHA-256 |
+|---|---:|---|
+| Windows portable `.zip` | 62,624,891 | `38b46733441f35a0f2a97406aef9c1d2312fcf834811e23ed5ed30f45efe15cf` |
+| Windows installer `.exe` | 38,427,714 | `528ca8285175edb43854fdd2271e4a6bc89f45cf865c86d5b5a43ae224704b1a` |
+| Linux portable `.tar.gz` | 80,480,887 | `4e0a33adac7f9cd9d305aa18e789474f4023ac30a91a6a8c92b57b0307fc539d` |
+| Debian `.deb` | 85,564,718 | `40ba725788a422b0579b945a6a89b49da6c2a440a94674d1dbec227ec42e9141` |
+
+GitHub Release [v0.5.21](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.21),
+R2 Worker [`latest.json`](https://save-editor-downloads.save-editor.workers.dev/latest.json)
+и каждый публичный download URL прочитаны обратно; GitHub и R2 совпали с
+локальными SHA/размерами побайтно. OTA manifest сообщает `0.5.21` и тот же
+source commit.
+
+Release job не получил `CLOUDFLARE_*` и `APT_SIGNING_*` secrets, поэтому Worker
+был обновлён авторизованным Wrangler вручную, root-объекты R2 опубликованы и
+проверены вручную, а GitHub Release создан из тех же байтов. APT не публиковался:
+исходный private signing key отсутствует; генерация нового ключа запрещена,
+чтобы не сломать доверие клиентов. Live Steam `WriteFile`/read-back и загрузка
+изменённого слота игрой остаются отдельными внешними runtime-gates.
 
 ## v0.5.20 — native Steam Cloud writer with remote-only listings — 2026-09-21
 

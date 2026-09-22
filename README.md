@@ -93,9 +93,12 @@ The latest release ships four end-user packages.
 | Linux | [Portable (.tar.gz)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-linux-x86_64.tar.gz) |
 | Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
 
-The next tagged release also publishes a signed APT channel through the same
-R2 download Worker. After importing its public key, Debian/Ubuntu users can
-install and receive later package versions with the normal package manager:
+The release pipeline is also prepared for a signed APT channel through the
+same R2 download Worker. The v0.5.21 direct `.deb` is published, but the APT
+repository is intentionally still unavailable until the original private
+signing key is present; do not generate a replacement key for an existing
+channel. After the key and repository have been published, Debian/Ubuntu users
+can install and receive later package versions with the normal package manager:
 
 ```bash
 curl -fsSL https://save-editor-downloads.save-editor.workers.dev/apt/repository-key.asc \
@@ -106,13 +109,13 @@ sudo apt update
 sudo apt install stalker2-save-editor
 ```
 
-The previous `v0.5.20` assets remain available as direct downloads; the signed
-APT channel is published by the next tag only after its key, package, R2
-read-back and disposable `apt update` gates pass.
+The previous `v0.5.20` assets remain available as direct downloads. The signed
+APT channel will be enabled only after its original key, package, R2 read-back
+and disposable `apt update` gates pass.
 
-Checksums are published with each GitHub release. The `v0.5.21` candidate is
-published only after the clean tagged build and public read-back gates pass.
-Current stable release: [v0.5.20](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.20).
+Checksums are published with each GitHub release. The `v0.5.21` release was
+published after the clean tagged build and public read-back gates passed.
+Current stable release: [v0.5.21](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.21).
 
 ## Desktop workflow
 
