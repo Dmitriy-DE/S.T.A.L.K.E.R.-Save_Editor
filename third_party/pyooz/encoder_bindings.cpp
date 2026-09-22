@@ -2,6 +2,7 @@
 #include <Python.h>
 
 #include <climits>
+#include <cmath>
 #include <cstddef>
 #include <vector>
 
