@@ -11,6 +11,7 @@ remain separate evidence gates.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from collections.abc import Iterable, Mapping, Sequence
@@ -74,6 +75,8 @@ _NUMBER_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 _S2_APP_ID = release_by_id("stalker2").app_id
 _ZONE_KIT_ENV_KEYS = ("STALKER2_ZONE_KIT_ROOT", "ZONE_KIT_ROOT")
 _WORKSHOP_ENV_KEYS = ("STALKER2_WORKSHOP_ROOT",)
+_LOCALIZATION_FILE_LIMIT = 256
+_LOCALIZATION_FILE_BYTES = 16 * 1024 * 1024
 
 
 class S2CatalogError(ValueError):
@@ -205,6 +208,122 @@ def _read_text(path: Path) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+def _localization_roots(root: Path) -> tuple[Path, ...]:
+    """Return bounded, conventional Zone Kit localization directories."""
+
+    candidates = (
+        root / "Content" / "Localization",
+        root / "Content" / "LocalizationDB",
+        root / "Content" / "GameLite" / "Localization",
+        root / "Localization",
+        root / "LocalizationDB",
+        root / "LocalizationStrings",
+        root / "Stalker2" / "Content" / "Localization",
+    )
+    result: list[Path] = []
+    seen: set[Path] = set()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            resolved = candidate
+        if resolved in seen or not resolved.is_dir():
+            continue
+        seen.add(resolved)
+        result.append(resolved)
+    return tuple(result)
+
+
+def _localization_value(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip().strip("\"'")
+    return text or None
+
+
+def _collect_localization(
+    value: object,
+    result: dict[str, str],
+    inherited_key: str | None = None,
+) -> None:
+    """Collect common Zone Kit JSON localization export shapes."""
+
+    if isinstance(value, str):
+        text = _localization_value(value)
+        if inherited_key and text is not None:
+            result.setdefault(inherited_key, text)
+        return
+    if isinstance(value, Mapping):
+        key = inherited_key
+        for candidate in ("id", "key", "sid", "name", "loc_key", "localization_key"):
+            candidate_value = _localization_value(value.get(candidate))
+            if candidate_value:
+                key = candidate_value
+                break
+        for candidate in ("text", "Text", "value", "Value", "translation", "Translation"):
+            text = _localization_value(value.get(candidate))
+            if key and text is not None:
+                result.setdefault(key, text)
+                break
+        for raw_key, child in value.items():
+            if not isinstance(raw_key, str):
+                continue
+            if raw_key.casefold() in {
+                "id",
+                "key",
+                "sid",
+                "name",
+                "loc_key",
+                "localization_key",
+                "text",
+                "value",
+                "translation",
+            }:
+                continue
+            if isinstance(child, str):
+                text = _localization_value(child)
+                if text is not None:
+                    result.setdefault(raw_key.strip(), text)
+            else:
+                _collect_localization(child, result, raw_key.strip())
+        return
+    if isinstance(value, list):
+        for child in value:
+            _collect_localization(child, result, inherited_key)
+
+
+def _load_localization(root: Path) -> dict[str, str]:
+    """Load safe JSON localization exports without scanning arbitrary assets."""
+
+    files: list[Path] = []
+    for directory in _localization_roots(root):
+        try:
+            files.extend(
+                path
+                for path in directory.rglob("*.json")
+                if path.is_file() and not path.is_symlink()
+            )
+        except OSError:
+            continue
+    files = sorted(
+        set(files),
+        key=lambda path: (
+            0 if any(part.casefold() in {"en", "en-us", "english"} for part in path.parts) else 1,
+            path.as_posix().casefold(),
+        ),
+    )[:_LOCALIZATION_FILE_LIMIT]
+    result: dict[str, str] = {}
+    for path in files:
+        try:
+            if path.stat().st_size > _LOCALIZATION_FILE_BYTES:
+                continue
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        _collect_localization(payload, result)
+    return result
+
+
 def _is_mod_path(path: Path) -> bool:
     return any(part.casefold() in _MOD_PARTS for part in path.parts)
 
@@ -249,6 +368,16 @@ def _append_source(
     sources.append(S2CatalogSource(path, kind))
 
 
+def _explicit_source_kind(root: str | Path) -> Literal["zonekit", "workshop"]:
+    path = _resolved_path(root)
+    parts = tuple(part.casefold() for part in path.parts)
+    if "workshop" in parts and str(_S2_APP_ID) in parts:
+        return "workshop"
+    if path.name.isdigit() and path.parent.name == str(_S2_APP_ID):
+        return "workshop"
+    return "zonekit"
+
+
 def _workshop_item_roots(root: str | Path) -> tuple[Path, ...]:
     """Return Steam Workshop item directories below one library override."""
 
@@ -283,18 +412,21 @@ def discover_s2_catalog_sources(
     *,
     installed_roots: Iterable[str | Path] = (),
     steam_libraries: Iterable[str | Path] = (),
+    catalog_roots: Iterable[str | Path] = (),
     environ: Mapping[str, str] | None = None,
 ) -> tuple[S2CatalogSource, ...]:
     """Discover loose S2 metadata without treating mods as canonical.
 
-    The source path and installed roots are searched first.  Zone Kit roots
-    are explicit environment overrides.  Steam Workshop directories are
+    Explicit catalog roots are searched first.  The source path and installed
+    roots follow. Zone Kit roots are explicit environment overrides. Steam Workshop directories are
     included last and are only usable through :meth:`load_overlay`, so an
     overlay cannot shadow an official catalog by accident.
     """
 
     sources: list[S2CatalogSource] = []
     seen: set[tuple[Path, str]] = set()
+    for catalog_root in catalog_roots:
+        _append_source(sources, seen, catalog_root, _explicit_source_kind(catalog_root))
     if source_name:
         source_path = Path(source_name).expanduser()
         if source_path.is_absolute() or source_path.exists():
@@ -435,7 +567,7 @@ def _is_item(record: _S2Record, values: dict[str, tuple[str, ...]]) -> bool:
     return bool(record.values.get("sid")) and bool(_ITEM_FIELDS & leaves)
 
 
-def _display_name(values: dict[str, tuple[str, ...]]) -> str | None:
+def _display_name_key(values: dict[str, tuple[str, ...]]) -> str | None:
     value = _first(
         values,
         "displayname",
@@ -447,6 +579,26 @@ def _display_name(values: dict[str, tuple[str, ...]]) -> str | None:
         return None
     normalized = value.strip().strip("\"'")
     return normalized or None
+
+
+def _display_name(
+    values: dict[str, tuple[str, ...]],
+    localization: Mapping[str, str] | None = None,
+) -> str | None:
+    key = _display_name_key(values)
+    if key is None:
+        return None
+    if localization:
+        translated = localization.get(key)
+        if translated is None:
+            folded = key.casefold()
+            translated = next(
+                (value for candidate, value in localization.items() if candidate.casefold() == folded),
+                None,
+            )
+        if translated:
+            return translated
+    return key
 
 
 def _icon_texture(values: dict[str, tuple[str, ...]]) -> str | None:
@@ -509,6 +661,8 @@ def _source(root: Path, path: Path) -> str:
 def _find_game_data(root: Path, *, allow_mod_path: bool = False) -> Path | None:
     candidates: list[Path] = [
         root / "Content" / "GameLite" / "GameData",
+        root / "GameLite" / "GameData",
+        root / "GameData",
         root / "Stalker2" / "Content" / "GameLite" / "GameData",
         root / "stalker2" / "Content" / "GameLite" / "GameData",
     ]
@@ -541,14 +695,18 @@ def _find_game_data(root: Path, *, allow_mod_path: bool = False) -> Path | None:
 def _catalog_source_root(root: Path, game_data: Path) -> Path:
     """Return the content root from which loose image assets are addressable."""
 
-    if root.name.casefold() == "gamedata":
+    lowered_parts = tuple(part.casefold() for part in game_data.parts)
+    content_indexes = [
+        index for index, part in enumerate(lowered_parts) if part == "content"
+    ]
+    try:
+        content_index = content_indexes[-1]
+    except IndexError:
         return root
-    if tuple(part.casefold() for part in game_data.parts[-3:]) == (
-        "content",
-        "gamelite",
-        "gamedata",
-    ):
-        return game_data.parents[2]
+    if content_index > 0:
+        return Path(*game_data.parts[:content_index])
+    if content_index == 0:
+        return root.parent if root.name.casefold() == "content" else Path(game_data.anchor or "/")
     return root
 
 
@@ -604,6 +762,11 @@ class S2CatalogProvider:
             not allow_mod_overlay and _is_mod_path(item_root)
         ):
             return None
+        # A Steam Workshop item can wrap the actual mod below
+        # ``Stalker2/Mods/<name>/Content``.  Resolve the nearest Content root
+        # before looking for localization so the outer Workshop container does
+        # not hide the mod's human-readable names.
+        localization = _load_localization(_catalog_source_root(root, game_data))
 
         item_paths = tuple(
             path
@@ -656,7 +819,7 @@ class S2CatalogProvider:
                 continue
             definition = ItemDefinition(
                 key=sid,
-                display_name=_display_name(values),
+                display_name=_display_name(values, localization),
                 category=_category(record, values),
                 unit_weight=_number(_first(values, "weight")),
                 width=None,
@@ -667,6 +830,7 @@ class S2CatalogProvider:
                 source=f"{record.source}#{record.name or sid}",
                 serialization_family=None,
                 icon_texture=_icon_texture(values),
+                display_name_key=_display_name_key(values),
             )
             items.append(definition)
             item_by_sid[sid] = definition
@@ -699,11 +863,11 @@ class S2CatalogProvider:
                     _UpgradeRow(
                         category=_category(record, values),
                         source=f"{record.source}#{record.name or sid}",
-                        display_name=_display_name(values),
+                        display_name=_display_name(values, localization),
                     ),
                 )
                 if row.display_name is None:
-                    row.display_name = _display_name(values)
+                    row.display_name = _display_name(values, localization)
                 for item_sid in _item_sids(values):
                     if item_sid in item_by_sid:
                         row.items.add(item_sid)

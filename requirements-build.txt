@@ -2,3 +2,4 @@
 # PyInstaller is invoked only during packaging; it is not a runtime dependency.
 -r requirements.txt
 PyInstaller==6.22.3
+setuptools>=68

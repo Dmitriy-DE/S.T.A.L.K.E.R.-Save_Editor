@@ -276,6 +276,10 @@ class ItemDefinition:
     icon_x: int | None = None
     icon_y: int | None = None
     icon_texture: str | None = None
+    # S2 config files commonly store a localization key in DisplayName. Keep
+    # that key beside the translated label so save-local rows can resolve both
+    # forms without pretending that a translated string is the prototype SID.
+    display_name_key: str | None = None
 
     def __post_init__(self) -> None:
         if not self.key.strip():
@@ -290,6 +294,12 @@ class ItemDefinition:
         if self.icon_texture is not None:
             texture = self.icon_texture.strip().replace("\\", "/")
             object.__setattr__(self, "icon_texture", texture or None)
+        if self.display_name_key is not None:
+            object.__setattr__(
+                self,
+                "display_name_key",
+                self.display_name_key.strip() or None,
+            )
         object.__setattr__(self, "slots", tuple(str(slot) for slot in self.slots))
         if self.unit_weight is not None and self.unit_weight < 0:
             raise ValueError("item weight must not be negative")
@@ -345,6 +355,25 @@ class ItemCatalog:
             and item.display_name.strip().casefold() == normalized
         )
         return matches[0] if len(matches) == 1 else None
+
+    def resolve_key_or_display_name(self, value: str | None) -> ItemDefinition | None:
+        """Resolve an exact SID, localization key, or unique translated label."""
+
+        normalized = str(value or "").strip()
+        if not normalized:
+            return None
+        exact = self.resolve(normalized)
+        if exact is not None:
+            return exact
+        key_matches = tuple(
+            item
+            for item in self.items
+            if item.display_name_key is not None
+            and item.display_name_key.casefold() == normalized.casefold()
+        )
+        if len(key_matches) == 1:
+            return key_matches[0]
+        return self.resolve_display_name(normalized)
 
 
 class CatalogProvider(Protocol):

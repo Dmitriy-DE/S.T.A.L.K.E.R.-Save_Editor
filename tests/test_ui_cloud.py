@@ -250,6 +250,31 @@ def test_cloud_view_filters_non_data_files(
     assert view.table.item(0, view.SOURCE_COLUMN).text() == "Неизвестно"
 
 
+def test_cloud_view_hides_editor_artifacts_and_explains_why(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    data_name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    artifact_name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a-edited.sav"
+    transport = FakeCloudTransport(
+        synthetic_save,
+        files=[_cloud_file(data_name), _cloud_file(artifact_name)],
+    )
+    view = CloudView(
+        EditorService(),
+        worker_factory=lambda _path: transport,
+        helper_path=tmp_path / "helper",
+    )
+    qtbot.addWidget(view)
+
+    with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        view.start_connect()
+    _wait_cloud_idle(qtbot, view)
+
+    assert [cloud_file.name for cloud_file in view.files] == [data_name]
+    assert view._hidden_editor_artifacts == 1
+    assert "скрыто 1" in view.status_label.text()
+
+
 def test_cloud_view_profile_switch_filters_the_selected_game_path(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:
@@ -391,6 +416,39 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
         assert "verified" in view.result_label.text().lower()
     else:
         assert "uncertain" in view.result_label.text().lower()
+
+
+def test_cloud_upload_log_contains_target_size_and_result(
+    synthetic_save: bytes, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
+    prepared = _prepared(synthetic_save, name)
+    from ui import cloud_view
+    from ui.cloud_view import CloudOperationWorker
+
+    worker = CloudOperationWorker(
+        EditorService(),
+        mode="upload",
+        transport=transport,
+        prepared=prepared,
+        backup_dir=tmp_path / "backups",
+    )
+
+    records: list[str] = []
+
+    def record(message: str, *args: object, **_kwargs: object) -> None:
+        records.append(message % args if args else message)
+
+    monkeypatch.setattr(cloud_view.LOGGER, "info", record)
+    worker.run()
+
+    text = "\n".join(records)
+    assert f"path={name}" in text
+    assert f"expected_bytes={len(prepared.data)}" in text
+    assert "mode=upload" in text
+    assert "status=verified" in text
+    assert f"sha256={prepared.output_sha256}" in text
 
 
 def test_main_window_routes_cloud_snapshot_preview_to_upload(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import struct
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -132,6 +133,17 @@ class _Stalker2Format:
         ),
     )
 
+    def __init__(self) -> None:
+        # Catalog discovery can inspect Steam library metadata and loose cfg
+        # trees.  The service asks for both the item catalog and the full game
+        # catalog during one save inspection, so keep one source-scoped result
+        # instead of parsing the same tree twice.  ``None`` sources are not
+        # cached because an explicit Zone Kit/Workshop environment can change
+        # during a process lifetime.
+        self._catalog_cache: dict[
+            tuple[str, tuple[str, ...]], tuple[ItemCatalog | None, GameCatalog | None]
+        ] = {}
+
     def detect(self, data: bytes) -> bool:
         """Recognize the confirmed S.T.A.L.K.E.R. 2 container signature.
 
@@ -160,9 +172,29 @@ class _Stalker2Format:
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_save(data, with_inventory=with_inventory)
 
-    def catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
+    def catalog_for_source(
+        self,
+        source_name: str | None,
+        *,
+        catalog_roots: Sequence[Path] = (),
+    ) -> ItemCatalog | None:
         """Read loose S2 metadata, keeping Workshop overlays explicit."""
 
+        return self._catalog_bundle_for_source(source_name, catalog_roots=catalog_roots)[0]
+
+    def _catalog_bundle_for_source(
+        self,
+        source_name: str | None,
+        *,
+        catalog_roots: Sequence[Path] = (),
+    ) -> tuple[ItemCatalog | None, GameCatalog | None]:
+        cache_key = (
+            str(source_name) if source_name else "",
+            tuple(str(Path(root).expanduser()) for root in catalog_roots),
+        )
+        if (cache_key[0] or cache_key[1]) and cache_key in self._catalog_cache:
+            return self._catalog_cache[cache_key]
+
         provider = S2CatalogProvider()
         release = release_by_id(self.release_id)
         installed_roots: list[Path] = []
@@ -182,51 +214,29 @@ class _Stalker2Format:
             source_name,
             installed_roots=installed_roots,
             steam_libraries=steam_roots,
+            catalog_roots=catalog_roots,
         )
+        result: tuple[ItemCatalog | None, GameCatalog | None]
         for source in sources:
-            catalog = self._load_catalog_source(provider, release, source)
-            if catalog is not None:
-                return catalog
-        return None
+            bundle = self._load_bundle_source(provider, release, source)
+            if bundle is not None:
+                result = (bundle.items, bundle)
+                if cache_key[0] or cache_key[1]:
+                    self._catalog_cache[cache_key] = result
+                return result
+        result = (None, None)
+        if cache_key[0] or cache_key[1]:
+            self._catalog_cache[cache_key] = result
+        return result
 
-    def game_catalog_for_source(self, source_name: str | None) -> GameCatalog | None:
+    def game_catalog_for_source(
+        self,
+        source_name: str | None,
+        *,
+        catalog_roots: Sequence[Path] = (),
+    ) -> GameCatalog | None:
         """Expose S2 item/upgrades metadata with no faction or writer claim."""
-
-        provider = S2CatalogProvider()
-        release = release_by_id(self.release_id)
-        installed_roots: list[Path] = []
-        steam_roots: tuple[Path, ...] = ()
-        try:
-            from .platforms import installed_releases, steam_libraries
-
-            installed_roots.extend(
-                game.install_dir
-                for game in installed_releases()
-                if game.release_id == self.release_id
-            )
-            steam_roots = steam_libraries()
-        except (OSError, RuntimeError):
-            pass
-        sources = discover_s2_catalog_sources(
-            source_name,
-            installed_roots=installed_roots,
-            steam_libraries=steam_roots,
-        )
-        for source in sources:
-            catalog = self._load_bundle_source(provider, release, source)
-            if catalog is not None:
-                return catalog
-        return None
-
-    @staticmethod
-    def _load_catalog_source(
-        provider: S2CatalogProvider,
-        release: ReleaseDescriptor,
-        source: S2CatalogSource,
-    ) -> ItemCatalog | None:
-        if source.kind == "workshop":
-            return provider.load_overlay(release, source.root)
-        return provider.load(release, source.root)
+        return self._catalog_bundle_for_source(source_name, catalog_roots=catalog_roots)[1]
 
     @staticmethod
     def _load_bundle_source(
@@ -337,7 +347,12 @@ class _XRayFormat:
     def inspect(self, data: bytes, *, with_inventory: bool = True) -> SaveInfo:
         return inspect_xray(data, self.spec, with_inventory=with_inventory)
 
-    def catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
+    def catalog_for_source(
+        self,
+        source_name: str | None,
+        *,
+        catalog_roots: Sequence[Path] = (),
+    ) -> ItemCatalog | None:
         """Find an official catalog by walking up from a local save path."""
 
         if not source_name:
@@ -363,7 +378,12 @@ class _XRayFormat:
         generated = provider.load_generated_bundle(release)
         return generated.items if generated is not None else None
 
-    def game_catalog_for_source(self, source_name: str | None) -> GameCatalog | None:
+    def game_catalog_for_source(
+        self,
+        source_name: str | None,
+        *,
+        catalog_roots: Sequence[Path] = (),
+    ) -> GameCatalog | None:
         """Find the full official item/community catalog for a local save."""
 
         if not source_name:

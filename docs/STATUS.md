@@ -1,5 +1,28 @@
 # Состояние и пробелы — 2026-09-21
 
+## Unreleased — S2 catalog/UI and Cloud target correction — 2026-09-22
+
+Текущая рабочая ветка `fix/cloud-repack-s2-ui` закрывает дефекты из ручной
+проверки v0.5.20:
+
+- панель отношений/группировок больше не показывается для S.T.A.L.K.E.R. 2;
+- CFG-каталог S2 принимает отдельный путь Zone Kit/Workshop, распознаёт
+  вложенный `Stalker2/Mods/<name>/Content/...`, common JSON localization и
+  loose PNG/JPG/WebP/BMP/DDS icon references; выбранный ресурс остаётся
+  read-only presentation metadata;
+- Cloud picker скрывает старые `-edited.sav`, upload повторно читает именно
+  выбранный исходный remote path, делает backup/recovery и не ретраит
+  неоднозначный `WriteFile`;
+- изменённый S2 stream пересобирается bundled native Kraken encoder вместо
+  15 MB stored-block fallback, с CRC/decompression/round-trip проверками.
+
+Локальный gate после этих изменений: `619 passed` (один одиночный Qt timeout
+при параллельном запуске с `make check` воспроизведён отдельно как `1 passed`),
+`ruff`, `mypy`, generated web bundle/theme checks и `py_compile` проходят.
+Это ещё не публичный релиз: `VERSION` и стабильные v0.5.20 assets не
+перезаписывались, live Steam `WriteFile` и загрузка изменённого слота игрой
+остаются внешними runtime-gates.
+
 ## v0.5.20 — native Steam Cloud writer with remote-only listings — 2026-09-21
 
 Исправлен ложный read-only блок upload. Steam `GetFileCount()` перечисляет

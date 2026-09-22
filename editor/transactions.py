@@ -21,6 +21,7 @@ from .cloud_capabilities import (
     cloud_write_capability,
 )
 from .models import CloudReceipt, PreparedEdit
+from .steam_profiles import is_editor_cloud_artifact
 
 
 class CloudTransactionError(RuntimeError):
@@ -129,6 +130,10 @@ def upload_cloud(
     if source.kind != "cloud":
         raise CloudTransactionError("Cloud upload требует source kind=cloud")
     remote_path = source.locator
+    if is_editor_cloud_artifact(remote_path):
+        raise CloudTransactionError(
+            f"Cloud upload запрещён для editor recovery artifact: {remote_path}"
+        )
     edited = bytes(prepared.data)
     output_sha256 = _sha256(edited)
     if output_sha256 != prepared.output_sha256:
@@ -224,8 +229,10 @@ def upload_cloud(
         )
     _notify(on_stage, "persisted")
 
+    readback_method = getattr(worker, "readback_file", None)
+    readback_reader = readback_method if callable(readback_method) else worker.read_file
     try:
-        readback = bytes(worker.read_file(remote_path))
+        readback = bytes(readback_reader(remote_path))
     except Exception as exc:
         return _uncertain(
             remote_path,

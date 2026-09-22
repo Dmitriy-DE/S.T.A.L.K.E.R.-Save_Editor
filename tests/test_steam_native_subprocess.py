@@ -470,3 +470,54 @@ def test_wait_persisted_caps_each_native_list_to_remaining_deadline(
         timeout is not None and timeout <= requested_timeout + 0.001
         for timeout in timeouts
     )
+
+
+def test_wait_persisted_prefers_native_list_over_stale_web_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worker = steam_native.SteamNativeSubprocessWorker(timeout=15)
+    worker.app_id = APP_ID
+    worker._native_writer_ready = True
+
+    class StaleCdp:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def wait_persisted(self, *_args, **_kwargs) -> bool:
+            self.calls += 1
+            return False
+
+    cdp = StaleCdp()
+    worker._cdp = cdp
+    monkeypatch.setattr(
+        worker,
+        "_native_list",
+        lambda **_kwargs: [CloudFile("slot.sav", 4, 1, True, True)],
+    )
+
+    assert worker.wait_persisted("slot.sav", 4, timeout=1) is True
+    assert cdp.calls == 0
+
+
+def test_readback_file_forces_native_remote_storage_when_writer_is_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worker = steam_native.SteamNativeSubprocessWorker(timeout=15)
+    worker.app_id = APP_ID
+    worker._native_writer_ready = True
+
+    class StaleCdp:
+        def read_file(self, _filename: str) -> bytes:
+            return b"stale"
+
+    worker._cdp = StaleCdp()
+    calls: list[str] = []
+
+    def fake_native(op: str, **_kwargs):
+        calls.append(op)
+        return {"type": "Ok", "size": 6}, b"edited"
+
+    monkeypatch.setattr(worker, "_run_native", fake_native)
+
+    assert worker.readback_file("slot.sav") == b"edited"
+    assert calls == ["read"]

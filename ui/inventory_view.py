@@ -98,6 +98,7 @@ class InventoryView(QWidget):
         self._upgrades_reason: str | None = None
         self._staged_upgrades: dict[int, tuple[str, ...]] = {}
         self._icon_resolver = XRayIconResolver(None)
+        self.model.set_name_provider(self._name_for_item)
         self.model.set_icon_provider(self._icon_for_item)
         self._build_ui()
 
@@ -455,6 +456,7 @@ class InventoryView(QWidget):
             catalog, donor=_donor_resolver_for(catalog)
         )
         self.model.set_icon_provider(self._icon_for_item)
+        self.model.set_name_provider(self._name_for_item)
         self._add_enabled = bool(enabled and catalog is not None)
         self._add_reason = reason
         self.add_combo.blockSignals(True)
@@ -489,6 +491,18 @@ class InventoryView(QWidget):
             item.category,
             size=30,
         )
+
+    def _name_for_item(self, item: InventoryItem) -> str | None:
+        """Resolve a save-local label through the selected release catalog."""
+
+        if self._catalog is None:
+            return item.display_name
+        definition = self._catalog.resolve_key_or_display_name(
+            item.display_name or item.type_key
+        )
+        if definition is not None:
+            return definition.display_name or definition.key
+        return item.display_name
 
     def set_remove_enabled(self, enabled: bool, *, reason: str | None = None) -> None:
         self._remove_enabled = bool(enabled)

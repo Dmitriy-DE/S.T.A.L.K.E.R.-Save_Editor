@@ -204,6 +204,20 @@ def test_unknown_display_name_is_honest_and_handle_is_visible(
     assert handle.startswith("0x300000")
 
 
+def test_inventory_model_can_present_catalog_name_without_mutating_snapshot(
+    synthetic_save: bytes,
+) -> None:
+    info = inspect_save(synthetic_save, with_inventory=True)
+    model = InventoryTableModel()
+    model.set_name_provider(lambda item: f"Каталог: {item.handle_hex}")
+    model.set_items(info.inventory)
+
+    assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == (
+        "Каталог: 0x30000001"
+    )
+    assert info.inventory[0].display_name is None
+
+
 def test_inventory_layout_keeps_names_and_editor_fields_readable(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:

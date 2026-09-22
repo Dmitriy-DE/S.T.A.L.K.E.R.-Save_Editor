@@ -18,6 +18,7 @@ from editor.cloud_capabilities import CloudWriteCapability
 # from this module.  Keep it in __all__: an "unused import" cleanup that drops
 # it breaks the Cloud tab at import time.
 from editor.platforms import discover_helper, resolve_helper_command
+from editor.steam_profiles import is_editor_cloud_artifact
 
 __all__ = [
     "APP_ID",
@@ -97,7 +98,11 @@ def default_cloud_file_filter(name: str) -> bool:
     """Keep backwards-compatible S.T.A.L.K.E.R. 2 filtering by default."""
 
     normalized = str(name or "").replace("\\", "/")
-    return normalized.startswith(SAVE_PREFIX) and normalized.casefold().endswith(".sav")
+    return (
+        not is_editor_cloud_artifact(normalized)
+        and normalized.startswith(SAVE_PREFIX)
+        and normalized.casefold().endswith(".sav")
+    )
 
 
 def _helper_environment(library_dir: Path) -> dict[str, str]:

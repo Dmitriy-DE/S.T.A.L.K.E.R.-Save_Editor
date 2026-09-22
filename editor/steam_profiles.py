@@ -14,6 +14,15 @@ from dataclasses import dataclass
 from .releases import ReleaseDescriptor, official_releases, release_by_app_id, release_by_id
 
 
+def is_editor_cloud_artifact(name: str) -> bool:
+    """Return whether a cloud path is an editor-generated recovery artifact."""
+
+    normalized = str(name or "").replace("\\", "/").rstrip("/")
+    leaf = normalized.rsplit("/", 1)[-1]
+    stem = leaf.rsplit(".", 1)[0] if "." in leaf else leaf
+    return stem.casefold().endswith(("-edited", ".edited"))
+
+
 @dataclass(frozen=True)
 class SteamCloudProfile:
     """One official release's app identity and editable save path rules."""
@@ -29,6 +38,8 @@ class SteamCloudProfile:
 
         normalized = str(name or "").replace("\\", "/").lstrip("/")
         folded = normalized.casefold()
+        if is_editor_cloud_artifact(normalized):
+            return False
         if not any(
             folded.startswith(prefix.casefold().lstrip("/"))
             for prefix in self.remote_prefixes
@@ -98,6 +109,7 @@ def steam_cloud_profile_for_app_id(app_id: int) -> SteamCloudProfile:
 
 __all__ = [
     "SteamCloudProfile",
+    "is_editor_cloud_artifact",
     "steam_cloud_profile_for_app_id",
     "steam_cloud_profile_for_release",
     "steam_cloud_profiles",

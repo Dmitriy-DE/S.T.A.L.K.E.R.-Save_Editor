@@ -21,6 +21,7 @@ from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
 _ICON_CELL_SIZE = 50
+_LOOSE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds")
 
 
 def _bundled_icon_dir() -> Path:
@@ -249,6 +250,37 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
     return QIcon(canvas)
 
 
+def _unreal_texture_variants(texture: str) -> tuple[Path, ...]:
+    """Turn an Unreal object reference into safe loose-file candidates."""
+
+    value = texture.strip().replace("\\", "/")
+    if "'" in value:
+        quoted = value.split("'", 1)
+        if len(quoted) == 2 and "'" in quoted[1]:
+            value = quoted[1].rsplit("'", 1)[0]
+    value = value.strip("\"'")
+    for prefix in ("/Game/", "/Engine/", "Game/", "Engine/", "Content/"):
+        if value.casefold().startswith(prefix.casefold()):
+            value = value[len(prefix) :]
+            break
+    value = value.lstrip("/")
+    if not value:
+        return ()
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        return ()
+    variants: list[Path] = [relative]
+    suffix = relative.suffix.casefold()
+    if suffix not in _LOOSE_IMAGE_SUFFIXES:
+        # Unreal references usually end in ``.ObjectName``. Remove that object
+        # suffix before trying exported PNG/DDS files with the same asset path.
+        if suffix:
+            relative = relative.with_suffix("")
+        variants = [relative]
+        variants.extend(relative.with_suffix(extension) for extension in _LOOSE_IMAGE_SUFFIXES)
+    return tuple(dict.fromkeys(variants))
+
+
 class XRayIconResolver:
     """Resolve item atlas crops without changing the selected game install."""
 
@@ -332,9 +364,13 @@ class XRayIconResolver:
     ) -> QIcon:
         """Resolve an exact key, then one unique catalog display name."""
 
-        definition = self.catalog.resolve(key) if self.catalog is not None else None
+        definition = (
+            self.catalog.resolve_key_or_display_name(key)
+            if self.catalog is not None
+            else None
+        )
         if definition is None and self.catalog is not None and display_name:
-            definition = self.catalog.resolve_display_name(display_name)
+            definition = self.catalog.resolve_key_or_display_name(display_name)
         if definition is not None:
             return self.icon_for(definition, size=size)
         for candidate in (key, display_name or ""):
@@ -363,7 +399,7 @@ class XRayIconResolver:
 
         if self.catalog is None:
             return None
-        definition = self.catalog.resolve(key)
+        definition = self.catalog.resolve_key_or_display_name(key)
         if definition is None:
             return None
         return self._atlas_icon(definition, size=size)
@@ -436,28 +472,12 @@ class XRayIconResolver:
         texture = (definition.icon_texture or "").strip().replace("\\", "/")
         if source_root is None or not texture:
             return None
-        relative = Path(texture.lstrip("/"))
-        if relative.is_absolute() or ".." in relative.parts:
+        variants = _unreal_texture_variants(texture)
+        if not variants:
             return None
-        image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
-        if relative.suffix and relative.suffix.casefold() not in image_suffixes:
-            return None
-        cache_key = (source_root, relative.as_posix().casefold(), size)
+        cache_key = (source_root, texture.casefold(), size)
         if cache_key in self._direct_image_cache:
             return self._direct_image_cache[cache_key]
-        relative_variants = [relative]
-        parts = relative.parts
-        if parts and parts[0].casefold() == "game":
-            relative_variants.append(Path(*parts[1:]))
-        if parts and parts[0].casefold() == "gamelite":
-            relative_variants.append(Path(*parts[1:]))
-        file_variants: list[Path] = []
-        for variant in relative_variants:
-            if not variant.parts:
-                continue
-            file_variants.append(variant)
-            if not variant.suffix:
-                file_variants.extend(variant.with_suffix(suffix) for suffix in sorted(image_suffixes))
         candidates = tuple(
             root / variant
             for root in (
@@ -466,13 +486,20 @@ class XRayIconResolver:
                 source_root / "Content" / "GameLite",
                 source_root / "Content" / "GameLite" / "GameData",
             )
-            for variant in file_variants
+            for variant in variants
         )
         icon: QIcon | None = None
         for path in candidates:
             if not path.is_file():
                 continue
-            image = QImage(str(path))
+            try:
+                image = (
+                    decode_dds(path.read_bytes())
+                    if path.suffix.casefold() == ".dds"
+                    else QImage(str(path))
+                )
+            except (OSError, ValueError, struct.error):
+                continue
             if image.isNull():
                 continue
             icon = QIcon(

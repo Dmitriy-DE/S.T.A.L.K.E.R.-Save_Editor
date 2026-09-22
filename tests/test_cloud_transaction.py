@@ -116,6 +116,48 @@ def test_wrong_slot_is_rejected_before_write(synthetic_save: bytes, tmp_path: Pa
     assert worker.write_calls == []
 
 
+def test_editor_recovery_artifact_is_rejected_before_any_cloud_io(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    artifact_path = REMOTE_PATH.replace(".sav", "-edited.sav")
+    source = SourceRef(
+        kind="cloud",
+        locator=artifact_path,
+        sha256=hashlib.sha256(synthetic_save).hexdigest(),
+    )
+    prepared = prepare_edit(synthetic_save, EditPlan(source=source, money=900_000))
+    worker = FakeCloud(synthetic_save)
+
+    with pytest.raises(CloudTransactionError, match="editor|edited|артефакт"):
+        upload_cloud(worker, prepared, tmp_path)
+
+    assert worker.read_calls == []
+    assert worker.write_calls == []
+
+
+def test_upload_uses_native_readback_hook_when_transport_provides_one(
+    synthetic_save: bytes, tmp_path: Path
+) -> None:
+    prepared = _prepared(synthetic_save)
+
+    class NativeReadbackCloud(FakeCloud):
+        def __init__(self, data: bytes) -> None:
+            super().__init__(data)
+            self.readback_calls: list[str] = []
+
+        def readback_file(self, filename: str) -> bytes:
+            self.readback_calls.append(filename)
+            return self.files[filename]
+
+    worker = NativeReadbackCloud(synthetic_save)
+
+    receipt = upload_cloud(worker, prepared, tmp_path)
+
+    assert receipt.status == "verified"
+    assert worker.read_calls == [REMOTE_PATH]
+    assert worker.readback_calls == [REMOTE_PATH]
+
+
 def test_backup_failure_aborts_before_write(synthetic_save: bytes, tmp_path: Path) -> None:
     prepared = _prepared(synthetic_save)
     worker = FakeCloud(synthetic_save)

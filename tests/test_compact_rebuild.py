@@ -113,6 +113,26 @@ def test_save_rebuild_unsupported_stream_returns_valid_full_container() -> None:
     assert sf.decompress_save(rebuilt) == b"changed"
 
 
+def test_save_rebuild_uses_real_encoder_when_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = b"payload"
+    source = _container(raw, (_stored_quantum(raw),))
+    calls: list[bytes] = []
+
+    def fake_encoder(value: bytes, *, level: int) -> bytes:
+        calls.append(value)
+        assert level == 5
+        return b"encoded-stream"
+
+    monkeypatch.setattr(sf, "codec_compress", fake_encoder)
+
+    rebuilt, decision = sf.rebuild_compact(source, b"changed", original_raw=raw)
+
+    assert calls == [b"changed"]
+    assert decision.mode == "compact"
+    assert rebuilt[4:-4] == b"encoded-stream"
+    assert sf.validate_crc(rebuilt)[2] is True
+
+
 def test_parse_kraken_stream_rejects_trailing_bytes() -> None:
     source, raw, _blocks = _three_block_source()
     with pytest.raises(KrakenBlocksError, match="trailing|лишн"):

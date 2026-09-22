@@ -307,7 +307,9 @@ def _copy_metadata(runtime: Path, manifest: Mapping[str, object]) -> None:
     )
 
 
-def _run_pyinstaller(*, root: Path, target: str, work: Path, runtime_dist: Path) -> None:
+def _run_pyinstaller(
+    *, root: Path, target: str, work: Path, runtime_dist: Path, encoder_dir: Path
+) -> None:
     spec = root / "packaging" / "editor.spec"
     if not spec.is_file():
         raise BuildError(f"PyInstaller spec отсутствует: {spec}")
@@ -318,9 +320,14 @@ def _run_pyinstaller(*, root: Path, target: str, work: Path, runtime_dist: Path)
         {
             "SAVE_EDITOR_ROOT": str(root),
             "SAVE_EDITOR_TARGET": target,
+            "SAVE_EDITOR_ENCODER_DIR": str(encoder_dir),
             "PYTHONHASHSEED": "0",
         }
     )
+    pythonpath = [str(encoder_dir), str(root)]
+    if env.get("PYTHONPATH"):
+        pythonpath.append(env["PYTHONPATH"])
+    env["PYTHONPATH"] = os.pathsep.join(pythonpath)
     command = [
         sys.executable,
         "-m",
@@ -789,7 +796,30 @@ def build(
         shutil.rmtree(work)
     runtime_dist.mkdir(parents=True, exist_ok=True)
 
-    _run_pyinstaller(root=root, target=target, work=work, runtime_dist=runtime_dist)
+    encoder_dir = work / "ooz_encoder"
+    try:
+        subprocess.run(
+            [
+                sys.executable,
+                str(root / "tools" / "build_ooz_encoder.py"),
+                "--root",
+                str(root),
+                "--output-dir",
+                str(encoder_dir),
+            ],
+            cwd=root,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"Не удалось собрать обязательный ooz_encoder: {exc}") from exc
+
+    _run_pyinstaller(
+        root=root,
+        target=target,
+        work=work,
+        runtime_dist=runtime_dist,
+        encoder_dir=encoder_dir,
+    )
     runtime = runtime_dist / APP_NAME
     executable = runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
     if not executable.is_file():

@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
+from editor.catalog import GameCatalog, ItemCatalog
 from editor.cloud_capabilities import CloudWriteCapability, cloud_write_capability
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
 from editor.models import CloudReceipt, PreparedEdit
@@ -33,6 +34,7 @@ from editor.steam_backend import make_cloud_worker
 from editor.steam_cdp import restart_steam_with_debugging
 from editor.steam_profiles import (
     SteamCloudProfile,
+    is_editor_cloud_artifact,
     steam_cloud_profile_for_app_id,
     steam_cloud_profile_for_release,
     steam_cloud_profiles,
@@ -85,6 +87,8 @@ class CloudSnapshot:
     capabilities: FormatCapabilities = field(
         default_factory=lambda: STALKER2_FORMAT.capabilities
     )
+    catalog: ItemCatalog | None = None
+    game_catalog: GameCatalog | None = None
 
 
 class CloudOperationWorker(QThread):
@@ -109,6 +113,7 @@ class CloudOperationWorker(QThread):
         app_id: int = APP_ID,
         profile: SteamCloudProfile | None = None,
         release_id: str | None = None,
+        catalog_roots: tuple[Path, ...] = (),
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -127,16 +132,34 @@ class CloudOperationWorker(QThread):
         else:
             self.profile = steam_cloud_profile_for_app_id(app_id)
         self.app_id = self.profile.app_id
+        self.catalog_roots = tuple(catalog_roots)
 
     def run(self) -> None:
         created_transport = False
         transport = self.transport
+        prepared_source = self.prepared.plan.source if self.prepared is not None else None
+        operation_path = (
+            self.cloud_file.name
+            if self.cloud_file is not None
+            else prepared_source.locator
+            if prepared_source is not None
+            else "-"
+        )
+        operation_source = (
+            self.cloud_file.source
+            if self.cloud_file is not None
+            else prepared_source.kind
+            if prepared_source is not None
+            else "-"
+        )
+        expected_bytes = len(self.prepared.data) if self.prepared is not None else None
         LOGGER.info(
-            "cloud operation start mode=%s app_id=%s path=%s source=%s",
+            "cloud operation start mode=%s app_id=%s path=%s source=%s expected_bytes=%s",
             self.mode,
             self.app_id,
-            self.cloud_file.name if self.cloud_file is not None else "-",
-            self.cloud_file.source if self.cloud_file is not None else "-",
+            operation_path,
+            operation_source,
+            expected_bytes if expected_bytes is not None else "-",
         )
         try:
             if self.mode == "list":
@@ -173,11 +196,19 @@ class CloudOperationWorker(QThread):
                     data = bytes(reader(cloud_file))
                 else:
                     data = bytes(transport.read_file(cloud_file.name))
-                result = self.service.inspect_result(
-                    data,
-                    with_inventory=True,
-                    source_name=cloud_file.name,
-                )
+                if self.catalog_roots:
+                    result = self.service.inspect_result(
+                        data,
+                        with_inventory=True,
+                        source_name=cloud_file.name,
+                        catalog_roots=self.catalog_roots,
+                    )
+                else:
+                    result = self.service.inspect_result(
+                        data,
+                        with_inventory=True,
+                        source_name=cloud_file.name,
+                    )
                 if result.release_id != self.profile.release_id:
                     raise SaveError(
                         f"Cloud save распознан как {result.release_id!r}, "
@@ -194,6 +225,8 @@ class CloudOperationWorker(QThread):
                         result.release_id,
                         result.edition,
                         result.capabilities,
+                        result.catalog,
+                        result.game_catalog,
                     )
                 )
                 LOGGER.info("cloud operation complete mode=analyze bytes=%s", len(data))
@@ -202,21 +235,42 @@ class CloudOperationWorker(QThread):
             if self.mode == "upload":
                 if self.prepared is None or self.backup_dir is None:
                     raise SaveError("Для cloud upload нужен проверенный preview")
+                prepared = self.prepared
                 self.progress.emit("Cloud: fresh read и SHA…")
+
+                def report_stage(stage: str) -> None:
+                    LOGGER.info(
+                        "cloud upload stage path=%s stage=%s expected_bytes=%s",
+                        prepared.plan.source.locator,
+                        stage,
+                        len(prepared.data),
+                    )
+                    self.progress.emit(stage)
+
                 receipt = self.service.upload_cloud(
                     transport,
-                    self.prepared,
+                    prepared,
                     self.backup_dir,
                     persisted_timeout=180,
-                    on_stage=self.progress.emit,
+                    on_stage=report_stage,
                 )
                 self.completed.emit(receipt)
-                LOGGER.info("cloud operation complete mode=upload status=%s", receipt.status)
+                LOGGER.info(
+                    "cloud operation complete mode=upload status=%s path=%s expected_bytes=%s "
+                    "sha256=%s reason=%s backup=%s recovery=%s",
+                    receipt.status,
+                    receipt.remote_path,
+                    len(prepared.data),
+                    receipt.output_sha256,
+                    receipt.reason or "-",
+                    receipt.backup_path,
+                    receipt.recovery_path,
+                )
                 return
 
             raise SaveError(f"Неизвестный cloud operation: {self.mode}")
         except FormatDetectionError as exc:
-            LOGGER.exception("cloud operation failed mode=%s", self.mode)
+            LOGGER.exception("cloud operation failed mode=%s path=%s", self.mode, operation_path)
             self.failed.emit(self._diagnostic_message(exc))
         except Exception as exc:
             if created_transport and transport is not None:
@@ -224,7 +278,7 @@ class CloudOperationWorker(QThread):
                     transport.close()
                 except Exception:
                     pass
-            LOGGER.exception("cloud operation failed mode=%s", self.mode)
+            LOGGER.exception("cloud operation failed mode=%s path=%s", self.mode, operation_path)
             self.failed.emit(self._diagnostic_message(exc))
 
     def _diagnostic_message(self, exc: BaseException) -> str:
@@ -287,6 +341,7 @@ class CloudView(QWidget):
         helper_path: Path | None = None,
         backup_dir: Path | None = None,
         app_id: int = APP_ID,
+        catalog_roots: tuple[Path, ...] = (),
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -307,8 +362,10 @@ class CloudView(QWidget):
         )
         self.profile = steam_cloud_profile_for_app_id(app_id)
         self.app_id = self.profile.app_id
+        self.catalog_roots = tuple(catalog_roots)
         self.transport: CloudSession | None = None
         self._files: tuple[CloudFile, ...] = ()
+        self._hidden_editor_artifacts = 0
         self._snapshot: CloudSnapshot | None = None
         self._prepared: PreparedEdit | None = None
         self._thread: CloudOperationWorker | None = None
@@ -474,6 +531,7 @@ class CloudView(QWidget):
             worker_factory=self.worker_factory,
             app_id=self.app_id,
             profile=self.profile,
+            catalog_roots=self.catalog_roots,
             parent=self,
         )
         worker.completed.connect(self._on_files_ready)
@@ -552,6 +610,7 @@ class CloudView(QWidget):
             cloud_file=cloud_file,
             worker_factory=self.worker_factory,
             profile=self.profile,
+            catalog_roots=self.catalog_roots,
             parent=self,
         )
         worker.completed.connect(self._on_snapshot_ready)
@@ -573,6 +632,11 @@ class CloudView(QWidget):
             f"Cloud preview готов для {selected.name}; SHA {prepared.output_sha256[:12]}…"
         )
         self._refresh_upload_state()
+
+    def set_catalog_roots(self, roots: tuple[Path, ...]) -> None:
+        """Use the selected S2 Zone Kit/Workshop tree on the next analysis."""
+
+        self.catalog_roots = tuple(Path(root).expanduser() for root in roots)
 
     def _refresh_upload_state(self, *, blocked: bool = False) -> CloudWriteCapability:
         capability = cloud_write_capability(self.transport)
@@ -620,6 +684,7 @@ class CloudView(QWidget):
             backup_dir=self.backup_dir,
             worker_factory=self.worker_factory,
             profile=self.profile,
+            catalog_roots=self.catalog_roots,
             parent=self,
         )
         worker.completed.connect(self._on_upload_ready)
@@ -629,12 +694,18 @@ class CloudView(QWidget):
         self.transport = transport
 
     def _on_files_ready(self, files) -> None:
-        self._files = tuple(
-            cloud_file
-            for cloud_file in files
-            if isinstance(cloud_file, CloudFile)
-            and self.profile.accepts(cloud_file.name)
-        )
+        accepted: list[CloudFile] = []
+        hidden_editor_artifacts = 0
+        for cloud_file in files:
+            if not isinstance(cloud_file, CloudFile):
+                continue
+            if not self.profile.accepts(cloud_file.name):
+                if is_editor_cloud_artifact(cloud_file.name):
+                    hidden_editor_artifacts += 1
+                continue
+            accepted.append(cloud_file)
+        self._files = tuple(accepted)
+        self._hidden_editor_artifacts = hidden_editor_artifacts
         self._snapshot = None
         self._prepared = None
         self.table.setRowCount(len(self._files))
@@ -662,6 +733,11 @@ class CloudView(QWidget):
             status = f"{status_prefix} · 0 · {self.profile.save_label} (список пуст)"
         if hint:
             status += f" · {hint}"
+        if hidden_editor_artifacts:
+            status += (
+                f" · скрыто {hidden_editor_artifacts} старых editor-файлов "
+                "(-edited.sav)"
+            )
         capability = cloud_write_capability(self.transport)
         if not capability.writable:
             status += f" · только чтение: {capability.reason}"
@@ -704,18 +780,23 @@ class CloudView(QWidget):
         self.snapshot_ready.emit(snapshot)
 
     def _on_upload_ready(self, receipt: CloudReceipt) -> None:
+        prepared = self._prepared
+        output_size = len(prepared.data) if prepared is not None else None
         self._prepared = None
         self.upload_button.setEnabled(False)
+        size_text = f"; размер {output_size} B" if output_size is not None else ""
         if receipt.status == "verified":
             self.result_label.setText(
                 "Cloud verified: persisted=true и read-back SHA совпали. "
+                f"Target: {receipt.remote_path}{size_text}. "
                 f"Original backup: {receipt.backup_path}; recovery: {receipt.recovery_path}"
             )
             self.status_label.setText("Cloud: verified")
         else:
             self.result_label.setText(
                 "Cloud uncertain: WriteFile уже отправлен, но результат не подтверждён. "
-                f"Причина: {receipt.reason}. Original backup: {receipt.backup_path}; "
+                f"Target: {receipt.remote_path}{size_text}. Причина: {receipt.reason}. "
+                f"Original backup: {receipt.backup_path}; "
                 f"recovery: {receipt.recovery_path}. Повторный WriteFile запрещён."
             )
             self.status_label.setText("Cloud: uncertain — требуется reconciliation")

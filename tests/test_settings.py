@@ -63,6 +63,7 @@ def test_settings_round_trip_uses_versioned_json(tmp_path: Path) -> None:
         steam_root=tmp_path / "Steam",
         game_roots=(("cop", tmp_path / "Call of Pripyat"),),
         save_roots=(("soc", tmp_path / "Shadow saves"),),
+        catalog_roots=(("stalker2", tmp_path / "Zone Kit"),),
     )
 
     assert save_settings(settings, path=settings_path) == settings_path
@@ -72,6 +73,16 @@ def test_settings_round_trip_uses_versioned_json(tmp_path: Path) -> None:
 
     assert loaded.settings == settings
     assert loaded.error is None
+
+
+def test_catalog_root_is_separate_from_game_and_save_roots(tmp_path: Path) -> None:
+    catalog = tmp_path / "Zone Kit"
+    settings = PathSettings().with_catalog_root("stalker2", catalog)
+
+    assert settings.catalog_root("stalker2") == catalog
+    assert settings.game_root("stalker2") is None
+    assert settings.save_root("stalker2") is None
+    assert catalog in settings.manual_paths()
 
 
 def test_settings_accept_release_specific_manual_roots_and_legacy_family_lookup(
@@ -133,13 +144,16 @@ def test_settings_view_explains_missing_path_and_can_persist_selection(
     assert str(missing) in view.warning_label.text()
     assert view.found_all_label.objectName() == "discoveryResults"
     assert "palette(mid)" not in view.found_all_label.styleSheet()
-    # Game selection was removed from Settings; the Steam root override is the
-    # only manual field now, and it persists.
+    # The Steam root and the explicit S2 resource root are independent manual
+    # fields; a Zone Kit is metadata input, not a save-write destination.
     view.steam_root_edit.setText(str(selected))
+    view.catalog_root_edit.setText(str(selected))
     with qtbot.waitSignal(view.settings_changed, timeout=1_000):
         view.save()
 
-    assert load_settings(path=settings_path).settings.steam_root == selected
+    loaded = load_settings(path=settings_path).settings
+    assert loaded.steam_root == selected
+    assert loaded.catalog_root("stalker2") == selected
 
 
 def test_main_window_discovers_from_loaded_manual_save_root(

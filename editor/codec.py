@@ -58,6 +58,7 @@ def registered_decoder() -> Any | None:
 
 
 Importer = Callable[[str], Any]
+EncoderImporter = Callable[[str], Any]
 
 
 def _normalise_system(value: str) -> str:
@@ -177,3 +178,53 @@ def decompress(
             f"Неверный размер после decoder: {len(raw)} вместо {unpacked_size}"
         )
     return raw
+
+
+def load_encoder(*, importer: EncoderImporter | None = None) -> Any:
+    """Load the optional native Kraken encoder bundled with desktop builds."""
+
+    import_module = importer or importlib.import_module
+    try:
+        encoder = import_module("ooz_encoder")
+    except Exception as exc:
+        raise CodecError(
+            "Не удалось загрузить Kraken encoder: desktop build должен содержать "
+            f"ooz_encoder ({type(exc).__name__}: {exc})"
+        ) from exc
+    if not callable(getattr(encoder, "compress", None)):
+        raise CodecError("Загруженный Kraken encoder не предоставляет compress(raw, level)")
+    return encoder
+
+
+def compress(
+    raw: bytes | bytearray | memoryview,
+    *,
+    encoder: Any | None = None,
+    level: int = 5,
+) -> bytes:
+    """Encode a raw save payload as a framed Kraken stream."""
+
+    if not isinstance(raw, (bytes, bytearray, memoryview)):
+        raise CodecError("Encoder получил raw payload не в bytes-подобном виде")
+    payload = bytes(raw)
+    if not payload:
+        raise CodecError("Нельзя сжать пустой raw payload")
+    if len(payload) > MAX_UNPACKED_SIZE:
+        raise CodecError(f"Недопустимый размер raw payload: {len(payload)}")
+    if not isinstance(level, int) or isinstance(level, bool) or not -3 <= level <= 9:
+        raise CodecError("Уровень Kraken должен быть целым числом от -3 до 9")
+
+    native = encoder if encoder is not None else load_encoder()
+    native_compress = getattr(native, "compress", None)
+    if not callable(native_compress):
+        raise CodecError("Загруженный encoder не предоставляет compress(raw, level)")
+    try:
+        result = native_compress(payload, level)
+    except Exception as exc:
+        raise CodecError(f"Native encoder завершился ошибкой: {exc}") from exc
+    if not isinstance(result, (bytes, bytearray, memoryview)):
+        raise CodecError("Native encoder вернул не bytes-подобный результат")
+    encoded = bytes(result)
+    if not encoded:
+        raise CodecError("Native encoder вернул пустой Kraken stream")
+    return encoded

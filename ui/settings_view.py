@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -63,6 +64,15 @@ class SettingsView(QWidget):
         self.steam_root_edit.setPlaceholderText("Не задано — использовать автопоиск")
         self.steam_hint = self._hint_label()
         form.addRow("Корень Steam", self._path_row(self.steam_root_edit, self.steam_hint))
+        self.catalog_root_edit = QLineEdit()
+        self.catalog_root_edit.setPlaceholderText(
+            "Не задано — использовать установленную игру/автопоиск"
+        )
+        self.catalog_hint = self._hint_label()
+        form.addRow(
+            "Каталог S.T.A.L.K.E.R. 2 (Zone Kit / Workshop)",
+            self._path_row(self.catalog_root_edit, self.catalog_hint),
+        )
         layout.addLayout(form)
 
         actions = QHBoxLayout()
@@ -125,6 +135,8 @@ class SettingsView(QWidget):
         self.steam_root_edit.setText(
             str(self.settings.steam_root) if self.settings.steam_root is not None else ""
         )
+        catalog_root = self.settings.catalog_root("stalker2")
+        self.catalog_root_edit.setText(str(catalog_root) if catalog_root is not None else "")
         # Autodiscovery scans Steam libraries on disk; keep it off the
         # construction/critical path so the shell stays responsive.
         QTimer.singleShot(0, self._refresh_hints)
@@ -159,6 +171,15 @@ class SettingsView(QWidget):
             return None
         return Path(dirs[0]) if dirs else None
 
+    def _discover_catalog_root(self) -> Path | None:
+        for key in ("STALKER2_ZONE_KIT_ROOT", "ZONE_KIT_ROOT", "STALKER2_WORKSHOP_ROOT"):
+            for raw in os.environ.get(key, "").split(os.pathsep):
+                if raw.strip():
+                    candidate = Path(raw).expanduser()
+                    if candidate.is_dir():
+                        return candidate
+        return None
+
     def _set_hint(self, label: QLabel, discovered: Path | None) -> None:
         if discovered is not None:
             label.setText(f"Автопоиск: {discovered}")
@@ -168,6 +189,10 @@ class SettingsView(QWidget):
     def _refresh_hints(self) -> None:
         try:
             self._set_hint(self.steam_hint, self._discover_steam_root())
+            self._set_hint(
+                self.catalog_hint,
+                self.settings.catalog_root("stalker2") or self._discover_catalog_root(),
+            )
             self._refresh_found_all()
         except RuntimeError:
             # The deferred timer can fire after the view (and its Qt labels)
@@ -180,13 +205,22 @@ class SettingsView(QWidget):
         for release in official_releases():
             game = self._discover_game_root(release.id)
             save = self._discover_save_root(release.id)
-            if game is None and save is None:
+            catalog = (
+                self.settings.catalog_root(release.id)
+                if release.id == "stalker2"
+                else None
+            )
+            if catalog is None and release.id == "stalker2":
+                catalog = self._discover_catalog_root()
+            if game is None and save is None and catalog is None:
                 continue
             parts = [release.title]
             if save is not None:
                 parts.append(f"сейвы: {save}")
-            elif game is not None:
+            if game is not None:
                 parts.append(f"игра: {game}")
+            if catalog is not None:
+                parts.append(f"каталог: {catalog}")
             lines.append(" — ".join(parts))
         if len(lines) == 1:
             lines.append("Установленных игр не найдено.")
@@ -208,8 +242,15 @@ class SettingsView(QWidget):
         return path
 
     def _collect_settings(self) -> PathSettings:
-        return self.settings.with_steam_root(
+        settings = self.settings.with_steam_root(
             self._path_from_text(self.steam_root_edit.text(), "Корень Steam")
+        )
+        return settings.with_catalog_root(
+            "stalker2",
+            self._path_from_text(
+                self.catalog_root_edit.text(),
+                "Каталог S.T.A.L.K.E.R. 2",
+            ),
         )
 
     def _refresh_warning(self) -> None:

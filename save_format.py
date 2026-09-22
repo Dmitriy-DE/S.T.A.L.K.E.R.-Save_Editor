@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from editor.codec import CodecError
+from editor.codec import compress as codec_compress
 from editor.codec import decompress as codec_decompress
 from editor.kraken_blocks import (
     CompactRebuildResult,
@@ -797,12 +798,12 @@ def rebuild_compact(
     *,
     original_raw: bytes | None = None,
 ) -> tuple[bytes, CompactRebuildResult]:
-    """Rebuild a save while preserving only proven source Kraken blocks.
+    """Rebuild a save with the native encoder when the desktop build has one.
 
-    This function never encodes Kraken.  It copies safe original blocks and
-    emits changed/dependent blocks in the known stored ``CC06`` form; a
-    changed raw length or unsupported framing produces a valid full stored
-    rebuild instead.
+    Source blocks remain the safe metadata decision.  Changed payloads are
+    re-encoded as one valid Kraken stream when ``ooz_encoder`` is available;
+    source-only/browser environments retain the conservative stored ``CC06``
+    fallback and report that choice in the rebuild reason.
     """
 
     stored, computed, ok = validate_crc(source_data)
@@ -824,6 +825,25 @@ def rebuild_compact(
     except KrakenBlocksError as exc:
         raise SaveError(f"Kraken compact rebuild не удался: {exc}") from exc
 
+    stream = decision.stream
+    reason = decision.reason
+    if decision.mode != "unchanged":
+        try:
+            stream = codec_compress(after, level=5)
+        except CodecError as exc:
+            reason = f"{reason}; native Kraken encoder unavailable: {exc}"
+        else:
+            reason = (
+                f"{reason}; changed payload re-encoded with native Kraken encoder"
+            )
+
+    decision = CompactRebuildResult(
+        stream=stream,
+        mode=decision.mode,
+        preserved_blocks=decision.preserved_blocks,
+        rebuilt_blocks=decision.rebuilt_blocks,
+        reason=reason,
+    )
     body = struct.pack("<I", len(after)) + decision.stream
     rebuilt = body + struct.pack("<I", zlib.crc32(body) & 0xFFFFFFFF)
     return rebuilt, decision

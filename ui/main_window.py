@@ -112,20 +112,37 @@ class InspectWorker(QThread):
     completed = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, service: EditorService, path: Path, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        service: EditorService,
+        path: Path,
+        parent: QWidget | None = None,
+        *,
+        catalog_roots: tuple[Path, ...] = (),
+    ) -> None:
         super().__init__(parent)
         self.service = service
         self.path = path
+        self.catalog_roots = tuple(catalog_roots)
 
     def run(self) -> None:
         try:
             data = self.path.read_bytes()
-            result = self.service.inspect_result(
-                data,
-                with_inventory=True,
-                source_name=self.path.name,
-                catalog_source=self.path,
-            )
+            if self.catalog_roots:
+                result = self.service.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=self.path.name,
+                    catalog_source=self.path,
+                    catalog_roots=self.catalog_roots,
+                )
+            else:
+                result = self.service.inspect_result(
+                    data,
+                    with_inventory=True,
+                    source_name=self.path.name,
+                    catalog_source=self.path,
+                )
             self.completed.emit(
                 LocalSnapshot(
                     path=self.path,
@@ -926,7 +943,13 @@ class MainWindow(QMainWindow):
         return self.backups_view
 
     def _build_cloud_tab(self) -> QWidget:
-        self.cloud_view = CloudView(self.service, backup_dir=backup_dirs()[0], parent=self)
+        catalog_root = self.settings.catalog_root("stalker2")
+        self.cloud_view = CloudView(
+            self.service,
+            backup_dir=backup_dirs()[0],
+            catalog_roots=(catalog_root,) if catalog_root is not None else (),
+            parent=self,
+        )
         self.cloud_view.snapshot_ready.connect(self._on_cloud_snapshot_ready)
         self.cloud_view.upload_ready.connect(self._on_cloud_upload_ready)
         self.cloud_view.operation_failed.connect(self._on_cloud_operation_failed)
@@ -967,6 +990,10 @@ class MainWindow(QMainWindow):
 
     def _on_settings_changed(self, settings: PathSettings) -> None:
         self.settings = settings
+        catalog_root = settings.catalog_root("stalker2")
+        self.cloud_view.set_catalog_roots(
+            (catalog_root,) if catalog_root is not None else ()
+        )
         self.status_label.setText("Настройки обновлены; обновляю список сохранений…")
         self.save_slots_view.refresh()
 
@@ -1023,7 +1050,13 @@ class MainWindow(QMainWindow):
         self.error_label.clear()
         self.error_label.setVisible(False)
 
-        thread = InspectWorker(self.service, path, self)
+        catalog_root = self.settings.catalog_root("stalker2")
+        thread = InspectWorker(
+            self.service,
+            path,
+            self,
+            catalog_roots=(catalog_root,) if catalog_root is not None else (),
+        )
         thread.completed.connect(self._on_analysis_ready)
         thread.failed.connect(self._on_analysis_failed)
         thread.finished.connect(self._on_inspect_thread_finished)
@@ -1304,10 +1337,22 @@ class MainWindow(QMainWindow):
         self.equipment_view.set_staged_durability(self.staged_durability)
 
     def _render_factions(self, info: SaveInfo) -> None:
-        capabilities = self.snapshot.capabilities if self.snapshot is not None else None
+        snapshot = self.snapshot
+        release_id = (
+            (snapshot.release_id or snapshot.format_id).casefold()
+            if snapshot is not None
+            else ""
+        )
+        if release_id == "stalker2":
+            # S2 has no confirmed relation parser/writer. Keeping the X-Ray
+            # panel visible suggests that its empty state is an S2 feature.
+            self.faction_view.setVisible(False)
+            return
+        self.faction_view.setVisible(True)
+        capabilities = snapshot.capabilities if snapshot is not None else None
         catalog = (
-            self.snapshot.game_catalog.factions
-            if self.snapshot is not None and self.snapshot.game_catalog is not None
+            snapshot.game_catalog.factions
+            if snapshot is not None and snapshot.game_catalog is not None
             else None
         )
         self.faction_view.set_catalog(
@@ -2377,6 +2422,8 @@ class MainWindow(QMainWindow):
             release_id=snapshot.release_id,
             edition=snapshot.edition,
             capabilities=snapshot.capabilities,
+            catalog=snapshot.catalog,
+            game_catalog=snapshot.game_catalog,
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)

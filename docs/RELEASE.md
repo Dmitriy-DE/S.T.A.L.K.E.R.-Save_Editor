@@ -1,5 +1,25 @@
 # Проверка и выпуск
 
+## Unreleased — S2 catalog/UI and Cloud target correction — 2026-09-22
+
+Рабочая ветка после v0.5.20 исправляет ручной сценарий пользователя без
+подмены результата за публичный релиз:
+
+- S2 больше не показывает неподтверждённый X-Ray faction editor;
+- отдельный каталог Zone Kit/Workshop подключается через Settings или
+  автопоиск, показывает локализованные CFG names и loose icons, но остаётся
+  read-only и не разрешает добавление предметов по неподтверждённому SID;
+- Cloud upload сохраняет исходный Steam `Data/<slot>.sav` locator и отклоняет
+  `-edited.sav`/`.edited.sav` artifacts;
+- изменённый compact S2 payload повторно кодируется bundled Kraken encoder и
+  проверяется CRC, decompression и round-trip до `WriteFile`;
+- rotating diagnostics уже отправляются через существующий R2 endpoint, но
+  этот проход не публикует новый tag и не выполняет live write в Steam.
+
+Local source gate: full pytest passed after the isolated Qt rerun, plus
+`make PYTHON=.venv/bin/python check`. Package/release publication is a
+separate gate and must use the exact new commit and freshly read-back assets.
+
 ## Diagnostics infrastructure
 
 `POST /diagnostics` принимает только bounded `application/gzip` payloads. The

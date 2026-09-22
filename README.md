@@ -55,7 +55,7 @@ tagged commit after the Linux and Windows packaged gates pass.
 
 | Game | Status | Editing surface |
 |---|---|---|
-| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported | money, confirmed stack edits, save-local inventory names; experimental condition editing for confirmed equipped armour; desktop Steam Cloud |
+| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported | money, confirmed stack edits, CFG/localization-backed inventory names and icons when a loose game/Zone Kit/Workshop catalog is available; experimental condition editing for confirmed equipped armour; desktop Steam Cloud |
 | **Shadow of Chernobyl — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations and confirmed equipment fields |
 | **Clear Sky — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; experimental equipment/upgrades where the exact format anchor is proven |
 | **Call of Pripyat — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; helmet/equipment/upgrades where the exact format anchor is proven |
@@ -73,6 +73,13 @@ Still read-only / research-gated in S2:
 - weapon/equipment upgrade mutation without a proven serializer path;
 - unknown GVAS inventory structures;
 - unsupported Enhanced Edition containers.
+
+S2 catalog metadata is read from a selected loose Zone Kit/Workshop or game
+resource root. CFG prototype names, common JSON localization exports, and
+loose PNG/JPG/WebP/BMP/DDS icon assets are presentation-only data: they improve
+the inventory display but do not turn a prototype SID into a save writer.
+Workshop overlays are never used as a save destination, and packed `.pak`
+resources are not unpacked by the editor.
 
 ## Download
 
@@ -152,6 +159,13 @@ remote listing without downloaded bytes; the app never sends it to native
 `FileRead` by mistake. The **Отправить логи** button collects only bounded,
 rotated technical logs, redacts local home paths and secret-like values, and
 returns an opaque report id. Save bytes are not included.
+
+Cloud upload keeps the selected original `Data/<slot>.sav` locator. Old
+editor-generated `-edited.sav`/`.edited.sav` entries are hidden from the
+picker and rejected as upload targets; the app does not delete them remotely.
+Changed S2 payloads are re-encoded with the bundled Kraken encoder when the
+desktop build has it, so the old 15 MB stored-block fallback is not used by a
+current packaged build.
 
 ## Updates and standalone packages
 
