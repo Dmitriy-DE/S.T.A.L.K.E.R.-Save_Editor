@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -55,7 +56,7 @@ def _source_root(work: Path, archive_path: Path) -> Path:
     return candidates[0]
 
 
-def _setup_script(source_root: Path, wrapper: Path) -> str:
+def _setup_script(source_root: Path, wrapper: Path, *, base_dir: Path) -> str:
     ooz_root = source_root / "ooz" / "dep" / "ooz"
     sources = [wrapper, *(ooz_root / name for name in _COMPRESSOR_SOURCES)]
     missing = [path for path in sources if not path.is_file()]
@@ -64,8 +65,24 @@ def _setup_script(source_root: Path, wrapper: Path) -> str:
             "В pyooz source archive отсутствуют encoder sources: "
             + ", ".join(str(path) for path in missing)
         )
-    encoded_sources = json.dumps([str(path) for path in sources])
-    encoded_include = json.dumps([str(source_root), str(ooz_root / "simde")])
+
+    base_dir = base_dir.resolve()
+
+    def relative(path: Path) -> str:
+        try:
+            return path.resolve().relative_to(base_dir).as_posix()
+        except ValueError as exc:
+            raise EncoderBuildError(
+                f"Encoder source находится вне временного build tree: {path}"
+            ) from exc
+
+    # Keep compiler inputs relative to the short temporary tree.  MSVC turns
+    # absolute source paths into object paths by appending the whole path
+    # below build\\Release; that breaks on Windows (and can hit MAX_PATH).
+    encoded_sources = json.dumps([relative(path) for path in sources])
+    encoded_include = json.dumps(
+        [relative(source_root), relative(ooz_root / "simde")]
+    )
     return f"""from setuptools import Extension, setup
 
 setup(
@@ -100,22 +117,26 @@ def build_encoder(
 
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(
-        prefix="save-editor-ooz-", dir=output_dir.parent
-    ) as raw_work:
+    # The build output lives inside the checkout and can have a long Windows
+    # path.  Keep compiler sources and temporary objects under the OS temp
+    # directory, then copy only the finished extension into output_dir.
+    with tempfile.TemporaryDirectory(prefix="se-ooz-", dir=tempfile.gettempdir()) as raw_work:
         work = Path(raw_work)
         source_root = _source_root(work / "source", archive_path)
+        wrapper_copy = work / "encoder_bindings.cpp"
+        shutil.copy2(wrapper, wrapper_copy)
         setup_path = work / "setup.py"
-        setup_path.write_text(_setup_script(source_root, wrapper), encoding="utf-8")
-        build_temp = work / "build"
+        setup_path.write_text(
+            _setup_script(source_root, wrapper_copy, base_dir=work), encoding="utf-8"
+        )
         interpreter = (
             str(Path(python_executable).expanduser().resolve())
             if python_executable is not None
             else sys.executable
         )
-        command = [interpreter, str(setup_path)]
+        command = [interpreter, setup_path.name]
         command.extend(
-            ("build_ext", "--build-lib", str(output_dir), "--build-temp", str(build_temp))
+            ("build_ext", "--build-lib", str(output_dir), "--build-temp", "build")
         )
         try:
             subprocess.run(command, cwd=work, check=True)

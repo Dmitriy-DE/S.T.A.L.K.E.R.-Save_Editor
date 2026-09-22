@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from tools import build_ooz_encoder as encoder_build
+
 ROOT = Path(__file__).parents[1]
 SPEC = importlib.util.spec_from_file_location("save_editor_build", ROOT / "packaging" / "build.py")
 assert SPEC and SPEC.loader
@@ -84,6 +86,22 @@ def test_windows_installer_build_uses_inno_and_requires_output(
     assert result == destination
     assert destination.read_bytes() == b"installer"
     assert calls and calls[0][0] == str(compiler)
+
+
+def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) -> None:
+    source_root = tmp_path / "source" / "pyooz-0.0.8"
+    ooz_root = source_root / "ooz" / "dep" / "ooz"
+    ooz_root.joinpath("simde").mkdir(parents=True)
+    for name in encoder_build._COMPRESSOR_SOURCES:
+        (ooz_root / name).write_text("// fixture\n", encoding="utf-8")
+    wrapper = tmp_path / "encoder_bindings.cpp"
+    wrapper.write_text("// fixture\n", encoding="utf-8")
+
+    script = encoder_build._setup_script(source_root, wrapper, base_dir=tmp_path)
+
+    assert str(tmp_path) not in script
+    assert "encoder_bindings.cpp" in script
+    assert "source/pyooz-0.0.8" in script
 
 
 def test_scan_package_tree_rejects_private_inputs(tmp_path: Path) -> None:
