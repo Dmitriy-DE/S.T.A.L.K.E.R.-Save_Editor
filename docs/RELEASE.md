@@ -1,8 +1,20 @@
 # Проверка и выпуск
 
-## v0.5.21 candidate — S2 catalog/UI and Cloud target correction — 2026-09-22
+## v0.5.21 — published root release; APT pending key recovery — 2026-09-22
 
-Рабочая ветка после v0.5.20 исправляет ручной сценарий пользователя без
+Публичный root-релиз завершён из commit
+`86cd76e3fb44c93249cb31f2da59ad204d4660e5` после PR
+[#121](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/121),
+[#122](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/122),
+[#123](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/123) и
+[#124](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/124).
+Tagged workflow
+[#35787422476](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/35787422476)
+прошёл source gate, Linux portable/`.deb` и Windows portable/installer smoke.
+Публичные GitHub/R2 assets затем были опубликованы из тех же CI-байтов и
+прочитаны обратно побайтно.
+
+Изменения релиза исправляют ручной сценарий пользователя без
 подмены результата за публичный релиз:
 
 - S2 больше не показывает неподтверждённый X-Ray faction editor;
@@ -21,14 +33,20 @@
   actor-owned weapon rows с точным anchor; названия Kharod/Lavina/Skif в
   evidence — наблюдаемые примеры, а не ограничительный список.
 
-Local source gate: `663 passed`, `make PYTHON=.venv/bin/python check` and the
-9 JavaScript tests pass. The dirty-tree Linux candidate also produced separate
-portable `.tar.gz` and Debian `.deb` files; packaged diagnostic/encoder smoke
-passed. Its manifest is explicitly marked `source_dirty=true`, so these files
-are local smoke artifacts, not a public release. Windows installer/portable
-must still be built and smoked on the Windows runner. Package/release
-publication is a separate gate and must use the exact new commit and freshly
-read-back assets.
+Local source gate after the final fixes: `668 passed`, 9 Node tests, Ruff,
+mypy, generated web/theme checks and `git diff --check` pass. The packaged
+artifacts were built by the tagged workflow from the exact release commit;
+the local dirty checkout was not used as a release source.
+
+GitHub Release
+[v0.5.21](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.21)
+and the R2
+[`latest.json`](https://save-editor-downloads.save-editor.workers.dev/latest.json)
+contain the same four packages, `SHA256SUMS` and OTA manifest. Every public
+GitHub and R2 download was read back and matched the local CI hashes and sizes.
+The direct `.deb` is published; the signed APT channel remains unavailable
+until the original private signing key is recovered. A replacement key must
+not be generated for the existing channel.
 
 ## Diagnostics infrastructure
 
