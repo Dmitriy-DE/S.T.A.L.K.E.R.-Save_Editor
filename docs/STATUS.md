@@ -47,7 +47,7 @@ smoke. Windows build корректно собран в CI, а Linux package с�
   redacted bundle, экспортируются и отправляются в отдельный R2 diagnostics
   prefix с rate-limit/lifecycle guard.
 
-Локальный source gate после финальных исправлений: `668 passed`, 9 Node tests,
+Локальный source gate после финальных исправлений: `669 passed`, 9 Node tests,
 Ruff, mypy, generated web/theme checks и `git diff --check` проходят. Публичные
 артефакты подготовлены из CI, а не из локального dirty checkout:
 
