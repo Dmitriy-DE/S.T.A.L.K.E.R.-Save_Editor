@@ -48,6 +48,9 @@ if chrome_pack.is_dir():
 shell_pack = ROOT / "assets" / "ui" / "s2_shell"
 if shell_pack.is_dir():
     datas.append((str(shell_pack), "assets/ui/s2_shell"))
+shell_icon_pack = ROOT / "assets" / "ui" / "shell_icons"
+if shell_icon_pack.is_dir():
+    datas.append((str(shell_icon_pack), "assets/ui/shell_icons"))
 
 font_pack = ROOT / "assets" / "fonts"
 if font_pack.is_dir():

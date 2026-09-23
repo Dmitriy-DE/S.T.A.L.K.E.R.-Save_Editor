@@ -11,9 +11,11 @@ _SOURCE_FONT_ROOT = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 REFERENCE_FONT_NAMES = (
     "LiberationSansNarrow-Regular.ttf",
     "LiberationSansNarrow-Bold.ttf",
+    "Oswald[wght].ttf",
 )
 REFERENCE_FONT_FILES = tuple(_SOURCE_FONT_ROOT / name for name in REFERENCE_FONT_NAMES)
 REFERENCE_FONT_FAMILY = "Liberation Sans Narrow"
+REFERENCE_DISPLAY_FONT_FAMILY = "Oswald"
 
 
 def _font_root() -> Path:
@@ -54,6 +56,7 @@ def load_reference_fonts() -> str:
 
 
 __all__ = [
+    "REFERENCE_DISPLAY_FONT_FAMILY",
     "REFERENCE_FONT_FAMILY",
     "REFERENCE_FONT_FILES",
     "REFERENCE_FONT_NAMES",

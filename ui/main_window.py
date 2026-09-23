@@ -7,9 +7,11 @@ snapshot visible when a later file is malformed.
 
 from __future__ import annotations
 
+import gzip
 import math
 from dataclasses import dataclass, field
-from pathlib import Path
+from datetime import datetime
+from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from PySide6.QtCore import QEvent, Qt, QThread, QTimer, QUrl, Signal
@@ -29,6 +31,7 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
+from editor.diagnostics import LOG_FILENAME, collect_log_bundle, log_directory
 from editor.equipment import EquipmentItem
 from editor.equipment_edits import RepairStageResult, stage_bulk_repair, stage_repair
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
@@ -213,7 +216,7 @@ class MainWindow(QMainWindow):
         self._update_thread: UpdateCheckWorker | None = None
         self._update_dialog: UpdateDialog | None = None
         self._update_installation: InstallationInfo | None = None
-        self._session_activity: list[tuple[str, str, str]] = []
+        self._session_activity: list[tuple[str, str, str, str]] = []
         self._reference_modal_view: QWidget | None = None
 
         # QApplication.instance() is typed as the base QCoreApplication.
@@ -246,7 +249,7 @@ class MainWindow(QMainWindow):
         )
         self.backup_controller = BackupController(backup_dirs=backup_dirs(), parent=self)
         self.discovery_controller = SlotDiscoveryController(
-            self._discover_slots,
+            self.slot_discovery,
             parent=self,
         )
         self.app_shell = AppShell(self)
@@ -256,6 +259,10 @@ class MainWindow(QMainWindow):
 
         self.reference_stack = QStackedWidget(self.app_shell)
         self.reference_stack.setObjectName("referenceScreenStack")
+        self.reference_stack.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
         self.library_view = LibraryView(self.reference_stack)
         self.library_view.set_installed_families(game.game_id for game in installed_releases())
         self.editor_view = EditorView(self.reference_stack)
@@ -273,7 +280,13 @@ class MainWindow(QMainWindow):
         )
         self.settings_reference_view.settings_changed.connect(self._on_settings_changed)
         self.settings_reference_view.update_requested.connect(lambda: self.check_for_updates(manual=True))
-        self.settings_reference_view.diagnostics_requested.connect(self._show_diagnostics_dialog)
+        self.settings_reference_view.backup_folder_requested.connect(
+            self._open_settings_backup_folder
+        )
+        self.settings_reference_view.journal_requested.connect(self._open_diagnostics_log)
+        self.settings_reference_view.copy_diagnostics_requested.connect(
+            self._copy_diagnostics_to_clipboard
+        )
         self.settings_reference_view.support_requested.connect(self._show_support_dialog)
         self.settings_reference_view.setObjectName("settingsView")
         for widget in (
@@ -293,12 +306,20 @@ class MainWindow(QMainWindow):
         # used as a background and no domain state is duplicated.
         self.reference_host = QWidget(self.app_shell)
         self.reference_host.setObjectName("referenceHost")
+        self.reference_host.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
         reference_host_layout = QGridLayout(self.reference_host)
         reference_host_layout.setContentsMargins(0, 0, 0, 0)
         reference_host_layout.setSpacing(0)
         reference_host_layout.addWidget(self.reference_stack, 0, 0)
         self.reference_modal_layer = QWidget(self.reference_host)
         self.reference_modal_layer.setObjectName("referenceModalLayer")
+        self.reference_modal_layer.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
         self.reference_modal_layer.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         modal_layer_layout = QGridLayout(self.reference_modal_layer)
         modal_layer_layout.setContentsMargins(0, 0, 0, 0)
@@ -306,8 +327,8 @@ class MainWindow(QMainWindow):
         self.reference_modal_card = QFrame(self.reference_modal_layer)
         self.reference_modal_card.setObjectName("referenceModalCard")
         self.reference_modal_card.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Preferred,
         )
         self.reference_modal_card_layout = QVBoxLayout(self.reference_modal_card)
         self.reference_modal_card_layout.setContentsMargins(0, 0, 0, 0)
@@ -377,7 +398,10 @@ class MainWindow(QMainWindow):
         journal_entries = [
             (
                 "Резервная копия",
-                record.source_path or str(record.backup_path),
+                PurePosixPath(record.source_path.replace("\\", "/")).name
+                if record.source_path
+                else record.backup_path.name,
+                record.created_at,
                 "Проверено" if record.status == "verified" else record.status,
             )
             for record in tuple(records or ())
@@ -385,7 +409,9 @@ class MainWindow(QMainWindow):
         self.library_view.set_recent_activity((*journal_entries, *self._session_activity))
 
     def _record_recent_activity(self, label: str, target: str, status: str) -> None:
-        self._session_activity.append((label, target, status))
+        visible_name = PurePosixPath(str(target).replace("\\", "/")).name or str(target)
+        occurred_at = datetime.now().astimezone().isoformat(timespec="minutes")
+        self._session_activity.append((label, visible_name, occurred_at, status))
         self._on_backup_records_changed(self.backup_controller.records)
 
     def _on_reference_destination(self, destination: str) -> None:
@@ -416,6 +442,10 @@ class MainWindow(QMainWindow):
         if hasattr(self, "reference_stack"):
             self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.editor_view)
+            table = self.editor_view.table
+            if table.model().rowCount() and not table.selectionModel().selectedRows():
+                table.selectRow(0)
+            table.setFocus(Qt.FocusReason.OtherFocusReason)
             self.app_shell.set_active_destination(
                 "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library"
             )
@@ -495,17 +525,21 @@ class MainWindow(QMainWindow):
         rows: list[tuple[str, str, str]] = []
         info = self.snapshot.info
         if self.staged_money is not None:
-            rows.append(("Баланс", str(info.money if info.money is not None else "—"), str(self.staged_money)))
+            before = human_money(info.money) if info.money is not None else "—"
+            rows.append(("Баланс", f"{before} ₽", f"{human_money(self.staged_money)} ₽"))
         for handle, value in sorted(self.staged_counts.items()):
             item = self._find_inventory_item(handle)
-            rows.append((item.type_key if item is not None else f"0x{handle:08X}", str(item.count if item is not None else "—"), str(value)))
+            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
+            rows.append((f"{name} · количество", str(item.count if item is not None else "—"), str(value)))
         for handle, durability_value in sorted(self.staged_durability.items()):
             item = self._find_inventory_item(handle)
-            before = "—" if item is None or item.condition is None else f"{item.condition * 100:.1f}%"
-            rows.append((item.type_key if item is not None else f"0x{handle:08X}", before, f"{durability_value * 100:.1f}%"))
+            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
+            before = "—" if item is None or item.condition is None else f"{item.condition * 100:.0f}%"
+            rows.append((f"{name} · состояние", before, f"{durability_value * 100:.0f}%"))
         for handle in sorted(self.staged_detach):
             item = self._find_inventory_item(handle)
-            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "в сейве", "удалить"))
+            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
+            rows.append((name, "в сейве", "удалить"))
         for item_key, quantity in sorted(self.staged_adds.items()):
             rows.append((item_key, "нет", f"добавить × {quantity}"))
         for key, value in sorted(self.staged_faction_relations.items()):
@@ -574,7 +608,16 @@ class MainWindow(QMainWindow):
         if self.reference_stack.indexOf(view) >= 0:
             self.reference_stack.removeWidget(view)
         view.setParent(self.reference_modal_card)
-        view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        limits = {
+            self.save_review_view: (960, 540),
+            self.save_result_view: (900, 500),
+            self.unsupported_view: (960, 540),
+        }
+        max_width, max_height = limits[view]
+        self.reference_modal_card.setMaximumSize(max_width, max_height)
+        self.reference_modal_card.setMinimumSize(0, 0)
+        view.setMaximumSize(max_width - 2, max_height - 2)
+        view.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.reference_modal_card_layout.addWidget(view)
         self._reference_modal_view = view
         self.reference_modal_layer.show()
@@ -692,6 +735,45 @@ class MainWindow(QMainWindow):
         self._diagnostics_dialog = dialog
         dialog.finished.connect(lambda _result: self._clear_diagnostics_dialog(dialog))
         dialog.open()
+
+    def _open_settings_backup_folder(self) -> None:
+        folder = next((path for path in backup_dirs() if path.is_dir()), None)
+        if folder is None:
+            self._show_operation_error(
+                "Папка резервных копий появится после создания первого backup."
+            )
+            return
+        self._open_backup_folder(folder)
+
+    def _open_diagnostics_log(self) -> None:
+        path = log_directory() / LOG_FILENAME
+        if not path.is_file():
+            QMessageBox.information(
+                self,
+                "Журнал приложения",
+                "Журнал пока пуст. Он появится после первой записи события приложения.",
+            )
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+            self._show_operation_error(f"Не удалось открыть журнал приложения: {path}")
+
+    def _copy_diagnostics_to_clipboard(self) -> None:
+        try:
+            redacted_text = gzip.decompress(collect_log_bundle()).decode(
+                "utf-8", errors="replace"
+            )
+        except (OSError, ValueError, gzip.BadGzipFile) as exc:
+            self._show_operation_error(f"Не удалось подготовить диагностику: {exc}")
+            return
+        if not redacted_text.strip():
+            self.status_label.setText("Журнал пуст — нечего копировать")
+            return
+        clipboard = QApplication.clipboard()
+        if clipboard is None:
+            self._show_operation_error("Буфер обмена недоступен")
+            return
+        clipboard.setText(redacted_text)
+        self.status_label.setText("ОБЕЗЛИЧЕННАЯ ДИАГНОСТИКА СКОПИРОВАНА")
 
     def _clear_diagnostics_dialog(self, dialog: DiagnosticsDialog) -> None:
         if self._diagnostics_dialog is dialog:
@@ -914,7 +996,7 @@ class MainWindow(QMainWindow):
             f"{snapshot.path.name} · {human_size(len(snapshot.data))} · "
             f"SHA {info.sha256[:12]}…"
         )
-        self.status_label.setText("Анализ завершён; snapshot готов")
+        self.status_label.setText("CORE: READY  |  CRC / SHA / BACKUP ВКЛЮЧЕНЫ")
         self.error_label.clear()
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True

@@ -9,6 +9,22 @@
   font-display: swap;
 }
 @font-face {
+  font-family: "Oswald";
+  src: url("assets/fonts/Oswald%5Bwght%5D.ttf") format("truetype");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.brand-subtitle, .badge, .reference-rail-heading, .reference-game,
+.reference-nav-button, .reference-screen-heading h1, .reference-editor-heading,
+.reference-subheading, .reference-table th, .reference-library-preview h2,
+.reference-item-panel h2, .reference-chip, .reference-primary,
+.reference-secondary, .reference-danger, .reference-back,
+.reference-settings-category, .reference-footer-action, .reference-big-value {
+  font-family: "Oswald", "Liberation Sans Narrow", sans-serif;
+}
+@font-face {
   font-family: "Liberation Sans Narrow";
   src: url("assets/fonts/LiberationSansNarrow-Bold.ttf") format("truetype");
   font-weight: 700 900;
@@ -54,6 +70,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px s
 .brand-title-row { display: flex; align-items: center; gap: 12px; }
 .brand-name {
   color: var(--text);
+  font-family: "Oswald", "Liberation Sans Narrow", sans-serif;
   font-size: 31px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -84,6 +101,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px s
   min-height: 47px;
   padding: 0 18px;
   color: var(--text-secondary);
+  font-family: "Oswald", "Liberation Sans Narrow", sans-serif;
   background: rgb(16 19 17 / 90%);
   border: 1px solid var(--border);
   border-bottom: 3px solid transparent;

@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .style_components import TextureFrame, action_button
+from .style_components import TextureFrame, action_button, key_hint
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,12 @@ class _ChromeHeader(TextureFrame):
     """Frameless-window header with drag and double-click maximize behavior."""
 
     def __init__(self, parent: QWidget, *, asset: str) -> None:
-        super().__init__(parent, asset=asset, overlay_alpha=158)
+        super().__init__(
+            parent,
+            asset=asset,
+            overlay_alpha=0,
+            draw_border=False,
+        )
         self._drag_offset: QPoint | None = None
         self._controls_host: QWidget | None = None
 
@@ -121,20 +126,20 @@ class AppShell(QWidget):
         header.setObjectName("referenceHeader")
         header.setFixedHeight(122)
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(46, 14, 30, 0)
-        header_layout.setSpacing(10)
+        header_layout.setContentsMargins(32, 6, 36, 0)
+        header_layout.setSpacing(0)
 
         brand = QVBoxLayout()
-        brand.setContentsMargins(0, 0, 20, 10)
+        brand.setContentsMargins(19, 21, 14, 10)
         brand.setSpacing(2)
         title_row = QHBoxLayout()
-        title_row.setSpacing(12)
+        title_row.setSpacing(9)
         title = QLabel("S.T.A.L.K.E.R. — SAVE EDITOR", header)
         title.setObjectName("referenceBrand")
         title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
         brand_font = QFont(title.font())
         brand_font.setPointSize(46)
-        brand_font.setStretch(45)
+        brand_font.setStretch(68)
         title.setFont(brand_font)
         title_row.addWidget(title)
         version = QLabel("v0.5.21", header)
@@ -145,8 +150,9 @@ class AppShell(QWidget):
         subtitle = QLabel("РЕДАКТОР СОХРАНЕНИЙ ДЛЯ ВСЕЙ СЕРИИ S.T.A.L.K.E.R.", header)
         subtitle.setObjectName("referenceSubtitle")
         brand.addWidget(subtitle)
-        brand_host = QWidget(header)
-        brand_host.setFixedWidth(474)
+        brand_host = QFrame(header)
+        brand_host.setObjectName("referenceBrandPanel")
+        brand_host.setFixedSize(498, 108)
         brand_host.setLayout(brand)
         header_layout.addWidget(brand_host)
 
@@ -154,11 +160,13 @@ class AppShell(QWidget):
         nav.setContentsMargins(0, 0, 0, 0)
         nav.setSpacing(19)
         nav_widths = (237, 158, 102, 162)
-        for key, label, icon, width in zip(
+        nav_minimum_widths = (176, 116, 78, 122)
+        for key, label, icon, width, minimum_width in zip(
             self._destination_keys,
             self.destination_names,
             self._destination_icons,
             nav_widths,
+            nav_minimum_widths,
             strict=True,
         ):
             button = QPushButton(label, header)
@@ -166,7 +174,9 @@ class AppShell(QWidget):
             button.setProperty("destination", key)
             button.setIcon(self._navigation_icon(icon))
             button.setIconSize(QSize(19, 19))
-            button.setFixedWidth(width)
+            button.setMinimumWidth(minimum_width)
+            button.setMaximumWidth(width)
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, dest=key: self.set_active_destination(dest))
             nav.addWidget(button)
@@ -219,19 +229,26 @@ class AppShell(QWidget):
         self.content_host.setObjectName("referenceContent")
         self.content_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._content_layout = QVBoxLayout(self.content_host)
-        self._content_layout.setContentsMargins(32, 0, 32, 20)
+        self._content_layout.setContentsMargins(24, 0, 32, 10)
         self._content_layout.setSpacing(0)
         root.addWidget(self.content_host, 1)
-
         footer = QFrame(self)
         footer.setObjectName("referenceFooter")
-        footer.setFixedHeight(43)
+        footer.setFixedHeight(52)
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(32, 8, 32, 8)
-        footer_layout.setSpacing(16)
+        footer_layout.setSpacing(12)
+        self.footer_action_host = QWidget(footer)
+        self.footer_action_host.setObjectName("footerActions")
+        self._footer_action_layout = QHBoxLayout(self.footer_action_host)
+        self._footer_action_layout.setContentsMargins(0, 0, 0, 0)
+        self._footer_action_layout.setSpacing(10)
+        footer_layout.addWidget(self.footer_action_host)
+        # Kept as a hidden compatibility handle for older callers. Visible
+        # hints are the keycap widgets above, paired with live QShortcuts.
         self.footer_hints = QLabel("", footer)
         self.footer_hints.setObjectName("footerHints")
-        footer_layout.addWidget(self.footer_hints)
+        self.footer_hints.hide()
         footer_layout.addStretch(1)
         self.footer_status = QLabel("CORE: READY  |  CRC / SHA / BACKUP ВКЛЮЧЕНЫ", footer)
         self.footer_status.setObjectName("footerStatus")
@@ -240,6 +257,17 @@ class AppShell(QWidget):
 
         self.set_active_destination("library")
         self._sync_maximize_button()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        compact = self.width() < 1490
+        for button in self.navigation_buttons:
+            if button.property("compactNav") == compact:
+                continue
+            button.setProperty("compactNav", compact)
+            button.style().unpolish(button)
+            button.style().polish(button)
+            button.updateGeometry()
 
     def _minimize_window(self) -> None:
         self.window().showMinimized()
@@ -306,7 +334,20 @@ class AppShell(QWidget):
             self._footer_shortcuts.append(shortcut)
             rendered.append(FooterAction(key, label, callback, shortcut))
         self.footer_actions = tuple(rendered)
-        self.footer_hints.setText("    ".join(f"{action.key}  {action.label}" for action in rendered))
+        while self._footer_action_layout.count():
+            item = self._footer_action_layout.takeAt(0)
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        for index, action in enumerate(rendered):
+            if index:
+                separator = QFrame(self.footer_action_host)
+                separator.setObjectName("footerActionSeparator")
+                separator.setFrameShape(QFrame.Shape.VLine)
+                self._footer_action_layout.addWidget(separator)
+            self._footer_action_layout.addWidget(
+                key_hint(action.key, action.label, self.footer_action_host)
+            )
 
 
 __all__ = ["AppShell"]

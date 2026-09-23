@@ -31,3 +31,12 @@ def test_browser_keeps_local_only_and_does_not_use_screenshot_chrome() -> None:
     assert "showReferenceScreen" in js
     assert "renderReferenceReview" in js
 
+
+def test_browser_bundles_the_desktop_display_font_for_typographic_parity() -> None:
+    css = (ROOT / "web/style.css").read_text(encoding="utf-8")
+    source_font = ROOT / "assets/fonts/Oswald[wght].ttf"
+    browser_font = ROOT / "web/assets/fonts/Oswald[wght].ttf"
+
+    assert 'font-family: "Oswald"' in css
+    assert browser_font.is_file()
+    assert browser_font.read_bytes() == source_font.read_bytes()

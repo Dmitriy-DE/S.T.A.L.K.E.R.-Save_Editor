@@ -5,6 +5,8 @@ import pytest
 pytest.importorskip("PySide6")
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QLabel
 
 from ui.app_shell import AppShell
 from ui.theme import stylesheet
@@ -29,6 +31,21 @@ def test_app_shell_exposes_canonical_global_navigation_and_footer(qtbot) -> None
         qtbot.mouseClick(shell.navigation_buttons[2], Qt.MouseButton.LeftButton)
     assert signal.args == ["history"]
     assert shell.active_destination == "history"
+
+
+def test_footer_renders_keycaps_and_the_visible_shortcut_executes(qtbot) -> None:
+    shell = AppShell()
+    qtbot.addWidget(shell)
+    calls: list[str] = []
+    shell.set_footer_actions((("K", "Проверить", lambda: calls.append("checked")),))
+    keycaps = shell.findChildren(QLabel, "keyHintKey")
+    labels = shell.findChildren(QLabel, "keyHintText")
+    assert [label.text() for label in keycaps] == ["K"]
+    assert [label.text() for label in labels] == ["Проверить"]
+    shortcut = shell.footer_actions[0].shortcut
+    assert shortcut.key() == QKeySequence("K")
+    shortcut.activated.emit()
+    assert calls == ["checked"]
 
 
 def test_reference_theme_is_real_shell_styling_without_old_xray_chrome() -> None:

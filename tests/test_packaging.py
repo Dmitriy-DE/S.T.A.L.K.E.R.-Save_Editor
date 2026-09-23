@@ -41,6 +41,13 @@ def test_artifact_names_include_architecture_and_version() -> None:
         "SaveEditor-linux-x86_64-v9.9.9-test.tar.gz",
         "stalker2-save-editor_9.9.9-test_amd64.deb",
     )
+
+
+def test_desktop_shell_icons_are_bundled_with_the_application() -> None:
+    spec_source = (ROOT / "packaging" / "editor.spec").read_text(encoding="utf-8")
+
+    assert 'shell_icon_pack = ROOT / "assets" / "ui" / "shell_icons"' in spec_source
+    assert 'datas.append((str(shell_icon_pack), "assets/ui/shell_icons"))' in spec_source
     assert build.artifact_names("9.9.9-test", "windows") == (
         "SaveEditor-windows-x86_64-v9.9.9-test.zip",
         "SaveEditor-windows-x86_64-v9.9.9-test-setup.exe",

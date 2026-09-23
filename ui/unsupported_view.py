@@ -24,8 +24,8 @@ class UnsupportedView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(250, 72, 250, 50)
-        root.setSpacing(12)
+        root.setContentsMargins(40, 30, 40, 30)
+        root.setSpacing(8)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("РЕДАКТИРОВАНИЕ НЕДОСТУПНО", self))
         heading.addStretch(1)
@@ -53,8 +53,8 @@ class UnsupportedView(QWidget):
         self.reason_label.setWordWrap(True)
         detail.addWidget(self.reason_label)
         detail.addStretch(1)
-        self.detail_panel.setMinimumHeight(300)
-        self.detail_panel.setMaximumHeight(360)
+        self.detail_panel.setMinimumHeight(230)
+        self.detail_panel.setMaximumHeight(280)
         root.addWidget(self.detail_panel, 0)
         actions = QHBoxLayout()
         self.folder_button = action_button("ОТКРЫТЬ ПАПКУ СОХРАНЕНИЯ", self)

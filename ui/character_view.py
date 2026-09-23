@@ -114,6 +114,7 @@ class CharacterView(QWidget):
         self.faction_table.setHorizontalHeaderLabels(("ГРУППИРОВКА", "ТЕКУЩЕЕ", "НОВОЕ", "СТАТУС"))
         self.faction_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.faction_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.faction_table.setShowGrid(False)
         self.faction_table.verticalHeader().setVisible(False)
         self.faction_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in (1, 2, 3):
@@ -189,8 +190,13 @@ class CharacterView(QWidget):
             self.faction_table.insertRow(row)
             name = faction.display_name or faction.key
             self.faction_table.setItem(row, 0, QTableWidgetItem(name))
+            has_current_value = faction.numeric_id in current
             current_value = current.get(faction.numeric_id, 0)
-            self.faction_table.setItem(row, 1, QTableWidgetItem(str(current_value)))
+            self.faction_table.setItem(
+                row,
+                1,
+                QTableWidgetItem(str(current_value) if has_current_value else "—"),
+            )
             staged = self._staged.get(faction.key, current_value)
             if self.editable:
                 spin = QSpinBox(self.faction_table)

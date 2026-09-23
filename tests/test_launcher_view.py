@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from PySide6.QtWidgets import QLabel
 
 pytest.importorskip("PySide6")
 
@@ -57,7 +58,11 @@ def test_library_filters_save_rows_and_opens_selected_slot(qtbot, tmp_path: Path
     assert "1 сохранений" in view.game_list.item(1).text()
     view.game_list.setCurrentRow(1)
     assert view.save_table.rowCount() == 1
-    assert stalker2.name in view.save_table.item(0, 0).text()
+    row_title = view.save_table.cellWidget(0, 0)
+    assert row_title is not None
+    title = row_title.findChild(QLabel, "libraryRowTitle")
+    assert title is not None
+    assert title.text() == stalker2.stem
     view.save_table.selectRow(0)
 
     with qtbot.waitSignal(view.open_requested, timeout=1_000) as blocker:

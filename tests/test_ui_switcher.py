@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from PySide6.QtWidgets import QLabel
 
 pytest.importorskip("PySide6")
 
@@ -26,7 +27,11 @@ def test_discovery_controller_populates_canonical_library(qtbot, tmp_path: Path)
     window.library_view.set_discovery(SaveDiscovery((slot,), (tmp_path,)))
 
     assert window.library_view.save_table.rowCount() == 1
-    assert path.name in window.library_view.save_table.item(0, 0).text()
+    row_title = window.library_view.save_table.cellWidget(0, 0)
+    assert row_title is not None
+    title = row_title.findChild(QLabel, "libraryRowTitle")
+    assert title is not None
+    assert title.text() == path.stem
 
 
 def test_discovery_controller_is_read_only_and_does_not_auto_open(qtbot) -> None:

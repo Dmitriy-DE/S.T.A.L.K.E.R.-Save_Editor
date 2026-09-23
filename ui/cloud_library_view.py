@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from datetime import datetime
+from pathlib import Path, PurePosixPath
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -20,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from .cloud_controller import CloudController
+from .formatting import human_size
 from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
 
 _SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
@@ -105,6 +109,7 @@ class CloudLibraryView(QWidget):
         self.save_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.save_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.save_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.save_table.setShowGrid(False)
         self.save_table.verticalHeader().setVisible(False)
         self.save_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in (1, 2, 3, 4):
@@ -116,8 +121,25 @@ class CloudLibraryView(QWidget):
         self.detail_panel = panel(self, object_name="cloudDetailPanel")
         detail = QVBoxLayout(self.detail_panel)
         detail.setContentsMargins(12, 12, 12, 12)
-        detail.addWidget(section_header("ПРОСМОТР СОХРАНЕНИЯ", "ИСТОЧНИК И СТАТУС", self.detail_panel))
-        self.detail_image = QLabel(self.detail_panel)
+        self.detail_scroll = QScrollArea(self.detail_panel)
+        self.detail_scroll.setObjectName("cloudDetailScroll")
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.detail_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.detail_content = QWidget(self.detail_scroll)
+        self.detail_content.setObjectName("cloudDetailContent")
+        detail_content_layout = QVBoxLayout(self.detail_content)
+        detail_content_layout.setContentsMargins(0, 0, 5, 0)
+        detail_content_layout.setSpacing(5)
+        detail_content_layout.addWidget(
+            section_header(
+                "ПРОСМОТР СОХРАНЕНИЯ",
+                "ИСТОЧНИК И СТАТУС",
+                self.detail_content,
+            )
+        )
+        self.detail_image = QLabel(self.detail_content)
         self.detail_image.setObjectName("cloudDetailImage")
         self.detail_image.setMinimumHeight(118)
         self.detail_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -125,23 +147,25 @@ class CloudLibraryView(QWidget):
         if not detail_pixmap.isNull():
             self.detail_image.setPixmap(detail_pixmap)
             self.detail_image.setScaledContents(True)
-        detail.addWidget(self.detail_image)
-        self.detail_name = QLabel("Сохранение не выбрано", self.detail_panel)
+        detail_content_layout.addWidget(self.detail_image)
+        self.detail_name = QLabel("Сохранение не выбрано", self.detail_content)
         self.detail_name.setObjectName("cloudDetailName")
         self.detail_name.setWordWrap(True)
-        detail.addWidget(self.detail_name)
-        self.detail_meta = QLabel("Выбери Data path, чтобы увидеть детали.", self.detail_panel)
+        detail_content_layout.addWidget(self.detail_name)
+        self.detail_meta = QLabel("Выбери Data path, чтобы увидеть детали.", self.detail_content)
         self.detail_meta.setObjectName("cloudDetailMeta")
         self.detail_meta.setWordWrap(True)
-        detail.addWidget(self.detail_meta)
+        detail_content_layout.addWidget(self.detail_meta)
         self.read_only_banner = QLabel(
             "Только чтение до подтверждения Cloud writer. WriteFile не запускается автоматически.",
-            self.detail_panel,
+            self.detail_content,
         )
         self.read_only_banner.setObjectName("cloudReadOnlyBanner")
         self.read_only_banner.setWordWrap(True)
-        detail.addWidget(self.read_only_banner)
-        detail.addStretch(1)
+        detail_content_layout.addWidget(self.read_only_banner)
+        detail_content_layout.addStretch(1)
+        self.detail_scroll.setWidget(self.detail_content)
+        detail.addWidget(self.detail_scroll, 1)
         self.download_button = action_button("СКАЧАТЬ И ОТКРЫТЬ", self.detail_panel, kind="primary")
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self._analyze_selected)
@@ -191,7 +215,9 @@ class CloudLibraryView(QWidget):
         self.download_button.setEnabled(bool(selected) and self.backend.transport is not None and not self.backend.is_busy)
         self.upload_button.setEnabled(False)
         if selected:
-            self.detail_name.setText(selected[0].text())
+            name = PurePosixPath(selected_file.name.replace("\\", "/")).name if selected_file is not None else selected[0].text()
+            self.detail_name.setText(name)
+            self.detail_name.setToolTip(selected_file.name if selected_file is not None else "")
             self.detail_meta.setText("Выбран cloud slot. Анализ скачает bytes и проверит формат до редактирования.")
 
     def _analyze_selected(self) -> None:
@@ -214,15 +240,19 @@ class CloudLibraryView(QWidget):
         self.save_table.setRowCount(0)
         for row, cloud_file in enumerate(files):
             self.save_table.insertRow(row)
+            self.save_table.setRowHeight(row, 58)
             values = (
-                cloud_file.name,
-                f"{cloud_file.size} B",
-                str(cloud_file.timestamp),
+                PurePosixPath(cloud_file.name.replace("\\", "/")).name,
+                human_size(cloud_file.size),
+                datetime.fromtimestamp(cloud_file.timestamp).strftime("%d.%m.%Y %H:%M"),
                 "да" if cloud_file.is_persisted else "нет",
                 "Неизвестно" if str(cloud_file.source) == "unknown" else str(cloud_file.source),
             )
             for column, value in enumerate(values):
-                self.save_table.setItem(row, column, QTableWidgetItem(value))
+                item = QTableWidgetItem(value)
+                if column == 0:
+                    item.setToolTip(cloud_file.name)
+                self.save_table.setItem(row, column, item)
         status = self.backend.status_text
         if status.startswith("Steam Cloud:"):
             status = status.removeprefix("Steam Cloud:").strip()

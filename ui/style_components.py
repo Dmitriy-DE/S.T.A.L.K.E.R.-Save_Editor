@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPaintEvent, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
@@ -32,19 +32,25 @@ class TextureFrame(QFrame):
         tiled: bool = False,
         overlay_alpha: int = 158,
         draw_border: bool = True,
+        image_height_ratio: float = 1.0,
     ) -> None:
         super().__init__(parent)
         self._texture = QPixmap(str(_SHELL_ASSETS / asset))
         self._tiled = tiled
         self._overlay_alpha = overlay_alpha
         self._draw_border = draw_border
+        self._image_height_ratio = max(0.0, min(1.0, image_height_ratio))
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
         super().paintEvent(event)
         if self._texture.isNull():
             return
         painter = QPainter(self)
-        if self._tiled:
+        image_height = round(self.height() * self._image_height_ratio)
+        if self._image_height_ratio < 1.0:
+            painter.fillRect(self.rect(), QColor(9, 11, 10))
+            painter.drawPixmap(QRect(0, 0, self.width(), image_height), self._texture)
+        elif self._tiled:
             for y in range(0, self.height(), self._texture.height()):
                 for x in range(0, self.width(), self._texture.width()):
                     painter.drawPixmap(x, y, self._texture)
@@ -150,6 +156,7 @@ def reference_game_rail(
     games = QListWidget(rail)
     games.setObjectName("referenceSecondaryGameList")
     games.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+    games.setIconSize(QSize(22, 22))
     entries = (
         ("ВСЕ ИГРЫ", "Локальные сохранения", "all"),
         ("S.T.A.L.K.E.R. 2", "Heart of Chornobyl", "stalker2"),
@@ -160,15 +167,23 @@ def reference_game_rail(
     selected_row = 0
     for row, (title, detail, family) in enumerate(entries):
         item = QListWidgetItem(f"{title}\n{detail}")
+        icon_name = "game-grid.svg" if family == "all" else "radiation.svg"
+        item.setIcon(QIcon(str(_SHELL_ICONS / icon_name)))
         item.setData(Qt.ItemDataRole.UserRole, family)
+        item.setSizeHint(QSize(0, 60))
         games.addItem(item)
         if family == active_family:
             selected_row = row
     games.setCurrentRow(selected_row)
     layout.addWidget(games, 1)
-    zone = TextureFrame(rail, asset="rail_zone.png")
+    zone = TextureFrame(
+        rail,
+        asset="rail_zone.png",
+        overlay_alpha=0,
+        image_height_ratio=0.66,
+    )
     zone.setObjectName("secondaryZoneDecoration")
-    zone.setFixedHeight(340)
+    zone.setFixedHeight(294)
     zone_layout = QVBoxLayout(zone)
     zone_layout.setContentsMargins(12, 20, 12, 12)
     zone_layout.addStretch(1)

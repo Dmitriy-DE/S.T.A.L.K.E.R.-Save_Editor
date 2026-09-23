@@ -2,18 +2,27 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QLocale, QSize, Qt, Signal
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
     QTableView,
     QToolButton,
     QVBoxLayout,
@@ -21,7 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.capabilities import FormatCapabilities
-from editor.catalog import ItemCatalog
+from editor.catalog import ItemCatalog, UpgradeCatalog
 from editor.equipment import EquipmentItem, equipment_items
 from editor.releases import is_xray_original_release
 from save_format import InventoryItem
@@ -40,6 +49,91 @@ _EQUIPMENT_DISPLAY_NAMES = {
     "detector_advanced": "«Велес»",
     "zat_b33_safe_container": "«ВЕРПИЛО-5»",
 }
+_EQUIPMENT_SLOT_LABELS = {
+    "cs_heavy_outfit": "БРОНЯ",
+    "zat_b33_safe_container": "КОНТЕЙНЕР",
+}
+
+
+class ConditionBarDelegate(QStyledItemDelegate):
+    """Render the inventory condition as a compact label and durability meter."""
+
+    def paint(self, painter: QPainter, option, index) -> None:
+        raw_value = index.data(Qt.ItemDataRole.UserRole)
+        display_text = str(index.data(Qt.ItemDataRole.DisplayRole) or "—")
+        styled_option = QStyleOptionViewItem(option)
+        self.initStyleOption(styled_option, index)
+        styled_option.text = ""
+        super().paint(painter, styled_option, index)
+
+        value: float | None
+        try:
+            value = float(raw_value) if raw_value is not None else None
+        except (TypeError, ValueError):
+            value = None
+        if value is not None and not math.isfinite(value):
+            value = None
+
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if value is None:
+            text = display_text
+            painter.setPen(
+                QColor("#151713")
+                if option.state & QStyle.StateFlag.State_Selected
+                else QColor("#A29D90")
+            )
+            painter.drawText(
+                option.rect.adjusted(8, 0, -8, 0),
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                text,
+            )
+            painter.restore()
+            return
+
+        value = min(1.0, max(0.0, value))
+        text_color = (
+            QColor("#151713")
+            if option.state & QStyle.StateFlag.State_Selected
+            else QColor("#D8D2BE")
+        )
+        painter.setPen(text_color)
+        content = option.rect.adjusted(8, 0, -8, 0)
+        label_width = 39
+        painter.drawText(
+            content.x(),
+            content.y(),
+            label_width,
+            content.height(),
+            int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft),
+            f"{round(value * 100)}%",
+        )
+        bar_width = max(0, min(58, content.width() - label_width - 6))
+        if bar_width:
+            bar_height = 9
+            bar = option.rect.adjusted(0, 0, 0, 0)
+            bar_x = content.right() - bar_width + 1
+            bar_y = bar.center().y() - bar_height // 2
+            painter.setPen(QPen(QColor("#4B5048"), 1))
+            painter.setBrush(QColor("#1D221E"))
+            painter.drawRoundedRect(bar_x, bar_y, bar_width, bar_height, 2, 2)
+            fill_width = round((bar_width - 2) * value)
+            fill_color = QColor(
+                "#71C96A" if value >= 0.8 else "#E0B53D" if value >= 0.5 else "#D85A45"
+            )
+            if fill_width > 0:
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(fill_color)
+                painter.drawRoundedRect(
+                    bar_x + 1,
+                    bar_y + 1,
+                    fill_width,
+                    bar_height - 2,
+                    1,
+                    1,
+                )
+        painter.restore()
+_SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
 
 class EditorView(QWidget):
@@ -65,6 +159,7 @@ class EditorView(QWidget):
         self._items: tuple[InventoryItem, ...] = ()
         self._capabilities: FormatCapabilities | None = None
         self._catalog: ItemCatalog | None = None
+        self._upgrade_catalog: UpgradeCatalog | None = None
         self._icon_resolver = XRayIconResolver(None)
         self._staged_counts: Mapping[int, int] = {}
         self._staged_durability: Mapping[int, float] = {}
@@ -74,37 +169,54 @@ class EditorView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 10, 0, 0)
-        root.setSpacing(8)
+        root.setContentsMargins(0, 6, 0, 0)
+        root.setSpacing(7)
         header = QHBoxLayout()
+        header.setSpacing(0)
         self.back_button = action_button("←  К СПИСКУ СОХРАНЕНИЙ", self)
+        self.back_button.setFixedSize(222, 33)
         self.back_button.clicked.connect(self.back_requested)
         header.addWidget(self.back_button)
+        header.addSpacing(17)
+        self.breadcrumb_separator = QFrame(self)
+        self.breadcrumb_separator.setObjectName("editorBreadcrumbSeparator")
+        self.breadcrumb_separator.setFrameShape(QFrame.Shape.VLine)
+        self.breadcrumb_separator.setFixedSize(1, 38)
+        header.addWidget(self.breadcrumb_separator)
+        header.addSpacing(40)
         self.breadcrumb = QLabel("Сохранение не открыто", self)
         self.breadcrumb.setObjectName("editorBreadcrumb")
         header.addWidget(self.breadcrumb, 1)
         self.header_status = status_chip("НЕТ SNAPSHOT", self, tone="neutral")
+        self.header_status.setFixedHeight(28)
         header.addWidget(self.header_status)
         root.addLayout(header)
 
         columns = QHBoxLayout()
-        columns.setSpacing(10)
+        columns.setSpacing(0)
         self.status_column = panel(self, object_name="editorStatusColumn")
         status_layout = QVBoxLayout(self.status_column)
-        status_layout.setContentsMargins(6, 8, 6, 8)
-        status_layout.setSpacing(4)
+        status_layout.setContentsMargins(14, 8, 12, 8)
+        status_layout.setSpacing(6)
         status_layout.addWidget(section_header("СТАТУС СОХРАНЕНИЯ", parent=self.status_column))
         self.money_label = QLabel("ДЕНЬГИ  — ₽", self.status_column)
         self.money_label.setObjectName("editorMetric")
         self.money_label.setVisible(False)
         money_controls = QHBoxLayout()
-        money_caption = QLabel("ДЕНЬГИ", self.status_column)
-        money_caption.setObjectName("editorMetricCaption")
-        money_controls.addWidget(money_caption)
+        money_controls.setContentsMargins(8, 0, 0, 0)
+        money_controls.setSpacing(8)
+        self.money_icon = QLabel(self.status_column)
+        self.money_icon.setObjectName("editorMetricIcon")
+        self.money_icon.setPixmap(
+            QIcon(str(_SHELL_ICONS / "currency.svg")).pixmap(QSize(24, 24))
+        )
+        self.money_icon.setAccessibleName("Деньги")
+        money_controls.addWidget(self.money_icon)
         self.money_spin = QSpinBox(self.status_column)
         self.money_spin.setRange(0, 2_000_000_000)
         self.money_spin.setSuffix(" ₽")
         self.money_spin.setGroupSeparatorShown(True)
+        self.money_spin.setLocale(QLocale("ru_RU"))
         self.money_spin.setObjectName("editorMoneySpin")
         self.money_spin.setEnabled(False)
         money_controls.addWidget(self.money_spin, 1)
@@ -115,51 +227,76 @@ class EditorView(QWidget):
         self.money_clear_button.clicked.connect(self.money_clear_requested)
         money_controls.addWidget(self.money_clear_button)
         status_layout.addLayout(money_controls)
-        self.weight_label = QLabel("ВЕС  — кг", self.status_column)
+        weight_controls = QHBoxLayout()
+        weight_controls.setContentsMargins(8, 0, 0, 0)
+        weight_controls.setSpacing(8)
+        self.weight_icon = QLabel(self.status_column)
+        self.weight_icon.setObjectName("editorMetricIcon")
+        self.weight_icon.setPixmap(
+            QIcon(str(_SHELL_ICONS / "weight.svg")).pixmap(QSize(24, 24))
+        )
+        self.weight_icon.setAccessibleName("Вес")
+        weight_controls.addWidget(self.weight_icon)
+        self.weight_label = QLabel("— кг", self.status_column)
         self.weight_label.setObjectName("editorMetric")
-        status_layout.addWidget(self.weight_label)
-        self.source_label = QLabel("Источник\n—", self.status_column)
-        self.source_label.setObjectName("editorInfo")
-        status_layout.addWidget(self.source_label)
-        self.integrity_label = QLabel("Целостность\n—", self.status_column)
-        self.integrity_label.setObjectName("editorInfo")
-        status_layout.addWidget(self.integrity_label)
-        self.capability_label = QLabel("Статус\n—", self.status_column)
-        self.capability_label.setObjectName("editorInfo")
-        status_layout.addWidget(self.capability_label)
-        status_layout.addWidget(section_header("ЭКИПИРОВКА", parent=self.status_column))
+        weight_controls.addWidget(self.weight_label, 1)
+        status_layout.addLayout(weight_controls)
+        self.source_label = self._add_info_row(status_layout, "Источник", "library")
+        self.integrity_label = self._add_info_row(status_layout, "Целостность", "verified")
+        self.capability_label = self._add_info_row(status_layout, "Статус", "equipment")
+        status_layout.addSpacing(12)
+        self.equipment_scroll = QScrollArea(self.status_column)
+        self.equipment_scroll.setObjectName("equipmentScroll")
+        self.equipment_scroll.setWidgetResizable(True)
+        self.equipment_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.equipment_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.equipment_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.equipment_content = QWidget(self.equipment_scroll)
+        self.equipment_content.setObjectName("equipmentContent")
+        equipment_content_layout = QVBoxLayout(self.equipment_content)
+        equipment_content_layout.setContentsMargins(0, 0, 4, 0)
+        equipment_content_layout.setSpacing(6)
+        self.equipment_section_header = section_header(
+            "ЭКИПИРОВКА", parent=self.equipment_content
+        )
+        self.equipment_section_header.setFixedHeight(31)
+        equipment_content_layout.addWidget(self.equipment_section_header)
         self.equipment_list = QVBoxLayout()
         self.equipment_list.setSpacing(4)
-        status_layout.addLayout(self.equipment_list)
-        artifact_heading = QLabel("АРТЕФАКТЫ", self.status_column)
-        artifact_heading.setObjectName("editorInfo")
-        status_layout.addWidget(artifact_heading)
+        equipment_content_layout.addLayout(self.equipment_list)
+        self.artifact_heading = QLabel("АРТЕФАКТЫ", self.equipment_content)
+        self.artifact_heading.setObjectName("editorInfo")
+        equipment_content_layout.addWidget(self.artifact_heading)
         self.artifact_list = QHBoxLayout()
         self.artifact_list.setSpacing(5)
-        status_layout.addLayout(self.artifact_list)
-        self.character_button = action_button("ПЕРСОНАЖ И ГРУППИРОВКИ", self.status_column)
+        equipment_content_layout.addLayout(self.artifact_list)
+        self.character_button = action_button("ПЕРСОНАЖ И ГРУППИРОВКИ", self.equipment_content)
         self.character_button.clicked.connect(self.character_requested)
         self.character_button.setVisible(False)
-        status_layout.addWidget(self.character_button)
-        status_layout.addStretch(1)
-        self.status_column.setFixedWidth(345)
+        equipment_content_layout.addWidget(self.character_button)
+        equipment_content_layout.addStretch(1)
+        self.equipment_scroll.setWidget(self.equipment_content)
+        status_layout.addWidget(self.equipment_scroll, 1)
+        self.status_column.setFixedWidth(362)
         columns.addWidget(self.status_column, 0)
 
         self.inventory_column = panel(self, object_name="editorInventoryColumn")
         inventory_layout = QVBoxLayout(self.inventory_column)
         inventory_layout.setContentsMargins(14, 8, 14, 8)
-        inventory_layout.setSpacing(8)
+        inventory_layout.setSpacing(3)
+        inventory_controls = QVBoxLayout()
+        inventory_controls.setSpacing(8)
         inventory_header = QHBoxLayout()
         inventory_header.addWidget(section_header("ИНВЕНТАРЬ", parent=self.inventory_column), 1)
         self.item_count_label = QLabel("Элементов: 0", self.inventory_column)
         inventory_header.addWidget(self.item_count_label)
-        inventory_layout.addLayout(inventory_header)
+        inventory_controls.addLayout(inventory_header)
         self.search_edit = QLineEdit(self.inventory_column)
         self.search_edit.setObjectName("referenceSearch")
         self.search_edit.setMinimumHeight(39)
         self.search_edit.setPlaceholderText("Поиск по названию, типу, категории…")
         self.search_edit.textChanged.connect(self.model.set_search)
-        inventory_layout.addWidget(self.search_edit)
+        inventory_controls.addWidget(self.search_edit)
         categories = QHBoxLayout()
         categories.setSpacing(4)
         self.category_buttons: list[QPushButton] = []
@@ -178,7 +315,8 @@ class EditorView(QWidget):
             categories.addWidget(button)
             self.category_buttons.append(button)
         self.category_buttons[0].setChecked(True)
-        inventory_layout.addLayout(categories)
+        inventory_controls.addLayout(categories)
+        inventory_layout.addLayout(inventory_controls)
         self.table = QTableView(self.inventory_column)
         self.table.setObjectName("referenceTable")
         self.table.setModel(self.model)
@@ -186,9 +324,14 @@ class EditorView(QWidget):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
         self.table.setSortingEnabled(True)
-        self.table.setIconSize(QSize(46, 46))
-        self.table.verticalHeader().setDefaultSectionSize(47)
+        self.table.setItemDelegateForColumn(
+            InventoryTableModel.CONDITION_COLUMN,
+            ConditionBarDelegate(self.table),
+        )
+        self.table.setIconSize(QSize(38, 38))
+        self.table.verticalHeader().setDefaultSectionSize(41)
         # Technical evidence remains in the model and tooltips, while the
         # canonical editor presents the compact product hierarchy: name,
         # category, count, weight and condition.  Leaving every diagnostic
@@ -210,15 +353,17 @@ class EditorView(QWidget):
             InventoryTableModel.CATEGORY_COLUMN,
             QHeaderView.ResizeMode.Interactive,
         )
+        self.table.horizontalHeader().setFixedHeight(34)
         self.table.setColumnWidth(InventoryTableModel.NAME_COLUMN, 250)
         self.table.setColumnWidth(InventoryTableModel.CATEGORY_COLUMN, 145)
         self.table.selectionModel().currentRowChanged.connect(self._on_selection_changed)
         inventory_layout.addWidget(self.table, 1)
         columns.addWidget(self.inventory_column, 1)
+        columns.addSpacing(9)
 
         self.detail_column = panel(self, object_name="editorDetailColumn")
         detail_layout = QVBoxLayout(self.detail_column)
-        detail_layout.setContentsMargins(6, 8, 6, 8)
+        detail_layout.setContentsMargins(6, 0, 6, 8)
         self.detail_view = ItemDetailView(self.detail_column)
         self.detail_view.count_stage_requested.connect(self.stack_stage_requested)
         self.detail_view.durability_stage_requested.connect(self.durability_stage_requested)
@@ -226,12 +371,43 @@ class EditorView(QWidget):
         self.detail_view.remove_requested.connect(self.remove_requested)
         self.detail_view.reset_requested.connect(self.reset_requested)
         detail_layout.addWidget(self.detail_view)
-        self.detail_column.setFixedWidth(390)
+        self.detail_column.setFixedWidth(393)
         columns.addWidget(self.detail_column, 0)
         root.addLayout(columns, 1)
 
         self.save_button = self.detail_view.save_button
         self.save_button.clicked.connect(self.save_requested)
+
+    def _add_info_row(
+        self,
+        parent_layout: QVBoxLayout,
+        label_text: str,
+        icon_name: str,
+    ) -> QLabel:
+        row = QFrame(self.status_column)
+        row.setObjectName("editorInfoRow")
+        row.setFixedHeight(30)
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(3, 0, 6, 0)
+        layout.setSpacing(6)
+        label = QLabel(label_text, row)
+        label.setObjectName("editorInfoLabel")
+        label.setFixedWidth(136)
+        layout.addWidget(label)
+        icon = QLabel(row)
+        icon.setObjectName("editorInfoIcon")
+        icon.setFixedSize(18, 18)
+        icon.setPixmap(
+            QIcon(str(_SHELL_ICONS / f"{icon_name}.svg")).pixmap(QSize(18, 18))
+        )
+        icon.setAccessibleName(label_text)
+        layout.addWidget(icon)
+        value = QLabel("—", row)
+        value.setObjectName("editorInfoValue")
+        value.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(value, 1)
+        parent_layout.addWidget(row)
+        return value
 
     def _set_category(self, category: str) -> None:
         for button in self.category_buttons:
@@ -244,6 +420,17 @@ class EditorView(QWidget):
     def set_snapshot(self, snapshot: Any) -> None:
         self._capabilities = snapshot.capabilities
         self._catalog = snapshot.catalog
+        release_id = str(
+            getattr(snapshot, "release_id", "")
+            or getattr(snapshot, "format_id", "")
+        )
+        game_catalog = getattr(snapshot, "game_catalog", None)
+        self._upgrade_catalog = (
+            game_catalog.upgrades
+            if game_catalog is not None
+            and game_catalog.release_id == release_id
+            else None
+        )
         self._icon_resolver = XRayIconResolver(
             self._catalog,
             donor=donor_resolver_for(self._catalog),
@@ -277,10 +464,19 @@ class EditorView(QWidget):
         self.money_spin.setEnabled(money_writable)
         self.money_clear_button.setEnabled(False)
         weight = sum(item.total_weight or 0.0 for item in self._items) if all(item.total_weight is not None for item in self._items) else None
-        self.weight_label.setText(f"ВЕС  {weight:.1f} кг" if weight is not None else "ВЕС  — кг")
-        self.source_label.setText("Источник\n" + ("Steam Cloud" if snapshot.source_kind == "cloud" else "Локальный"))
-        self.integrity_label.setText("Целостность\n" + ("CRC PASS" if snapshot.info.crc_ok else "ПРОВЕРЬТЕ ДАННЫЕ"))
-        self.capability_label.setText("Статус\n" + ("Редактируемый" if self.header_status.text() == "РЕДАКТИРУЕМЫЙ" else "Только чтение"))
+        self.weight_label.setText(f"{weight:.1f} кг" if weight is not None else "— кг")
+        self.source_label.setText("Steam Cloud" if snapshot.source_kind == "cloud" else "Локальный")
+        self.integrity_label.setText("CRC PASS" if snapshot.info.crc_ok else "ПРОВЕРЬТЕ ДАННЫЕ")
+        self.integrity_label.setProperty(
+            "integrityState", "passed" if snapshot.info.crc_ok else "warning"
+        )
+        self.integrity_label.style().unpolish(self.integrity_label)
+        self.integrity_label.style().polish(self.integrity_label)
+        self.capability_label.setText(
+            "Редактируемый"
+            if self.header_status.text() == "РЕДАКТИРУЕМЫЙ"
+            else "Только чтение"
+        )
         self._render_equipment_summary()
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
         self.character_button.setVisible(is_xray_original_release(release))
@@ -308,8 +504,9 @@ class EditorView(QWidget):
             "device": "ДЕТЕКТОР",
             "other": "КОНТЕЙНЕР",
         }
+        weapon_slot = 0
         for offset in range(0, len(rows), 2):
-            row_host = QWidget(self.status_column)
+            row_host = QWidget(self.equipment_content)
             row_host.setObjectName("equipmentCardRow")
             row_layout = QHBoxLayout(row_host)
             row_layout.setContentsMargins(0, 0, 0, 0)
@@ -318,23 +515,70 @@ class EditorView(QWidget):
             for equipment in current_rows:
                 name = _EQUIPMENT_DISPLAY_NAMES.get(equipment.type_key, equipment.name or equipment.type_key)
                 button = QToolButton(row_host)
-                button.setText(f"{name}\n{category_labels.get(equipment.category, equipment.category)}")
+                button.setText("")
                 button.setObjectName("equipmentSlot")
-                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-                button.setIcon(
-                    fit_icon(
-                        self._icon_resolver.icon_for_item(
-                            equipment.type_key,
-                            equipment.name,
-                            equipment.category,
-                            size=120,
-                        ),
-                        120,
-                        72,
-                    )
+                button.setAccessibleName(
+                    f"{category_labels.get(equipment.category, equipment.category)}: {name}"
                 )
-                button.setIconSize(QSize(120, 72))
-                button.setMinimumHeight(124)
+                card_layout = QVBoxLayout(button)
+                card_layout.setContentsMargins(7, 4, 7, 4)
+                card_layout.setSpacing(1)
+                heading_row = QHBoxLayout()
+                heading_row.setContentsMargins(0, 0, 0, 0)
+                heading_row.setSpacing(2)
+                if equipment.category == "weapon":
+                    weapon_slot += 1
+                    slot_title = "ОСНОВНОЕ ОРУЖИЕ" if weapon_slot == 1 else "ДОП. ОРУЖИЕ"
+                else:
+                    slot_title = _EQUIPMENT_SLOT_LABELS.get(
+                        equipment.type_key,
+                        category_labels.get(
+                            equipment.category, equipment.category.upper()
+                        ),
+                    )
+                caption = QLabel(slot_title, button)
+                caption.setObjectName("equipmentSlotCaption")
+                caption.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                heading_row.addWidget(caption, 1)
+                card_layout.addLayout(heading_row)
+                item_icon = fit_icon(
+                    self._icon_resolver.icon_for_item(
+                        equipment.type_key,
+                        equipment.name,
+                        equipment.category,
+                        size=120,
+                    ),
+                    120,
+                    72,
+                )
+                artwork = QLabel(button)
+                artwork.setObjectName("equipmentSlotArtwork")
+                artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                artwork.setPixmap(item_icon.pixmap(QSize(120, 72)))
+                artwork.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                card_layout.addWidget(artwork, 1)
+                footer_row = QHBoxLayout()
+                footer_row.setContentsMargins(0, 0, 0, 0)
+                item_name = QLabel(name, button)
+                item_name.setObjectName("equipmentSlotName")
+                item_name.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                footer_row.addWidget(item_name, 1)
+                options = QToolButton(button)
+                options.setObjectName("equipmentSlotOptions")
+                options.setIcon(QIcon(str(_SHELL_ICONS / "settings.svg")))
+                options.setIconSize(QSize(14, 14))
+                options.setFixedSize(25, 22)
+                options.setToolTip("Выбрать этот предмет в инвентаре")
+                options.clicked.connect(
+                    lambda _checked=False, handle=equipment.handle: self.select_handle(handle)
+                )
+                footer_row.addWidget(options)
+                card_layout.addLayout(footer_row)
+                button.setSizePolicy(
+                    QSizePolicy.Policy.Expanding,
+                    QSizePolicy.Policy.Preferred,
+                )
+                button.setMinimumHeight(120)
                 button.setToolTip(f"{name} · {equipment.category}")
                 button.clicked.connect(
                     lambda _checked=False, handle=equipment.handle: self.select_handle(handle)
@@ -350,7 +594,7 @@ class EditorView(QWidget):
             if widget is not None:
                 widget.deleteLater()
         for artifact in artifacts:
-            artifact_button = QPushButton(self.status_column)
+            artifact_button = QPushButton(self.equipment_content)
             artifact_button.setObjectName("artifactSlot")
             artifact_button.setIcon(
                 fit_icon(
@@ -368,7 +612,7 @@ class EditorView(QWidget):
             artifact_button.setFixedSize(64, 64)
             artifact_button.setToolTip(artifact.name or artifact.type_key)
             self.artifact_list.addWidget(artifact_button)
-        empty_slot = QPushButton("+", self.status_column)
+        empty_slot = QPushButton("+", self.equipment_content)
         empty_slot.setObjectName("artifactSlotEmpty")
         empty_slot.setEnabled(False)
         empty_slot.setFixedSize(64, 64)
@@ -405,6 +649,7 @@ class EditorView(QWidget):
         self.detail_view.set_item(
             item,
             self._capabilities,
+            upgrade_catalog=self._upgrade_catalog,
             staged_counts=self._staged_counts,
             staged_durability=self._staged_durability,
             removed_handles=self._removed_handles,
@@ -427,8 +672,24 @@ class EditorView(QWidget):
         self.model.set_changed_handles(set(counts) | set(durability) | set(removed))
         self.detail_view.set_change_count(change_count)
         current = self.selected_handle
+        visible_handles = {item.handle for item in self.model.visible_items()}
+        if current not in visible_handles:
+            current = next(
+                (item.handle for item in self.model.visible_items()),
+                None,
+            )
+        self.selected_handle = current
+        if current is not None:
+            self.select_handle(current)
         item = next((candidate for candidate in self._items if candidate.handle == current), None)
-        self.detail_view.set_item(item, self._capabilities, staged_counts=counts, staged_durability=durability, removed_handles=removed)
+        self.detail_view.set_item(
+            item,
+            self._capabilities,
+            upgrade_catalog=self._upgrade_catalog,
+            staged_counts=counts,
+            staged_durability=durability,
+            removed_handles=removed,
+        )
         self.detail_view.set_item_icon(self._detail_icon(item) if item is not None else None)
 
     def _detail_icon(self, item: InventoryItem):
@@ -437,10 +698,10 @@ class EditorView(QWidget):
                 item.type_key,
                 item.display_name,
                 item.category,
-            size=320,
-        ),
-                380,
-                104,
+                size=420,
+            ),
+            380,
+            86,
         )
 
     def set_money_draft(self, value: int | None) -> None:

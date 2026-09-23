@@ -208,9 +208,21 @@ class InventoryTableModel(QAbstractTableModel):
             return None
 
         if role == Qt.ItemDataRole.DisplayRole:
+            if index.column() == self.CONDITION_COLUMN:
+                # The condition delegate draws the percentage and durability
+                # meter together; leaving text here makes Qt paint it again.
+                return ""
+            return self._display_value(item, index.column())
+        if (
+            role == Qt.ItemDataRole.AccessibleTextRole
+            and index.column() == self.CONDITION_COLUMN
+        ):
             return self._display_value(item, index.column())
         if role == Qt.ItemDataRole.DecorationRole and index.column() == self.NAME_COLUMN:
             return self._icon_provider(item) if self._icon_provider is not None else None
+        if role == Qt.ItemDataRole.UserRole and index.column() == self.CONDITION_COLUMN:
+            staged_condition = self._staged_durability.get(item.handle)
+            return item.condition if staged_condition is None else staged_condition
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._tooltip(item, index.column())
         if role == Qt.ItemDataRole.BackgroundRole and (

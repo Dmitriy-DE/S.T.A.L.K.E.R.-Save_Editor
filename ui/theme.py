@@ -8,10 +8,16 @@ assets are required at runtime.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
-from .fonts import REFERENCE_FONT_FAMILY, load_reference_fonts
+from .fonts import (
+    REFERENCE_DISPLAY_FONT_FAMILY,
+    REFERENCE_FONT_FAMILY,
+    load_reference_fonts,
+)
 
 PALETTE = {
     # Industrial S2-like grounds with an amber operational accent.
@@ -45,10 +51,11 @@ TYPOGRAPHY = {
     # Keep the family exact: a host fallback changes wrapping and therefore
     # the fixed reference geometry.
     "body": f'"{REFERENCE_FONT_FAMILY}"',
-    "heading": f'"{REFERENCE_FONT_FAMILY}"',
+    "heading": f'"{REFERENCE_DISPLAY_FONT_FAMILY}"',
     "mono": f'"{REFERENCE_FONT_FAMILY}"',
 }
 SPACING = {"xs": 4, "sm": 8, "md": 12, "lg": 18}
+_SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
 
 
 def stylesheet() -> str:
@@ -219,6 +226,8 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     """Styles for the canonical shell and its reusable visual primitives."""
 
     t = TYPOGRAPHY
+    selection_texture = (_SHELL_ASSETS / "selection_paper.png").as_posix()
+    amber_texture = (_SHELL_ASSETS / "amber_paper.png").as_posix()
     return f"""
     QWidget#referenceShell {{
         background: {c['bg_base']};
@@ -244,6 +253,10 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
             stop:0 #080A09, stop:0.62 #151A17, stop:1 #0A0C0B);
         border-bottom: 1px solid {c['border']};
     }}
+    QFrame#referenceBrandPanel {{
+        background: rgba(8, 10, 9, 232);
+        border: 1px solid {c['border']};
+    }}
     QLabel#referenceBrand {{
         background: transparent;
         color: {c['text']};
@@ -265,7 +278,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         font-family: {t['heading']};
         font-size: 15px;
-        letter-spacing: 1.1px;
+        letter-spacing: 1.4px;
     }}
     QPushButton#globalNav {{
         background: rgba(16, 19, 17, 210);
@@ -276,14 +289,20 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         min-height: 45px;
         padding: 0 10px;
         font-family: {t['heading']};
-        font-size: 14px;
-        letter-spacing: 0.8px;
+        font-size: 15px;
+        letter-spacing: 1.1px;
     }}
     QPushButton#globalNav:hover {{ color: {c['text']}; background: {c['bg_hover']}; }}
     QPushButton#globalNav[destination="library"] {{ min-width: 210px; }}
     QPushButton#globalNav[destination="cloud"] {{ min-width: 150px; }}
     QPushButton#globalNav[destination="history"] {{ min-width: 92px; }}
     QPushButton#globalNav[destination="settings"] {{ min-width: 145px; }}
+    QPushButton#globalNav[compactNav="true"] {{
+        min-width: 0;
+        padding: 0 5px;
+        font-size: 12px;
+        letter-spacing: .35px;
+    }}
     QPushButton#globalNav:checked {{
         color: {c['text']};
         border-bottom-color: {c['olive']};
@@ -339,16 +358,16 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text_secondary']};
         font-family: {t['mono']};
-        font-size: 10px;
+        font-size: 12px;
         letter-spacing: 0.7px;
     }}
     QLabel#statusChip {{
         background: transparent;
         border: 1px solid {c['border']};
         color: {c['text_secondary']};
-        padding: 4px 8px;
+        padding: 5px 9px;
         font-family: {t['heading']};
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.5px;
     }}
     QLabel#statusChip[tone="success"] {{ color: {c['success']}; border-color: {c['success']}; }}
@@ -356,7 +375,8 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QLabel#statusChip[tone="danger"] {{ color: {c['error']}; border-color: {c['error']}; }}
     QLabel#statusChip[tone="info"] {{ color: #8BB8D6; border-color: #4A6877; }}
     QPushButton#primaryButton, QPushButton#primaryActionButton {{
-        background: {c['olive']};
+        background-color: {c['olive']};
+        background-image: url("{amber_texture}");
         color: #17130A;
         border: 1px solid {c['olive']};
         border-radius: 0;
@@ -383,25 +403,32 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QLineEdit#referenceSearch:focus, QComboBox#referenceSort:focus, QLineEdit#referenceField:focus {{
         border-color: {c['olive']};
     }}
-    QPushButton#keyHintKey {{
+    QLabel#keyHintKey {{
         background: #252821;
         color: {c['text']};
         border: 1px solid {c['border']};
         padding: 2px 5px;
+        min-width: 23px;
+        min-height: 20px;
+        qproperty-alignment: AlignCenter;
+        font-family: {t['heading']};
+        font-size: 11px;
     }}
-    QLabel#keyHintText {{ background: transparent; color: {c['text_secondary']}; }}
+    QLabel#keyHintText {{ background: transparent; color: {c['text_secondary']}; font-size: 13px; }}
+    QFrame#footerActionSeparator {{ color: {c['border']}; max-width: 1px; }}
     QTableView#referenceTable, QTableWidget#referenceTable {{
         background: #0B0E0C;
         alternate-background-color: #101411;
         border: 1px solid {c['border']};
         gridline-color: {c['border_subtle']};
-        selection-background-color: #D8D1BE;
+        selection-background-color: #C9C2B2;
         selection-color: #151713;
         outline: none;
     }}
     QTableView#referenceTable::item, QTableWidget#referenceTable::item {{ padding: 9px 8px; }}
     QTableView#referenceTable::item:selected, QTableWidget#referenceTable::item:selected {{
-        background: repeating-linear-gradient(173deg, #D8D1BE 0 12px, #D2CAB6 13px 14px);
+        background-color: #C9C2B2;
+        background-image: url("{selection_texture}");
         color: #151713;
     }}
     QHeaderView::section {{
@@ -457,10 +484,27 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     }}
     QFrame#libraryRecentActivity {{ background: #0C100D; }}
     QFrame#libraryQuickSummary {{ background: #0B0E0C; border: 1px solid {c['border_subtle']}; }}
-    QLabel#librarySummaryValue {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; padding: 2px 0; }}
+    QLabel#librarySummaryCaption {{ background: transparent; color: {c['text_secondary']}; font-family: {t['heading']}; font-size: 10px; letter-spacing: .5px; }}
+    QLabel#librarySummaryValue {{ background: transparent; color: {c['text']}; font-family: {t['heading']}; font-size: 15px; font-weight: 700; padding: 0; }}
+    QLabel#librarySummaryIcon {{ background: transparent; border: none; }}
+    QLabel#libraryMetadataLabel {{ background: transparent; color: {c['text_secondary']}; font-size: 14px; }}
+    QLabel#libraryMetadataValue {{ background: transparent; color: {c['text']}; font-size: 15px; }}
+    QLabel#libraryMetadataValue[integrityState="verified"] {{ color: {c['success']}; }}
+    QLabel#libraryMetadataValue[integrityState="warning"] {{ color: {c['warning']}; }}
+    QLabel#libraryMetadataValue[integrityState="unknown"] {{ color: {c['text_secondary']}; }}
+    QWidget#librarySaveTitleCell, QWidget#libraryRowText,
+    QLabel#libraryRowThumbnail, QLabel#libraryRowTitle, QLabel#libraryRowSubtitle {{
+        background: transparent;
+        border: none;
+    }}
+    QLabel#libraryRowTitle {{ color: {c['text']}; font-size: 16px; font-weight: 700; }}
+    QLabel#libraryRowSubtitle {{ color: {c['text_secondary']}; font-size: 13px; }}
+    QLabel#libraryRowTitle[rowSelected="true"] {{ color: #151713; }}
+    QLabel#libraryRowSubtitle[rowSelected="true"] {{ color: #454238; }}
+    QTableWidget#librarySaveTable QLabel#libraryEditableChip {{ padding-left: 4px; padding-right: 4px; font-size: 11px; }}
     QLabel#libraryActivityText {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; line-height: 1.35; }}
-    QTableWidget#libraryActivityTable {{ background: transparent; border: none; gridline-color: {c['border_subtle']}; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; }}
-    QTableWidget#libraryActivityTable::item {{ padding: 4px 6px; border-bottom: 1px solid {c['border_subtle']}; }}
+    QTableWidget#libraryActivityTable {{ background: transparent; border: none; gridline-color: {c['border_subtle']}; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 14px; }}
+    QTableWidget#libraryActivityTable::item {{ padding: 5px 7px; border-bottom: 1px solid {c['border_subtle']}; }}
     QFrame#zoneDecoration {{ background: transparent; border: 1px solid {c['border_subtle']}; }}
     QLabel#zoneDecorationText {{
         background: transparent;
@@ -469,19 +513,50 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         font-size: 12px;
         letter-spacing: 1.2px;
     }}
+    QLabel#libraryZoneDecorationText, QLabel#settingsZoneDecorationText {{
+        background: transparent;
+        color: {c['text_secondary']};
+        font-family: {t['heading']};
+        font-size: 15px;
+        letter-spacing: 1.2px;
+    }}
+    QFrame#settingsZoneDecoration[compact="true"] QLabel#settingsZoneDecorationText {{
+        font-size: 11px;
+        letter-spacing: .5px;
+    }}
     QListWidget#libraryGameList, QListWidget#reviewPipelineSteps {{
         background: #0B0E0C;
         border: 1px solid {c['border_subtle']};
         outline: none;
+        font-size: 16px;
     }}
     QListWidget#libraryGameList::item {{
         color: {c['text_secondary']};
         border-bottom: 1px solid {c['border_subtle']};
-        padding: 14px 10px;
-        min-height: 42px;
+        padding: 10px 10px;
+        min-height: 48px;
     }}
     QListWidget#libraryGameList::item:selected {{
-        background: #D8D1BE;
+        background-color: #D8D1BE;
+        background-image: url("{selection_texture}");
+        color: #151713;
+        border-left: 3px solid {c['olive']};
+    }}
+    QListWidget#referenceSecondaryGameList {{
+        background: #0B0E0C;
+        border: 1px solid {c['border_subtle']};
+        outline: none;
+        font-size: 15px;
+    }}
+    QListWidget#referenceSecondaryGameList::item {{
+        color: {c['text_secondary']};
+        border-bottom: 1px solid {c['border_subtle']};
+        padding: 9px 8px;
+        min-height: 48px;
+    }}
+    QListWidget#referenceSecondaryGameList::item:selected {{
+        background-color: #D8D1BE;
+        background-image: url("{selection_texture}");
         color: #151713;
         border-left: 3px solid {c['olive']};
     }}
@@ -492,13 +567,23 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         alternate-background-color: #101411;
         border: 1px solid {c['border']};
         gridline-color: {c['border_subtle']};
-        selection-background-color: #D8D1BE;
+        selection-background-color: #C9C2B2;
         selection-color: #151713;
         outline: none;
         font-size: 15px;
     }}
+    QTableWidget#librarySaveTable::item, QTableWidget#cloudSaveTable::item,
+    QTableWidget#historyTable::item, QTableWidget#characterFactionTable::item,
+    QTableWidget#reviewChangesTable::item, QTableWidget#resultReceiptTable::item,
+    QTableView#referenceTable::item {{
+        border-bottom: 1px solid {c['border_subtle']};
+    }}
     QTableWidget#librarySaveTable::item:selected, QTableWidget#cloudSaveTable::item:selected,
-    QTableWidget#historyTable::item:selected {{ background: repeating-linear-gradient(173deg, #D8D1BE 0 12px, #D2CAB6 13px 14px); color: #151713; }}
+    QTableWidget#historyTable::item:selected {{ background-color: #C9C2B2; background-image: url("{selection_texture}"); color: #151713; }}
+    QWidget#librarySaveStatusCell {{ background: transparent; }}
+    QLabel#libraryReadyDot {{ background: transparent; color: #70C66A; font-size: 13px; }}
+    QLabel#libraryCandidateDot {{ background: transparent; color: {c['warning']}; font-size: 13px; }}
+    QLabel#libraryReadyLabel {{ background: transparent; color: {c['text']}; }}
     QLabel#libraryPreviewImage {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #273029, stop:1 #0A0D0B);
         border: 1px solid {c['border']};
@@ -521,7 +606,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text']};
         font-family: {t['heading']};
-        font-size: 17px;
+        font-size: 18px;
         font-weight: 700;
     }}
     QLabel#libraryPreviewMeta, QLabel#cloudDetailMeta, QLabel#historyDetailStatus,
@@ -538,12 +623,12 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         border: 1px solid transparent;
         border-radius: 0;
-        padding: 12px 10px;
+        padding: 8px 10px;
         min-height: 42px;
         text-align: left;
         font-family: {t['heading']};
-        letter-spacing: .7px;
-        font-size: 15px;
+        letter-spacing: 1px;
+        font-size: 16px;
     }}
     QPushButton#categoryButton {{
         padding: 0 8px;
@@ -554,7 +639,8 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     }}
     QPushButton#categoryButton:hover, QPushButton#settingsCategoryButton:hover {{ background: {c['bg_hover']}; color: {c['text']}; }}
     QPushButton#categoryButton:checked, QPushButton#settingsCategoryButton:checked {{
-        background: #D8D1BE;
+        background-color: #C9C2B2;
+        background-image: url("{selection_texture}");
         color: #151713;
         border-left: 3px solid {c['olive']};
         font-weight: 700;
@@ -565,6 +651,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         font-family: {t['mono']};
         font-size: 12px;
     }}
+    QFrame#editorBreadcrumbSeparator {{ background: {c['border']}; border: none; }}
     QWidget#editorView QLabel#editorMetric {{
         background: transparent;
         color: {c['text']};
@@ -577,12 +664,13 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         font-family: {t['heading']};
         font-size: 14px;
     }}
-    QWidget#editorView QLabel#editorInfo {{
-        background: transparent;
-        color: {c['text_secondary']};
-        padding: 3px 0;
-        border-bottom: 1px solid {c['border_subtle']};
-    }}
+    QWidget#editorView QLabel#editorMetricIcon {{ background: transparent; border: none; }}
+    QFrame#editorInfoRow {{ background: transparent; border: none; border-bottom: 1px solid {c['border_subtle']}; }}
+    QLabel#editorInfoLabel {{ background: transparent; color: {c['text_secondary']}; padding: 0; }}
+    QLabel#editorInfoIcon {{ background: transparent; border: none; padding: 0; }}
+    QLabel#editorInfoValue {{ background: transparent; color: {c['text']}; padding: 0; }}
+    QLabel#editorInfoValue[integrityState="passed"] {{ color: {c['success']}; }}
+    QLabel#editorInfoValue[integrityState="warning"] {{ color: {c['warning']}; }}
     QSpinBox#editorMoneySpin {{
         background: transparent;
         border: none;
@@ -618,13 +706,18 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: #0B0E0C;
         border: 1px solid {c['border_subtle']};
         color: {c['text_secondary']};
-        padding: 7px 6px;
+        padding: 2px;
         text-align: left;
         font-family: {t['heading']};
         font-size: 11px;
         line-height: 1.15;
     }}
     QPushButton#equipmentSlot:hover, QToolButton#equipmentSlot:hover {{ border-color: {c['olive']}; color: {c['text']}; }}
+    QLabel#equipmentSlotCaption {{ background: transparent; color: {c['text_secondary']}; font-family: {t['heading']}; font-size: 10px; letter-spacing: .6px; }}
+    QLabel#equipmentSlotArtwork, QLabel#equipmentSlotName {{ background: transparent; border: none; }}
+    QLabel#equipmentSlotName {{ color: {c['text']}; font-family: {t['heading']}; font-size: 12px; }}
+    QToolButton#equipmentSlotOptions {{ background: #151814; border: 1px solid {c['border']}; padding: 1px; }}
+    QToolButton#equipmentSlotOptions:hover {{ border-color: {c['olive']}; }}
     QPushButton#artifactSlot {{
         background: #0B0E0C;
         border: 1px solid {c['border_subtle']};
@@ -638,7 +731,10 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     }}
     QLabel#detailItemName {{ background: transparent; color: {c['text']}; font-family: {t['heading']}; font-size: 27px; font-weight: 800; }}
     QLabel#detailItemType, QLabel#detailDescription, QLabel#detailModuleStatus {{ background: transparent; color: {c['text_secondary']}; }}
-    QLabel#detailItemImage {{ background: transparent; border: none; color: {c['olive']}; font-size: 48px; min-height: 104px; }}
+    QLabel#detailItemImage {{ background: transparent; border: none; color: {c['olive']}; font-size: 48px; min-height: 86px; }}
+    QListWidget#detailUpgradeList {{ background: transparent; border: 1px solid {c['border_subtle']}; outline: none; }}
+    QListWidget#detailUpgradeList::item {{ background: #101411; color: {c['text']}; padding: 4px 9px; border-bottom: 1px solid {c['border_subtle']}; }}
+    QListWidget#detailUpgradeList::item:alternate {{ background: #0B0E0C; }}
     QPushButton#detailTab {{
         background: #151914;
         border: 1px solid {c['border_subtle']};
@@ -651,7 +747,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         letter-spacing: .6px;
     }}
     QPushButton#detailTab:hover {{ color: {c['text']}; border-color: {c['olive_dim']}; }}
-    QPushButton#detailTab:checked {{ background: {c['olive']}; color: #17130A; border-color: {c['olive']}; font-weight: 800; }}
+    QPushButton#detailTab:checked {{ background-color: #C9C2B2; background-image: url("{selection_texture}"); color: #17130A; border-color: {c['olive']}; font-weight: 800; }}
     QLabel#detailFeatureHelp {{
         background: transparent;
         border: 1px solid {c['border']};
@@ -664,10 +760,24 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     }}
     QFrame#settingsSafetyRowFrame {{ background: transparent; border: none; border-bottom: 1px solid {c['border_subtle']}; min-height: 31px; }}
     QLabel#settingsSafetyRow {{ background: transparent; color: {c['text']}; font-size: 15px; }}
-    QLabel#settingsToggle {{ background: #3C7A45; border: 1px solid #73C968; border-radius: 12px; color: #EAF4D8; font-size: 15px; padding: 0 2px; }}
-    QLabel#settingsToggle[enabledState="off"] {{ background: #2A2D2B; border-color: {c['border']}; color: #D8D2BE; }}
-    QLabel#settingsRowStatus {{ background: transparent; border: none; color: #8BD675; padding: 0; min-width: 66px; font-family: {t['heading']}; font-size: 12px; }}
+    QCheckBox#settingsToggle {{ background: transparent; border: none; padding: 0; }}
+    QLabel#settingsRowStatus {{ background: transparent; border: none; color: #8BD675; padding: 0; min-width: 66px; font-family: {t['heading']}; font-size: 14px; }}
     QLabel#settingsRowStatus[enabledState="off"] {{ color: {c['text_secondary']}; }}
+    QFrame#settingsCloudRow {{ background: transparent; border: none; border-bottom: 1px solid {c['border_subtle']}; }}
+    QLabel#settingsCloudLabel, QLabel#settingsCloudValue {{ background: transparent; color: {c['text']}; padding: 0; }}
+    QLabel#settingsCloudValue {{ color: {c['text_secondary']}; }}
+    QLabel#settingsCloudConnectionValue[reviewAvailable="true"] {{ color: {c['success']}; }}
+    QToolButton#settingsBackupFolderButton {{
+        background: {c['bg_elevated']};
+        border: 1px solid {c['border']};
+        color: {c['text']};
+        padding: 6px 12px;
+        font-family: {t['heading']};
+        letter-spacing: .5px;
+    }}
+    QToolButton#settingsBackupFolderButton:hover {{ background: {c['bg_hover']}; border-color: {c['border_focus']}; }}
+    QToolButton#settingsBackupFolderButton::menu-button {{ border-left: 1px solid {c['border']}; width: 20px; }}
+    QFrame#pathsSettingsPanel QPushButton#settingsAdvancedPathsButton {{ padding: 5px 12px; }}
     QFrame#pathsSettingsPanel QLineEdit, QFrame#pathsSettingsPanel QPushButton {{ padding-top: 4px; padding-bottom: 4px; }}
     QFrame#pathsSettingsPanel QPushButton#settingsBrowseButton {{ padding: 2px; }}
     QFrame#pathsSettingsPanel QLabel#discoveryHint {{
@@ -681,7 +791,25 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         border-color: {c['warning']};
         color: {c['warning']};
     }}
+    QFrame#pathsSettingsPanel QLabel#discoveryHint[discoveryState="optional"] {{
+        border-color: {c['warning']};
+        color: {c['warning']};
+    }}
+    QFrame#pathsSettingsPanel QLabel#settingsPathStatus {{
+        background: #0B0E0C;
+        border: 1px solid {c['success']};
+        color: {c['success']};
+        padding: 2px 6px;
+        font-family: {t['heading']};
+        font-size: 11px;
+    }}
+    QFrame#pathsSettingsPanel QLabel#settingsPathStatus[discoveryState="pending"] {{
+        border-color: {c['warning']};
+        color: {c['warning']};
+    }}
+    QFrame#pathsSettingsPanel QPushButton#settingsBackupPathButton {{ padding: 2px; }}
     QLabel#settingsReadOnlyPath {{ background: #0B0E0C; border: 1px solid {c['border_subtle']}; color: {c['text_secondary']}; padding: 6px 8px; }}
+    QLabel#settingsBackupPathValue {{ background: #0B0E0C; border: 1px solid {c['border_subtle']}; color: {c['text_secondary']}; padding: 6px 8px; }}
     QLabel#settingsDiagnosticsNote {{ background: transparent; color: {c['text_secondary']}; padding-top: 4px; }}
     QScrollArea#settingsScroll {{ background: transparent; border: none; }}
     QWidget#settingsContent {{ background: transparent; }}

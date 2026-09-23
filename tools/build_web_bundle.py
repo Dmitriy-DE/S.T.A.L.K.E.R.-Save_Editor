@@ -21,6 +21,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE = ROOT / "web" / "pysrc.json"
+STATIC_ASSETS = (
+    ("assets/fonts/Oswald[wght].ttf", "web/assets/fonts/Oswald[wght].ttf"),
+    ("assets/fonts/Oswald-OFL.txt", "web/assets/fonts/Oswald-OFL.txt"),
+)
 
 # Only what the browser actually needs: parse a save, build an immutable edit
 # plan and apply it.  Storage, cloud transactions and platform paths stay out -
@@ -66,6 +70,23 @@ def build() -> dict[str, Any]:
     }
 
 
+def static_assets_current() -> bool:
+    return all(
+        (ROOT / target).is_file()
+        and (ROOT / source).read_bytes() == (ROOT / target).read_bytes()
+        for source, target in STATIC_ASSETS
+    )
+
+
+def write_static_assets() -> None:
+    for source, target in STATIC_ASSETS:
+        destination = ROOT / target
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        payload = (ROOT / source).read_bytes()
+        if not destination.is_file() or destination.read_bytes() != payload:
+            destination.write_bytes(payload)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="verify the bundle is current")
@@ -81,12 +102,19 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
+        if not static_assets_current():
+            print(
+                "web display font assets are out of date; run python3 tools/build_web_bundle.py",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     BUNDLE.parent.mkdir(parents=True, exist_ok=True)
     if not BUNDLE.is_file() or BUNDLE.read_text(encoding="utf-8") != rendered:
         BUNDLE.write_text(rendered, encoding="utf-8")
         print(f"updated {BUNDLE.relative_to(ROOT)} ({bundle['source_sha256'][:12]}…)")
+    write_static_assets()
     return 0
 
 

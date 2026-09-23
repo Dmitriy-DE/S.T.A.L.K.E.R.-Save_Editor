@@ -7,8 +7,11 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QColor, QIcon, QPainter
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -16,9 +19,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -27,9 +32,47 @@ from editor.platforms import backup_dirs, installed_games, save_directories, ste
 from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
 
-from .style_components import action_button, panel, section_header
+from .style_components import TextureFrame, action_button, panel, section_header
 
 _SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
+
+
+def _display_path(path: Path) -> str:
+    expanded = Path(path).expanduser()
+    try:
+        relative = expanded.relative_to(Path.home())
+    except ValueError:
+        return str(expanded)
+    return str(Path("~") / relative)
+
+
+class _ReadOnlySwitch(QCheckBox):
+    """A semantic switch that displays an enforced policy without toggling it."""
+
+    def __init__(self, checked: bool, *, label: str, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setObjectName("settingsToggle")
+        self.setChecked(checked)
+        self.setEnabled(False)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAccessibleName(label)
+        self.setToolTip(f"{label}: правило безопасности, изменить нельзя")
+        self.setFixedSize(42, 24)
+
+    def paintEvent(self, event) -> None:  # noqa: N802 - Qt override
+        del event
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        checked = self.isChecked()
+        track = QColor("#3f8a4b" if checked else "#282c2a")
+        edge = QColor("#78cb69" if checked else "#444a42")
+        painter.setPen(edge)
+        painter.setBrush(track)
+        painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 11, 11)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#e9eadc" if checked else "#d8d2be"))
+        knob_x = 30 if checked else 12
+        painter.drawEllipse(knob_x - 7, 5, 14, 14)
 
 
 class _SettingsCategoryStack:
@@ -70,7 +113,9 @@ class SettingsView(QWidget):
     settings_changed = Signal(object)
     save_failed = Signal(str)
     update_requested = Signal()
-    diagnostics_requested = Signal()
+    backup_folder_requested = Signal()
+    journal_requested = Signal()
+    copy_diagnostics_requested = Signal()
     support_requested = Signal()
 
     def __init__(
@@ -85,9 +130,10 @@ class SettingsView(QWidget):
         self.settings = settings
         self.settings_path = Path(settings_path).expanduser()
         self.load_error = load_error
-        # Safety switches are policy, not preferences.  The visible rows below
-        # are deliberately labels, so no caller can turn off backup, warning,
-        # confirmation, or uncertain-write protection through this page.
+        self._advanced_paths_dialog: QDialog | None = None
+        # Safety switches are policy, not preferences.  Their visual state is
+        # represented by disabled semantic controls so users can inspect the
+        # enforced value without being able to weaken it here.
         self.core_safety_read_only = True
         self._build_ui()
         self._load_fields()
@@ -97,11 +143,12 @@ class SettingsView(QWidget):
         self.setObjectName("settingsView")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout = QGridLayout(self)
-        layout.setContentsMargins(0, 27, 0, 9)
+        layout.setContentsMargins(0, 6, 0, 11)
         layout.setHorizontalSpacing(33)
-        layout.setVerticalSpacing(11)
+        layout.setVerticalSpacing(6)
 
         heading = QHBoxLayout()
+        heading.setContentsMargins(0, 16, 0, 8)
         title = QLabel("НАСТРОЙКИ", self)
         title.setObjectName("screenTitle")
         heading.addWidget(title)
@@ -110,16 +157,20 @@ class SettingsView(QWidget):
         subtitle.setObjectName("screenSubtitle")
         heading.addWidget(subtitle)
         heading.addStretch(1)
-        layout.setRowMinimumHeight(0, 25)
+        layout.setRowMinimumHeight(0, 33)
         layout.addLayout(heading, 0, 1)
 
         rail = panel(self, object_name="settingsCategoryRail")
         rail_layout = QVBoxLayout(rail)
-        rail_layout.setContentsMargins(10, 12, 10, 12)
-        rail_layout.addWidget(QLabel("РАЗДЕЛЫ", rail))
+        rail_layout.setContentsMargins(4, 18, 4, 12)
+        rail_layout.setSpacing(1)
+        rail_heading = QLabel("РАЗДЕЛЫ", rail)
+        rail_heading.setIndent(11)
+        rail_layout.addWidget(rail_heading)
         rule = QFrame(rail)
         rule.setFrameShape(QFrame.Shape.HLine)
         rail_layout.addWidget(rule)
+        rail_layout.addSpacing(16)
         self.category_buttons: list[QPushButton] = []
         self.category_names = (
             "ОБЩИЕ",
@@ -132,17 +183,39 @@ class SettingsView(QWidget):
         )
         category_icons = ("settings", "paths", "backups", "cloud", "diagnostics", "interface", "support")
         for index, name in enumerate(self.category_names):
-            button = QPushButton(name, rail)
+            button = QPushButton(name.replace("ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ОБНОВЛЕНИЯ И\nДИАГНОСТИКА"), rail)
             button.setObjectName("settingsCategoryButton")
+            button.setAccessibleName(name)
             button.setIcon(QIcon(str(_SHELL_ICONS / f"{category_icons[index]}.svg")))
-            button.setIconSize(QSize(18, 18))
+            button.setIconSize(QSize(24, 24))
+            button.setFixedHeight(61)
             button.setCheckable(True)
             button.setAutoExclusive(True)
             button.clicked.connect(lambda _checked=False, selected=index: self._select_category(selected))
             rail_layout.addWidget(button)
             self.category_buttons.append(button)
-        rail_layout.addStretch(1)
-        rail.setFixedWidth(260)
+        self.zone_decoration = TextureFrame(
+            rail,
+            asset="rail_zone.png",
+            overlay_alpha=0,
+            image_height_ratio=0.66,
+        )
+        self.zone_decoration.setObjectName("settingsZoneDecoration")
+        self.zone_decoration.setMinimumHeight(70)
+        self.zone_decoration.setMaximumHeight(286)
+        self.zone_decoration.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        zone_layout = QVBoxLayout(self.zone_decoration)
+        zone_layout.setContentsMargins(12, 1, 8, 1)
+        zone_layout.addStretch(1)
+        zone_note = QLabel(
+            "ОДНИ СОХРАНЯЮТ\nИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ.",
+            self.zone_decoration,
+        )
+        zone_note.setObjectName("settingsZoneDecorationText")
+        zone_note.setWordWrap(True)
+        zone_layout.addWidget(zone_note)
+        rail_layout.addWidget(self.zone_decoration, 1)
+        rail.setFixedWidth(267)
         rail.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
 
         self.settings_stack = _SettingsCategoryStack()
@@ -150,14 +223,14 @@ class SettingsView(QWidget):
         self.settings_scroll.setObjectName("settingsScroll")
         self.settings_scroll.setWidgetResizable(True)
         self.settings_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.settings_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.settings_content = QWidget(self.settings_scroll)
         self.settings_content.setObjectName("settingsContent")
         settings_sections = QVBoxLayout(self.settings_content)
         settings_sections.setContentsMargins(0, 0, 0, 0)
-        settings_sections.setSpacing(10)
+        settings_sections.setSpacing(11)
         self.general_panel = panel(self.settings_content, object_name="generalSettingsPanel")
         self.paths_panel = panel(self.settings_content, object_name="pathsSettingsPanel")
         self.backups_panel = panel(self.settings_content, object_name="backupsSettingsPanel")
@@ -204,29 +277,64 @@ class SettingsView(QWidget):
         actions.setSpacing(16)
         self.save_button = action_button("СОХРАНИТЬ НАСТРОЙКИ", self, kind="primary")
         self.save_button.clicked.connect(self.save)
-        self.save_button.setFixedWidth(403)
-        actions.addWidget(self.save_button)
+        self.save_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        actions.addWidget(self.save_button, 403)
         self.reset_button = action_button("СБРОСИТЬ", self)
         self.reset_button.clicked.connect(self._reset_fields)
-        self.reset_button.setFixedWidth(272)
-        actions.addWidget(self.reset_button)
+        self.reset_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        actions.addWidget(self.reset_button, 272)
         self.defaults_button = action_button("ПО УМОЛЧАНИЮ", self)
         self.defaults_button.clicked.connect(self._set_defaults)
-        self.defaults_button.setFixedWidth(272)
-        actions.addWidget(self.defaults_button)
+        self.defaults_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        actions.addWidget(self.defaults_button, 272)
         self.cancel_button = action_button("ОТМЕНА", self)
         self.cancel_button.clicked.connect(self._cancel_changes)
-        self.cancel_button.setFixedWidth(232)
-        actions.addWidget(self.cancel_button)
+        self.cancel_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        actions.addWidget(self.cancel_button, 232)
         for button in (self.save_button, self.reset_button, self.defaults_button, self.cancel_button):
             button.setMinimumHeight(42)
         layout.addLayout(actions, 2, 1)
         self._select_category(0)
 
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        compact = event.size().height() < 700
+        if not hasattr(self, "zone_decoration"):
+            return
+        if self.zone_decoration.property("compact") == compact:
+            return
+        self.zone_decoration.setProperty("compact", compact)
+        self.zone_decoration.style().unpolish(self.zone_decoration)
+        self.zone_decoration.style().polish(self.zone_decoration)
+        note = self.zone_decoration.findChild(QLabel, "settingsZoneDecorationText")
+        if note is not None:
+            note.style().unpolish(note)
+            note.style().polish(note)
+            note.updateGeometry()
+        self.zone_decoration.updateGeometry()
+
+    @staticmethod
+    def _settings_section_header(
+        title: str,
+        subtitle: str,
+        parent: QWidget,
+        icon_name: str,
+    ) -> QWidget:
+        header = section_header(title, subtitle, parent, icon_name=icon_name)
+        header_layout = header.layout()
+        if header_layout is not None:
+            header_layout.setContentsMargins(20, 0, 12, 0)
+            header_layout.setSpacing(26)
+        header.setFixedHeight(38)
+        return header
+
     def _build_general_panel(self) -> None:
         layout = QVBoxLayout(self.general_panel)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ОБЩИЕ", "УПРАВЛЕНИЕ ОСНОВНЫМ ПОВЕДЕНИЕМ РЕДАКТОРА", self.general_panel, icon_name="settings"))
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._settings_section_header(
+            "ОБЩИЕ", "УПРАВЛЕНИЕ ОСНОВНЫМ ПОВЕДЕНИЕМ РЕДАКТОРА", self.general_panel, "settings"
+        ))
         intro = QLabel(
             "Ручные пути имеют приоритет: папка сохранений → папка игры → корень Steam. "
             "Пути сохраняются локально; программа ничего не пишет в каталог игры."
@@ -244,8 +352,9 @@ class SettingsView(QWidget):
         ):
             row = QFrame(self.general_panel)
             row.setObjectName("settingsSafetyRowFrame")
+            row.setFixedHeight(34)
             row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(32, 1, 20, 1)
+            row_layout.setContentsMargins(44, 1, 20, 1)
             label = QLabel(text, row)
             label.setObjectName("settingsSafetyRow")
             self.safety_labels.append(label)
@@ -254,12 +363,9 @@ class SettingsView(QWidget):
             status_layout = QHBoxLayout(status_host)
             status_layout.setContentsMargins(0, 0, 0, 0)
             status_layout.setSpacing(8)
-            status_host.setFixedWidth(140)
-            toggle = QLabel("●", status_host)
-            toggle.setObjectName("settingsToggle")
-            toggle.setProperty("enabledState", "on" if enabled_state else "off")
-            toggle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            toggle.setFixedSize(42, 24)
+            status_host.setFixedWidth(153)
+            status_layout.setSpacing(21)
+            toggle = _ReadOnlySwitch(enabled_state, label=text, parent=status_host)
             enabled = QLabel("Включено" if enabled_state else "Выключено", status_host)
             enabled.setObjectName("settingsRowStatus")
             enabled.setProperty("enabledState", "on" if enabled_state else "off")
@@ -271,35 +377,78 @@ class SettingsView(QWidget):
 
     def _build_paths_panel(self) -> None:
         layout = QVBoxLayout(self.paths_panel)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ПУТИ И АВТОПОИСК", "ПУТИ К ИГРАМ, СОХРАНЕНИЯМ И РЕСУРСАМ", self.paths_panel, icon_name="library"))
+        layout.setContentsMargins(0, 0, 0, 8)
+        layout.setSpacing(4)
+        layout.addWidget(self._settings_section_header(
+            "ПУТИ И АВТОПОИСК", "ПУТИ К ИГРАМ, СОХРАНЕНИЯМ И РЕСУРСАМ", self.paths_panel, "library"
+        ))
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         # Keep the label/value split at the same stable column as the
         # canonical sheet.  Letting QFormLayout derive it from the narrow
         # font collapses the path controls toward the left edge.
-        form.setContentsMargins(32, 0, 0, 0)
+        form.setContentsMargins(44, 0, 0, 0)
         form.setHorizontalSpacing(10)
-        form.setVerticalSpacing(5)
+        form.setVerticalSpacing(4)
         self.steam_root_edit = QLineEdit()
         self.steam_root_edit.setPlaceholderText("Не задано — использовать автопоиск")
         self.steam_hint = self._hint_label()
         form.addRow("Корень Steam", self._path_row(self.steam_root_edit, self.steam_hint))
+        backup_locations = backup_dirs()
+        backup_value = QLabel(
+            _display_path(backup_locations[0])
+            if backup_locations
+            else "Не найдено — будет создано при первой записи",
+            self.paths_panel,
+        )
+        backup_value.setObjectName("settingsBackupPathValue")
+        backup_value.setFixedHeight(29)
+        backup_value.setToolTip(backup_value.text())
+        backup_row = QWidget(self.paths_panel)
+        backup_layout = QHBoxLayout(backup_row)
+        backup_layout.setContentsMargins(0, 0, 0, 0)
+        backup_layout.setSpacing(8)
+        self.backup_path_button = QPushButton(backup_row)
+        self.backup_path_button.setObjectName("settingsBackupPathButton")
+        self.backup_path_button.setIcon(QIcon(str(_SHELL_ICONS / "paths.svg")))
+        self.backup_path_button.setIconSize(QSize(18, 18))
+        self.backup_path_button.setFixedSize(38, 29)
+        self.backup_path_button.setToolTip("Открыть папку резервных копий")
+        self.backup_path_button.setEnabled(
+            bool(backup_locations) and backup_locations[0].is_dir()
+        )
+        self.backup_path_button.clicked.connect(self.backup_folder_requested.emit)
+        self.backup_path_status = QLabel(backup_row)
+        self.backup_path_status.setObjectName("settingsPathStatus")
+        backup_ready = bool(backup_locations) and backup_locations[0].is_dir()
+        self.backup_path_status.setText("● ГОТОВО" if backup_ready else "● БУДЕТ СОЗДАНО")
+        self.backup_path_status.setProperty(
+            "discoveryState", "found" if backup_ready else "pending"
+        )
+        self.backup_path_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.backup_path_status.setFixedHeight(29)
+        self.backup_path_status.setMinimumWidth(153)
+        self.backup_path_status.setToolTip(
+            "Папка резервных копий доступна."
+            if backup_ready
+            else "Папка будет создана при первой записи."
+        )
+        backup_layout.addWidget(backup_value, 1)
+        backup_layout.addWidget(self.backup_path_button)
+        backup_layout.addWidget(self.backup_path_status)
+        form.addRow("Папка резервных копий", backup_row)
         self.catalog_root_edit = QLineEdit()
         self.catalog_root_edit.setPlaceholderText("Не задано — использовать установленную игру/автопоиск")
         self.catalog_hint = self._hint_label()
         form.addRow("Каталог S.T.A.L.K.E.R. 2 (Zone Kit / Workshop)", self._path_row(self.catalog_root_edit, self.catalog_hint))
-        backup_locations = backup_dirs()
-        backup_value = QLabel(
-            str(backup_locations[0]) if backup_locations else "Не найдено — будет создано при первой записи",
+        self.advanced_paths_button = action_button(
+            "ПОКАЗАТЬ РАСШИРЕННЫЕ  ›",
             self.paths_panel,
+            object_name="settingsAdvancedPathsButton",
         )
-        backup_value.setObjectName("settingsReadOnlyPath")
-        backup_value.setWordWrap(True)
-        form.addRow("Папка резервных копий", backup_value)
-        manual_value = QLabel("Не заданы — использовать автопоиск", self.paths_panel)
-        manual_value.setObjectName("settingsReadOnlyPath")
-        form.addRow("Ручные пути", manual_value)
+        self.advanced_paths_button.setFixedSize(270, 35)
+        self.advanced_paths_button.clicked.connect(self._show_advanced_paths)
+        form.addRow("Ручные пути", self.advanced_paths_button)
         for row_index in range(form.rowCount()):
             label_item = form.itemAt(row_index, QFormLayout.ItemRole.LabelRole)
             label_widget = label_item.widget() if label_item is not None else None
@@ -338,33 +487,69 @@ class SettingsView(QWidget):
 
     def _build_cloud_panel(self) -> None:
         layout = QVBoxLayout(self.cloud_panel)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("STEAM CLOUD", "ИНТЕГРАЦИЯ СО STEAM CLOUD", self.cloud_panel, icon_name="cloud"))
-        for text in (
-            "Подключение: доступно по явному действию пользователя",
-            "Режим: только по явному подтверждению",
-            "Поведение при uncertain write: никогда не повторять автоматически",
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._settings_section_header(
+            "STEAM CLOUD", "ИНТЕГРАЦИЯ СО STEAM CLOUD", self.cloud_panel, "cloud"
+        ))
+        for label_text, value_text in (
+            ("Подключение", "Только по явному действию пользователя"),
+            ("Режим", "Только после подтверждения"),
+            ("Поведение при uncertain write", "Никогда не повторять автоматически"),
         ):
-            label = QLabel("●  " + text, self.cloud_panel)
-            label.setObjectName("settingsSafetyRow")
-            label.setContentsMargins(32, 0, 20, 0)
-            layout.addWidget(label)
-        layout.addStretch(1)
+            row = QFrame(self.cloud_panel)
+            row.setObjectName("settingsCloudRow")
+            row.setFixedHeight(32)
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(32, 0, 20, 0)
+            row_layout.setSpacing(0)
+            label = QLabel(label_text, row)
+            label.setObjectName("settingsCloudLabel")
+            label.setMinimumWidth(400)
+            value = QLabel(value_text, row)
+            value.setObjectName(
+                "settingsCloudConnectionValue"
+                if label_text == "Подключение"
+                else "settingsCloudValue"
+            )
+            row_layout.addWidget(label)
+            row_layout.addWidget(value, 1)
+            layout.addWidget(row)
         self.cloud_panel.setFixedHeight(139)
 
     def _build_diagnostics_panel(self) -> None:
         layout = QVBoxLayout(self.diagnostics_panel)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ИНСТРУМЕНТЫ ДЛЯ ПОДДЕРЖКИ", self.diagnostics_panel, icon_name="history"))
-        self.update_action_button = action_button("ПРОВЕРИТЬ ОБНОВЛЕНИЯ", self.diagnostics_panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(self._settings_section_header(
+            "ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ИНСТРУМЕНТЫ ДЛЯ ПОДДЕРЖКИ", self.diagnostics_panel, "history"
+        ))
+        self.backup_folder_button = QToolButton(self.diagnostics_panel)
+        self.backup_folder_button.setObjectName("settingsBackupFolderButton")
+        self.backup_folder_button.setText("ОТКРЫТЬ ПАПКУ BACKUP")
+        self.backup_folder_button.setIcon(QIcon(str(_SHELL_ICONS / "backups.svg")))
+        self.backup_folder_button.setIconSize(QSize(18, 18))
+        self.backup_folder_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.backup_folder_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.backup_folder_button.setEnabled(
+            any(path.is_dir() for path in backup_dirs())
+        )
+        if not self.backup_folder_button.isEnabled():
+            self.backup_folder_button.setToolTip(
+                "Папка появится после создания первой резервной копии"
+            )
+        update_menu = QMenu(self.backup_folder_button)
+        update_action = update_menu.addAction("Проверить обновления")
+        update_action.triggered.connect(self.update_requested.emit)
+        self.backup_folder_button.setMenu(update_menu)
+        self.backup_folder_button.clicked.connect(self.backup_folder_requested.emit)
         self.diagnostics_action_button = action_button("ПОКАЗАТЬ ЖУРНАЛ", self.diagnostics_panel)
         self.copy_diagnostics_button = action_button("СКОПИРОВАТЬ ДИАГНОСТИКУ", self.diagnostics_panel)
-        self.update_action_button.clicked.connect(self.update_requested)
-        self.diagnostics_action_button.clicked.connect(self.diagnostics_requested)
-        self.copy_diagnostics_button.clicked.connect(self.diagnostics_requested)
+        self.diagnostics_action_button.clicked.connect(self.journal_requested)
+        self.copy_diagnostics_button.clicked.connect(self.copy_diagnostics_requested)
         actions = QHBoxLayout()
         actions.setSpacing(8)
-        actions.addWidget(self.update_action_button, 1)
+        actions.addWidget(self.backup_folder_button, 1)
         actions.addWidget(self.diagnostics_action_button, 1)
         actions.addWidget(self.copy_diagnostics_button, 1)
         layout.addLayout(actions)
@@ -376,6 +561,72 @@ class SettingsView(QWidget):
         layout.addWidget(note)
         layout.addStretch(1)
         self.diagnostics_panel.setFixedHeight(131)
+
+    def _show_advanced_paths(self) -> None:
+        if self._advanced_paths_dialog is not None and self._advanced_paths_dialog.isVisible():
+            self._advanced_paths_dialog.raise_()
+            self._advanced_paths_dialog.activateWindow()
+            return
+
+        dialog = QDialog(self)
+        dialog.setObjectName("advancedPathsDialog")
+        dialog.setWindowTitle("Расширенные пути")
+        dialog.resize(940, 620)
+        layout = QVBoxLayout(dialog)
+        intro = QLabel(
+            "Для каждого официального выпуска показан ручной путь, если он задан, "
+            "иначе — результат автопоиска. Здесь ничего не записывается в каталог игры.",
+            dialog,
+        )
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+        scroll = QScrollArea(dialog)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget(scroll)
+        form = QFormLayout(content)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        for release in official_releases():
+            game_path = self.settings.game_root(release.id) or self._discover_game_root(release.id)
+            save_path = self.settings.save_root(release.id) or self._discover_save_root(release.id)
+            game_source = "Ручной путь" if self.settings.game_root(release.id) else "Автопоиск"
+            save_source = "Ручной путь" if self.settings.save_root(release.id) else "Автопоиск"
+            form.addRow(
+                f"{release.title} · игра",
+                self._advanced_path_value(game_path, game_source, content),
+            )
+            form.addRow(
+                f"{release.title} · сохранения",
+                self._advanced_path_value(save_path, save_source, content),
+            )
+            if release.id == "stalker2":
+                catalog = self.settings.catalog_root(release.id) or self._discover_catalog_root()
+                source = "Ручной путь" if self.settings.catalog_root(release.id) else "Автопоиск"
+                form.addRow(
+                    f"{release.title} · каталог ресурсов",
+                    self._advanced_path_value(catalog, source, content),
+                )
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, dialog)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        self._advanced_paths_dialog = dialog
+        dialog.finished.connect(lambda _result: self._clear_advanced_paths_dialog(dialog))
+        dialog.open()
+
+    @staticmethod
+    def _advanced_path_value(path: Path | None, source: str, parent: QWidget) -> QLineEdit:
+        value = QLineEdit(parent)
+        value.setReadOnly(True)
+        value.setText(f"{source}: {path}" if path is not None else f"{source}: не найдено")
+        value.setToolTip(value.text())
+        value.setMinimumWidth(560)
+        return value
+
+    def _clear_advanced_paths_dialog(self, dialog: QDialog) -> None:
+        if self._advanced_paths_dialog is dialog:
+            self._advanced_paths_dialog = None
 
     @staticmethod
     def _build_simple_panel(page: QWidget, title: str, text: str) -> None:
@@ -445,6 +696,7 @@ class SettingsView(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(2)
         row = QWidget()
+        row.setMinimumHeight(29)
         layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(edit, 1)

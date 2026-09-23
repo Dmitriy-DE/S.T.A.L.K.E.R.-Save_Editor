@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QIcon
@@ -33,8 +33,8 @@ class SaveResultView(QWidget):
         root = QVBoxLayout(self)
         # A receipt is intentionally compact: the dimmed shell remains the
         # context and the verified outcome is the focal card.
-        root.setContentsMargins(250, 72, 250, 50)
-        root.setSpacing(12)
+        root.setContentsMargins(40, 30, 40, 30)
+        root.setSpacing(8)
         heading = QHBoxLayout()
         self.success_icon = QLabel(self)
         icon_path = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons" / "verified.svg"
@@ -59,10 +59,11 @@ class SaveResultView(QWidget):
         self.receipt_table.setHorizontalHeaderLabels(("ПРОВЕРКА", "РЕЗУЛЬТАТ"))
         self.receipt_table.verticalHeader().setVisible(False)
         self.receipt_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.receipt_table.setShowGrid(False)
         self.receipt_table.horizontalHeader().setStretchLastSection(True)
         receipt_layout.addWidget(self.receipt_table)
-        receipt_panel.setMinimumHeight(245)
-        receipt_panel.setMaximumHeight(360)
+        receipt_panel.setMinimumHeight(150)
+        receipt_panel.setMaximumHeight(205)
         root.addWidget(receipt_panel, 0)
         self.reconcile_button = action_button(
             "ОБНОВИТЬ STEAM CLOUD / ПРОВЕРИТЬ СОСТОЯНИЕ",
@@ -127,15 +128,15 @@ class SaveResultView(QWidget):
         output_path = getattr(receipt, "output_path", None)
         remote_path = getattr(receipt, "remote_path", None)
         if output_path is not None:
-            rows.append(("Output", output_path))
+            rows.append(("Сохранение", output_path))
         if remote_path is not None:
-            rows.append(("Remote path", remote_path))
+            rows.append(("Слот Steam Cloud", remote_path))
         for name, attribute in (
-            ("Original backup", "backup_path"),
-            ("Output SHA-256", "output_sha256"),
-            ("Recovery", "recovery_path"),
-            ("Safety backup", "safety_backup_path"),
-            ("Reason", "reason"),
+            ("Резервная копия", "backup_path"),
+            ("SHA-256 результата", "output_sha256"),
+            ("Файл восстановления", "recovery_path"),
+            ("Защитная копия", "safety_backup_path"),
+            ("Причина", "reason"),
         ):
             value = getattr(receipt, attribute, None)
             if value is not None:
@@ -143,7 +144,17 @@ class SaveResultView(QWidget):
         self.receipt_table.setRowCount(len(rows))
         for row, (name, value) in enumerate(rows):
             self.receipt_table.setItem(row, 0, QTableWidgetItem(str(name)))
-            self.receipt_table.setItem(row, 1, QTableWidgetItem(str(value)))
+            full_value = str(value)
+            if isinstance(value, Path):
+                display_value = value.name
+            elif name == "Слот Steam Cloud":
+                display_value = PurePosixPath(full_value.replace("\\", "/")).name
+            else:
+                display_value = full_value
+            result_cell = QTableWidgetItem(display_value)
+            if display_value != full_value:
+                result_cell.setToolTip(full_value)
+            self.receipt_table.setItem(row, 1, result_cell)
         self.subtitle.setText(subtitle)
 
     def set_editor_ready(self, ready: bool, message: str | None = None) -> None:

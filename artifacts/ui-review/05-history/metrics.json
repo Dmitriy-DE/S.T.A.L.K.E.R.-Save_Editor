@@ -12,26 +12,26 @@
     },
     "mode": "board-derived-geometry"
   },
-  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
+  "data_policy": "review saves use parser-valid registered-format fixtures and official release metadata; displayed dates and sizes are deterministic visual fixture values; Cloud rows are a demo list with no live connection/read/write; Settings values are temporary",
   "diff": null,
   "geometry": {
     "active_view": {
-      "height": 807,
-      "width": 1522,
-      "x": 32,
+      "height": 808,
+      "width": 1530,
+      "x": 24,
       "y": 122
     },
     "content": {
-      "height": 827,
+      "height": 818,
       "width": 1586,
       "x": 0,
       "y": 122
     },
     "footer": {
-      "height": 43,
+      "height": 52,
       "width": 1586,
       "x": 0,
-      "y": 949
+      "y": 940
     },
     "header": {
       "height": 122,
@@ -56,65 +56,83 @@
   "reference_source": "04_REMAINING_STATES_BOARD_CANONICAL.png",
   "screen": "05-history",
   "screen_rects": {
+    "destination_field": {
+      "height": 30,
+      "width": 432,
+      "x": 1100,
+      "y": 523
+    },
     "detail_image": {
       "height": 148,
-      "width": 383,
-      "x": 1149,
-      "y": 242
+      "width": 432,
+      "x": 1100,
+      "y": 264
+    },
+    "detail_name": {
+      "height": 27,
+      "width": 432,
+      "x": 1100,
+      "y": 418
     },
     "detail_panel": {
-      "height": 732,
-      "width": 409,
-      "x": 1136,
-      "y": 188
+      "height": 721,
+      "width": 458,
+      "x": 1087,
+      "y": 200
+    },
+    "detail_status": {
+      "height": 66,
+      "width": 432,
+      "x": 1100,
+      "y": 451
     },
     "game_rail": {
-      "height": 750,
+      "height": 739,
       "width": 246,
-      "x": 32,
-      "y": 179
+      "x": 24,
+      "y": 191
     },
     "preview_cta": {
-      "height": 33,
-      "width": 383,
-      "x": 1149,
-      "y": 792
+      "height": 41,
+      "width": 432,
+      "x": 1100,
+      "y": 769
     },
     "restore_cta": {
-      "height": 37,
-      "width": 383,
-      "x": 1149,
-      "y": 831
+      "height": 45,
+      "width": 432,
+      "x": 1100,
+      "y": 816
     },
     "restore_in_place_cta": {
-      "height": 33,
-      "width": 383,
-      "x": 1149,
-      "y": 874
+      "height": 41,
+      "width": 432,
+      "x": 1100,
+      "y": 867
     },
     "source_filter": {
       "height": 30,
-      "width": 803,
-      "x": 310,
-      "y": 242
+      "width": 762,
+      "x": 302,
+      "y": 264
     },
     "table": {
-      "height": 590,
-      "width": 803,
-      "x": 310,
-      "y": 278
+      "height": 561,
+      "width": 762,
+      "x": 302,
+      "y": 300
     },
     "table_panel": {
-      "height": 732,
-      "width": 829,
-      "x": 297,
-      "y": 188
+      "height": 721,
+      "width": 788,
+      "x": 289,
+      "y": 200
     },
     "workspace": {
-      "height": 750,
-      "width": 1266,
-      "x": 288,
-      "y": 179
+      "height": 739,
+      "width": 1274,
+      "x": 280,
+      "y": 191
     }
   },
   "tokens": {
@@ -148,12 +166,12 @@
     },
     "typography": {
       "body": "\"Liberation Sans Narrow\"",
-      "heading": "\"Liberation Sans Narrow\"",
+      "heading": "\"Oswald\"",
       "mono": "\"Liberation Sans Narrow\""
     }
   },
   "viewport": {
-    "dpr": 1,
+    "dpr": 1.0,
     "height": 992,
     "width": 1586
   }

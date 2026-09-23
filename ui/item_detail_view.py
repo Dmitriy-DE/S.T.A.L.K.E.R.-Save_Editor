@@ -4,22 +4,26 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QRect, QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QListWidgetItem,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
 from editor.capabilities import FormatCapabilities
+from editor.catalog import UpgradeCatalog
 from save_format import InventoryItem
 
 from .style_components import action_button, panel, section_header, status_chip
@@ -32,6 +36,35 @@ _DETAIL_TYPE_LABELS = {
     "detector_advanced": "Детектор",
     "zat_b33_safe_container": "Контейнер",
 }
+
+
+def _wide_detail_pixmap(icon: QIcon) -> QPixmap:
+    """Place resolver artwork into the broad weapon-art slot used by the reference."""
+
+    source = icon.pixmap(QSize(380, 86)).toImage()
+    if source.isNull():
+        return QPixmap()
+    left, top, right, bottom = source.width(), source.height(), -1, -1
+    for alpha_threshold in (128, 8):
+        for y in range(source.height()):
+            for x in range(source.width()):
+                if source.pixelColor(x, y).alpha() > alpha_threshold:
+                    left = min(left, x)
+                    top = min(top, y)
+                    right = max(right, x)
+                    bottom = max(bottom, y)
+        if right >= left and bottom >= top:
+            break
+    if right < left or bottom < top:
+        return QPixmap()
+    cropped = source.copy(QRect(left, top, right - left + 1, bottom - top + 1))
+    return QPixmap.fromImage(
+        cropped.scaled(
+            QSize(355, 80),
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    )
 
 
 class ItemDetailView(QWidget):
@@ -48,6 +81,7 @@ class ItemDetailView(QWidget):
         self.setObjectName("itemDetailView")
         self._item: InventoryItem | None = None
         self._capabilities: FormatCapabilities | None = None
+        self._upgrade_catalog: UpgradeCatalog | None = None
         self._staged_counts: Mapping[int, int] = {}
         self._staged_durability: Mapping[int, float] = {}
         self._removed_handles: Mapping[int, bool] = {}
@@ -56,46 +90,59 @@ class ItemDetailView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(8)
-        self.status_chip = status_chip("READ-ONLY", self, tone="neutral")
-        detail_header = section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", parent=self)
+        root.setContentsMargins(0, 0, 0, 2)
+        root.setSpacing(4)
+        self.detail_scroll = QScrollArea(self)
+        self.detail_scroll.setObjectName("itemDetailScroll")
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.detail_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.detail_content = QWidget(self.detail_scroll)
+        self.detail_content.setObjectName("itemDetailContent")
+        body = QVBoxLayout(self.detail_content)
+        body.setContentsMargins(0, 0, 5, 4)
+        body.setSpacing(4)
+        self.status_chip = status_chip("READ-ONLY", self.detail_content, tone="neutral")
+        detail_header = section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", parent=self.detail_content)
         detail_header.setObjectName("detailHeader")
+        detail_header.setFixedHeight(40)
         detail_header_layout = detail_header.layout()
         if detail_header_layout is None:
             raise RuntimeError("item detail header has no layout")
         detail_header_layout.addWidget(self.status_chip)
-        root.addWidget(detail_header)
-        self.name_label = QLabel("Предмет не выбран", self)
+        body.addWidget(detail_header)
+        self.name_label = QLabel("Предмет не выбран", self.detail_content)
         self.name_label.setObjectName("detailItemName")
-        root.addWidget(self.name_label)
-        self.type_label = QLabel("Выбери строку инвентаря", self)
+        body.addWidget(self.name_label)
+        self.type_label = QLabel("Выбери строку инвентаря", self.detail_content)
         self.type_label.setObjectName("detailItemType")
-        root.addWidget(self.type_label)
-        self.image_label = QLabel("—", self)
+        body.addWidget(self.type_label)
+        self.image_label = QLabel("—", self.detail_content)
         self.image_label.setObjectName("detailItemImage")
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setFixedHeight(112)
-        root.addWidget(self.image_label)
-        self.description_label = QLabel("Данные отображаются только из текущего snapshot.", self)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.image_label.setFixedHeight(86)
+        body.addWidget(self.image_label)
+        self.description_label = QLabel("Данные отображаются только из текущего snapshot.", self.detail_content)
         self.description_label.setObjectName("detailDescription")
         self.description_label.setWordWrap(True)
-        root.addWidget(self.description_label)
+        body.addWidget(self.description_label)
+        body.addSpacing(14)
 
         self.detail_tabs: list[QPushButton] = []
         tabs = QHBoxLayout()
         tabs.setSpacing(4)
         for index, label in enumerate(("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")):
-            button = QPushButton(label, self)
+            button = QPushButton(label, self.detail_content)
             button.setObjectName("detailTab")
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, selected=index: self._select_detail_tab(selected))
             tabs.addWidget(button, 1)
             self.detail_tabs.append(button)
         self.detail_tabs[0].setChecked(True)
-        root.addLayout(tabs)
+        body.addLayout(tabs)
 
-        form_panel = panel(self, object_name="detailFields")
+        form_panel = panel(self.detail_content, object_name="detailFields")
         form = QFormLayout(form_panel)
         form.setContentsMargins(10, 10, 10, 10)
         form.setSpacing(8)
@@ -117,40 +164,52 @@ class ItemDetailView(QWidget):
         self.placement_combo.addItem("Рюкзак", ("ruck", None))
         self.placement_combo.currentIndexChanged.connect(lambda _index: self._emit_placement())
         form.addRow("Размещение", self.placement_combo)
-        root.addWidget(form_panel)
+        body.addWidget(form_panel)
 
-        root.addWidget(QLabel("УСТАНОВЛЕННЫЕ МОДУЛИ / УЛУЧШЕНИЯ", self))
-        self.upgrade_list = QListWidget(self)
+        body.addSpacing(14)
+        self.upgrade_heading = QLabel(
+            "УСТАНОВЛЕННЫЕ МОДУЛИ / УЛУЧШЕНИЯ",
+            self.detail_content,
+        )
+        self.upgrade_heading.setObjectName("detailUpgradesHeading")
+        body.addWidget(self.upgrade_heading)
+        self.upgrade_list = QListWidget(self.detail_content)
         self.upgrade_list.setObjectName("detailUpgradeList")
-        self.upgrade_list.setMaximumHeight(92)
-        root.addWidget(self.upgrade_list)
-        self.module_status = QLabel("—", self)
+        self.upgrade_list.setMaximumHeight(118)
+        body.addWidget(self.upgrade_list)
+        self.module_status = QLabel("—", self.detail_content)
         self.module_status.setObjectName("detailModuleStatus")
         self.module_status.setWordWrap(True)
-        root.addWidget(self.module_status)
+        body.addWidget(self.module_status)
         feature_row = QHBoxLayout()
         feature_row.setSpacing(6)
-        self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self, tone="success")
-        self.read_only_feature_chip = status_chip("READ-ONLY", self, tone="neutral")
-        self.feature_help = QLabel("?", self)
+        self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self.detail_content, tone="success")
+        self.read_only_feature_chip = status_chip("READ-ONLY", self.detail_content, tone="neutral")
+        self.feature_help = QLabel("?", self.detail_content)
         self.feature_help.setObjectName("detailFeatureHelp")
         feature_row.addWidget(self.verified_feature_chip)
         feature_row.addWidget(self.read_only_feature_chip)
         feature_row.addWidget(self.feature_help)
         feature_row.addStretch(1)
-        root.addLayout(feature_row)
-        root.addStretch(1)
+        body.addLayout(feature_row)
+        body.addStretch(1)
+        self.detail_scroll.setWidget(self.detail_content)
+        root.addWidget(self.detail_scroll, 1)
 
         self.save_button = action_button("СОХРАНИТЬ 0 ИЗМЕНЕНИЙ", self, kind="primary", object_name="primaryActionButton")
         self.save_button.setMinimumHeight(42)
+        self.save_button.setFixedHeight(42)
         self.save_button.setEnabled(False)
         root.addWidget(self.save_button)
+        root.addSpacing(6)
         actions = QHBoxLayout()
         self.reset_button = action_button("СБРОСИТЬ", self)
+        self.reset_button.setFixedHeight(38)
         self.reset_button.setEnabled(False)
         self.reset_button.clicked.connect(self._emit_reset)
         actions.addWidget(self.reset_button)
         self.remove_button = action_button("УДАЛИТЬ ПРЕДМЕТ", self, kind="danger")
+        self.remove_button.setFixedHeight(38)
         self.remove_button.setEnabled(False)
         self.remove_button.clicked.connect(self._emit_remove)
         actions.addWidget(self.remove_button)
@@ -179,12 +238,14 @@ class ItemDetailView(QWidget):
         item: InventoryItem | None,
         capabilities: FormatCapabilities | None,
         *,
+        upgrade_catalog: UpgradeCatalog | None = None,
         staged_counts: Mapping[int, int] | None = None,
         staged_durability: Mapping[int, float] | None = None,
         removed_handles: Mapping[int, bool] | None = None,
     ) -> None:
         self._item = item
         self._capabilities = capabilities
+        self._upgrade_catalog = upgrade_catalog
         self._staged_counts = staged_counts or {}
         self._staged_durability = staged_durability or {}
         self._removed_handles = removed_handles or {}
@@ -225,7 +286,7 @@ class ItemDetailView(QWidget):
         weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
         self.description_label.setText(f"Вес: {weight}\nИсточник: {item.observation_source or 'snapshot'}")
         if self._item_icon is not None and not self._item_icon.isNull():
-            self.image_label.setPixmap(self._item_icon.pixmap(380, 112))
+            self.image_label.setPixmap(_wide_detail_pixmap(self._item_icon))
             self.image_label.setText("")
         else:
             self.image_label.setText("—")
@@ -276,8 +337,28 @@ class ItemDetailView(QWidget):
         self.placement_combo.setEnabled(placement_writable)
 
         self.upgrade_list.clear()
-        for value in item.upgrades or item.modules or ():
-            self.upgrade_list.addItem(str(value))
+        upgrade_values = item.upgrades or item.modules or ()
+        for index, value in enumerate(upgrade_values, start=1):
+            raw_key = str(value)
+            definition = (
+                self._upgrade_catalog.resolve(raw_key)
+                if self._upgrade_catalog is not None
+                else None
+            )
+            catalog_name = definition.display_name if definition is not None else None
+            # Generated catalogs can contain localization tokens rather than
+            # translated labels. Keep those identifiers out of the normal
+            # screen; retain the exact key as a hoverable evidence detail.
+            label = (
+                catalog_name
+                if catalog_name and not catalog_name.casefold().startswith("st_")
+                else f"Улучшение {index}"
+            )
+            row = QListWidgetItem(label)
+            row.setSizeHint(QSize(0, 26))
+            row.setToolTip(f"Ключ из сохранения: {raw_key}")
+            row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
+            self.upgrade_list.addItem(row)
         self.module_status.setText(
             "Модули/улучшения показаны как read-only evidence."
             if item.upgrades or item.modules

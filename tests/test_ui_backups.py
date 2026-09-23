@@ -10,6 +10,7 @@ pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel
 
 import editor.storage as storage
 from editor.models import EditPlan, SourceRef
@@ -56,10 +57,11 @@ def test_history_view_renders_statuses_and_requires_preview_before_restore(
     view.refresh()
 
     assert view.table.rowCount() == 2
-    statuses = [
-        view.table.item(row, 4).text()
-        for row in range(view.table.rowCount())
-    ]
+    statuses = []
+    for row in range(view.table.rowCount()):
+        status_chip = view.table.cellWidget(row, 4)
+        assert isinstance(status_chip, QLabel)
+        statuses.append(status_chip.text())
     assert "Проверено" in statuses
     assert "Отсутствует" in statuses
     assert not view.restore_button.isEnabled()

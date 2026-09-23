@@ -545,7 +545,7 @@ class CloudController(QObject):
         self,
         files: tuple[CloudFile, ...] | list[CloudFile],
         *,
-        status: str = "Steam Cloud: review fixture · список прочитан",
+        status: str = "Steam Cloud: демосписок · 4 файла",
     ) -> None:
         """Publish deterministic read-only rows for the visual-review harness.
 
@@ -561,7 +561,7 @@ class CloudController(QObject):
         self._snapshot = None
         self._prepared = None
         self._set_status(status)
-        self._set_result("Review fixture: live Cloud write не выполнялся")
+        self._set_result("Демо-данные списка; запись в Cloud не выполнялась")
         self._on_selection_changed()
         self.files_ready.emit(self._files)
 

@@ -86,6 +86,7 @@ class HistoryView(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         for column in (0, 2, 3, 4):
@@ -176,13 +177,25 @@ class HistoryView(QWidget):
                 self.table.insertRow(row)
                 values = (
                     record.created_at or "—",
-                    record.source_path or "Неизвестный источник",
+                    Path(record.source_path).name if record.source_path else "Неизвестный источник",
                     self.backend._operation_text(record.operation),
                     record.source_sha256[:12] + "…" if record.source_sha256 else "—",
                     {"verified": "Проверено", "missing": "Отсутствует", "corrupt": "Повреждено"}.get(record.status, record.status),
                 )
                 for column, value in enumerate(values):
-                    self.table.setItem(row, column, QTableWidgetItem(str(value)))
+                    item = QTableWidgetItem("" if column == 4 else str(value))
+                    if column == 1 and record.source_path:
+                        item.setToolTip(record.source_path)
+                    self.table.setItem(row, column, item)
+                tone = {
+                    "verified": "success",
+                    "missing": "warning",
+                    "corrupt": "error",
+                }.get(record.status, "neutral")
+                verification = status_chip(values[4], self.table, tone=tone)
+                verification.setObjectName("historyVerificationChip")
+                self.table.setCellWidget(row, 4, verification)
+                self.table.setRowHeight(row, 58)
         self.status_chip.setText("ЖУРНАЛ ГОТОВ" if records else "ЖУРНАЛ ПУСТ")
         self._selection_changed()
 
@@ -197,7 +210,10 @@ class HistoryView(QWidget):
             self.detail_status.setText("Проверка SHA обязательна перед восстановлением.")
             self.destination_edit.clear()
             return
-        self.detail_name.setText(record.source_path or "Неизвестный источник")
+        self.detail_name.setText(
+            Path(record.source_path).name if record.source_path else "Неизвестный источник"
+        )
+        self.detail_name.setToolTip(record.source_path)
         self.detail_status.setText(f"Статус backup: {record.status}. Нажми проверку перед восстановлением.")
         self.destination_edit.clear()
 
@@ -219,8 +235,10 @@ class HistoryView(QWidget):
         self._preview()
 
     def _destination_changed(self) -> None:
+        destination = self.destination_edit.text().strip()
+        self.destination_edit.setToolTip(destination)
         self.restore_button.setEnabled(
-            self.backend.preview_record is not None and bool(self.destination_edit.text().strip())
+            self.backend.preview_record is not None and bool(destination)
         )
 
     def _restore(self) -> None:

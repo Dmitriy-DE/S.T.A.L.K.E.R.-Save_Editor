@@ -33,8 +33,8 @@ class SaveReviewView(QWidget):
         root = QVBoxLayout(self)
         # This is a confirmation card, not a second full-screen editor.  Keep
         # the application context visible around a bounded review surface.
-        root.setContentsMargins(220, 34, 220, 34)
-        root.setSpacing(12)
+        root.setContentsMargins(42, 24, 42, 24)
+        root.setSpacing(8)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ", self))
         heading.addStretch(1)
@@ -57,6 +57,7 @@ class SaveReviewView(QWidget):
         self.changes_table.setHorizontalHeaderLabels(("ОБЪЕКТ", "БЫЛО", "СТАНЕТ"))
         self.changes_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.changes_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.changes_table.setShowGrid(False)
         self.changes_table.verticalHeader().setVisible(False)
         changes_layout.addWidget(self.changes_table, 1)
         body.addWidget(changes_panel, 66)
@@ -78,8 +79,8 @@ class SaveReviewView(QWidget):
         body_host = QWidget(self)
         body_host.setObjectName("reviewBodyHost")
         body_host.setLayout(body)
-        body_host.setMinimumHeight(390)
-        body_host.setMaximumHeight(470)
+        body_host.setMinimumHeight(270)
+        body_host.setMaximumHeight(310)
         root.addWidget(body_host, 0)
 
         actions = QHBoxLayout()

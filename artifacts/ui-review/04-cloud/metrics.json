@@ -12,26 +12,26 @@
     },
     "mode": "board-derived-geometry"
   },
-  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
+  "data_policy": "review saves use parser-valid registered-format fixtures and official release metadata; displayed dates and sizes are deterministic visual fixture values; Cloud rows are a demo list with no live connection/read/write; Settings values are temporary",
   "diff": null,
   "geometry": {
     "active_view": {
-      "height": 807,
-      "width": 1522,
-      "x": 32,
+      "height": 808,
+      "width": 1530,
+      "x": 24,
       "y": 122
     },
     "content": {
-      "height": 827,
+      "height": 818,
       "width": 1586,
       "x": 0,
       "y": 122
     },
     "footer": {
-      "height": 43,
+      "height": 52,
       "width": 1586,
       "x": 0,
-      "y": 949
+      "y": 940
     },
     "header": {
       "height": 122,
@@ -57,64 +57,94 @@
   "screen": "04-cloud",
   "screen_rects": {
     "controls": {
-      "height": 55,
-      "width": 1522,
-      "x": 32,
-      "y": 179
+      "height": 63,
+      "width": 1530,
+      "x": 24,
+      "y": 191
     },
     "detail_image": {
       "height": 148,
-      "width": 395,
-      "x": 1137,
-      "y": 307
+      "width": 393,
+      "x": 1134,
+      "y": 336
+    },
+    "detail_meta": {
+      "height": 32,
+      "width": 393,
+      "x": 1134,
+      "y": 521
+    },
+    "detail_name": {
+      "height": 27,
+      "width": 393,
+      "x": 1134,
+      "y": 489
     },
     "detail_panel": {
-      "height": 624,
-      "width": 421,
-      "x": 1124,
-      "y": 253
+      "height": 605,
+      "width": 424,
+      "x": 1121,
+      "y": 273
+    },
+    "detail_scroll": {
+      "height": 456,
+      "width": 398,
+      "x": 1134,
+      "y": 286
     },
     "download_cta": {
-      "height": 37,
-      "width": 395,
-      "x": 1137,
-      "y": 763
+      "height": 45,
+      "width": 398,
+      "x": 1134,
+      "y": 748
     },
     "game_rail": {
-      "height": 642,
+      "height": 623,
       "width": 246,
-      "x": 32,
-      "y": 244
+      "x": 24,
+      "y": 264
+    },
+    "read_only_banner": {
+      "height": 50,
+      "width": 393,
+      "x": 1134,
+      "y": 558
+    },
+    "result_label": {
+      "height": 15,
+      "width": 398,
+      "x": 1134,
+      "y": 850
     },
     "safety_panel": {
       "height": 33,
-      "width": 1522,
-      "x": 32,
-      "y": 896
+      "width": 1530,
+      "x": 24,
+      "y": 897
     },
     "save_table": {
-      "height": 557,
-      "width": 791,
-      "x": 310,
-      "y": 307
+      "height": 528,
+      "width": 796,
+      "x": 302,
+      "y": 337
     },
     "table_panel": {
-      "height": 624,
-      "width": 817,
-      "x": 297,
-      "y": 253
+      "height": 605,
+      "width": 822,
+      "x": 289,
+      "y": 273
     },
     "upload_cta": {
-      "height": 37,
-      "width": 395,
-      "x": 1137,
-      "y": 806
+      "height": 45,
+      "width": 398,
+      "x": 1134,
+      "y": 799
     },
     "workspace": {
-      "height": 642,
-      "width": 1266,
-      "x": 288,
-      "y": 244
+      "height": 623,
+      "width": 1274,
+      "x": 280,
+      "y": 264
     }
   },
   "tokens": {
@@ -148,12 +178,12 @@
     },
     "typography": {
       "body": "\"Liberation Sans Narrow\"",
-      "heading": "\"Liberation Sans Narrow\"",
+      "heading": "\"Oswald\"",
       "mono": "\"Liberation Sans Narrow\""
     }
   },
   "viewport": {
-    "dpr": 1,
+    "dpr": 1.0,
     "height": 992,
     "width": 1586
   }
