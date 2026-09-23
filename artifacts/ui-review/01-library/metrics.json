@@ -9,11 +9,11 @@
   },
   "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
   "diff": {
-    "changed_pixel_ratio_threshold_12": 0.274433,
-    "changed_pixels_threshold_12": 431769,
+    "changed_pixel_ratio_threshold_12": 0.274391,
+    "changed_pixels_threshold_12": 431703,
     "height": 992,
     "max_channel_delta": 246,
-    "mean_rgb_delta": 17.154,
+    "mean_rgb_delta": 17.152,
     "width": 1586
   },
   "geometry": {

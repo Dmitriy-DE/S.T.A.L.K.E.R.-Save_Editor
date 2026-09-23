@@ -617,12 +617,14 @@ def _render_states(app: QApplication, window: MainWindow, local: LocalSnapshot, 
             window._show_reference_library()
         elif widget_name == "editor_view":
             # The editor review must exercise the populated, parser-backed
-            # X-Ray inventory and resolver path rather than the tiny synthetic
-            # S2 fixture used for the library shell.
-            window._render_snapshot(xray, show_editor=False)
-            # The canonical editor keeps the X-Ray character surface on its
-            # dedicated screen; retain the real route in normal UI while the
-            # editor fixture mirrors that focused reference composition.
+            # inventory while retaining the canonical S.T.A.L.K.E.R. 2
+            # release context shown by the reference editor.
+            editor_snapshot = replace(
+                local,
+                catalog=xray.catalog,
+                game_catalog=xray.game_catalog,
+            )
+            window._render_snapshot(editor_snapshot, show_editor=False)
             window.editor_view.character_button.setVisible(False)
             window._show_reference_editor()
             ak74 = next(
