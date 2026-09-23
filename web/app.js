@@ -27,6 +27,7 @@ const state = {
   adds: new Map(),
   detach: new Set(),
   equipmentSelectedHandle: null,
+  referenceSelectedHandle: null,
   prepared: null,
   catalogsReady: null,
 };
@@ -39,6 +40,145 @@ function setStatus(text, kind = "") {
 function fail(error) {
   console.error(error);
   setStatus(String(error && error.message ? error.message : error), "error");
+}
+
+function showReferenceScreen(name) {
+  for (const screen of document.querySelectorAll(".reference-screen")) {
+    screen.hidden = screen.id !== `reference-screen-${name}`;
+    screen.classList.toggle("is-active", !screen.hidden);
+  }
+  for (const button of document.querySelectorAll(".reference-nav-button")) {
+    button.classList.toggle("is-active", button.dataset.referenceScreen === name);
+  }
+}
+
+function referenceChangeCount() {
+  return state.stacks.size + state.durability.size + state.upgrades.size +
+    state.placements.size + state.relations.size + state.adds.size +
+    state.detach.size + (state.money === null ? 0 : 1) +
+    (state.playerFaction === null ? 0 : 1);
+}
+
+function referenceItemStaged(item) {
+  return state.stacks.has(item.handle) || state.durability.has(item.handle) ||
+    state.upgrades.has(item.handle) || state.placements.has(item.handle) ||
+    state.detach.has(item.handle);
+}
+
+function renderReferenceReview() {
+  const table = el("reference-review-table");
+  if (!table || !state.snapshot) return;
+  const rows = [];
+  if (state.money !== null) rows.push(["Баланс", String(state.snapshot.money ?? "—"), String(state.money)]);
+  for (const [handle, count] of state.stacks) {
+    const item = state.snapshot.inventory.find((candidate) => candidate.handle === handle);
+    rows.push([item?.name ?? `0x${handle.toString(16)}`, String(item?.count ?? "—"), String(count)]);
+  }
+  for (const [handle, condition] of state.durability) {
+    const item = state.snapshot.inventory.find((candidate) => candidate.handle === handle);
+    const before = item?.condition === null || item?.condition === undefined ? "—" : `${(item.condition * 100).toFixed(1)}%`;
+    rows.push([item?.name ?? `0x${handle.toString(16)}`, before, `${(condition * 100).toFixed(1)}%`]);
+  }
+  for (const [key, quantity] of state.adds) rows.push([key, "нет", `добавить × ${quantity}`]);
+  for (const handle of state.detach) {
+    const item = state.snapshot.inventory.find((candidate) => candidate.handle === handle);
+    rows.push([item?.name ?? `0x${handle.toString(16)}`, "в сейве", "удалить"]);
+  }
+  table.tBodies[0].replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("tr"), {
+    innerHTML: '<td colspan="3" class="reference-empty">Изменений ещё нет.</td>',
+  })]));
+  const count = referenceChangeCount();
+  el("reference-review-save").disabled = count === 0;
+  el("reference-save").textContent = `СОХРАНИТЬ ${count} ИЗМЕНЕНИЙ`;
+  el("reference-save").disabled = count === 0;
+}
+
+function renderReferenceEditor(s) {
+  const table = el("reference-inventory-table");
+  if (!table) return;
+  const query = (el("reference-inventory-search")?.value ?? "").trim().toLowerCase();
+  const items = (s.inventory ?? []).filter((item) => !query ||
+    [item.name, item.category, item.type_key, item.handle_hex].join(" ").toLowerCase().includes(query));
+  table.tBodies[0].replaceChildren(...(items.length ? items.map((item) => {
+    const row = document.createElement("tr");
+    if (item.handle === state.referenceSelectedHandle) row.classList.add("selected");
+    if (referenceItemStaged(item)) row.classList.add("staged");
+    const selectCell = document.createElement("td");
+    const select = document.createElement("button");
+    select.className = "reference-row-select";
+    select.type = "button";
+    select.textContent = item.handle === state.referenceSelectedHandle ? "✓" : "□";
+    select.addEventListener("click", () => {
+      state.referenceSelectedHandle = item.handle;
+      renderReferenceEditor(s);
+    });
+    selectCell.append(select);
+    row.append(selectCell);
+    for (const value of [item.name, item.category]) {
+      const cell = document.createElement("td");
+      cell.textContent = value ?? "—";
+      row.append(cell);
+    }
+    const countCell = document.createElement("td");
+    if (item.editable && s.capabilities?.edit_stacks) {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "1";
+      input.max = String(s.stack_max ?? 1000000);
+      input.value = String(state.stacks.get(item.handle) ?? item.count ?? 1);
+      input.addEventListener("change", () => {
+        const value = Number(input.value);
+        if (!Number.isInteger(value) || value < 1 || value > Number(s.stack_max ?? 1000000)) {
+          input.value = String(item.count ?? 1);
+          return;
+        }
+        if (value === item.count) state.stacks.delete(item.handle);
+        else state.stacks.set(item.handle, value);
+        invalidate();
+        renderChanges();
+        renderReferenceEditor(s);
+      });
+      countCell.append(input);
+    } else countCell.textContent = item.count === null || item.count === undefined ? "—" : String(item.count);
+    row.append(countCell);
+    const weight = document.createElement("td");
+    weight.textContent = item.total_weight === null || item.total_weight === undefined ? "—" : Number(item.total_weight).toFixed(1);
+    row.append(weight);
+    const condition = document.createElement("td");
+    condition.textContent = item.condition === null || item.condition === undefined ? "—" : `${(item.condition * 100).toFixed(0)}%`;
+    row.append(condition);
+    const action = document.createElement("td");
+    action.textContent = item.editable ? "…" : "READ-ONLY";
+    action.className = item.editable ? "" : "muted";
+    row.append(action);
+    return row;
+  }) : [Object.assign(document.createElement("tr"), {
+    innerHTML: '<td colspan="7" class="reference-empty">Предметов не найдено.</td>',
+  })]));
+  const selected = (s.inventory ?? []).find((item) => item.handle === state.referenceSelectedHandle);
+  el("reference-item-name").textContent = selected?.name ?? "Предмет не выбран";
+  el("reference-item-type").textContent = selected ? `${selected.category ?? "—"} · ${selected.type_key ?? "—"}` : "Выбери строку инвентаря";
+  el("reference-item-detail").textContent = selected
+    ? `Handle ${selected.handle_hex ?? "—"} · неизвестные поля остаются read-only.`
+    : "Неизвестные и неподтверждённые поля остаются read-only.";
+  el("reference-item-gate").textContent = selected?.editable ? "ПРОВЕРЕНО" : "READ-ONLY";
+  el("reference-item-count").textContent = `Элементов: ${s.inventory_count ?? items.length}`;
+  el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
+  el("reference-money").textContent = `◉  ${s.money === null ? "—" : s.money} ₽`;
+  el("reference-source").innerHTML = `Источник<br>Локальный файл`;
+  el("reference-integrity").innerHTML = `Целостность<br>${s.crc_present ? (s.crc_ok ? "CRC PASS" : "CRC FAIL") : "Проверено"}`;
+  el("reference-equipment-summary").textContent = `${(s.equipment ?? []).length} объектов оборудования · неизвестное остаётся read-only`;
+}
+
+function renderReferenceSnapshot(s) {
+  el("reference-game-count").textContent = `${s.inventory_count ?? 0} сохранение`;
+  el("reference-preview-name").textContent = s.name;
+  el("reference-preview-meta").innerHTML = `Игра: ${s.format_title}<br>Источник: локальное сохранение<br>Размер: ${s.size_text}<br>SHA: ${s.sha256.slice(0, 12)}…`;
+  el("reference-preview-status").textContent = s.crc_present ? (s.crc_ok ? "ПРОВЕРЕНО · CRC PASS" : "ОШИБКА CRC") : "ПРОВЕРЕНО";
+  el("reference-activity").textContent = `Проанализирован ${s.name}; исходный файл не изменён.`;
+  el("reference-editor-state").textContent = s.capabilities?.read_inventory === false ? "READ-ONLY" : "РЕДАКТИРУЕМЫЙ";
+  renderReferenceEditor(s);
+  renderReferenceReview();
 }
 
 async function boot() {
@@ -216,6 +356,7 @@ function renderSnapshot(s) {
   renderInventory();
   renderEquipment();
   renderChanges();
+  renderReferenceSnapshot(s);
 }
 
 function renderFaction(s) {
@@ -938,6 +1079,8 @@ function renderChanges() {
   el("download").textContent = state.prepared === null
     ? "Проверить и скачать копию"
     : "Скачать копию";
+  renderReferenceReview();
+  if (state.snapshot) renderReferenceEditor(state.snapshot);
 }
 
 function invalidate() {
@@ -1036,6 +1179,38 @@ for (const button of document.querySelectorAll(".nav")) {
     }
   });
 }
+
+for (const button of document.querySelectorAll(".reference-nav-button")) {
+  button.addEventListener("click", () => showReferenceScreen(button.dataset.referenceScreen));
+}
+el("reference-open").addEventListener("click", () => el("file-input").click());
+el("reference-refresh").addEventListener("click", () => {
+  if (state.snapshot) {
+    renderReferenceSnapshot(state.snapshot);
+    setStatus("Предпросмотр обновлён; исходный файл не изменён");
+  } else {
+    setStatus("Открой локальный файл сохранения", "error");
+  }
+});
+el("reference-editor-back").addEventListener("click", () => showReferenceScreen("library"));
+el("reference-character").addEventListener("click", () => {
+  setStatus("Персонаж и группировки доступны в desktop-версии для X-Ray сейвов");
+});
+el("reference-save").addEventListener("click", () => {
+  if (referenceChangeCount() > 0) showReferenceScreen("review");
+});
+el("reference-review-save").addEventListener("click", () => {
+  preview();
+  if (state.prepared !== null) download();
+});
+el("reference-library-search").addEventListener("input", () => {
+  const query = el("reference-library-search").value.trim().toLowerCase();
+  const row = el("reference-save-table").tBodies[0].firstElementChild;
+  if (row && state.snapshot) row.hidden = Boolean(query && !state.snapshot.name.toLowerCase().includes(query));
+});
+el("reference-inventory-search").addEventListener("input", () => {
+  if (state.snapshot) renderReferenceEditor(state.snapshot);
+});
 
 el("file-input").addEventListener("change", (event) => {
   const file = event.target.files?.[0];

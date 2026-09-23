@@ -11,12 +11,20 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <span class="brand-name">S.T.A.L.K.E.R. Save Editor</span>
-    <span class="badge badge-version" id="version">web</span>
+    <div class="brand-title-row">
+      <span class="brand-name">S.T.A.L.K.E.R. — SAVE EDITOR</span>
+      <span class="badge badge-version" id="version">v0.5.21</span>
+    </div>
+    <span class="brand-subtitle">РЕДАКТОР СОХРАНЕНИЙ ДЛЯ ВСЕЙ СЕРИИ S.T.A.L.K.E.R.</span>
   </div>
   <div class="topbar-actions">
-    <div class="brand-right">SAVE WORKBENCH</div>
-    <button class="button support-button" id="support-button" type="button">♡ Support project</button>
+    <nav class="reference-nav" aria-label="Основная навигация">
+      <button class="reference-nav-button is-active" data-reference-screen="library" type="button">▣  ЛОКАЛЬНЫЕ СОХРАНЕНИЯ</button>
+      <button class="reference-nav-button" data-reference-screen="cloud" type="button">☁  STEAM CLOUD</button>
+      <button class="reference-nav-button" data-reference-screen="history" type="button">◷  ИСТОРИЯ</button>
+      <button class="reference-nav-button" data-reference-screen="settings" type="button">⚙  НАСТРОЙКИ</button>
+    </nav>
+    <button class="button support-button" id="support-button" type="button">♡  ПОДДЕРЖАТЬ ПРОЕКТ</button>
   </div>
 </header>
 
@@ -35,6 +43,95 @@
 </section>
 
 <div class="status" id="status">Загрузка ядра…</div>
+
+<main class="reference-app" id="reference-app">
+  <aside class="reference-game-rail" id="reference-game-rail">
+    <div class="reference-rail-heading">ИГРЫ</div>
+    <button class="reference-game is-active" type="button" data-reference-game="all">▦  ВСЕ ИГРЫ <span id="reference-game-count">Открой файл</span></button>
+    <button class="reference-game" type="button">☢  S.T.A.L.K.E.R. 2 <span>локальный файл</span></button>
+    <button class="reference-game" type="button">☢  Call of Pripyat <span>локальный файл</span></button>
+    <button class="reference-game" type="button">☢  Clear Sky <span>локальный файл</span></button>
+    <button class="reference-game" type="button">☢  Shadow of Chornobyl <span>локальный файл</span></button>
+    <div class="reference-zone-note">ОДНИ СОХРАНЯЮТ ИГРЫ.<br>МЫ СОХРАНЯЕМ<br>ИСТОРИЮ.</div>
+  </aside>
+
+  <section class="reference-workspace">
+    <section class="reference-screen is-active" id="reference-screen-library">
+      <div class="reference-screen-heading"><h1>СОХРАНЕНИЯ</h1><span>Локальные слоты и импортированные копии</span></div>
+      <div class="reference-library-grid">
+        <section class="reference-panel reference-library-list">
+          <div class="reference-toolbar">
+            <input id="reference-library-search" type="search" placeholder="⌕  Поиск по названию, категории, type-key, handle…">
+            <select id="reference-library-sort"><option>⇅  Сначала новые</option><option>⇅  Сначала старые</option></select>
+          </div>
+          <table class="reference-table" id="reference-save-table">
+            <thead><tr><th>НАЗВАНИЕ</th><th>ИГРА</th><th>ДАТА И ВРЕМЯ</th><th>РАЗМЕР</th><th>СТАТУС</th></tr></thead>
+            <tbody><tr><td colspan="5" class="reference-empty">Открой локальный файл сохранения для анализа.</td></tr></tbody>
+          </table>
+          <section class="reference-subpanel"><div class="reference-subheading">НЕДАВНЯЯ АКТИВНОСТЬ</div><div id="reference-activity" class="muted">Файл обрабатывается только в этом браузере.</div></section>
+        </section>
+        <aside class="reference-panel reference-library-preview">
+          <div class="reference-subheading">ПРОСМОТР СОХРАНЕНИЯ</div>
+          <div class="reference-preview-image">ЗОНА<br>ПОМНИ<br>ВСЁ</div>
+          <h2 id="reference-preview-name">Сохранение не выбрано</h2>
+          <div id="reference-preview-meta" class="muted">Источник: локальная копия<br>Целостность: —</div>
+          <div id="reference-preview-status" class="reference-chip">ОЖИДАЕТ АНАЛИЗА</div>
+          <button class="reference-primary" id="reference-open" type="button">ОТКРЫТЬ СОХРАНЕНИЕ  →</button>
+          <label class="reference-secondary" for="file-input">ИМПОРТИРОВАТЬ…</label>
+          <button class="reference-secondary" id="reference-refresh" type="button">⟳  ОБНОВИТЬ</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="reference-screen" id="reference-screen-editor" hidden>
+      <div class="reference-editor-heading"><button class="reference-back" id="reference-editor-back" type="button">←  К СПИСКУ СОХРАНЕНИЙ</button><span id="reference-editor-breadcrumb">Сохранение не открыто</span><span id="reference-editor-state" class="reference-chip success">РЕДАКТИРУЕМЫЙ</span></div>
+      <div class="reference-editor-grid">
+        <aside class="reference-panel reference-status-panel">
+          <div class="reference-subheading">СТАТУС СОХРАНЕНИЯ</div>
+          <div class="reference-big-value" id="reference-money">◉  —</div>
+          <div class="reference-big-value" id="reference-weight">⚖  — кг</div>
+          <div class="reference-info-row" id="reference-source">Источник<br>—</div>
+          <div class="reference-info-row" id="reference-integrity">Целостность<br>—</div>
+          <div class="reference-subheading">ЭКИПИРОВКА</div>
+          <div id="reference-equipment-summary" class="reference-equipment-summary">Данные появятся после анализа.</div>
+          <button class="reference-secondary" id="reference-character" type="button">ПЕРСОНАЖ И ГРУППИРОВКИ</button>
+        </aside>
+        <section class="reference-panel reference-inventory-panel">
+          <div class="reference-panel-title"><span>ИНВЕНТАРЬ</span><span id="reference-item-count">Элементов: 0</span></div>
+          <div class="reference-toolbar"><input id="reference-inventory-search" type="search" placeholder="⌕  Поиск по названию, типу, категории…"><div class="reference-filters"><button class="reference-filter is-active" type="button">ВСЕ</button><button class="reference-filter" type="button">ОРУЖИЕ</button><button class="reference-filter" type="button">СНАРЯЖЕНИЕ</button><button class="reference-filter" type="button">РАСХОДНИКИ</button></div></div>
+          <table class="reference-table" id="reference-inventory-table"><thead><tr><th></th><th>НАЗВАНИЕ</th><th>ТИП</th><th>КОЛ-ВО</th><th>ВЕС (КГ)</th><th>СОСТОЯНИЕ</th><th></th></tr></thead><tbody><tr><td colspan="7" class="reference-empty">Сейв не проанализирован.</td></tr></tbody></table>
+        </section>
+        <aside class="reference-panel reference-item-panel">
+          <div class="reference-subheading">РЕДАКТИРОВАНИЕ ПРЕДМЕТА</div>
+          <h2 id="reference-item-name">Предмет не выбран</h2>
+          <div id="reference-item-type" class="muted">Выбери строку инвентаря</div>
+          <div class="reference-item-image" id="reference-item-image">▧</div>
+          <div id="reference-item-detail" class="muted">Неизвестные и неподтверждённые поля остаются read-only.</div>
+          <div class="reference-chip success" id="reference-item-gate">ПРОВЕРЕНО</div>
+          <button class="reference-primary" id="reference-save" type="button" disabled>СОХРАНИТЬ 0 ИЗМЕНЕНИЙ</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="reference-screen" id="reference-screen-review" hidden>
+      <div class="reference-screen-heading"><h1>ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ</h1><span>Проверь список изменений перед immutable preview</span></div>
+      <div class="reference-review-grid"><section class="reference-panel"><div class="reference-subheading">ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ</div><table class="reference-table" id="reference-review-table"><thead><tr><th>ОБЪЕКТ</th><th>БЫЛО</th><th>СТАНЕТ</th></tr></thead><tbody><tr><td colspan="3" class="reference-empty">Изменений ещё нет.</td></tr></tbody></table></section><aside class="reference-panel"><div class="reference-subheading">ЭТАПЫ СОХРАНЕНИЯ</div><ol class="reference-pipeline"><li>Проверить изменения и источник</li><li>Создать verified backup</li><li>Собрать immutable preview</li><li>Записать и проверить SHA</li></ol><p class="reference-warning">При uncertain write автоматический повтор запрещён.</p><button class="reference-primary" id="reference-review-save" type="button" disabled>СОХРАНИТЬ С ИЗМЕНЕНИЯМИ</button></aside></div>
+    </section>
+
+    <section class="reference-screen" id="reference-screen-cloud" hidden><div class="reference-screen-heading"><h1>STEAM CLOUD</h1><span>Облачные сохранения доступны только в desktop-версии</span></div><section class="reference-panel reference-desktop-only"><div class="reference-chip warning">DESKTOP ONLY</div><h2>Steam Cloud подключается явно</h2><p>Браузер не получает доступ к Steam, native folders или cloud writer. Используй desktop-версию для списка, анализа и подтверждённой записи.</p></section></section>
+    <section class="reference-screen" id="reference-screen-history" hidden><div class="reference-screen-heading"><h1>ИСТОРИЯ И РЕЗЕРВНЫЕ КОПИИ</h1><span>Журнал backup доступен в desktop-версии</span></div><section class="reference-panel reference-desktop-only"><div class="reference-chip warning">DESKTOP ONLY</div><h2>Локальный браузер не ведёт native backup journal</h2><p>Скачиваемая копия создаётся только после immutable preview. Verified restore выполняется в desktop-версии.</p></section></section>
+    <section class="reference-screen" id="reference-screen-settings" hidden><div class="reference-screen-heading"><h1>НАСТРОЙКИ</h1><span>Браузер обрабатывает только выбранный локальный файл</span></div><section class="reference-panel"><div class="reference-subheading">БЕЗОПАСНОСТЬ</div><div class="reference-safety">● Файл не покидает браузер<br>● Steam Cloud и native paths недоступны<br>● Исходный файл не изменяется<br>● При uncertain write автоматический повтор не выполняется</div></section></section>
+  </section>
+</main>
+
+<footer class="reference-footer">
+  <span>Enter&nbsp; Открыть</span>
+  <span>I&nbsp; Импорт</span>
+  <span>R&nbsp; Обновить</span>
+  <span>F&nbsp; Фильтр</span>
+  <span>Esc&nbsp; Назад</span>
+  <span class="reference-footer-status">CORE: READY&nbsp; | &nbsp;CRC / SHA / BACKUP ВКЛЮЧЕНЫ</span>
+</footer>
 
 <main class="layout">
   <nav class="sidebar">

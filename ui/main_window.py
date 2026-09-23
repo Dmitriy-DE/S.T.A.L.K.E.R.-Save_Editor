@@ -49,16 +49,24 @@ from editor.settings import PathSettings, load_settings, search_paths_for_settin
 from editor.updater import InstallationInfo, UpdateCheckResult, UpdateClient, detect_installation
 from save_format import SaveError, SaveInfo
 
+from .app_shell import AppShell
 from .backups_view import BackupView, RestoreWorker
 from .changes_view import ChangesView
+from .character_view import CharacterView
+from .cloud_library_view import CloudLibraryView
 from .cloud_view import CloudSnapshot, CloudView
 from .diagnostics_dialog import DiagnosticsDialog
+from .editor_view import EditorView
 from .equipment_view import EquipmentView
 from .faction_view import FactionView
 from .formatting import human_size
+from .history_view import HistoryView
 from .inventory_view import InventoryView
 from .launcher_view import LauncherView, _slot_family
+from .library_view import LibraryView
 from .operation_worker import OperationWorker
+from .save_result_view import SaveResultView
+from .save_review import SaveReviewView
 from .save_slots_view import (
     GAME_TITLES,
     RELEASE_IDS,
@@ -70,6 +78,7 @@ from .save_slots_view import (
 from .settings_view import SettingsView
 from .support_dialog import SupportDialog
 from .theme import apply_theme
+from .unsupported_view import UnsupportedView
 from .update_dialog import UpdateCheckWorker, UpdateDialog
 
 
@@ -203,6 +212,7 @@ class MainWindow(QMainWindow):
         self._pending_apply_path: Path | None = None
         self._pending_cloud_upload = False
         self._pending_replace = False
+        self._review_confirmed = False
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
         self._inspect_worker: InspectWorker | None = None
@@ -447,22 +457,232 @@ class MainWindow(QMainWindow):
         self.launcher_view.cloud_requested.connect(self._show_cloud)
         self.launcher_view.refresh_requested.connect(self.save_slots_view.refresh)
         self.mode_stack.setCurrentWidget(self.launcher_view)
+        # The original workbench remains an internal compatibility surface for
+        # integrations that still reach the legacy object attributes.  The
+        # visible product surface is the reference shell below; no legacy tab
+        # or sidebar is user-visible.
+        self.mode_stack.setVisible(False)
+        self._build_reference_frontend(root_layout)
+
+    def _build_reference_frontend(self, root_layout: QVBoxLayout) -> None:
+        self.app_shell = AppShell(self)
+        self.app_shell.destination_requested.connect(self._on_reference_destination)
+        self.app_shell.support_requested.connect(self._show_support_dialog)
+        self.app_shell.close_requested.connect(self.close)
+
+        self.reference_stack = QStackedWidget(self.app_shell)
+        self.reference_stack.setObjectName("referenceScreenStack")
+        self.library_view = LibraryView(self.reference_stack)
+        self.library_view.set_installed_families(game.game_id for game in installed_releases())
+        self.editor_view = EditorView(self.reference_stack)
+        self.cloud_reference_view = CloudLibraryView(self.cloud_view, self.reference_stack)
+        self.history_reference_view = HistoryView(self.backups_view, self.reference_stack)
+        self.character_view = CharacterView(self.reference_stack)
+        self.save_review_view = SaveReviewView(self.reference_stack)
+        self.save_result_view = SaveResultView(self.reference_stack)
+        self.unsupported_view = UnsupportedView(self.reference_stack)
+        # The legacy settings page remains in the hidden compatibility
+        # workbench.  Give the visible shell its own top-level page so the
+        # old QScrollArea cannot constrain the canonical settings geometry.
+        self.settings_reference_view = SettingsView(
+            self.settings,
+            settings_path=self.settings_path,
+            load_error=self.settings_load.error,
+            parent=self.reference_stack,
+        )
+        self.settings_reference_view.settings_changed.connect(self._on_settings_changed)
+        self.settings_reference_view.update_requested.connect(lambda: self.check_for_updates(manual=True))
+        self.settings_reference_view.diagnostics_requested.connect(self._show_diagnostics_dialog)
+        self.settings_reference_view.support_requested.connect(self._show_support_dialog)
+        self.settings_reference_view.setObjectName("settingsView")
+        for widget in (
+            self.library_view,
+            self.editor_view,
+            self.cloud_reference_view,
+            self.history_reference_view,
+            self.character_view,
+            self.save_review_view,
+            self.save_result_view,
+            self.unsupported_view,
+            self.settings_reference_view,
+        ):
+            self.reference_stack.addWidget(widget)
+        self.app_shell.set_content(self.reference_stack)
+        root_layout.addWidget(self.app_shell, 1)
+
+        self.library_view.import_requested.connect(self.open_local)
+        self.library_view.open_requested.connect(self._start_inspect)
+        self.library_view.refresh_requested.connect(self.save_slots_view.refresh)
+        self.library_view.cloud_requested.connect(self._show_cloud)
+        self.editor_view.back_requested.connect(self._show_launcher)
+        self.editor_view.save_requested.connect(self._request_reference_save)
+        self.editor_view.stack_stage_requested.connect(self._stage_stack_change)
+        self.editor_view.durability_stage_requested.connect(self._stage_item_durability)
+        self.editor_view.placement_stage_requested.connect(self._stage_item_placement)
+        self.editor_view.remove_requested.connect(self._stage_item_remove)
+        self.editor_view.reset_requested.connect(self._reset_editor_item)
+        self.editor_view.character_requested.connect(self._show_character_state)
+        self.character_view.back_requested.connect(self._show_reference_editor)
+        self.character_view.relation_stage_requested.connect(self._stage_faction_relation)
+        self.character_view.player_faction_stage_requested.connect(self._stage_player_faction)
+        self.save_review_view.confirmed.connect(self._confirm_reference_save)
+        self.save_review_view.cancelled.connect(self._cancel_reference_save)
+        self.save_result_view.back_to_editor_requested.connect(self._show_reference_editor)
+        self.save_result_view.history_requested.connect(self._show_history)
+        self.save_result_view.library_requested.connect(self._show_launcher)
+        self.unsupported_view.back_requested.connect(self._show_launcher)
+        self.unsupported_view.diagnostics_requested.connect(self._show_diagnostics_dialog)
+        self.save_slots_view.discovery_ready.connect(self.library_view.set_discovery)
+        self.save_slots_view.discovery_failed.connect(self.library_view.set_error)
+        self._show_reference_library()
+
+    def _on_reference_destination(self, destination: str) -> None:
+        if destination == "library":
+            self._show_reference_library()
+        elif destination == "cloud":
+            self._show_cloud()
+        elif destination == "history":
+            self._show_history()
+        elif destination == "settings":
+            self._show_settings()
+
+    def _show_reference_library(self) -> None:
+        if hasattr(self, "reference_stack"):
+            self.reference_stack.setCurrentWidget(self.library_view)
+            self.app_shell.set_active_destination("library")
+
+    def _show_reference_editor(self) -> None:
+        if hasattr(self, "reference_stack"):
+            self.reference_stack.setCurrentWidget(self.editor_view)
+            self.app_shell.set_active_destination(
+                "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library"
+            )
+
+    def _show_history(self) -> None:
+        if hasattr(self, "reference_stack"):
+            self.reference_stack.setCurrentWidget(self.history_reference_view)
+            self.app_shell.set_active_destination("history")
+
+    def _show_settings(self) -> None:
+        if hasattr(self, "reference_stack"):
+            self.reference_stack.setCurrentWidget(self.settings_reference_view)
+            self.app_shell.set_active_destination("settings")
+
+    def _show_character_state(self) -> None:
+        """Show the X-Ray-only character state without changing the editor draft."""
+
+        if self.snapshot is None:
+            return
+        release = (self.snapshot.release_id or self.snapshot.format_id).casefold()
+        if release not in {"soc", "cop", "clear_sky", "xray", "shadow_of_chornobyl", "call_of_pripyat"}:
+            self.status_label.setText("Персонаж и группировки доступны только для X-Ray сейвов")
+            return
+        self.character_view.set_snapshot(self.snapshot)
+        self.character_view.set_state(
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
+        self.reference_stack.setCurrentWidget(self.character_view)
+        self.app_shell.set_active_destination(
+            "cloud" if self.snapshot.source_kind == "cloud" else "library",
+            emit=False,
+        )
+
+    def _reference_change_rows(self) -> tuple[tuple[str, str, str], ...]:
+        """Build review rows from staged values already accepted by the controller."""
+
+        if self.snapshot is None:
+            return ()
+        rows: list[tuple[str, str, str]] = []
+        info = self.snapshot.info
+        if self.staged_money is not None:
+            rows.append(("Баланс", str(info.money if info.money is not None else "—"), str(self.staged_money)))
+        for handle, value in sorted(self.staged_counts.items()):
+            item = self._find_inventory_item(handle)
+            rows.append((item.type_key if item is not None else f"0x{handle:08X}", str(item.count if item is not None else "—"), str(value)))
+        for handle, durability_value in sorted(self.staged_durability.items()):
+            item = self._find_inventory_item(handle)
+            before = "—" if item is None or item.condition is None else f"{item.condition * 100:.1f}%"
+            rows.append((item.type_key if item is not None else f"0x{handle:08X}", before, f"{durability_value * 100:.1f}%"))
+        for handle in sorted(self.staged_detach):
+            item = self._find_inventory_item(handle)
+            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "в сейве", "удалить"))
+        for item_key, quantity in sorted(self.staged_adds.items()):
+            rows.append((item_key, "нет", f"добавить × {quantity}"))
+        for key, value in sorted(self.staged_faction_relations.items()):
+            rows.append((f"goodwill · {key}", "текущее", str(value)))
+        for handle, values in sorted(self.staged_upgrades.items()):
+            item = self._find_inventory_item(handle)
+            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "улучшения", ", ".join(values) or "нет"))
+        for handle, (placement, slot) in sorted(self.staged_placements.items()):
+            item = self._find_inventory_item(handle)
+            target = placement if slot is None else f"{placement}:{slot}"
+            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "позиция", target))
+        if self.staged_player_faction is not None:
+            rows.append(("Группировка игрока", "текущая", self.staged_player_faction))
+        return tuple(rows)
+
+    def _request_reference_save(self) -> None:
+        """Enter the visible review state; the legacy method remains test/API compatible."""
+
+        if self.snapshot is None or not self._has_staged_changes():
+            self._save_one_click()
+            return
+        rows = self._reference_change_rows()
+        self.save_review_view.set_source(
+            f"Источник: {self.snapshot.path.name} · "
+            f"изменений: {len(rows)} · bytes исходного сейва пока не изменены"
+        )
+        self.save_review_view.set_changes(rows)
+        self.reference_stack.setCurrentWidget(self.save_review_view)
+        self.app_shell.set_active_destination(
+            "cloud" if self.snapshot.source_kind == "cloud" else "library",
+            emit=False,
+        )
+
+    def _confirm_reference_save(self) -> None:
+        self.reference_stack.setCurrentWidget(self.editor_view)
+        self._review_confirmed = True
+        self._save_one_click()
+
+    def _cancel_reference_save(self) -> None:
+        self.status_label.setText("Сохранение отменено; staged изменения сохранены в памяти")
+        self._show_reference_editor()
+
+    def _show_save_result(self, receipt) -> None:
+        self.save_result_view.set_receipt(receipt, status=str(getattr(receipt, "status", "verified")))
+        self.reference_stack.setCurrentWidget(self.save_result_view)
+        self.app_shell.set_active_destination(
+            "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library",
+            emit=False,
+        )
+
+    def _show_unsupported(self, snapshot: LocalSnapshot, reason: str) -> None:
+        self.unsupported_view.set_snapshot(snapshot, reason)
+        self.reference_stack.setCurrentWidget(self.unsupported_view)
+        self.app_shell.set_active_destination("library", emit=False)
 
     def _show_launcher(self) -> None:
         """Show the read-only library without discarding the current snapshot."""
 
         if hasattr(self, "mode_stack"):
             self.mode_stack.setCurrentWidget(self.launcher_view)
+        self._show_reference_library()
 
     def _show_workbench(self) -> None:
         if hasattr(self, "mode_stack"):
             self.mode_stack.setCurrentWidget(self.workbench)
+        self._show_reference_editor()
 
     def _show_cloud(self) -> None:
         """Enter the remote-save flow without requiring a local game save."""
 
-        self._show_workbench()
+        if hasattr(self, "mode_stack"):
+            self.mode_stack.setCurrentWidget(self.workbench)
         self.tabs.setCurrentIndex(self.nav_labels.index("Steam Cloud"))
+        if hasattr(self, "reference_stack"):
+            self.reference_stack.setCurrentWidget(self.cloud_reference_view)
+            self.app_shell.set_active_destination("cloud")
 
     def _select_tab(self, index: int) -> None:
         if 0 <= index < self.tabs.count():
@@ -994,6 +1214,9 @@ class MainWindow(QMainWindow):
             parent=self,
         )
         self.settings_view.settings_changed.connect(self._on_settings_changed)
+        self.settings_view.update_requested.connect(lambda: self.check_for_updates(manual=True))
+        self.settings_view.diagnostics_requested.connect(self._show_diagnostics_dialog)
+        self.settings_view.support_requested.connect(self._show_support_dialog)
         return self.settings_view
 
     def _on_settings_changed(self, settings: PathSettings) -> None:
@@ -1002,6 +1225,10 @@ class MainWindow(QMainWindow):
         self.cloud_view.set_catalog_roots(
             (catalog_root,) if catalog_root is not None else ()
         )
+        if hasattr(self, "cloud_reference_view"):
+            self.cloud_reference_view.set_catalog_roots(
+                (catalog_root,) if catalog_root is not None else ()
+            )
         self.status_label.setText("Настройки обновлены; обновляю список сохранений…")
         self.save_slots_view.refresh()
 
@@ -1075,6 +1302,14 @@ class MainWindow(QMainWindow):
 
     def _on_analysis_ready(self, snapshot: LocalSnapshot) -> None:
         self.snapshot = snapshot
+        if not snapshot.capabilities.read_inventory:
+            self._show_unsupported(
+                snapshot,
+                "Релиз распознан, но безопасный inventory reader/writer для него не подтверждён. "
+                "Диагностика доступна; запись и staged-редактирование отключены.",
+            )
+            self.analysis_ready.emit(snapshot)
+            return
         self._render_snapshot(snapshot)
         self._show_workbench()
         self.analysis_ready.emit(snapshot)
@@ -1117,6 +1352,8 @@ class MainWindow(QMainWindow):
         self._pending_cloud_upload = False
         self._pending_replace = False
         self.cloud_view.set_prepared(None)
+        if hasattr(self, "cloud_reference_view"):
+            self.cloud_reference_view.set_prepared(None)
         if snapshot.source_kind == "cloud":
             self.save_copy_button.setText("Сохранить и загрузить в облако")
             self.save_copy_button.setToolTip(
@@ -1202,6 +1439,19 @@ class MainWindow(QMainWindow):
         self._render_inventory(info)
         self._render_equipment(info)
         self._render_factions(info)
+        self.editor_view.set_snapshot(snapshot)
+        self.library_view.set_snapshot(snapshot)
+        self.editor_view.set_draft(
+            counts=self.staged_counts,
+            durability=self.staged_durability,
+            removed=self.staged_detach,
+            change_count=self._draft_change_count(),
+        )
+        self.character_view.set_snapshot(snapshot)
+        self.character_view.set_state(
+            self.staged_faction_relations,
+            self.staged_player_faction,
+        )
         self.changes_view.set_staged(
             info,
             self.staged_money,
@@ -1888,6 +2138,24 @@ class MainWindow(QMainWindow):
             f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
         )
 
+    def _reset_editor_item(self, handle: int) -> None:
+        """Clear draft fields for one item without touching source bytes."""
+
+        handle = int(handle)
+        self.staged_counts.pop(handle, None)
+        self.staged_durability.pop(handle, None)
+        self.staged_detach.pop(handle, None)
+        self.staged_upgrades.pop(handle, None)
+        self.staged_placements.pop(handle, None)
+        self.inventory_view.set_staged_counts(self.staged_counts)
+        self.inventory_view.set_staged_durability(self.staged_durability)
+        self.inventory_view.set_removed_handles(self.staged_detach)
+        self.inventory_view.set_staged_upgrades(self.staged_upgrades)
+        self.inventory_view.set_staged_placements(self.staged_placements)
+        self._render_changes()
+        self._invalidate_preview("черновик предмета сброшен")
+        self.status_label.setText("Черновик предмета сброшен; исходные байты не изменены")
+
     def _clear_all_stacks(self) -> None:
         self.staged_counts.clear()
         self.staged_money = None
@@ -1915,6 +2183,13 @@ class MainWindow(QMainWindow):
         self._sync_nav_counters()
         self.inventory_view.set_clear_all_enabled(self._has_staged_changes())
         self.equipment_view.set_staged_durability(self.staged_durability)
+        if hasattr(self, "editor_view"):
+            self.editor_view.set_draft(
+                counts=self.staged_counts,
+                durability=self.staged_durability,
+                removed=self.staged_detach,
+                change_count=self._draft_change_count(),
+            )
         if self.snapshot is None:
             return
         self.changes_view.set_staged(
@@ -1952,6 +2227,19 @@ class MainWindow(QMainWindow):
             or self.staged_player_faction is not None
         )
 
+    def _draft_change_count(self) -> int:
+        return (
+            len(self.staged_counts)
+            + len(self.staged_adds)
+            + len(self.staged_detach)
+            + len(self.staged_durability)
+            + len(self.staged_faction_relations)
+            + len(self.staged_upgrades)
+            + len(self.staged_placements)
+            + (1 if self.staged_player_faction is not None else 0)
+            + (1 if self.staged_money is not None else 0)
+        )
+
     def _update_action_buttons(self) -> None:
         local_busy = self._operation_thread is not None and self._operation_thread.isRunning()
         busy = local_busy or self._cloud_busy
@@ -1975,6 +2263,8 @@ class MainWindow(QMainWindow):
             busy=busy,
         )
         self.backups_view.set_busy(busy)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.set_busy(busy)
         self.cloud_view.set_external_busy(local_busy if not self._cloud_busy else False)
 
     def _show_operation_error(self, message: str) -> None:
@@ -1983,6 +2273,8 @@ class MainWindow(QMainWindow):
         self.error_label.setVisible(True)
         self.changes_view.set_error(message)
         self.backups_view.set_error(message)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.set_error(message)
         self.cloud_view.set_error(message)
         self.operation_failed.emit(message)
 
@@ -2080,6 +2372,8 @@ class MainWindow(QMainWindow):
         self.prepared_edit = prepared
         self.changes_view.set_preview(prepared)
         self.cloud_view.set_prepared(prepared)
+        if hasattr(self, "cloud_reference_view"):
+            self.cloud_reference_view.set_prepared(prepared)
         self.preview_ready.emit(prepared)
         # One-click save chains straight into the write once the internal
         # preview is ready, so the user never sees a separate preview step.
@@ -2098,6 +2392,8 @@ class MainWindow(QMainWindow):
         self.status_label.setText(message)
         self.changes_view.set_progress(message)
         self.backups_view.set_progress(message)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.set_progress(message)
 
     def _on_operation_failed(self, message: str) -> None:
         # A failed step must not leave a queued one-click apply behind.
@@ -2114,6 +2410,8 @@ class MainWindow(QMainWindow):
         self._operation_kind = None
         self.changes_view.set_busy(False)
         self.backups_view.set_busy(False)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.set_busy(False)
         self._update_action_buttons()
 
     def _choose_output(self) -> None:
@@ -2156,6 +2454,8 @@ class MainWindow(QMainWindow):
         they are internal stages and never require a separate preview tab.
         """
 
+        review_confirmed = self._review_confirmed
+        self._review_confirmed = False
         if self._busy_now():
             self.status_label.setText("Дождись завершения текущей операции")
             return
@@ -2165,7 +2465,7 @@ class MainWindow(QMainWindow):
         if not self._has_staged_changes() and self.prepared_edit is None:
             self._show_operation_error("Нет staged изменений")
             return
-        if not self._confirm_save():
+        if not review_confirmed and not self._confirm_save():
             self.status_label.setText("Сохранение отменено")
             return
         if self.snapshot.source_kind == "cloud":
@@ -2368,6 +2668,7 @@ class MainWindow(QMainWindow):
             self.status_label.setText(
                 f"Сохранено: {receipt.output_path} · бэкап исходного сделан"
             )
+        self._show_save_result(receipt)
         self.apply_ready.emit(receipt)
 
     def _start_restore(self, record, output_path: Path) -> None:
@@ -2391,6 +2692,8 @@ class MainWindow(QMainWindow):
 
     def _on_restore_ready(self, receipt) -> None:
         self.backups_view.mark_restored(receipt)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.mark_restored(receipt)
         self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
         self.restore_ready.emit(receipt)
 
@@ -2415,6 +2718,8 @@ class MainWindow(QMainWindow):
 
     def _on_restore_in_place_ready(self, receipt) -> None:
         self.backups_view.mark_in_place_restored(receipt)
+        if hasattr(self, "history_reference_view"):
+            self.history_reference_view.mark_in_place_restored(receipt)
         self.status_label.setText(f"Исходный слот восстановлен: {receipt.output_path}")
         self.restore_ready.emit(receipt)
 
@@ -2452,6 +2757,7 @@ class MainWindow(QMainWindow):
             "Cloud: verified" if receipt.status == "verified" else "Cloud: uncertain — требуется reconciliation"
         )
         self._update_action_buttons()
+        self._show_save_result(receipt)
         self.apply_ready.emit(receipt)
 
     def _on_cloud_operation_failed(self, message: str) -> None:

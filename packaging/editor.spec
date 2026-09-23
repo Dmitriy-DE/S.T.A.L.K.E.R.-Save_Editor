@@ -43,6 +43,11 @@ if icon_pack.is_dir():
 chrome_pack = ROOT / "assets" / "chrome" / "xray"
 if chrome_pack.is_dir():
     datas.append((str(chrome_pack), "assets/chrome/xray"))
+# Reference shell textures used by the visible desktop UI.  Keep them as
+# ordinary data files so TextureFrame can resolve them beside the bundled UI.
+shell_pack = ROOT / "assets" / "ui" / "s2_shell"
+if shell_pack.is_dir():
+    datas.append((str(shell_pack), "assets/ui/s2_shell"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))
