@@ -3,21 +3,23 @@
     "height": 992,
     "width": 1586
   },
-  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
-  "diff": {
-    "changed_pixel_ratio_threshold_12": 0.246572,
-    "changed_pixels_threshold_12": 387934,
-    "height": 992,
-    "max_channel_delta": 247,
-    "mean_rgb_delta": 18.068,
-    "width": 1586
+  "comparison": {
+    "board_panel_rect": {
+      "height": 325,
+      "width": 696,
+      "x": 734,
+      "y": 733
+    },
+    "mode": "board-derived-geometry"
   },
+  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
+  "diff": null,
   "geometry": {
     "active_view": {
-      "height": 807,
-      "width": 1522,
-      "x": 0,
-      "y": 0
+      "height": 539,
+      "width": 1231,
+      "x": 33,
+      "y": 123
     },
     "content": {
       "height": 827,
@@ -46,13 +48,51 @@
     "window": {
       "height": 992,
       "width": 1586,
-      "x": 2,
-      "y": 2
+      "x": 0,
+      "y": 0
     }
   },
-  "reference_kind": "panel crop from canonical board placed on fixed canvas",
+  "reference_kind": "board panel geometry reference; no same-canvas pixel score",
   "reference_source": "04_REMAINING_STATES_BOARD_CANONICAL.png",
   "screen": "09-unsupported",
+  "screen_rects": {
+    "detail_panel": {
+      "height": 300,
+      "width": 731,
+      "x": 283,
+      "y": 263
+    },
+    "diagnostics_cta": {
+      "height": 33,
+      "width": 224,
+      "x": 527,
+      "y": 577
+    },
+    "folder_cta": {
+      "height": 33,
+      "width": 232,
+      "x": 283,
+      "y": 577
+    },
+    "library_cta": {
+      "height": 37,
+      "width": 251,
+      "x": 763,
+      "y": 575
+    },
+    "modal_card": {
+      "height": 541,
+      "width": 1233,
+      "x": 32,
+      "y": 122
+    },
+    "preview_image": {
+      "height": 121,
+      "width": 282,
+      "x": 300,
+      "y": 280
+    }
+  },
   "tokens": {
     "font_family": "Liberation Sans Narrow",
     "palette": {

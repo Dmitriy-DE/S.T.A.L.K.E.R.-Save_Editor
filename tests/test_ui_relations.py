@@ -21,8 +21,8 @@ def test_character_surface_is_explicitly_read_only_without_verified_xray_catalog
         path=tmp_path / "save.sav",
         data=synthetic_save,
         info=inspect_save(synthetic_save, with_inventory=True),
-        release_id="soc",
-        format_id="soc",
+        release_id="stalker-soc",
+        format_id="stalker-soc",
         format_title="Shadow of Chornobyl",
     ))
 

@@ -12,14 +12,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from PySide6.QtCore import QThread, QTimer, QUrl, Signal
+from PySide6.QtCore import QEvent, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
-    QLabel,
+    QFrame,
+    QGridLayout,
     QMainWindow,
     QMessageBox,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -32,6 +34,7 @@ from editor.equipment_edits import RepairStageResult, stage_bulk_repair, stage_r
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.platforms import backup_dirs, installed_releases
+from editor.releases import is_xray_original_release
 from editor.service import EditorService
 from editor.settings import PathSettings, load_settings, search_paths_for_settings
 from editor.updater import InstallationInfo, UpdateCheckResult, UpdateClient, detect_installation
@@ -44,7 +47,7 @@ from .cloud_controller import CloudController, CloudSnapshot
 from .cloud_library_view import CloudLibraryView
 from .diagnostics_dialog import DiagnosticsDialog
 from .editor_view import EditorView
-from .formatting import human_size
+from .formatting import human_money, human_size
 from .history_view import HistoryView
 from .library_view import LibraryView
 from .operation_worker import OperationWorker
@@ -193,6 +196,8 @@ class MainWindow(QMainWindow):
         self._pending_apply_path: Path | None = None
         self._pending_cloud_upload = False
         self._pending_replace = False
+        self._post_save_reinspect_thread: QThread | None = None
+        self._post_save_receipt = None
         self._review_confirmed = False
         self.edit_actions_enabled = False
         self._inspect_thread: QThread | None = None
@@ -208,10 +213,13 @@ class MainWindow(QMainWindow):
         self._update_thread: UpdateCheckWorker | None = None
         self._update_dialog: UpdateDialog | None = None
         self._update_installation: InstallationInfo | None = None
+        self._session_activity: list[tuple[str, str, str]] = []
+        self._reference_modal_view: QWidget | None = None
 
         # QApplication.instance() is typed as the base QCoreApplication.
         application = QApplication.instance()
         apply_theme(application if isinstance(application, QApplication) else None)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setWindowTitle("S.T.A.L.K.E.R. — Save Editor")
         self.resize(1280, 820)
         self.setMinimumSize(960, 620)
@@ -280,21 +288,51 @@ class MainWindow(QMainWindow):
             self.settings_reference_view,
         ):
             self.reference_stack.addWidget(widget)
-        self.app_shell.set_content(self.reference_stack)
+        # Modal states keep the last valid screen alive beneath a real dimming
+        # layer.  The focused card is a normal Qt widget; no screenshot is
+        # used as a background and no domain state is duplicated.
+        self.reference_host = QWidget(self.app_shell)
+        self.reference_host.setObjectName("referenceHost")
+        reference_host_layout = QGridLayout(self.reference_host)
+        reference_host_layout.setContentsMargins(0, 0, 0, 0)
+        reference_host_layout.setSpacing(0)
+        reference_host_layout.addWidget(self.reference_stack, 0, 0)
+        self.reference_modal_layer = QWidget(self.reference_host)
+        self.reference_modal_layer.setObjectName("referenceModalLayer")
+        self.reference_modal_layer.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        modal_layer_layout = QGridLayout(self.reference_modal_layer)
+        modal_layer_layout.setContentsMargins(0, 0, 0, 0)
+        modal_layer_layout.setSpacing(0)
+        self.reference_modal_card = QFrame(self.reference_modal_layer)
+        self.reference_modal_card.setObjectName("referenceModalCard")
+        self.reference_modal_card.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
+        self.reference_modal_card_layout = QVBoxLayout(self.reference_modal_card)
+        self.reference_modal_card_layout.setContentsMargins(0, 0, 0, 0)
+        self.reference_modal_card_layout.setSpacing(0)
+        modal_layer_layout.addWidget(
+            self.reference_modal_card,
+            0,
+            Qt.AlignmentFlag.AlignCenter,
+        )
+        reference_host_layout.addWidget(self.reference_modal_layer, 0, 0)
+        self.reference_modal_layer.hide()
+        self.app_shell.set_content(self.reference_host)
         root_layout.addWidget(self.app_shell, 1)
 
         # These handles point at canonical surfaces, not a second hidden UI.
-        # ``status_label`` is the shell footer status; errors stay out of the
-        # geometry until a view has a dedicated error surface.
+        # ``status_label`` is the shell footer status; analysis errors belong to
+        # the library surface so a failed open cannot leave an unattached label.
         self.status_label = self.app_shell.footer_status
-        self.error_label = QLabel("", self)
-        self.error_label.setObjectName("operationError")
-        self.error_label.setVisible(False)
+        self.error_label = self.library_view.error_label
         self.open_button = self.library_view.open_button
         self.save_copy_button = self.editor_view.save_button
         self.preview_button = self.editor_view.save_button
         self.library_view.import_requested.connect(self.open_local)
         self.library_view.open_requested.connect(self._start_inspect)
+        self.library_view.restore_requested.connect(self._show_history_for_source)
         self.library_view.refresh_requested.connect(self.discovery_controller.refresh)
         self.library_view.cloud_requested.connect(self._show_cloud)
         self.editor_view.back_requested.connect(self._show_library)
@@ -318,18 +356,37 @@ class MainWindow(QMainWindow):
         self.save_result_view.back_to_editor_requested.connect(self._show_reference_editor)
         self.save_result_view.history_requested.connect(self._show_history)
         self.save_result_view.library_requested.connect(self._show_library)
+        self.save_result_view.reconcile_requested.connect(self.cloud_controller.reconcile_remote)
         self.unsupported_view.back_requested.connect(self._show_library)
         self.unsupported_view.diagnostics_requested.connect(self._show_diagnostics_dialog)
         self.discovery_controller.discovery_ready.connect(self.library_view.set_discovery)
         self.discovery_controller.discovery_failed.connect(self.library_view.set_error)
         self.cloud_controller.snapshot_ready.connect(self._on_cloud_snapshot_ready)
+        self.cloud_controller.reconciliation_ready.connect(self._on_cloud_reconciliation_ready)
+        self.cloud_controller.reconciliation_failed.connect(self._on_cloud_reconciliation_failed)
         self.cloud_controller.upload_ready.connect(self._on_cloud_upload_ready)
         self.cloud_controller.operation_failed.connect(self._on_cloud_operation_failed)
         self.cloud_controller.operation_progress.connect(self._on_cloud_progress)
         self.cloud_controller.busy_changed.connect(self._on_cloud_busy)
+        self.backup_controller.records_changed.connect(self._on_backup_records_changed)
         self.backup_controller.refresh()
         self.discovery_controller.refresh()
         self._show_reference_library()
+
+    def _on_backup_records_changed(self, records) -> None:
+        journal_entries = [
+            (
+                "Резервная копия",
+                record.source_path or str(record.backup_path),
+                "Проверено" if record.status == "verified" else record.status,
+            )
+            for record in tuple(records or ())
+        ]
+        self.library_view.set_recent_activity((*journal_entries, *self._session_activity))
+
+    def _record_recent_activity(self, label: str, target: str, status: str) -> None:
+        self._session_activity.append((label, target, status))
+        self._on_backup_records_changed(self.backup_controller.records)
 
     def _on_reference_destination(self, destination: str) -> None:
         if destination == "library":
@@ -343,25 +400,65 @@ class MainWindow(QMainWindow):
 
     def _show_reference_library(self) -> None:
         if hasattr(self, "reference_stack"):
+            self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.library_view)
             self.app_shell.set_active_destination("library")
+            self.app_shell.set_footer_actions(
+                (
+                    ("Enter", "Открыть", self.library_view.open_selected),
+                    ("I", "Импорт", self.open_local),
+                    ("R", "Обновить", self.discovery_controller.refresh),
+                    ("F", "Фильтр", self.library_view.search_edit.setFocus),
+                )
+            )
 
     def _show_reference_editor(self) -> None:
         if hasattr(self, "reference_stack"):
+            self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.editor_view)
             self.app_shell.set_active_destination(
                 "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library"
             )
+            actions = [
+                ("S", "Сохранить", self._request_reference_save),
+                ("F", "Фильтр", self.editor_view.search_edit.setFocus),
+                ("Esc", "Назад", self._show_library),
+            ]
+            if self.editor_view.detail_view.remove_button.isEnabled():
+                actions.insert(2, ("Del", "Удалить", self.editor_view.detail_view._emit_remove))
+            self.app_shell.set_footer_actions(actions)
 
     def _show_history(self) -> None:
         if hasattr(self, "reference_stack"):
+            self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.history_reference_view)
             self.app_shell.set_active_destination("history")
+            self.app_shell.set_footer_actions(
+                (
+                    ("Enter", "Проверить копию", self.history_reference_view.preview_selected),
+                    ("R", "Обновить", self.history_reference_view.refresh),
+                    ("Esc", "Назад", self._show_library),
+                )
+            )
+
+    def _show_history_for_source(self, source: Path) -> None:
+        self._show_history()
+        self.history_reference_view.select_for_source(source)
 
     def _show_settings(self) -> None:
         if hasattr(self, "reference_stack"):
+            self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.settings_reference_view)
             self.app_shell.set_active_destination("settings")
+            self.app_shell.set_footer_actions(
+                (
+                    ("Enter", "Сохранить", self.settings_reference_view.save),
+                    ("Ctrl+S", "Сохранить", self.settings_reference_view.save),
+                    ("R", "Сбросить", self.settings_reference_view.reset),
+                    ("D", "По умолчанию", self.settings_reference_view.defaults),
+                    ("Esc", "Отмена", self.settings_reference_view.cancel),
+                )
+            )
 
     def _show_character_state(self) -> None:
         """Show the X-Ray-only character state without changing the editor draft."""
@@ -369,7 +466,7 @@ class MainWindow(QMainWindow):
         if self.snapshot is None:
             return
         release = (self.snapshot.release_id or self.snapshot.format_id).casefold()
-        if release not in {"soc", "cop", "clear_sky", "xray", "shadow_of_chornobyl", "call_of_pripyat"}:
+        if not is_xray_original_release(release):
             self.status_label.setText("Персонаж и группировки доступны только для X-Ray сейвов")
             return
         self.character_view.set_snapshot(self.snapshot)
@@ -377,10 +474,17 @@ class MainWindow(QMainWindow):
             self.staged_faction_relations,
             self.staged_player_faction,
         )
+        self._hide_reference_modal()
         self.reference_stack.setCurrentWidget(self.character_view)
         self.app_shell.set_active_destination(
             "cloud" if self.snapshot.source_kind == "cloud" else "library",
             emit=False,
+        )
+        self.app_shell.set_footer_actions(
+            (
+                ("S", "Сохранить", self._request_reference_save),
+                ("Esc", "Назад", self._show_reference_editor),
+            )
         )
 
     def _reference_change_rows(self) -> tuple[tuple[str, str, str], ...]:
@@ -429,13 +533,20 @@ class MainWindow(QMainWindow):
             f"изменений: {len(rows)} · bytes исходного сейва пока не изменены"
         )
         self.save_review_view.set_changes(rows)
-        self.reference_stack.setCurrentWidget(self.save_review_view)
+        self._show_reference_modal(self.save_review_view, base_widget=self.editor_view)
         self.app_shell.set_active_destination(
             "cloud" if self.snapshot.source_kind == "cloud" else "library",
             emit=False,
         )
+        self.app_shell.set_footer_actions(
+            (
+                ("Enter", "Подтвердить", self._confirm_reference_save),
+                ("Esc", "Отмена", self._cancel_reference_save),
+            )
+        )
 
     def _confirm_reference_save(self) -> None:
+        self._hide_reference_modal()
         self.reference_stack.setCurrentWidget(self.editor_view)
         self._review_confirmed = True
         self._save_one_click()
@@ -444,21 +555,101 @@ class MainWindow(QMainWindow):
         self.status_label.setText("Сохранение отменено; изменения сохранены в памяти")
         self._show_reference_editor()
 
-    def _show_save_result(self, receipt) -> None:
+    def _show_reference_modal(self, view: QWidget, *, base_widget: QWidget | None = None) -> None:
+        """Show a focused state over a live, dimmed application surface."""
+
+        if view not in {
+            self.save_review_view,
+            self.save_result_view,
+            self.unsupported_view,
+        }:
+            raise ValueError("unsupported reference modal")
+        if self._reference_modal_view is not None:
+            self._hide_reference_modal()
+        base = base_widget or self.reference_stack.currentWidget()
+        if base in {view, self.save_review_view, self.save_result_view, self.unsupported_view}:
+            base = self.editor_view if self.snapshot is not None else self.library_view
+        if base is not None and self.reference_stack.indexOf(base) >= 0:
+            self.reference_stack.setCurrentWidget(base)
+        if self.reference_stack.indexOf(view) >= 0:
+            self.reference_stack.removeWidget(view)
+        view.setParent(self.reference_modal_card)
+        view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.reference_modal_card_layout.addWidget(view)
+        self._reference_modal_view = view
+        self.reference_modal_layer.show()
+        self.reference_modal_card.show()
+        view.show()
+        self.reference_modal_layer.raise_()
+        self.reference_modal_card.adjustSize()
+
+    def _hide_reference_modal(self) -> None:
+        view = self._reference_modal_view
+        if view is None:
+            return
+        self.reference_modal_card_layout.removeWidget(view)
+        view.setParent(self.reference_stack)
+        view.hide()
+        self.reference_stack.addWidget(view)
+        self.reference_modal_card.hide()
+        self.reference_modal_layer.hide()
+        self._reference_modal_view = None
+
+    def _show_save_result(self, receipt, *, cloud_reconciliation: bool = False) -> None:
         self.save_result_view.set_receipt(
             receipt,
             status=getattr(receipt, "status", None),
         )
-        self.reference_stack.setCurrentWidget(self.save_result_view)
+        # The receipt is visible immediately, but the editor may only be
+        # reopened after the actual published bytes have been re-inspected (or
+        # Cloud has completed remote reconciliation).
+        pending_message = (
+            "Cloud write имеет локальный receipt; ожидаю remote reconciliation, редактор заблокирован."
+            if getattr(receipt, "remote_path", None) is not None
+            else "Запись подтверждена локально; проверяю фактически сохранённое состояние…"
+        )
+        self.save_result_view.set_editor_ready(False, pending_message)
+        if cloud_reconciliation and getattr(receipt, "status", None) == "verified":
+            self.save_result_view.subtitle.setText(
+                "Write подтверждён receipt; обновляю список Cloud и сверяю remote SHA."
+            )
+        base = self.reference_stack.currentWidget()
+        if base in {
+            self.save_review_view,
+            self.save_result_view,
+            self.unsupported_view,
+        }:
+            base = self.editor_view if self.snapshot is not None else self.library_view
+        self._show_reference_modal(self.save_result_view, base_widget=base)
         self.app_shell.set_active_destination(
             "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library",
             emit=False,
         )
+        self.app_shell.set_footer_actions(
+            (
+                ("Esc", "К библиотеке", self._show_library),
+            )
+        )
+
+    def _enable_verified_result_editor(self, message: str) -> None:
+        self.save_result_view.set_editor_ready(True, message)
+        self.app_shell.set_footer_actions(
+            (
+                ("Enter", "К редактору", self._show_reference_editor),
+                ("Esc", "К библиотеке", self._show_library),
+            )
+        )
 
     def _show_unsupported(self, snapshot: LocalSnapshot, reason: str) -> None:
         self.unsupported_view.set_snapshot(snapshot, reason)
-        self.reference_stack.setCurrentWidget(self.unsupported_view)
+        self._show_reference_modal(self.unsupported_view, base_widget=self.library_view)
         self.app_shell.set_active_destination("library", emit=False)
+        self.app_shell.set_footer_actions(
+            (
+                ("D", "Диагностика", self._show_diagnostics_dialog),
+                ("Esc", "К библиотеке", self._show_library),
+            )
+        )
 
     def _show_library(self) -> None:
         """Show the library without discarding the current snapshot."""
@@ -471,8 +662,16 @@ class MainWindow(QMainWindow):
         """Enter the remote-save flow without requiring a local game save."""
 
         if hasattr(self, "reference_stack"):
+            self._hide_reference_modal()
             self.reference_stack.setCurrentWidget(self.cloud_reference_view)
             self.app_shell.set_active_destination("cloud")
+            self.app_shell.set_footer_actions(
+                (
+                    ("Enter", "Скачать и открыть", self.cloud_reference_view.analyze_selected),
+                    ("R", "Обновить", self.cloud_reference_view.refresh),
+                    ("Esc", "Назад", self._show_library),
+                )
+            )
 
     def _show_support_dialog(self) -> None:
         if self._support_dialog is not None and self._support_dialog.isVisible():
@@ -616,13 +815,12 @@ class MainWindow(QMainWindow):
         if self._inspect_thread is not None and self._inspect_thread.isRunning():
             return
 
-        # Selecting a library row or importing a file enters the editor
-        # immediately, so a failed/unsupported file is reported on-screen
-        # instead of leaving the user on a stale library state.
-        self._show_editor()
+        # Keep the library visible while the worker runs. The editor is only
+        # entered after a successful, fully inspected snapshot is published.
+        self._show_library()
         self._pending_path = path
         self.open_button.setEnabled(False)
-        self.library_view.status_label.setText(f"Анализ: {path.name}…")
+        self.library_view.set_analysis_state(f"АНАЛИЗ: {path.name}…")
         self.status_label.setText(f"Анализ: {path.name}…")
         self.error_label.clear()
         self.error_label.setVisible(False)
@@ -648,7 +846,7 @@ class MainWindow(QMainWindow):
             self._show_unsupported(
                 snapshot,
                 "Релиз распознан, но безопасный inventory reader/writer для него не подтверждён. "
-                "Диагностика доступна; запись и staged-редактирование отключены.",
+                "Диагностика доступна; запись и редактирование отключены.",
             )
             self.analysis_ready.emit(snapshot)
             return
@@ -666,6 +864,8 @@ class MainWindow(QMainWindow):
         )
         self.error_label.setText(display_message)
         self.error_label.setVisible(True)
+        self.library_view.set_analysis_error(display_message)
+        self._show_library()
         self.analysis_failed.emit(message)
 
     def _on_inspect_thread_finished(self) -> None:
@@ -673,7 +873,7 @@ class MainWindow(QMainWindow):
         self._inspect_thread = None
         self._inspect_worker = None
 
-    def _render_snapshot(self, snapshot: LocalSnapshot) -> None:
+    def _render_snapshot(self, snapshot: LocalSnapshot, *, show_editor: bool = True) -> None:
         self.snapshot = snapshot
         info = snapshot.info
         for mapping in (
@@ -702,7 +902,7 @@ class MainWindow(QMainWindow):
             change_count=0,
         )
         self.editor_view.money_label.setText(
-            f"◉  {info.money if info.money is not None else '—'} ₽"
+            f"ДЕНЬГИ  {human_money(info.money) if info.money is not None else '—'} ₽"
         )
         self.library_view.set_snapshot(snapshot)
         self.character_view.set_snapshot(snapshot)
@@ -719,7 +919,8 @@ class MainWindow(QMainWindow):
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True
         self._update_action_buttons()
-        self._show_editor()
+        if show_editor:
+            self._show_editor()
 
     def _render_factions(self, _info: SaveInfo) -> None:
         self.character_view.set_state(
@@ -736,14 +937,12 @@ class MainWindow(QMainWindow):
         )
         if not can_edit_money:
             self.editor_view.money_spin.setEnabled(False)
-            self.editor_view.money_stage_button.setEnabled(False)
             self.editor_view.money_clear_button.setEnabled(False)
             return
         assert info.money is not None
         effective = self.staged_money if self.staged_money is not None else info.money
         self.editor_view.set_money_draft(effective)
         self.editor_view.money_spin.setEnabled(True)
-        self.editor_view.money_stage_button.setEnabled(True)
         self.editor_view.money_clear_button.setEnabled(self.staged_money is not None)
 
     def _on_money_value_changed(self, _value: int) -> None:
@@ -773,10 +972,10 @@ class MainWindow(QMainWindow):
         self.staged_money = None if value == info.money else value
         self._render_money(info)
         self._render_changes()
-        self._invalidate_preview("изменилось staged значение баланса")
+        self._invalidate_preview("изменилось значение баланса")
         self.status_label.setText(
-            f"Staged: money={'нет' if self.staged_money is None else self.staged_money}, "
-            f"stacks={len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
+            f"Подготовлено изменений: баланс={'нет' if self.staged_money is None else self.staged_money}, "
+            f"предметов={len(self.staged_counts)}; байты сейва не изменены"
         )
 
     def _clear_money(self) -> None:
@@ -784,7 +983,7 @@ class MainWindow(QMainWindow):
         if self.snapshot is not None:
             self._render_money(self.snapshot.info)
             self._render_changes()
-            self._invalidate_preview("staged баланс очищен")
+            self._invalidate_preview("черновик баланса очищен")
         self.status_label.setText("Баланс возвращён к исходному значению; bytes сейва не изменены")
 
     def _find_inventory_item(self, handle: int):
@@ -824,9 +1023,9 @@ class MainWindow(QMainWindow):
         else:
             self.staged_counts[item.handle] = value
         self._render_changes()
-        self._invalidate_preview("изменилось staged значение stack")
+        self._invalidate_preview("изменилось значение количества")
         self.status_label.setText(
-            f"Staged: {len(self.staged_counts)}; bytes сейва не изменены — нужен preview"
+            f"Подготовлено изменений: {len(self.staged_counts)}; байты сейва не изменены"
         )
 
     def _stage_item_add(self, item_key: str, quantity: int) -> None:
@@ -861,9 +1060,9 @@ class MainWindow(QMainWindow):
             return
         self.staged_adds[item_key] = value
         self._render_changes()
-        self._invalidate_preview("изменилось staged добавление предмета")
+        self._invalidate_preview("изменилось добавление предмета")
         self.status_label.setText(
-            f"Добавление staged: {item_key} × {value}; bytes сейва не изменены — нужен preview"
+            f"Подготовлено добавление: {item_key} × {value}; байты сейва не изменены"
         )
 
     def _stage_item_remove(self, handle: int) -> None:
@@ -892,9 +1091,9 @@ class MainWindow(QMainWindow):
         else:
             self.staged_detach[handle] = True
             self.staged_counts.pop(handle, None)
-            message = f"Удаление staged для {item.type_key}"
+            message = f"Удаление подготовлено для {item.type_key}"
         self._render_changes()
-        self._invalidate_preview("изменился staged список удалений")
+        self._invalidate_preview("изменился список удалений")
         self.status_label.setText(f"{message}; bytes сейва не изменены — нужна проверка")
 
     def _stage_item_durability(self, handle: int, condition: float) -> None:
@@ -920,9 +1119,9 @@ class MainWindow(QMainWindow):
         else:
             self.staged_durability[item.handle] = value
         self._render_changes()
-        self._invalidate_preview("изменилось staged значение прочности")
+        self._invalidate_preview("изменилось значение прочности")
         self.status_label.setText(
-            f"Прочность staged для {item.type_key}; bytes сейва не изменены — нужен preview"
+            f"Прочность подготовлена для {item.type_key}; байты сейва не изменены"
         )
 
     def _clear_item_durability(self, handle: int) -> None:
@@ -933,7 +1132,7 @@ class MainWindow(QMainWindow):
             return
         self.staged_durability.pop(item.handle, None)
         self._render_changes()
-        self._invalidate_preview("staged прочность очищена")
+        self._invalidate_preview("черновик прочности очищен")
         self.status_label.setText(f"Прочность очищена для {item.type_key}; bytes сейва не изменены")
 
     def _finish_equipment_repair(self, result: RepairStageResult, *, action: str) -> None:
@@ -943,8 +1142,8 @@ class MainWindow(QMainWindow):
             if skipped.reason.startswith("no-op:"):
                 self.staged_durability.pop(skipped.handle, None)
         self._render_changes()
-        self._invalidate_preview("изменилось staged оборудование")
-        parts = [f"{action}: staged {len(result.changes)}"]
+        self._invalidate_preview("изменилось оборудование")
+        parts = [f"{action}: подготовлено {len(result.changes)}"]
         if result.skipped:
             parts.append(f"пропущено {len(result.skipped)}")
         details = "; ".join(
@@ -966,7 +1165,7 @@ class MainWindow(QMainWindow):
     def _reset_equipment_repair(self, handle: int) -> None:
         self.staged_durability.pop(int(handle), None)
         self._render_changes()
-        self._invalidate_preview("staged прочность оборудования очищена")
+        self._invalidate_preview("черновик прочности оборудования очищен")
         self.status_label.setText("Прочность очищена; bytes сейва не изменены")
 
     def _stage_item_upgrades(self, handle: int, values: object) -> None:
@@ -993,7 +1192,7 @@ class MainWindow(QMainWindow):
         else:
             self.staged_upgrades[item.handle] = desired
         self._render_changes()
-        self._invalidate_preview("изменился staged список улучшений")
+        self._invalidate_preview("изменился список улучшений")
         self.status_label.setText(f"Улучшения подготовлены для {item.type_key}; bytes сейва не изменены — нужна проверка")
 
     def _clear_item_upgrades(self, handle: int) -> None:
@@ -1004,7 +1203,7 @@ class MainWindow(QMainWindow):
             return
         self.staged_upgrades.pop(item.handle, None)
         self._render_changes()
-        self._invalidate_preview("staged улучшения очищены")
+        self._invalidate_preview("черновик улучшений очищен")
         self.status_label.setText(f"Улучшения очищены для {item.type_key}; bytes сейва не изменены")
 
     def _stage_item_placement(self, handle: int, placement_type: str, slot_id: object) -> None:
@@ -1036,9 +1235,9 @@ class MainWindow(QMainWindow):
             message = f"Позиция очищена для {item.type_key}"
         else:
             self.staged_placements[item.handle] = desired
-            message = f"Позиция staged для {item.type_key}: {normalized_type}"
+            message = f"Позиция подготовлена для {item.type_key}: {normalized_type}"
         self._render_changes()
-        self._invalidate_preview("изменилось staged размещение предмета")
+        self._invalidate_preview("изменилось размещение предмета")
         self.status_label.setText(f"{message}; bytes сейва не изменены — нужна проверка")
 
     def _clear_item_placement(self, handle: int) -> None:
@@ -1049,7 +1248,7 @@ class MainWindow(QMainWindow):
             return
         self.staged_placements.pop(item.handle, None)
         self._render_changes()
-        self._invalidate_preview("staged размещение очищено")
+        self._invalidate_preview("черновик размещения очищен")
         self.status_label.setText(f"Позиция очищена для {item.type_key}; bytes сейва не изменены")
 
     def _stage_faction_relation(self, key: str, goodwill: int) -> None:
@@ -1083,7 +1282,7 @@ class MainWindow(QMainWindow):
             self.staged_faction_relations[key] = int(goodwill)
         self.character_view.set_state(self.staged_faction_relations, self.staged_player_faction)
         self._render_changes()
-        self._invalidate_preview("изменилось staged отношение группировки")
+        self._invalidate_preview("изменилось отношение группировки")
         self.status_label.setText(f"Отношение изменено: {key} → {goodwill}; bytes сейва не изменены — нужна проверка")
 
     def _stage_player_faction(self, key: str) -> None:
@@ -1108,13 +1307,13 @@ class MainWindow(QMainWindow):
         self.staged_player_faction = None if faction.numeric_id == self.snapshot.info.player_faction_index else key
         self.character_view.set_state(self.staged_faction_relations, self.staged_player_faction)
         self._render_changes()
-        self._invalidate_preview("изменилось staged принадлежность игрока")
+        self._invalidate_preview("изменилось принадлежность игрока")
         self.status_label.setText(f"Принадлежность игрока изменена: {key}; bytes сейва не изменены — нужна проверка")
 
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self._render_changes()
-        self._invalidate_preview("staged stack очищен")
+        self._invalidate_preview("черновик количества очищен")
         self.status_label.setText(f"Подготовлено изменений: {len(self.staged_counts)}; bytes сейва не изменены — нужна проверка")
 
     def _reset_editor_item(self, handle: int) -> None:
@@ -1144,7 +1343,7 @@ class MainWindow(QMainWindow):
             self._render_money(self.snapshot.info)
             self._render_factions(self.snapshot.info)
         self._render_changes()
-        self._invalidate_preview("все staged-правки очищены")
+        self._invalidate_preview("все черновики очищены")
         self.status_label.setText("Все изменения очищены; bytes сейва не изменены")
 
     def _render_changes(self) -> None:
@@ -1223,7 +1422,7 @@ class MainWindow(QMainWindow):
         if self.snapshot is None:
             raise SaveError("Сначала проанализируй сейв")
         if not self._has_staged_changes():
-            raise SaveError("Нет staged изменений")
+            raise SaveError("Нет подготовленных изменений")
         source_kind = self.snapshot.source_kind
         locator = self.snapshot.locator or str(self.snapshot.path)
         if source_kind not in ("local", "cloud"):
@@ -1303,11 +1502,11 @@ class MainWindow(QMainWindow):
             self._on_operation_failed(str(exc))
             return
         if prepared.plan != current_plan:
-            self._on_operation_failed("Staged форма изменилась во время preview; повтори preview")
+            self._on_operation_failed("Черновик изменился во время проверки; повтори проверку")
             return
         self.prepared_edit = prepared
         self.editor_view.show_capability_message(
-            f"Preview готов: SHA {prepared.output_sha256[:12]}…"
+            f"Проверка готова: SHA {prepared.output_sha256[:12]}…"
         )
         self.cloud_controller.set_prepared(prepared)
         if hasattr(self, "cloud_reference_view"):
@@ -1411,6 +1610,11 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Сохранение отменено")
             return
         if self.snapshot.source_kind == "cloud":
+            if self.cloud_controller.reconciliation_pending:
+                self._show_operation_error(
+                    "Cloud upload заблокирован до reconciliation; обнови состояние Cloud"
+                )
+                return
             # Cloud has its own fail-closed upload path; keep using it.
             if self.prepared_edit is None:
                 self._pending_apply_path = None
@@ -1598,8 +1802,73 @@ class MainWindow(QMainWindow):
             self.status_label.setText(
                 f"Сохранено: {receipt.output_path} · бэкап исходного сделан"
             )
+        self._post_save_receipt = receipt
+        self._start_post_save_reinspect(Path(receipt.output_path))
+        self.backup_controller.refresh()
+        self._record_recent_activity(
+            "Локальное сохранение",
+            str(receipt.output_path),
+            f"SHA {receipt.output_sha256[:12]}…",
+        )
         self._show_save_result(receipt)
         self.apply_ready.emit(receipt)
+
+    def _start_post_save_reinspect(self, path: Path) -> None:
+        """Read the bytes that were actually published before returning to edit mode."""
+
+        if self._post_save_reinspect_thread is not None and self._post_save_reinspect_thread.isRunning():
+            return
+        catalog_root = self.settings.catalog_root("stalker2")
+        worker = InspectWorker(
+            self.service,
+            Path(path).expanduser(),
+            self,
+            catalog_roots=(catalog_root,) if catalog_root is not None else (),
+        )
+        worker.completed.connect(self._on_post_save_reinspect_ready)
+        worker.failed.connect(self._on_post_save_reinspect_failed)
+        worker.finished.connect(self._on_post_save_reinspect_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._post_save_reinspect_thread = worker
+        self.status_label.setText("Сохранено; повторно проверяю записанный слот…")
+        worker.start()
+
+    def _on_post_save_reinspect_ready(self, snapshot: LocalSnapshot) -> None:
+        self._render_snapshot(snapshot, show_editor=False)
+        self.status_label.setText("Сохранено и повторно проверено; подготовлено 0 изменений")
+        self._enable_verified_result_editor(
+            "Сохранение повторно прочитано; snapshot обновлён, подготовлено 0 изменений."
+        )
+        self._record_recent_activity(
+            "Повторная проверка локального слота",
+            str(snapshot.path),
+            f"SHA {snapshot.info.sha256[:12]}…",
+        )
+
+    def _on_post_save_reinspect_failed(self, message: str) -> None:
+        # The local receipt already proves the writer's read-back. Keep the
+        # previous snapshot rather than presenting it as the newly written one,
+        # and make the reconciliation failure visible on the library surface.
+        display = f"Повторная проверка записанного слота не выполнена: {message}"
+        self.status_label.setText("Сохранение записано; требуется повторная проверка")
+        self.save_result_view.set_editor_ready(
+            False,
+            "Сохранение записано, но повторная проверка не завершилась; редактор пока заблокирован.",
+        )
+        self.app_shell.set_footer_actions((("Esc", "К библиотеке", self._show_library),))
+        self.error_label.setText(display)
+        self.error_label.setVisible(True)
+        self.library_view.set_analysis_error(display)
+
+    def _on_post_save_reinspect_finished(self) -> None:
+        self._post_save_reinspect_thread = None
+
+    def changeEvent(self, event: QEvent) -> None:  # noqa: N802 - Qt override
+        """Keep custom chrome state truthful after OS or header state changes."""
+
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and hasattr(self, "app_shell"):
+            self.app_shell._sync_maximize_button()
 
     def _start_restore(self, record, output_path: Path) -> None:
         if self._operation_thread is not None and self._operation_thread.isRunning():
@@ -1623,6 +1892,11 @@ class MainWindow(QMainWindow):
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.mark_restored(receipt)
         self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
+        self._record_recent_activity(
+            "Восстановление копии",
+            str(receipt.output_path),
+            f"SHA {receipt.output_sha256[:12]}…",
+        )
         self.restore_ready.emit(receipt)
 
     def _start_restore_in_place(self, record) -> None:
@@ -1647,6 +1921,11 @@ class MainWindow(QMainWindow):
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.mark_in_place_restored(receipt)
         self.status_label.setText(f"Исходный слот восстановлен: {receipt.output_path}")
+        self._record_recent_activity(
+            "Восстановление исходного слота",
+            str(receipt.output_path),
+            f"SHA {receipt.output_sha256[:12]}…",
+        )
         self.restore_ready.emit(receipt)
 
     def _on_cloud_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
@@ -1667,7 +1946,12 @@ class MainWindow(QMainWindow):
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)
         self.status_label.setText(
-            f"Cloud snapshot готов: {snapshot.name}; выбери изменения и создай preview"
+            f"Cloud snapshot готов: {snapshot.name}; выбери изменения и выполни проверку"
+        )
+        self._record_recent_activity(
+            "Cloud скачивание",
+            snapshot.name,
+            f"SHA {snapshot.info.sha256[:12]}…",
         )
 
     def _start_cloud_upload(self) -> None:
@@ -1678,13 +1962,54 @@ class MainWindow(QMainWindow):
         self.cloud_controller.start_upload()
 
     def _on_cloud_upload_ready(self, receipt) -> None:
-        self.prepared_edit = None
         self.status_label.setText(
-            "Cloud: verified" if receipt.status == "verified" else "Cloud: uncertain — требуется reconciliation"
+            "Cloud: verified — выполняю reconciliation"
+            if receipt.status == "verified"
+            else "Cloud: uncertain — требуется reconciliation"
         )
         self._update_action_buttons()
-        self._show_save_result(receipt)
+        self._post_save_receipt = receipt
+        self._show_save_result(receipt, cloud_reconciliation=True)
+        self._record_recent_activity(
+            "Cloud запись",
+            receipt.remote_path,
+            "Проверено" if receipt.status == "verified" else "Требуется reconciliation",
+        )
         self.apply_ready.emit(receipt)
+
+    def _on_cloud_reconciliation_ready(self, snapshot: CloudSnapshot) -> None:
+        local_snapshot = LocalSnapshot(
+            path=Path(snapshot.name),
+            data=snapshot.data,
+            info=snapshot.info,
+            source_kind="cloud",
+            locator=snapshot.name,
+            format_id=snapshot.format_id,
+            format_title=snapshot.format_title,
+            release_id=snapshot.release_id,
+            edition=snapshot.edition,
+            capabilities=snapshot.capabilities,
+            catalog=snapshot.catalog,
+            game_catalog=snapshot.game_catalog,
+        )
+        self._render_snapshot(local_snapshot, show_editor=False)
+        self.status_label.setText("Cloud reconciliation подтверждена; подготовлено 0 изменений")
+        self._enable_verified_result_editor(
+            "Cloud remote read-back подтверждён; snapshot обновлён, подготовлено 0 изменений."
+        )
+        self._record_recent_activity(
+            "Cloud запись и проверка",
+            snapshot.name,
+            f"SHA {snapshot.info.sha256[:12]}…",
+        )
+
+    def _on_cloud_reconciliation_failed(self, message: str) -> None:
+        self.save_result_view.set_editor_ready(
+            False,
+            "Cloud reconciliation не подтверждена; состояние не очищено и запись не повторяется автоматически.",
+        )
+        self.app_shell.set_footer_actions((("Esc", "К библиотеке", self._show_library),))
+        self._show_operation_error(message)
 
     def _on_cloud_operation_failed(self, message: str) -> None:
         self._show_operation_error(message)

@@ -3,21 +3,23 @@
     "height": 992,
     "width": 1586
   },
-  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
-  "diff": {
-    "changed_pixel_ratio_threshold_12": 0.253864,
-    "changed_pixels_threshold_12": 399407,
-    "height": 992,
-    "max_channel_delta": 247,
-    "mean_rgb_delta": 17.107,
-    "width": 1586
+  "comparison": {
+    "board_panel_rect": {
+      "height": 325,
+      "width": 696,
+      "x": 734,
+      "y": 380
+    },
+    "mode": "board-derived-geometry"
   },
+  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
+  "diff": null,
   "geometry": {
     "active_view": {
-      "height": 807,
-      "width": 1522,
-      "x": 0,
-      "y": 0
+      "height": 595,
+      "width": 1106,
+      "x": 33,
+      "y": 123
     },
     "content": {
       "height": 827,
@@ -46,13 +48,51 @@
     "window": {
       "height": 992,
       "width": 1586,
-      "x": 2,
-      "y": 2
+      "x": 0,
+      "y": 0
     }
   },
-  "reference_kind": "panel crop from canonical board placed on fixed canvas",
+  "reference_kind": "board panel geometry reference; no same-canvas pixel score",
   "reference_source": "04_REMAINING_STATES_BOARD_CANONICAL.png",
   "screen": "07-review",
+  "screen_rects": {
+    "cancel_cta": {
+      "height": 33,
+      "width": 85,
+      "x": 253,
+      "y": 649
+    },
+    "changes_panel": {
+      "height": 372,
+      "width": 341,
+      "x": 262,
+      "y": 254
+    },
+    "changes_table": {
+      "height": 305,
+      "width": 315,
+      "x": 275,
+      "y": 308
+    },
+    "confirm_cta": {
+      "height": 37,
+      "width": 241,
+      "x": 678,
+      "y": 647
+    },
+    "modal_card": {
+      "height": 597,
+      "width": 1108,
+      "x": 32,
+      "y": 122
+    },
+    "pipeline_panel": {
+      "height": 372,
+      "width": 295,
+      "x": 615,
+      "y": 254
+    }
+  },
   "tokens": {
     "font_family": "Liberation Sans Narrow",
     "palette": {

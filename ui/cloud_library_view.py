@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QShowEvent
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -19,7 +20,9 @@ from PySide6.QtWidgets import (
 )
 
 from .cloud_controller import CloudController
-from .style_components import action_button, panel, section_header, status_chip
+from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+
+_SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
 
 
 class CloudLibraryView(QWidget):
@@ -72,7 +75,7 @@ class CloudLibraryView(QWidget):
         self.profile_combo.setObjectName("cloudProfileCombo")
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
         controls_layout.addWidget(self.profile_combo, 1)
-        self.refresh_button = action_button("⟳  ОБНОВИТЬ СПИСОК", controls)
+        self.refresh_button = action_button("ОБНОВИТЬ СПИСОК", controls)
         self.refresh_button.clicked.connect(self.backend.start_connect)
         controls_layout.addWidget(self.refresh_button)
         self.web_button = action_button("STEAM WEB", controls)
@@ -82,6 +85,16 @@ class CloudLibraryView(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(10)
+        body.addWidget(
+            reference_game_rail(
+                self,
+                object_name="cloudGameRail",
+                active_family="stalker2",
+            ),
+            0,
+        )
+        workspace = QHBoxLayout()
+        workspace.setSpacing(10)
         table_panel = panel(self, object_name="cloudTablePanel")
         table_layout = QVBoxLayout(table_panel)
         table_layout.setContentsMargins(12, 12, 12, 12)
@@ -98,12 +111,21 @@ class CloudLibraryView(QWidget):
             self.save_table.horizontalHeader().setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         self.save_table.itemSelectionChanged.connect(self._selection_changed)
         table_layout.addWidget(self.save_table, 1)
-        body.addWidget(table_panel, 66)
+        workspace.addWidget(table_panel, 66)
 
         self.detail_panel = panel(self, object_name="cloudDetailPanel")
         detail = QVBoxLayout(self.detail_panel)
         detail.setContentsMargins(12, 12, 12, 12)
         detail.addWidget(section_header("ПРОСМОТР СОХРАНЕНИЯ", "ИСТОЧНИК И СТАТУС", self.detail_panel))
+        self.detail_image = QLabel(self.detail_panel)
+        self.detail_image.setObjectName("cloudDetailImage")
+        self.detail_image.setMinimumHeight(118)
+        self.detail_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        detail_pixmap = QPixmap(str(_SHELL_ASSETS / "preview_zone.png"))
+        if not detail_pixmap.isNull():
+            self.detail_image.setPixmap(detail_pixmap)
+            self.detail_image.setScaledContents(True)
+        detail.addWidget(self.detail_image)
         self.detail_name = QLabel("Сохранение не выбрано", self.detail_panel)
         self.detail_name.setObjectName("cloudDetailName")
         self.detail_name.setWordWrap(True)
@@ -132,13 +154,17 @@ class CloudLibraryView(QWidget):
         self.result_label.setObjectName("cloudResultLabel")
         self.result_label.setWordWrap(True)
         detail.addWidget(self.result_label)
-        body.addWidget(self.detail_panel, 34)
+        workspace.addWidget(self.detail_panel, 34)
+        workspace_host = QWidget(self)
+        workspace_host.setObjectName("cloudWorkspace")
+        workspace_host.setLayout(workspace)
+        body.addWidget(workspace_host, 1)
         root.addLayout(body, 1)
 
         safety = panel(self, object_name="cloudSafetyPanel")
         safety_layout = QHBoxLayout(safety)
         safety_layout.setContentsMargins(12, 8, 12, 8)
-        safety_layout.addWidget(QLabel("⚠  Cloud запись проходит через backup, fresh read и read-back SHA. При uncertain write повтор запрещён.", safety))
+        safety_layout.addWidget(QLabel("Cloud запись проходит через backup, fresh read и read-back SHA. При uncertain write повтор запрещён.", safety))
         root.addWidget(safety)
 
     def _copy_profiles(self) -> None:
@@ -171,8 +197,20 @@ class CloudLibraryView(QWidget):
     def _analyze_selected(self) -> None:
         self.backend.analyze_selected()
 
+    def analyze_selected(self) -> None:
+        """Analyze the selected cloud row; wired to the visible Enter hint."""
+
+        self._analyze_selected()
+
+    def refresh(self) -> None:
+        """Refresh the cloud listing; wired to the visible R hint."""
+
+        self.backend.start_connect()
+
     def _on_files_ready(self, files) -> None:
         files = tuple(files or ())
+        selected_file = self.backend.selected_file()
+        self.save_table.blockSignals(True)
         self.save_table.setRowCount(0)
         for row, cloud_file in enumerate(files):
             self.save_table.insertRow(row)
@@ -189,7 +227,17 @@ class CloudLibraryView(QWidget):
         if status.startswith("Steam Cloud:"):
             status = status.removeprefix("Steam Cloud:").strip()
         self.status_chip.setText(status.upper())
-        self._selection_changed()
+        selected_row = next(
+            (row for row, cloud_file in enumerate(files) if cloud_file == selected_file),
+            -1,
+        )
+        if selected_row >= 0:
+            self.save_table.selectRow(selected_row)
+        else:
+            self._selection_changed()
+        self.save_table.blockSignals(False)
+        if selected_row >= 0:
+            self._selection_changed()
 
     def _on_snapshot_ready(self, snapshot) -> None:
         self.result_label.setText(

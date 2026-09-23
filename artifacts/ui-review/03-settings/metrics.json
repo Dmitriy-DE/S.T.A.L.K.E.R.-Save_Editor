@@ -3,21 +3,25 @@
     "height": 992,
     "width": 1586
   },
-  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
+  "comparison": {
+    "board_panel_rect": null,
+    "mode": "full-canvas-pixel-diff"
+  },
+  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
   "diff": {
-    "changed_pixel_ratio_threshold_12": 0.258646,
-    "changed_pixels_threshold_12": 406931,
+    "changed_pixel_ratio_threshold_12": 0.226998,
+    "changed_pixels_threshold_12": 357139,
     "height": 992,
-    "max_channel_delta": 255,
-    "mean_rgb_delta": 16.816,
+    "max_channel_delta": 246,
+    "mean_rgb_delta": 14.941,
     "width": 1586
   },
   "geometry": {
     "active_view": {
       "height": 807,
       "width": 1522,
-      "x": 0,
-      "y": 0
+      "x": 32,
+      "y": 122
     },
     "content": {
       "height": 827,
@@ -46,13 +50,59 @@
     "window": {
       "height": 992,
       "width": 1586,
-      "x": 2,
-      "y": 2
+      "x": 0,
+      "y": 0
     }
   },
   "reference_kind": "full canonical reference",
   "reference_source": "03_SETTINGS_CANONICAL.png",
   "screen": "03-settings",
+  "screen_rects": {
+    "category_rail": {
+      "height": 771,
+      "width": 260,
+      "x": 32,
+      "y": 149
+    },
+    "content": {
+      "height": 682,
+      "width": 1229,
+      "x": 325,
+      "y": 185
+    },
+    "save_cta": {
+      "height": 42,
+      "width": 403,
+      "x": 325,
+      "y": 878
+    },
+    "visible_panels": {
+      "cloudSettingsPanel": {
+        "height": 139,
+        "width": 1229,
+        "x": 325,
+        "y": 578
+      },
+      "diagnosticsSettingsPanel": {
+        "height": 131,
+        "width": 1229,
+        "x": 325,
+        "y": 727
+      },
+      "generalSettingsPanel": {
+        "height": 179,
+        "width": 1229,
+        "x": 325,
+        "y": 185
+      },
+      "pathsSettingsPanel": {
+        "height": 194,
+        "width": 1229,
+        "x": 325,
+        "y": 374
+      }
+    }
+  },
   "tokens": {
     "font_family": "Liberation Sans Narrow",
     "palette": {

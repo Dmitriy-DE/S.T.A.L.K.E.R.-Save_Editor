@@ -29,7 +29,9 @@ def test_library_starts_with_all_games_and_import_path(qtbot) -> None:
     qtbot.addWidget(view)
 
     assert view.game_list.count() == 5
-    assert view.game_list.item(0).text().startswith("▦   ВСЕ ИГРЫ")
+    first_game = view.game_list.item(0)
+    assert first_game.text().startswith("ВСЕ ИГРЫ")
+    assert not first_game.icon().isNull()
     assert view.game_list.item(1).text().startswith("S.T.A.L.K.E.R. 2")
     assert view.import_button.isEnabled()
     assert "ИМПОРТ" in view.import_button.text()

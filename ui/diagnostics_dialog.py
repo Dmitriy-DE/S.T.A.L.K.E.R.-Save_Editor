@@ -61,7 +61,7 @@ class DiagnosticsDialog(QDialog):
         description.setWordWrap(True)
         layout.addWidget(description)
         self.preview_label = QLabel(
-            "Предпросмотр: будет отправлен только обезличенный gzip-архив "
+            "Проверка: будет отправлен только обезличенный gzip-архив "
             "ограниченного размера."
         )
         self.preview_label.setWordWrap(True)
@@ -124,7 +124,7 @@ class DiagnosticsDialog(QDialog):
 
     def _on_previewed(self, size: int) -> None:
         self.preview_label.setText(
-            f"Предпросмотр: обезличенный архив подготовлен ({size:,} байт)."
+            f"Проверка: обезличенный архив подготовлен ({size:,} байт)."
         )
 
     def _on_completed(self, report_id: str) -> None:

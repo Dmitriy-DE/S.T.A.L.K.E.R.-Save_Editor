@@ -24,6 +24,15 @@ from save_format import InventoryItem
 
 from .style_components import action_button, panel, section_header, status_chip
 
+_DETAIL_TYPE_LABELS = {
+    "mp_wpn_ak74": "Штурмовая винтовка",
+    "mp_wpn_toz34": "Дробовик",
+    "cs_heavy_outfit": "Броня",
+    "helm_respirator": "Шлем",
+    "detector_advanced": "Детектор",
+    "zat_b33_safe_container": "Контейнер",
+}
+
 
 class ItemDetailView(QWidget):
     """Render one item and expose only capability-approved draft controls."""
@@ -49,25 +58,42 @@ class ItemDetailView(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
-        root.addWidget(section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", "CAPABILITY-GATED", self))
-
         self.status_chip = status_chip("READ-ONLY", self, tone="neutral")
-        root.addWidget(self.status_chip, 0, Qt.AlignmentFlag.AlignLeft)
+        detail_header = section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", parent=self)
+        detail_header.setObjectName("detailHeader")
+        detail_header_layout = detail_header.layout()
+        if detail_header_layout is None:
+            raise RuntimeError("item detail header has no layout")
+        detail_header_layout.addWidget(self.status_chip)
+        root.addWidget(detail_header)
         self.name_label = QLabel("Предмет не выбран", self)
         self.name_label.setObjectName("detailItemName")
         root.addWidget(self.name_label)
         self.type_label = QLabel("Выбери строку инвентаря", self)
         self.type_label.setObjectName("detailItemType")
         root.addWidget(self.type_label)
-        self.image_label = QLabel("▧", self)
+        self.image_label = QLabel("—", self)
         self.image_label.setObjectName("detailItemImage")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setMinimumHeight(116)
+        self.image_label.setFixedHeight(112)
         root.addWidget(self.image_label)
         self.description_label = QLabel("Данные отображаются только из текущего snapshot.", self)
         self.description_label.setObjectName("detailDescription")
         self.description_label.setWordWrap(True)
         root.addWidget(self.description_label)
+
+        self.detail_tabs: list[QPushButton] = []
+        tabs = QHBoxLayout()
+        tabs.setSpacing(4)
+        for index, label in enumerate(("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")):
+            button = QPushButton(label, self)
+            button.setObjectName("detailTab")
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, selected=index: self._select_detail_tab(selected))
+            tabs.addWidget(button, 1)
+            self.detail_tabs.append(button)
+        self.detail_tabs[0].setChecked(True)
+        root.addLayout(tabs)
 
         form_panel = panel(self, object_name="detailFields")
         form = QFormLayout(form_panel)
@@ -75,40 +101,22 @@ class ItemDetailView(QWidget):
         form.setSpacing(8)
         self.count_spin = QSpinBox(form_panel)
         self.count_spin.setRange(1, 1_000_000)
-        self.count_apply = QPushButton("Применить", form_panel)
-        self.count_apply.clicked.connect(self._emit_count)
-        self.count_spin.editingFinished.connect(self._emit_count)
-        self.count_apply.setVisible(False)
-        count_row = QHBoxLayout()
-        count_row.addWidget(self.count_spin, 1)
-        count_row.addWidget(self.count_apply)
-        form.addRow("Количество", count_row)
+        self.count_spin.valueChanged.connect(lambda _value: self._emit_count())
+        form.addRow("Количество", self.count_spin)
 
         self.condition_spin = QDoubleSpinBox(form_panel)
         self.condition_spin.setRange(0.0, 100.0)
         self.condition_spin.setDecimals(1)
         self.condition_spin.setSuffix(" %")
-        self.condition_apply = QPushButton("Применить", form_panel)
-        self.condition_apply.clicked.connect(self._emit_condition)
-        self.condition_spin.editingFinished.connect(self._emit_condition)
-        self.condition_apply.setVisible(False)
-        condition_row = QHBoxLayout()
-        condition_row.addWidget(self.condition_spin, 1)
-        condition_row.addWidget(self.condition_apply)
-        form.addRow("Состояние", condition_row)
+        self.condition_spin.valueChanged.connect(lambda _value: self._emit_condition())
+        form.addRow("Состояние", self.condition_spin)
 
         self.placement_combo = QComboBox(form_panel)
         self.placement_combo.addItem("Инвентарь", ("inventory", None))
         self.placement_combo.addItem("Пояс", ("belt", None))
         self.placement_combo.addItem("Рюкзак", ("ruck", None))
-        self.placement_apply = QPushButton("Применить", form_panel)
-        self.placement_apply.clicked.connect(self._emit_placement)
-        self.placement_combo.activated.connect(lambda _index: self._emit_placement())
-        self.placement_apply.setVisible(False)
-        placement_row = QHBoxLayout()
-        placement_row.addWidget(self.placement_combo, 1)
-        placement_row.addWidget(self.placement_apply)
-        form.addRow("Размещение", placement_row)
+        self.placement_combo.currentIndexChanged.connect(lambda _index: self._emit_placement())
+        form.addRow("Размещение", self.placement_combo)
         root.addWidget(form_panel)
 
         root.addWidget(QLabel("УСТАНОВЛЕННЫЕ МОДУЛИ / УЛУЧШЕНИЯ", self))
@@ -120,13 +128,25 @@ class ItemDetailView(QWidget):
         self.module_status.setObjectName("detailModuleStatus")
         self.module_status.setWordWrap(True)
         root.addWidget(self.module_status)
+        feature_row = QHBoxLayout()
+        feature_row.setSpacing(6)
+        self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self, tone="success")
+        self.read_only_feature_chip = status_chip("READ-ONLY", self, tone="neutral")
+        self.feature_help = QLabel("?", self)
+        self.feature_help.setObjectName("detailFeatureHelp")
+        feature_row.addWidget(self.verified_feature_chip)
+        feature_row.addWidget(self.read_only_feature_chip)
+        feature_row.addWidget(self.feature_help)
+        feature_row.addStretch(1)
+        root.addLayout(feature_row)
         root.addStretch(1)
 
         self.save_button = action_button("СОХРАНИТЬ 0 ИЗМЕНЕНИЙ", self, kind="primary", object_name="primaryActionButton")
+        self.save_button.setMinimumHeight(42)
         self.save_button.setEnabled(False)
         root.addWidget(self.save_button)
         actions = QHBoxLayout()
-        self.reset_button = action_button("↶  СБРОСИТЬ", self)
+        self.reset_button = action_button("СБРОСИТЬ", self)
         self.reset_button.setEnabled(False)
         self.reset_button.clicked.connect(self._emit_reset)
         actions.addWidget(self.reset_button)
@@ -135,6 +155,24 @@ class ItemDetailView(QWidget):
         self.remove_button.clicked.connect(self._emit_remove)
         actions.addWidget(self.remove_button)
         root.addLayout(actions)
+
+    def _select_detail_tab(self, index: int) -> None:
+        for button_index, button in enumerate(self.detail_tabs):
+            button.setChecked(button_index == index)
+        if index == 1 and self._item is not None:
+            self.module_status.setText(
+                "Установленные модули и улучшения доступны как read-only evidence."
+            )
+        elif index == 2 and self._item is not None:
+            self.module_status.setText(
+                "Характеристики показываются только из текущего snapshot."
+            )
+        elif self._item is not None:
+            self.module_status.setText(
+                "Модули/улучшения показаны как read-only evidence."
+                if self._item.upgrades or self._item.modules
+                else "Для этого предмета модульные данные не разобраны; read-only."
+            )
 
     def set_item(
         self,
@@ -169,30 +207,28 @@ class ItemDetailView(QWidget):
             self.description_label.setText("Данные отображаются только из текущего snapshot.")
             self.status_chip.setText("READ-ONLY")
             self.count_spin.setEnabled(False)
-            self.count_apply.setEnabled(False)
             self.condition_spin.setEnabled(False)
-            self.condition_apply.setEnabled(False)
             self.placement_combo.setEnabled(False)
-            self.placement_apply.setEnabled(False)
             self.reset_button.setEnabled(False)
             self.remove_button.setVisible(False)
             self.remove_button.setEnabled(False)
             self.upgrade_list.clear()
             self.module_status.setText("—")
             self.image_label.clear()
-            self.image_label.setText("▧")
+            self.image_label.setText("—")
             return
 
         label = item.display_name or "Неизвестный объект"
         self.name_label.setText(label)
-        self.type_label.setText(f"{item.category}  ·  {item.type_key}  ·  {item.handle_hex}")
+        type_label = _DETAIL_TYPE_LABELS.get(item.type_key, item.category)
+        self.type_label.setText(type_label)
         weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
         self.description_label.setText(f"Вес: {weight}\nИсточник: {item.observation_source or 'snapshot'}")
         if self._item_icon is not None and not self._item_icon.isNull():
-            self.image_label.setPixmap(self._item_icon.pixmap(180, 105))
+            self.image_label.setPixmap(self._item_icon.pixmap(380, 112))
             self.image_label.setText("")
         else:
-            self.image_label.setText("▧")
+            self.image_label.setText("—")
 
         stack_support = caps.support("edit_stacks") if caps is not None else None
         condition_support = caps.support("edit_durability") if caps is not None else None
@@ -213,14 +249,12 @@ class ItemDetailView(QWidget):
         self.count_spin.setValue(count)
         self.count_spin.blockSignals(False)
         self.count_spin.setEnabled(writable_stack)
-        self.count_apply.setEnabled(writable_stack)
 
         condition = self._staged_durability.get(item.handle, item.condition or 0.0)
         self.condition_spin.blockSignals(True)
         self.condition_spin.setValue(condition * 100.0)
         self.condition_spin.blockSignals(False)
         self.condition_spin.setEnabled(writable_condition)
-        self.condition_apply.setEnabled(writable_condition)
 
         placement_writable = bool(caps and caps.edit_placement and item.placement_editable)
         self.placement_combo.blockSignals(True)
@@ -240,7 +274,6 @@ class ItemDetailView(QWidget):
                 break
         self.placement_combo.blockSignals(False)
         self.placement_combo.setEnabled(placement_writable)
-        self.placement_apply.setEnabled(placement_writable)
 
         self.upgrade_list.clear()
         for value in item.upgrades or item.modules or ():

@@ -4,11 +4,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPixmap
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QWidget
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPaintEvent, QPixmap
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 _SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
+_SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
 
 class TextureFrame(QFrame):
@@ -56,11 +66,21 @@ def section_header(
     title: str,
     subtitle: str = "",
     parent: QWidget | None = None,
+    *,
+    icon_name: str | None = None,
 ) -> QWidget:
     frame = panel(parent, object_name="sectionHeader")
     layout = QHBoxLayout(frame)
-    layout.setContentsMargins(12, 8, 12, 8)
+    layout.setContentsMargins(8, 8, 8, 8)
     layout.setSpacing(12)
+    if icon_name:
+        icon = QLabel(frame)
+        icon.setObjectName("sectionIcon")
+        icon_path = _SHELL_ICONS / f"{icon_name}.svg"
+        if icon_path.is_file():
+            icon.setPixmap(QIcon(str(icon_path)).pixmap(QSize(18, 18)))
+        icon.setFixedSize(18, 18)
+        layout.addWidget(icon)
     heading = QLabel(title, frame)
     heading.setObjectName("sectionHeading")
     layout.addWidget(heading)
@@ -105,6 +125,61 @@ def status_chip(
     return label
 
 
+def reference_game_rail(
+    parent: QWidget | None = None,
+    *,
+    object_name: str = "referenceGameRail",
+    active_family: str = "stalker2",
+) -> QFrame:
+    """Build the compact game rail shared by secondary canonical screens.
+
+    The rail is presentation-only: it mirrors the official release registry
+    and intentionally has no fake discovery counts or edit affordances.
+    """
+
+    rail = panel(parent, object_name=object_name)
+    rail.setFixedWidth(246)
+    layout = QVBoxLayout(rail)
+    layout.setContentsMargins(12, 12, 12, 12)
+    layout.setSpacing(8)
+    layout.addWidget(QLabel("ИГРЫ", rail), 0)
+    rule = QFrame(rail)
+    rule.setFrameShape(QFrame.Shape.HLine)
+    rule.setObjectName("railRule")
+    layout.addWidget(rule)
+    games = QListWidget(rail)
+    games.setObjectName("referenceSecondaryGameList")
+    games.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+    entries = (
+        ("ВСЕ ИГРЫ", "Локальные сохранения", "all"),
+        ("S.T.A.L.K.E.R. 2", "Heart of Chornobyl", "stalker2"),
+        ("Call of Pripyat", "X-Ray original", "cop"),
+        ("Clear Sky", "X-Ray original", "clear_sky"),
+        ("Shadow of Chornobyl", "X-Ray original", "soc"),
+    )
+    selected_row = 0
+    for row, (title, detail, family) in enumerate(entries):
+        item = QListWidgetItem(f"{title}\n{detail}")
+        item.setData(Qt.ItemDataRole.UserRole, family)
+        games.addItem(item)
+        if family == active_family:
+            selected_row = row
+    games.setCurrentRow(selected_row)
+    layout.addWidget(games, 1)
+    zone = TextureFrame(rail, asset="rail_zone.png")
+    zone.setObjectName("secondaryZoneDecoration")
+    zone.setFixedHeight(340)
+    zone_layout = QVBoxLayout(zone)
+    zone_layout.setContentsMargins(12, 20, 12, 12)
+    zone_layout.addStretch(1)
+    note = QLabel("ОДНИ СОХРАНЯЮТ ИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИЮ.", zone)
+    note.setObjectName("zoneDecorationText")
+    note.setWordWrap(True)
+    zone_layout.addWidget(note)
+    layout.addWidget(zone)
+    return rail
+
+
 def key_hint(key: str, text: str, parent: QWidget | None = None) -> QWidget:
     frame = QWidget(parent)
     layout = QHBoxLayout(frame)
@@ -125,6 +200,7 @@ __all__ = [
     "key_hint",
     "panel",
     "primary_button",
+    "reference_game_rail",
     "section_header",
     "status_chip",
 ]

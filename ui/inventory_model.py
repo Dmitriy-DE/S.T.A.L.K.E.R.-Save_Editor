@@ -7,7 +7,7 @@ values and a separate staged-count map; it never mutates a save payload.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
-from typing import TypeAlias
+from typing import ClassVar, TypeAlias
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon
@@ -20,6 +20,15 @@ from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
 IconProvider: TypeAlias = Callable[[InventoryItem], QIcon | None]
 NameProvider: TypeAlias = Callable[[InventoryItem], str | None]
+
+_ITEM_TYPE_LABELS = {
+    "mp_wpn_ak74": "Штурмовая винтовка",
+    "mp_wpn_toz34": "Дробовик",
+    "cs_heavy_outfit": "Броня",
+    "helm_respirator": "Шлем",
+    "detector_advanced": "Детектор",
+    "zat_b33_safe_container": "Контейнер",
+}
 
 
 class InventoryTableModel(QAbstractTableModel):
@@ -41,18 +50,30 @@ class InventoryTableModel(QAbstractTableModel):
     HANDLE_COLUMN = 9
 
     HEADERS = (
-        "Имя",
-        "Категория",
+        "НАЗВАНИЕ",
+        "ТИП",
         "Позиция",
         "Размер",
         "Type-key",
-        "Количество",
-        "Вес",
-        "Прочность",
+        "КОЛ-ВО",
+        "ВЕС (КГ)",
+        "СОСТОЯНИЕ",
         "Поддержка",
         "Handle",
     )
     _CHANGED_BRUSH = QBrush(QColor("#fff2cc"))
+    _CHANGED_TEXT_BRUSH = QBrush(QColor("#151713"))
+    _CATEGORY_LABELS: ClassVar[dict[str, str]] = {
+        "weapon": "Оружие",
+        "ammo": "Боеприпасы",
+        "armor": "Броня",
+        "helmet": "Шлем",
+        "device": "Детектор",
+        "consumable": "Расходник",
+        "artifact": "Артефакт",
+        "quest": "Ключ",
+        "other": "Прочее",
+    }
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -198,6 +219,12 @@ class InventoryTableModel(QAbstractTableModel):
             or item.handle in self._staged_placements
         ):
             return self._CHANGED_BRUSH
+        if role == Qt.ItemDataRole.ForegroundRole and (
+            item.handle in self._staged_counts
+            or item.handle in self._staged_durability
+            or item.handle in self._staged_placements
+        ):
+            return self._CHANGED_TEXT_BRUSH
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in {
             self.COUNT_COLUMN,
             self.WEIGHT_COLUMN,
@@ -303,7 +330,10 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.NAME_COLUMN:
             return self._display_name(item)
         if column == self.CATEGORY_COLUMN:
-            return item.category
+            return _ITEM_TYPE_LABELS.get(
+                item.type_key,
+                self._CATEGORY_LABELS.get(item.category, item.category),
+            )
         if column == self.POSITION_COLUMN:
             return self._normalise_absent(self._position_text(item))
         if column == self.SIZE_COLUMN:
@@ -318,8 +348,8 @@ class InventoryTableModel(QAbstractTableModel):
             if item.total_weight is None:
                 return "—"
             if staged is None or item.unit_weight is None:
-                return f"{item.total_weight:.3f}"
-            return f"{item.total_weight:.3f} → {staged * item.unit_weight:.3f}"
+                return f"{item.total_weight:.1f}"
+            return f"{item.total_weight:.1f} → {staged * item.unit_weight:.1f}"
         if column == self.CONDITION_COLUMN:
             staged_condition = self._staged_durability.get(item.handle)
             if item.condition is None:

@@ -166,6 +166,20 @@ class BackupController(QObject):
             self.backup_dirs[0] if self.backup_dirs else Path.cwd()
         )
 
+    @staticmethod
+    def default_restore_destination(record: BackupRecord) -> Path:
+        """Choose a recoverable, non-destructive copy name for a verified backup."""
+
+        source = Path(record.source_path).expanduser()
+        return source.with_name(f"{source.stem}-restored{source.suffix or '.sav'}")
+
+    def set_review_records(self, records: Sequence[BackupRecord]) -> None:
+        """Load deterministic records for a visual review without touching disk."""
+
+        self._records = tuple(records)
+        self._preview_record = None
+        self.records_changed.emit(self._records)
+
     def set_busy(self, busy: bool) -> None:
         self._busy = busy
         self.busy_changed.emit(busy)

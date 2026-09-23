@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSignalBlocker, Signal
+from PySide6.QtCore import QSignalBlocker, Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -17,8 +18,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.storage import BackupRecord
+
 from .backup_controller import BackupController
-from .style_components import action_button, panel, section_header, status_chip
+from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+
+_SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
 
 
 class HistoryView(QWidget):
@@ -32,6 +37,8 @@ class HistoryView(QWidget):
         super().__init__(parent)
         self.setObjectName("historyView")
         self.backend = backend
+        self._visible_records: tuple[BackupRecord, ...] = ()
+        self._source_filter = ""
         self._build_ui()
         backend.records_changed.connect(lambda _records: self._render())
         backend.progress_changed.connect(self.set_progress)
@@ -54,10 +61,25 @@ class HistoryView(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(10)
+        body.addWidget(
+            reference_game_rail(
+                self,
+                object_name="historyGameRail",
+                active_family="stalker2",
+            ),
+            0,
+        )
+        workspace = QHBoxLayout()
+        workspace.setSpacing(10)
         table_panel = panel(self, object_name="historyTablePanel")
+        self.table_panel = table_panel
         table_layout = QVBoxLayout(table_panel)
         table_layout.setContentsMargins(12, 12, 12, 12)
         table_layout.addWidget(section_header("ИСТОРИЯ И РЕЗЕРВНЫЕ КОПИИ", "SHA / СТАТУС", table_panel))
+        self.source_filter_edit = QLineEdit(table_panel)
+        self.source_filter_edit.setPlaceholderText("Фильтр по исходному слоту…")
+        self.source_filter_edit.textChanged.connect(self._filter_changed)
+        table_layout.addWidget(self.source_filter_edit)
         self.table = QTableWidget(0, 5, table_panel)
         self.table.setObjectName("historyTable")
         self.table.setHorizontalHeaderLabels(("ДАТА", "НАЗВАНИЕ СОХРАНЕНИЯ", "ОПЕРАЦИЯ", "SHA", "СТАТУС"))
@@ -71,7 +93,7 @@ class HistoryView(QWidget):
         self.table.itemSelectionChanged.connect(self._selection_changed)
         table_layout.addWidget(self.table, 1)
         toolbar = QHBoxLayout()
-        self.refresh_button = action_button("⟳  ОБНОВИТЬ", table_panel)
+        self.refresh_button = action_button("ОБНОВИТЬ", table_panel)
         self.refresh_button.clicked.connect(self._refresh)
         toolbar.addWidget(self.refresh_button)
         self.open_folder_button = action_button("ОТКРЫТЬ ПАПКУ", table_panel)
@@ -79,12 +101,21 @@ class HistoryView(QWidget):
         toolbar.addWidget(self.open_folder_button)
         toolbar.addStretch(1)
         table_layout.addLayout(toolbar)
-        body.addWidget(table_panel, 67)
+        workspace.addWidget(table_panel, 67)
 
         self.detail_panel = panel(self, object_name="historyDetailPanel")
         detail = QVBoxLayout(self.detail_panel)
         detail.setContentsMargins(12, 12, 12, 12)
         detail.addWidget(section_header("ДЕТАЛИ ЗАПИСИ", "ВОССТАНОВЛЕНИЕ", self.detail_panel))
+        self.detail_image = QLabel(self.detail_panel)
+        self.detail_image.setObjectName("historyDetailImage")
+        self.detail_image.setMinimumHeight(112)
+        self.detail_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        detail_pixmap = QPixmap(str(_SHELL_ASSETS / "preview_zone.png"))
+        if not detail_pixmap.isNull():
+            self.detail_image.setPixmap(detail_pixmap)
+            self.detail_image.setScaledContents(True)
+        detail.addWidget(self.detail_image)
         self.detail_name = QLabel("Запись не выбрана", self.detail_panel)
         self.detail_name.setObjectName("historyDetailName")
         self.detail_name.setWordWrap(True)
@@ -110,7 +141,11 @@ class HistoryView(QWidget):
         self.restore_in_place_button.setEnabled(False)
         self.restore_in_place_button.clicked.connect(self._restore_in_place)
         detail.addWidget(self.restore_in_place_button)
-        body.addWidget(self.detail_panel, 33)
+        workspace.addWidget(self.detail_panel, 33)
+        workspace_host = QWidget(self)
+        workspace_host.setObjectName("historyWorkspace")
+        workspace_host.setLayout(workspace)
+        body.addWidget(workspace_host, 1)
         root.addLayout(body, 1)
 
     def _refresh(self) -> None:
@@ -122,8 +157,19 @@ class HistoryView(QWidget):
 
         self._refresh()
 
+    def _filter_changed(self, value: str) -> None:
+        self._source_filter = value.strip().casefold()
+        self._render()
+
     def _render(self) -> None:
-        records = self.backend.records
+        records = tuple(
+            record
+            for record in self.backend.records
+            if not self._source_filter
+            or self._source_filter in record.source_path.casefold()
+            or self._source_filter in Path(record.source_path).name.casefold()
+        )
+        self._visible_records = records
         with QSignalBlocker(self.table):
             self.table.setRowCount(0)
             for row, record in enumerate(records):
@@ -137,6 +183,7 @@ class HistoryView(QWidget):
                 )
                 for column, value in enumerate(values):
                     self.table.setItem(row, column, QTableWidgetItem(str(value)))
+        self.status_chip.setText("ЖУРНАЛ ГОТОВ" if records else "ЖУРНАЛ ПУСТ")
         self._selection_changed()
 
     def _selection_changed(self) -> None:
@@ -148,9 +195,11 @@ class HistoryView(QWidget):
         if record is None:
             self.detail_name.setText("Запись не выбрана")
             self.detail_status.setText("Проверка SHA обязательна перед восстановлением.")
+            self.destination_edit.clear()
             return
         self.detail_name.setText(record.source_path or "Неизвестный источник")
         self.detail_status.setText(f"Статус backup: {record.status}. Нажми проверку перед восстановлением.")
+        self.destination_edit.clear()
 
     def _preview(self) -> None:
         checked = self.backend.preview_restore(self._selected_record())
@@ -160,7 +209,14 @@ class HistoryView(QWidget):
         self.restore_in_place_button.setEnabled(
             checked is not None and self.backend.can_restore_in_place(checked)
         )
+        if checked is not None and not self.destination_edit.text().strip():
+            self.destination_edit.setText(str(self.backend.default_restore_destination(checked)))
         self._destination_changed()
+
+    def preview_selected(self) -> None:
+        """Verify the selected backup; wired to the visible Enter hint."""
+
+        self._preview()
 
     def _destination_changed(self) -> None:
         self.restore_button.setEnabled(
@@ -183,7 +239,26 @@ class HistoryView(QWidget):
 
     def _selected_record(self):
         row = self.table.currentRow()
-        return self.backend.records[row] if 0 <= row < len(self.backend.records) else None
+        return self._visible_records[row] if 0 <= row < len(self._visible_records) else None
+
+    def select_for_source(self, source: Path | str) -> None:
+        """Filter and select the best matching verified journal record."""
+
+        source_path = Path(source).expanduser()
+        self.source_filter_edit.setText(source_path.name)
+        candidates: list[tuple[int, BackupRecord]] = [
+            (row, record)
+            for row, record in enumerate(self._visible_records)
+            if Path(record.source_path).expanduser() == source_path
+            or record.source_path == str(source_path)
+        ]
+        if not candidates:
+            return
+        row = next(
+            (index for index, record in candidates if record.status == "verified"),
+            candidates[0][0],
+        )
+        self.table.selectRow(row)
 
     def set_busy(self, busy: bool) -> None:
         self.backend.set_busy(busy)

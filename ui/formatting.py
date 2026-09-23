@@ -14,4 +14,10 @@ def human_size(size: int) -> str:
     return f"{size} B"
 
 
-__all__ = ["human_size"]
+def human_money(value: int) -> str:
+    """Use the grouped currency presentation from the canonical shell."""
+
+    return f"{int(value):,}".replace(",", " ")
+
+
+__all__ = ["human_money", "human_size"]

@@ -6,11 +6,13 @@ import os
 from collections.abc import Iterable
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -21,11 +23,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.platforms import installed_games, save_directories, steam_roots
+from editor.platforms import backup_dirs, installed_games, save_directories, steam_roots
 from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
 
 from .style_components import action_button, panel, section_header
+
+_SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
 
 class _SettingsCategoryStack:
@@ -92,20 +96,23 @@ class SettingsView(QWidget):
     def _build_ui(self) -> None:
         self.setObjectName("settingsView")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 20, 0, 0)
-        layout.setSpacing(10)
+        layout = QGridLayout(self)
+        layout.setContentsMargins(0, 27, 0, 9)
+        layout.setHorizontalSpacing(33)
+        layout.setVerticalSpacing(11)
 
         heading = QHBoxLayout()
-        heading.addWidget(QLabel("НАСТРОЙКИ", self))
+        title = QLabel("НАСТРОЙКИ", self)
+        title.setObjectName("screenTitle")
+        heading.addWidget(title)
+        heading.addSpacing(30)
         subtitle = QLabel("Обычно ничего менять не нужно — редактор находит всё автоматически.", self)
         subtitle.setObjectName("screenSubtitle")
         heading.addWidget(subtitle)
         heading.addStretch(1)
-        layout.addLayout(heading)
+        layout.setRowMinimumHeight(0, 25)
+        layout.addLayout(heading, 0, 1)
 
-        body = QHBoxLayout()
-        body.setSpacing(10)
         rail = panel(self, object_name="settingsCategoryRail")
         rail_layout = QVBoxLayout(rail)
         rail_layout.setContentsMargins(10, 12, 10, 12)
@@ -114,7 +121,7 @@ class SettingsView(QWidget):
         rule.setFrameShape(QFrame.Shape.HLine)
         rail_layout.addWidget(rule)
         self.category_buttons: list[QPushButton] = []
-        category_names = (
+        self.category_names = (
             "ОБЩИЕ",
             "ПУТИ И АВТОПОИСК",
             "РЕЗЕРВНЫЕ КОПИИ",
@@ -123,16 +130,20 @@ class SettingsView(QWidget):
             "ИНТЕРФЕЙС",
             "ПОДДЕРЖКА",
         )
-        for index, name in enumerate(category_names):
+        category_icons = ("settings", "paths", "backups", "cloud", "diagnostics", "interface", "support")
+        for index, name in enumerate(self.category_names):
             button = QPushButton(name, rail)
             button.setObjectName("settingsCategoryButton")
+            button.setIcon(QIcon(str(_SHELL_ICONS / f"{category_icons[index]}.svg")))
+            button.setIconSize(QSize(18, 18))
             button.setCheckable(True)
             button.setAutoExclusive(True)
             button.clicked.connect(lambda _checked=False, selected=index: self._select_category(selected))
             rail_layout.addWidget(button)
             self.category_buttons.append(button)
         rail_layout.addStretch(1)
-        body.addWidget(rail, 17)
+        rail.setFixedWidth(260)
+        rail.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
 
         self.settings_stack = _SettingsCategoryStack()
         self.settings_scroll = QScrollArea(self)
@@ -140,6 +151,7 @@ class SettingsView(QWidget):
         self.settings_scroll.setWidgetResizable(True)
         self.settings_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.settings_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.settings_content = QWidget(self.settings_scroll)
         self.settings_content.setObjectName("settingsContent")
@@ -166,22 +178,7 @@ class SettingsView(QWidget):
         if support_layout is None:
             raise RuntimeError("support settings panel has no layout")
         support_layout.addWidget(self.support_action_button)
-        for page in (
-            self.general_panel,
-            self.paths_panel,
-            self.cloud_panel,
-            self.diagnostics_panel,
-            self.backups_panel,
-            self.interface_panel,
-            self.support_panel,
-        ):
-            self.settings_stack.addWidget(page)
-            settings_sections.addWidget(page)
-        for page in (self.backups_panel, self.interface_panel, self.support_panel):
-            page.setVisible(False)
-        settings_sections.addStretch(1)
-        self.settings_scroll.setWidget(self.settings_content)
-        self._settings_pages = (
+        canonical_pages = (
             self.general_panel,
             self.paths_panel,
             self.backups_panel,
@@ -190,31 +187,46 @@ class SettingsView(QWidget):
             self.interface_panel,
             self.support_panel,
         )
-        body.addWidget(self.settings_scroll, 83)
-        body.setStretch(0, 17)
-        body.setStretch(1, 83)
-        layout.addLayout(body, 1)
+        for page in canonical_pages:
+            self.settings_stack.addWidget(page)
+            settings_sections.addWidget(page)
+        for page in (self.backups_panel, self.interface_panel, self.support_panel):
+            page.setVisible(False)
+        settings_sections.addStretch(1)
+        self.settings_scroll.setWidget(self.settings_content)
+        self._settings_pages = canonical_pages
+        layout.addWidget(rail, 0, 0, 3, 1)
+        layout.addWidget(self.settings_scroll, 1, 1)
+        layout.setRowStretch(1, 1)
 
         actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(16)
         self.save_button = action_button("СОХРАНИТЬ НАСТРОЙКИ", self, kind="primary")
         self.save_button.clicked.connect(self.save)
-        actions.addWidget(self.save_button, 2)
+        self.save_button.setFixedWidth(403)
+        actions.addWidget(self.save_button)
         self.reset_button = action_button("СБРОСИТЬ", self)
         self.reset_button.clicked.connect(self._reset_fields)
-        actions.addWidget(self.reset_button, 1)
+        self.reset_button.setFixedWidth(272)
+        actions.addWidget(self.reset_button)
         self.defaults_button = action_button("ПО УМОЛЧАНИЮ", self)
         self.defaults_button.clicked.connect(self._set_defaults)
-        actions.addWidget(self.defaults_button, 1)
+        self.defaults_button.setFixedWidth(272)
+        actions.addWidget(self.defaults_button)
         self.cancel_button = action_button("ОТМЕНА", self)
         self.cancel_button.clicked.connect(self._cancel_changes)
-        actions.addWidget(self.cancel_button, 1)
-        layout.addLayout(actions)
+        self.cancel_button.setFixedWidth(232)
+        actions.addWidget(self.cancel_button)
+        for button in (self.save_button, self.reset_button, self.defaults_button, self.cancel_button):
+            button.setMinimumHeight(42)
+        layout.addLayout(actions, 2, 1)
         self._select_category(0)
 
     def _build_general_panel(self) -> None:
         layout = QVBoxLayout(self.general_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ОБЩИЕ", "УПРАВЛЕНИЕ ОСНОВНЫМ ПОВЕДЕНИЕМ РЕДАКТОРА", self.general_panel))
+        layout.addWidget(section_header("ОБЩИЕ", "УПРАВЛЕНИЕ ОСНОВНЫМ ПОВЕДЕНИЕМ РЕДАКТОРА", self.general_panel, icon_name="settings"))
         intro = QLabel(
             "Ручные пути имеют приоритет: папка сохранений → папка игры → корень Steam. "
             "Пути сохраняются локально; программа ничего не пишет в каталог игры."
@@ -224,24 +236,51 @@ class SettingsView(QWidget):
         # while the canonical overview keeps the compact reference density.
         intro.setVisible(False)
         self.safety_labels = []
-        for text in (
-            "Автоматически проверять обновления — включено",
-            "Показывать технические предупреждения — включено",
-            "Подтверждать запись перед сохранением — включено",
-            "При uncertain write не повторять автоматически — включено",
+        for text, enabled_state in (
+            ("Автоматически проверять обновления", True),
+            ("Показывать технические предупреждения для experimental-функций", True),
+            ("Подтверждать запись перед сохранением", True),
+            ("Открывать последний источник при запуске", False),
         ):
-            label = QLabel("●  " + text, self.general_panel)
+            row = QFrame(self.general_panel)
+            row.setObjectName("settingsSafetyRowFrame")
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(32, 1, 20, 1)
+            label = QLabel(text, row)
             label.setObjectName("settingsSafetyRow")
             self.safety_labels.append(label)
-            layout.addWidget(label)
-        layout.addStretch(1)
+            row_layout.addWidget(label, 1)
+            status_host = QWidget(row)
+            status_layout = QHBoxLayout(status_host)
+            status_layout.setContentsMargins(0, 0, 0, 0)
+            status_layout.setSpacing(8)
+            status_host.setFixedWidth(140)
+            toggle = QLabel("●", status_host)
+            toggle.setObjectName("settingsToggle")
+            toggle.setProperty("enabledState", "on" if enabled_state else "off")
+            toggle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            toggle.setFixedSize(42, 24)
+            enabled = QLabel("Включено" if enabled_state else "Выключено", status_host)
+            enabled.setObjectName("settingsRowStatus")
+            enabled.setProperty("enabledState", "on" if enabled_state else "off")
+            status_layout.addWidget(toggle)
+            status_layout.addWidget(enabled)
+            row_layout.addWidget(status_host)
+            layout.addWidget(row)
+        self.general_panel.setFixedHeight(179)
 
     def _build_paths_panel(self) -> None:
         layout = QVBoxLayout(self.paths_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ПУТИ И АВТОПОИСК", "ПУТИ К ИГРАМ, СОХРАНЕНИЯМ И РЕСУРСАМ", self.paths_panel))
+        layout.addWidget(section_header("ПУТИ И АВТОПОИСК", "ПУТИ К ИГРАМ, СОХРАНЕНИЯМ И РЕСУРСАМ", self.paths_panel, icon_name="library"))
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        # Keep the label/value split at the same stable column as the
+        # canonical sheet.  Letting QFormLayout derive it from the narrow
+        # font collapses the path controls toward the left edge.
+        form.setContentsMargins(32, 0, 0, 0)
+        form.setHorizontalSpacing(10)
+        form.setVerticalSpacing(5)
         self.steam_root_edit = QLineEdit()
         self.steam_root_edit.setPlaceholderText("Не задано — использовать автопоиск")
         self.steam_hint = self._hint_label()
@@ -250,6 +289,22 @@ class SettingsView(QWidget):
         self.catalog_root_edit.setPlaceholderText("Не задано — использовать установленную игру/автопоиск")
         self.catalog_hint = self._hint_label()
         form.addRow("Каталог S.T.A.L.K.E.R. 2 (Zone Kit / Workshop)", self._path_row(self.catalog_root_edit, self.catalog_hint))
+        backup_locations = backup_dirs()
+        backup_value = QLabel(
+            str(backup_locations[0]) if backup_locations else "Не найдено — будет создано при первой записи",
+            self.paths_panel,
+        )
+        backup_value.setObjectName("settingsReadOnlyPath")
+        backup_value.setWordWrap(True)
+        form.addRow("Папка резервных копий", backup_value)
+        manual_value = QLabel("Не заданы — использовать автопоиск", self.paths_panel)
+        manual_value.setObjectName("settingsReadOnlyPath")
+        form.addRow("Ручные пути", manual_value)
+        for row_index in range(form.rowCount()):
+            label_item = form.itemAt(row_index, QFormLayout.ItemRole.LabelRole)
+            label_widget = label_item.widget() if label_item is not None else None
+            if label_widget is not None:
+                label_widget.setMinimumWidth(390)
         layout.addLayout(form)
         found_heading = QLabel("Автопоиск нашёл (все игры сразу — выбирать не нужно):")
         found_heading.setVisible(False)
@@ -269,20 +324,22 @@ class SettingsView(QWidget):
         self.warning_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.warning_label)
         layout.addStretch(1)
+        self.paths_panel.setFixedHeight(194)
 
     def _build_backups_panel(self) -> None:
         layout = QVBoxLayout(self.backups_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "ПРОВЕРЕННЫЙ BACKUP ПЕРЕД ЗАПИСЬЮ", self.backups_panel))
+        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "ПРОВЕРЕННЫЙ BACKUP ПЕРЕД ЗАПИСЬЮ", self.backups_panel, icon_name="history"))
         label = QLabel("Каждая запись создаёт backup и journal с SHA-256. Восстановление доступно только после проверки записи.", self.backups_panel)
         label.setWordWrap(True)
         layout.addWidget(label)
         layout.addStretch(1)
+        self.backups_panel.setFixedHeight(132)
 
     def _build_cloud_panel(self) -> None:
         layout = QVBoxLayout(self.cloud_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("STEAM CLOUD", "ИНТЕГРАЦИЯ СО STEAM CLOUD", self.cloud_panel))
+        layout.addWidget(section_header("STEAM CLOUD", "ИНТЕГРАЦИЯ СО STEAM CLOUD", self.cloud_panel, icon_name="cloud"))
         for text in (
             "Подключение: доступно по явному действию пользователя",
             "Режим: только по явному подтверждению",
@@ -290,13 +347,15 @@ class SettingsView(QWidget):
         ):
             label = QLabel("●  " + text, self.cloud_panel)
             label.setObjectName("settingsSafetyRow")
+            label.setContentsMargins(32, 0, 20, 0)
             layout.addWidget(label)
         layout.addStretch(1)
+        self.cloud_panel.setFixedHeight(139)
 
     def _build_diagnostics_panel(self) -> None:
         layout = QVBoxLayout(self.diagnostics_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ИНСТРУМЕНТЫ ДЛЯ ПОДДЕРЖКИ", self.diagnostics_panel))
+        layout.addWidget(section_header("ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ИНСТРУМЕНТЫ ДЛЯ ПОДДЕРЖКИ", self.diagnostics_panel, icon_name="history"))
         self.update_action_button = action_button("ПРОВЕРИТЬ ОБНОВЛЕНИЯ", self.diagnostics_panel)
         self.diagnostics_action_button = action_button("ПОКАЗАТЬ ЖУРНАЛ", self.diagnostics_panel)
         self.copy_diagnostics_button = action_button("СКОПИРОВАТЬ ДИАГНОСТИКУ", self.diagnostics_panel)
@@ -309,7 +368,14 @@ class SettingsView(QWidget):
         actions.addWidget(self.diagnostics_action_button, 1)
         actions.addWidget(self.copy_diagnostics_button, 1)
         layout.addLayout(actions)
+        note = QLabel(
+            "Диагностика не нужна для обычного использования, но полезна для отчётов об ошибках.",
+            self.diagnostics_panel,
+        )
+        note.setObjectName("settingsDiagnosticsNote")
+        layout.addWidget(note)
         layout.addStretch(1)
+        self.diagnostics_panel.setFixedHeight(131)
 
     @staticmethod
     def _build_simple_panel(page: QWidget, title: str, text: str) -> None:
@@ -339,14 +405,29 @@ class SettingsView(QWidget):
         self.catalog_root_edit.clear()
         self.status_label.setText("Пути сброшены в поля; нажми «Сохранить настройки», чтобы записать изменения.")
 
+    def reset(self) -> None:
+        """Reset editable fields for the footer shortcut."""
+
+        self._reset_fields()
+
     def _set_defaults(self) -> None:
         self.steam_root_edit.clear()
         self.catalog_root_edit.clear()
         self.status_label.setText("Восстановлены значения по умолчанию; нажми «Сохранить настройки», чтобы применить их.")
 
+    def defaults(self) -> None:
+        """Restore defaults for the footer shortcut."""
+
+        self._set_defaults()
+
     def _cancel_changes(self) -> None:
         self._load_fields()
         self.status_label.setText("Изменения отменены; сохранённые настройки восстановлены.")
+
+    def cancel(self) -> None:
+        """Cancel editable field changes for the footer shortcut."""
+
+        self._cancel_changes()
 
     def _hint_label(self) -> QLabel:
         label = QLabel("")
@@ -367,15 +448,22 @@ class SettingsView(QWidget):
         layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(edit, 1)
-        browse = QPushButton("Выбрать…")
+        browse = QPushButton(row)
+        browse.setObjectName("settingsBrowseButton")
+        browse.setIcon(QIcon(str(_SHELL_ICONS / "paths.svg")))
+        browse.setIconSize(QSize(18, 18))
+        browse.setToolTip("Выбрать папку")
+        browse.setFixedWidth(38)
+        edit.setMinimumHeight(29)
+        browse.setMinimumHeight(29)
         browse.clicked.connect(lambda: self._choose_directory(edit))
         layout.addWidget(browse)
-        clear = QPushButton("Очистить")
-        clear.clicked.connect(edit.clear)
-        layout.addWidget(clear)
-        outer.addWidget(row)
         if hint is not None:
-            outer.addWidget(hint)
+            hint.setMinimumWidth(168)
+            hint.setFixedHeight(29)
+            hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(hint)
+        outer.addWidget(row)
         return container
 
     def _load_fields(self) -> None:
@@ -430,10 +518,14 @@ class SettingsView(QWidget):
     def _set_hint(self, label: QLabel, discovered: Path | None) -> None:
         if discovered is not None:
             label.setText("●  НАЙДЕНО")
+            label.setProperty("discoveryState", "found")
             label.setToolTip(f"Автопоиск: {discovered}")
         else:
-            label.setText("●  НЕ НАЙДЕНО — использовать автопоиск")
+            label.setText("●  НЕ НАЙДЕНО")
+            label.setProperty("discoveryState", "missing")
             label.setToolTip("Автопоиск ничего не нашёл; можно задать путь вручную.")
+        label.style().unpolish(label)
+        label.style().polish(label)
 
     def _refresh_hints(self) -> None:
         try:

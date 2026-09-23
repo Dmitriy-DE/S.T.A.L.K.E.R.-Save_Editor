@@ -199,7 +199,7 @@ def test_diagnostics_dialog_previews_before_sending_and_reports_success(
 
     assert started.wait(2)
     qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
-    assert "Предпросмотр" in dialog.preview_label.text()
+    assert "Проверка" in dialog.preview_label.text()
     assert "report-123" in dialog.status_label.text()
 
 

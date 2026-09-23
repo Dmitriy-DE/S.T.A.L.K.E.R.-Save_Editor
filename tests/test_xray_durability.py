@@ -222,7 +222,6 @@ def test_edit_plan_freezes_and_rejects_duplicate_durability_handles() -> None:
 
 def test_qt_condition_editor_stages_percentage_without_mutating_snapshot(qtbot, tmp_path) -> None:
     pytest.importorskip("PySide6")
-    from PySide6.QtCore import Qt
 
     from editor.capabilities import CapabilitySupport, FormatCapabilities
     from editor.service import EditorService
@@ -258,7 +257,6 @@ def test_qt_condition_editor_stages_percentage_without_mutating_snapshot(qtbot, 
     assert view.detail_view.condition_spin.value() == 25
 
     view.detail_view.condition_spin.setValue(75)
-    qtbot.mouseClick(view.detail_view.condition_apply, Qt.MouseButton.LeftButton)
 
     assert window.staged_durability == {0x3456: pytest.approx(0.75)}
     assert window.snapshot.data == data

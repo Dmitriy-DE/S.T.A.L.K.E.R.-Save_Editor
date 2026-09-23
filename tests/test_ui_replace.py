@@ -71,7 +71,8 @@ def test_main_window_replaces_the_selected_local_slot_after_preview(
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
 
     assert calls == [(source, backup_dir)]
-    assert window.reference_stack.currentWidget() is window.save_result_view
+    assert window.reference_stack.currentWidget() is window.editor_view
+    assert window._reference_modal_view is window.save_result_view
     assert window.save_result_view.heading_label.text() == "СОХРАНЕНИЕ УСПЕШНО ЗАПИСАНО"
     assert "Output" in {
         window.save_result_view.receipt_table.item(row, 0).text()

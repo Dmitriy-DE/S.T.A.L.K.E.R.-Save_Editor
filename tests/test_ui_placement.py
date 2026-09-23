@@ -4,7 +4,6 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtCore import Qt
 from test_xray_durability import _condition_fixture
 
 from editor.capabilities import CapabilitySupport, FormatCapabilities
@@ -51,7 +50,6 @@ def test_qt_placement_editor_stages_slot_without_mutating_snapshot(qtbot, tmp_pa
         if view.detail_view.placement_combo.itemData(index) == ("slot", 4)
     )
     view.detail_view.placement_combo.setCurrentIndex(target)
-    qtbot.mouseClick(view.detail_view.placement_apply, Qt.MouseButton.LeftButton)
 
     assert window.staged_placements == {0x3456: ("slot", 4)}
     assert window.snapshot is not None

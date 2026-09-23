@@ -9,6 +9,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -19,7 +20,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .style_components import action_button, panel, section_header, status_chip
+from editor.releases import is_xray_original_release
+
+from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
 
 
 class CharacterView(QWidget):
@@ -50,6 +53,16 @@ class CharacterView(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(10)
+        body.addWidget(
+            reference_game_rail(
+                self,
+                object_name="characterGameRail",
+                active_family="cop",
+            ),
+            0,
+        )
+        workspace = QHBoxLayout()
+        workspace.setSpacing(10)
         profile = panel(self, object_name="characterProfilePanel")
         profile_layout = QVBoxLayout(profile)
         profile_layout.setContentsMargins(12, 12, 12, 12)
@@ -63,12 +76,34 @@ class CharacterView(QWidget):
         self.player_faction_combo = QComboBox(profile)
         self.player_faction_combo.setEnabled(False)
         profile_layout.addWidget(self.player_faction_combo)
-        self.player_faction_button = action_button("ЗАСТЕЙДЖИТЬ", profile)
+        self.player_faction_button = action_button("ИЗМЕНИТЬ", profile)
         self.player_faction_button.setEnabled(False)
         self.player_faction_button.clicked.connect(self._stage_player_faction)
         profile_layout.addWidget(self.player_faction_button)
+        facts_panel = panel(profile, object_name="characterFactsPanel")
+        facts_layout = QGridLayout(facts_panel)
+        facts_layout.setContentsMargins(8, 8, 8, 8)
+        facts_layout.setHorizontalSpacing(18)
+        facts_layout.setVerticalSpacing(5)
+        facts_layout.addWidget(section_header("ПАРАМЕТРЫ", "READ-ONLY", facts_panel), 0, 0, 1, 2)
+        for row, label in enumerate(
+            ("Здоровье", "Выносливость", "Радиация", "Ранг", "Репутация", "Карма"),
+            start=1,
+        ):
+            value = QLabel("—", facts_panel)
+            value.setObjectName("characterUnavailableValue")
+            facts_layout.addWidget(QLabel(label, facts_panel), row, 0)
+            facts_layout.addWidget(value, row, 1)
+        profile_layout.addWidget(facts_panel)
+        facts_note = QLabel(
+            "Эти поля не извлечены текущим X-Ray snapshot и оставлены read-only.",
+            profile,
+        )
+        facts_note.setObjectName("characterFactsNote")
+        facts_note.setWordWrap(True)
+        profile_layout.addWidget(facts_note)
         profile_layout.addStretch(1)
-        body.addWidget(profile, 34)
+        workspace.addWidget(profile, 34)
 
         relations = panel(self, object_name="characterRelationsPanel")
         relations_layout = QVBoxLayout(relations)
@@ -91,7 +126,11 @@ class CharacterView(QWidget):
         # Controller-facing status surface; this is part of the canonical
         # character page, not a legacy faction widget.
         self.status_label = self.warning_label
-        body.addWidget(relations, 66)
+        workspace.addWidget(relations, 66)
+        workspace_host = QWidget(self)
+        workspace_host.setObjectName("characterWorkspace")
+        workspace_host.setLayout(workspace)
+        body.addWidget(workspace_host, 1)
         root.addLayout(body, 1)
 
         footer = QHBoxLayout()
@@ -106,7 +145,7 @@ class CharacterView(QWidget):
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
         capabilities = getattr(snapshot, "capabilities", None)
         self.editable = bool(
-            release in {"soc", "cop", "clear_sky", "xray", "shadow_of_chornobyl", "call_of_pripyat"}
+            is_xray_original_release(release)
             and snapshot.game_catalog is not None
             and capabilities is not None
             and getattr(capabilities, "edit_relations", False)
@@ -159,7 +198,7 @@ class CharacterView(QWidget):
                 spin.setValue(staged)
                 self.faction_table.setCellWidget(row, 2, spin)
                 stage_button = action_button(
-                    "ОТНОШЕНИЕ*" if faction.key in self._staged else "ЗАСТЕЙДЖИТЬ",
+                    "ИЗМЕНЕНО" if faction.key in self._staged else "ИЗМЕНИТЬ",
                     self.faction_table,
                 )
                 stage_button.clicked.connect(

@@ -66,7 +66,7 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         background: {c['bg_base']};
         color: {c['text']};
         font-family: {t['body']};
-        font-size: 13px;
+        font-size: 15px;
     }}
     QMainWindow, QWidget#appRoot {{ background: {c['bg_base']}; }}
     QGroupBox {{
@@ -224,6 +224,17 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: {c['bg_base']};
         color: {c['text']};
     }}
+    QWidget#referenceModalLayer {{
+        background: rgba(0, 0, 0, 172);
+    }}
+    QFrame#referenceModalCard {{
+        background: #0D100E;
+        border: 1px solid {c['border_focus']};
+        padding: 0;
+    }}
+    QWidget#saveReviewView, QWidget#saveResultView, QWidget#unsupportedView {{
+        background: transparent;
+    }}
     QWidget#referenceContent {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
             stop:0 #0B0E0C, stop:0.48 #121510, stop:1 #080A09);
@@ -237,7 +248,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text']};
         font-family: {t['heading']};
-        font-size: 31px;
+        font-size: 46px;
         font-weight: 800;
         letter-spacing: 1px;
     }}
@@ -253,7 +264,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text_secondary']};
         font-family: {t['heading']};
-        font-size: 13px;
+        font-size: 15px;
         letter-spacing: 1.1px;
     }}
     QPushButton#globalNav {{
@@ -263,16 +274,16 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         border-bottom: 3px solid transparent;
         border-radius: 0;
         min-height: 45px;
-        padding: 0 19px;
+        padding: 0 10px;
         font-family: {t['heading']};
-        font-size: 12px;
+        font-size: 14px;
         letter-spacing: 0.8px;
     }}
     QPushButton#globalNav:hover {{ color: {c['text']}; background: {c['bg_hover']}; }}
-    QPushButton#globalNav[destination="library"] {{ min-width: 196px; }}
-    QPushButton#globalNav[destination="cloud"] {{ min-width: 135px; }}
-    QPushButton#globalNav[destination="history"] {{ min-width: 80px; }}
-    QPushButton#globalNav[destination="settings"] {{ min-width: 135px; }}
+    QPushButton#globalNav[destination="library"] {{ min-width: 210px; }}
+    QPushButton#globalNav[destination="cloud"] {{ min-width: 150px; }}
+    QPushButton#globalNav[destination="history"] {{ min-width: 92px; }}
+    QPushButton#globalNav[destination="settings"] {{ min-width: 145px; }}
     QPushButton#globalNav:checked {{
         color: {c['text']};
         border-bottom-color: {c['olive']};
@@ -292,7 +303,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         border: 1px solid transparent;
         padding: 0;
-        font-size: 16px;
+        font-size: 18px;
     }}
     QPushButton#windowControl:hover {{ color: {c['text']}; border-color: {c['border']}; }}
     QFrame#referenceFooter {{
@@ -303,11 +314,11 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text_secondary']};
         font-family: {t['mono']};
-        font-size: 10px;
+        font-size: 11px;
     }}
     QLabel#footerStatus {{ color: {c['text_secondary']}; letter-spacing: 0.5px; }}
     QFrame#referencePanel, QFrame#sectionHeader {{
-        background: rgba(16, 19, 17, 225);
+        background: rgba(16, 19, 17, 214);
         border: 1px solid {c['border']};
         border-radius: 0;
     }}
@@ -315,11 +326,12 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: #151914;
         border-bottom-color: {c['border_subtle']};
     }}
+    QFrame#detailHeader QLabel#sectionHeading {{ font-size: 16px; letter-spacing: .5px; }}
     QLabel#sectionHeading {{
         background: transparent;
         color: {c['text']};
         font-family: {t['heading']};
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 700;
         letter-spacing: 0.8px;
     }}
@@ -327,7 +339,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text_secondary']};
         font-family: {t['mono']};
-        font-size: 9px;
+        font-size: 10px;
         letter-spacing: 0.7px;
     }}
     QLabel#statusChip {{
@@ -336,7 +348,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         padding: 4px 8px;
         font-family: {t['heading']};
-        font-size: 10px;
+        font-size: 11px;
         letter-spacing: 0.5px;
     }}
     QLabel#statusChip[tone="success"] {{ color: {c['success']}; border-color: {c['success']}; }}
@@ -387,9 +399,9 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         selection-color: #151713;
         outline: none;
     }}
-    QTableView#referenceTable::item, QTableWidget#referenceTable::item {{ padding: 6px 7px; }}
+    QTableView#referenceTable::item, QTableWidget#referenceTable::item {{ padding: 9px 8px; }}
     QTableView#referenceTable::item:selected, QTableWidget#referenceTable::item:selected {{
-        background: #D8D1BE;
+        background: repeating-linear-gradient(173deg, #D8D1BE 0 12px, #D2CAB6 13px 14px);
         color: #151713;
     }}
     QHeaderView::section {{
@@ -399,7 +411,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         border-bottom: 1px solid {c['border']};
         padding: 8px 7px;
         font-family: {t['heading']};
-        font-size: 10px;
+        font-size: 11px;
         letter-spacing: 0.7px;
     }}
     QScrollBar:vertical {{ background: #0B0E0C; width: 9px; border: none; }}
@@ -421,14 +433,14 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text']};
         font-family: {t['heading']};
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 800;
         letter-spacing: 1px;
     }}
     QLabel#screenSubtitle {{
         background: transparent;
         color: {c['text_secondary']};
-        font-size: 11px;
+        font-size: 13px;
     }}
     QFrame#libraryGameRail, QFrame#libraryCentre, QFrame#libraryPreviewPanel,
     QFrame#libraryRecentActivity, QFrame#cloudControlsPanel, QFrame#cloudTablePanel,
@@ -439,13 +451,16 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QFrame#generalSettingsPanel, QFrame#pathsSettingsPanel, QFrame#backupsSettingsPanel,
     QFrame#cloudSettingsPanel, QFrame#diagnosticsSettingsPanel,
     QFrame#interfaceSettingsPanel, QFrame#supportSettingsPanel {{
-        background: rgba(16, 19, 17, 235);
+        background: rgba(16, 19, 17, 214);
         border: 1px solid {c['border']};
         border-radius: 0;
     }}
     QFrame#libraryRecentActivity {{ background: #0C100D; }}
     QFrame#libraryQuickSummary {{ background: #0B0E0C; border: 1px solid {c['border_subtle']}; }}
-    QLabel#librarySummaryValue {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 9px; }}
+    QLabel#librarySummaryValue {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; padding: 2px 0; }}
+    QLabel#libraryActivityText {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; line-height: 1.35; }}
+    QTableWidget#libraryActivityTable {{ background: transparent; border: none; gridline-color: {c['border_subtle']}; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; }}
+    QTableWidget#libraryActivityTable::item {{ padding: 4px 6px; border-bottom: 1px solid {c['border_subtle']}; }}
     QFrame#zoneDecoration {{ background: transparent; border: 1px solid {c['border_subtle']}; }}
     QLabel#zoneDecorationText {{
         background: transparent;
@@ -462,7 +477,8 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QListWidget#libraryGameList::item {{
         color: {c['text_secondary']};
         border-bottom: 1px solid {c['border_subtle']};
-        padding: 11px 8px;
+        padding: 14px 10px;
+        min-height: 42px;
     }}
     QListWidget#libraryGameList::item:selected {{
         background: #D8D1BE;
@@ -479,9 +495,10 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         selection-background-color: #D8D1BE;
         selection-color: #151713;
         outline: none;
+        font-size: 15px;
     }}
     QTableWidget#librarySaveTable::item:selected, QTableWidget#cloudSaveTable::item:selected,
-    QTableWidget#historyTable::item:selected {{ background: #D8D1BE; color: #151713; }}
+    QTableWidget#historyTable::item:selected {{ background: repeating-linear-gradient(173deg, #D8D1BE 0 12px, #D2CAB6 13px 14px); color: #151713; }}
     QLabel#libraryPreviewImage {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #273029, stop:1 #0A0D0B);
         border: 1px solid {c['border']};
@@ -490,12 +507,21 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         font-size: 17px;
         letter-spacing: 1px;
     }}
+    QLabel#cloudDetailImage, QLabel#historyDetailImage {{
+        background: #0B0E0C;
+        border: 1px solid {c['border']};
+    }}
+    QLabel#unsupportedPreviewImage {{
+        background: #0B0E0C;
+        border: 1px solid {c['border']};
+        padding: 5px;
+    }}
     QLabel#libraryPreviewName, QLabel#cloudDetailName, QLabel#historyDetailName,
     QLabel#characterProfileLabel {{
         background: transparent;
         color: {c['text']};
         font-family: {t['heading']};
-        font-size: 15px;
+        font-size: 17px;
         font-weight: 700;
     }}
     QLabel#libraryPreviewMeta, QLabel#cloudDetailMeta, QLabel#historyDetailStatus,
@@ -512,10 +538,19 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         color: {c['text_secondary']};
         border: 1px solid transparent;
         border-radius: 0;
-        padding: 9px 10px;
+        padding: 12px 10px;
+        min-height: 42px;
         text-align: left;
         font-family: {t['heading']};
         letter-spacing: .7px;
+        font-size: 15px;
+    }}
+    QPushButton#categoryButton {{
+        padding: 0 8px;
+        min-height: 0;
+        background: #151914;
+        border: 1px solid {c['border_subtle']};
+        font-size: 12px;
     }}
     QPushButton#categoryButton:hover, QPushButton#settingsCategoryButton:hover {{ background: {c['bg_hover']}; color: {c['text']}; }}
     QPushButton#categoryButton:checked, QPushButton#settingsCategoryButton:checked {{
@@ -528,38 +563,126 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         background: transparent;
         color: {c['text_secondary']};
         font-family: {t['mono']};
-        font-size: 11px;
+        font-size: 12px;
     }}
     QWidget#editorView QLabel#editorMetric {{
         background: transparent;
         color: {c['text']};
         font-family: {t['mono']};
-        font-size: 16px;
+        font-size: 18px;
+    }}
+    QWidget#editorView QLabel#editorMetricCaption {{
+        background: transparent;
+        color: {c['text_secondary']};
+        font-family: {t['heading']};
+        font-size: 14px;
     }}
     QWidget#editorView QLabel#editorInfo {{
         background: transparent;
         color: {c['text_secondary']};
-        padding: 7px 0;
+        padding: 3px 0;
         border-bottom: 1px solid {c['border_subtle']};
     }}
+    QSpinBox#editorMoneySpin {{
+        background: transparent;
+        border: none;
+        color: {c['text']};
+        font-family: {t['mono']};
+        font-size: 21px;
+        padding: 0;
+    }}
+    QSpinBox#editorMoneySpin::up-button, QSpinBox#editorMoneySpin::down-button {{
+        width: 0;
+        border: none;
+    }}
     QFrame#editorStatusColumn, QFrame#editorInventoryColumn, QFrame#editorDetailColumn {{
-        background: rgba(16, 19, 17, 235);
+        background: rgba(16, 19, 17, 218);
         border: 1px solid {c['border']};
     }}
-    QPushButton#equipmentSlot {{
+    QFrame#characterFactsPanel {{
+        background: #0B0E0C;
+        border: 1px solid {c['border_subtle']};
+    }}
+    QLabel#characterUnavailableValue {{
+        background: #151914;
+        border: 1px solid {c['border_subtle']};
+        color: {c['text_disabled']};
+        padding: 3px 7px;
+    }}
+    QLabel#characterFactsNote {{
+        background: transparent;
+        color: {c['text_secondary']};
+        font-size: 11px;
+    }}
+    QPushButton#equipmentSlot, QToolButton#equipmentSlot {{
         background: #0B0E0C;
         border: 1px solid {c['border_subtle']};
         color: {c['text_secondary']};
-        padding: 12px 8px;
+        padding: 7px 6px;
         text-align: left;
+        font-family: {t['heading']};
+        font-size: 11px;
+        line-height: 1.15;
     }}
-    QPushButton#equipmentSlot:hover {{ border-color: {c['olive']}; color: {c['text']}; }}
-    QLabel#detailItemName {{ background: transparent; color: {c['text']}; font-family: {t['heading']}; font-size: 22px; font-weight: 800; }}
+    QPushButton#equipmentSlot:hover, QToolButton#equipmentSlot:hover {{ border-color: {c['olive']}; color: {c['text']}; }}
+    QPushButton#artifactSlot {{
+        background: #0B0E0C;
+        border: 1px solid {c['border_subtle']};
+        padding: 4px;
+    }}
+    QPushButton#artifactSlotEmpty {{
+        background: transparent;
+        border: 1px dashed {c['border']};
+        color: {c['text_secondary']};
+        font-size: 26px;
+    }}
+    QLabel#detailItemName {{ background: transparent; color: {c['text']}; font-family: {t['heading']}; font-size: 27px; font-weight: 800; }}
     QLabel#detailItemType, QLabel#detailDescription, QLabel#detailModuleStatus {{ background: transparent; color: {c['text_secondary']}; }}
-    QLabel#detailItemImage {{ background: #0B0E0C; border: 1px solid {c['border']}; color: {c['olive']}; font-size: 48px; min-height: 112px; }}
-    QLabel#settingsSafetyRow {{ background: #0B0E0C; border-bottom: 1px solid {c['border_subtle']}; color: {c['success']}; padding: 3px 8px; font-size: 11px; }}
+    QLabel#detailItemImage {{ background: transparent; border: none; color: {c['olive']}; font-size: 48px; min-height: 104px; }}
+    QPushButton#detailTab {{
+        background: #151914;
+        border: 1px solid {c['border_subtle']};
+        border-radius: 0;
+        color: {c['text_secondary']};
+        min-height: 34px;
+        padding: 5px 8px;
+        font-family: {t['heading']};
+        font-size: 10px;
+        letter-spacing: .6px;
+    }}
+    QPushButton#detailTab:hover {{ color: {c['text']}; border-color: {c['olive_dim']}; }}
+    QPushButton#detailTab:checked {{ background: {c['olive']}; color: #17130A; border-color: {c['olive']}; font-weight: 800; }}
+    QLabel#detailFeatureHelp {{
+        background: transparent;
+        border: 1px solid {c['border']};
+        color: {c['text_secondary']};
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+        qproperty-alignment: AlignCenter;
+    }}
+    QFrame#settingsSafetyRowFrame {{ background: transparent; border: none; border-bottom: 1px solid {c['border_subtle']}; min-height: 31px; }}
+    QLabel#settingsSafetyRow {{ background: transparent; color: {c['text']}; font-size: 15px; }}
+    QLabel#settingsToggle {{ background: #3C7A45; border: 1px solid #73C968; border-radius: 12px; color: #EAF4D8; font-size: 15px; padding: 0 2px; }}
+    QLabel#settingsToggle[enabledState="off"] {{ background: #2A2D2B; border-color: {c['border']}; color: #D8D2BE; }}
+    QLabel#settingsRowStatus {{ background: transparent; border: none; color: #8BD675; padding: 0; min-width: 66px; font-family: {t['heading']}; font-size: 12px; }}
+    QLabel#settingsRowStatus[enabledState="off"] {{ color: {c['text_secondary']}; }}
     QFrame#pathsSettingsPanel QLineEdit, QFrame#pathsSettingsPanel QPushButton {{ padding-top: 4px; padding-bottom: 4px; }}
-    QFrame#pathsSettingsPanel QLabel#discoveryHint {{ font-size: 9px; }}
+    QFrame#pathsSettingsPanel QPushButton#settingsBrowseButton {{ padding: 2px; }}
+    QFrame#pathsSettingsPanel QLabel#discoveryHint {{
+        background: #0B0E0C;
+        border: 1px solid {c['success']};
+        color: {c['success']};
+        padding: 2px 6px;
+        font-size: 11px;
+    }}
+    QFrame#pathsSettingsPanel QLabel#discoveryHint[discoveryState="missing"] {{
+        border-color: {c['warning']};
+        color: {c['warning']};
+    }}
+    QLabel#settingsReadOnlyPath {{ background: #0B0E0C; border: 1px solid {c['border_subtle']}; color: {c['text_secondary']}; padding: 6px 8px; }}
+    QLabel#settingsDiagnosticsNote {{ background: transparent; color: {c['text_secondary']}; padding-top: 4px; }}
     QScrollArea#settingsScroll {{ background: transparent; border: none; }}
     QWidget#settingsContent {{ background: transparent; }}
     QPushButton#primaryButton:disabled, QPushButton#primaryActionButton:disabled {{ background: {c['bg_elevated']}; color: {c['text_disabled']}; border-color: {c['border_subtle']}; }}

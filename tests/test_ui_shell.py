@@ -23,7 +23,7 @@ def test_app_shell_exposes_canonical_global_navigation_and_footer(qtbot) -> None
     assert [button.text() for button in shell.navigation_buttons] == list(
         shell.destination_names
     )
-    assert shell.footer_hints.text() == "Enter  Открыть    I  Импорт    R  Обновить    F  Фильтр    Esc  Назад"
+    assert shell.footer_hints.text() == ""
 
     with qtbot.waitSignal(shell.destination_requested, timeout=1_000) as signal:
         qtbot.mouseClick(shell.navigation_buttons[2], Qt.MouseButton.LeftButton)

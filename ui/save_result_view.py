@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -19,6 +22,7 @@ class SaveResultView(QWidget):
     back_to_editor_requested = Signal()
     history_requested = Signal()
     library_requested = Signal()
+    reconcile_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -27,9 +31,16 @@ class SaveResultView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(120, 70, 120, 50)
+        # A receipt is intentionally compact: the dimmed shell remains the
+        # context and the verified outcome is the focal card.
+        root.setContentsMargins(250, 72, 250, 50)
         root.setSpacing(12)
         heading = QHBoxLayout()
+        self.success_icon = QLabel(self)
+        icon_path = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons" / "verified.svg"
+        self.success_icon.setPixmap(QIcon(str(icon_path)).pixmap(28, 28))
+        self.success_icon.setFixedSize(28, 28)
+        heading.addWidget(self.success_icon)
         self.heading_label = QLabel("ОПЕРАЦИЯ ЗАВЕРШЕНА", self)
         heading.addWidget(self.heading_label)
         heading.addStretch(1)
@@ -50,7 +61,17 @@ class SaveResultView(QWidget):
         self.receipt_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.receipt_table.horizontalHeader().setStretchLastSection(True)
         receipt_layout.addWidget(self.receipt_table)
-        root.addWidget(receipt_panel, 1)
+        receipt_panel.setMinimumHeight(245)
+        receipt_panel.setMaximumHeight(360)
+        root.addWidget(receipt_panel, 0)
+        self.reconcile_button = action_button(
+            "ОБНОВИТЬ STEAM CLOUD / ПРОВЕРИТЬ СОСТОЯНИЕ",
+            self,
+            kind="primary",
+        )
+        self.reconcile_button.setVisible(False)
+        self.reconcile_button.clicked.connect(self.reconcile_requested)
+        root.addWidget(self.reconcile_button)
         actions = QHBoxLayout()
         self.editor_button = action_button("←  ВЕРНУТЬСЯ К РЕДАКТОРУ", self)
         self.editor_button.clicked.connect(self.back_to_editor_requested)
@@ -62,6 +83,8 @@ class SaveResultView(QWidget):
         self.library_button.clicked.connect(self.library_requested)
         actions.addWidget(self.library_button)
         root.addLayout(actions)
+        root.addStretch(1)
+        root.insertStretch(0, 1)
 
     def set_receipt(self, receipt, *, status: str | None = None) -> None:
         """Render only facts present on the operation receipt.
@@ -74,6 +97,7 @@ class SaveResultView(QWidget):
         receipt_status = status or getattr(receipt, "status", None)
         is_cloud = hasattr(receipt, "remote_path")
         is_uncertain = receipt_status == "uncertain"
+        self.reconcile_button.setVisible(is_cloud and is_uncertain)
         if is_cloud:
             chip_text = "UNCERTAIN" if is_uncertain else "VERIFIED"
             chip_tone = "warning" if is_uncertain else "success"
@@ -94,6 +118,7 @@ class SaveResultView(QWidget):
             heading = "СОХРАНЕНИЕ УСПЕШНО ЗАПИСАНО"
             subtitle = "Выходной файл прочитан обратно; показаны только факты receipt."
         self.heading_label.setText(heading)
+        self.editor_button.setEnabled(not is_uncertain)
         self.status_chip.setText(chip_text)
         self.status_chip.setProperty("tone", chip_tone)
         self.status_chip.style().unpolish(self.status_chip)
@@ -120,6 +145,17 @@ class SaveResultView(QWidget):
             self.receipt_table.setItem(row, 0, QTableWidgetItem(str(name)))
             self.receipt_table.setItem(row, 1, QTableWidgetItem(str(value)))
         self.subtitle.setText(subtitle)
+
+    def set_editor_ready(self, ready: bool, message: str | None = None) -> None:
+        """Gate the return-to-editor action on verified post-write state."""
+
+        self.editor_button.setEnabled(ready)
+        if not ready:
+            self.editor_button.setToolTip(message or "Ожидается проверка записанного состояния")
+        else:
+            self.editor_button.setToolTip("")
+        if message:
+            self.subtitle.setText(message)
 
 
 __all__ = ["SaveResultView"]

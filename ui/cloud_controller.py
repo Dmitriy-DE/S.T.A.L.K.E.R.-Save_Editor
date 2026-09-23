@@ -309,6 +309,8 @@ class CloudController(QObject):
 
     files_ready = Signal(object)
     snapshot_ready = Signal(object)
+    reconciliation_ready = Signal(object)
+    reconciliation_failed = Signal(str)
     upload_ready = Signal(object)
     operation_failed = Signal(str)
     operation_progress = Signal(str)
@@ -365,6 +367,11 @@ class CloudController(QObject):
         self._debug_succeeded = False
         self._selected_file: CloudFile | None = None
         self._external_busy = False
+        self._reconciliation_receipt: CloudReceipt | None = None
+        self._reconciliation_target: str | None = None
+        self._reconciliation_status = "idle"
+        self._reconcile_after_finish = False
+        self._reconcile_analyze_after_finish = False
         self.status_text = "Steam Cloud: не подключено"
         self.result_text = ""
         self.error_text = ""
@@ -387,6 +394,14 @@ class CloudController(QObject):
     @property
     def profiles(self) -> tuple[SteamCloudProfile, ...]:
         return tuple(steam_cloud_profiles())
+
+    @property
+    def reconciliation_status(self) -> str:
+        return self._reconciliation_status
+
+    @property
+    def reconciliation_pending(self) -> bool:
+        return self._reconciliation_receipt is not None
 
     def _set_status(self, text: str) -> None:
         self.status_text = text
@@ -476,6 +491,23 @@ class CloudController(QObject):
         self._debug_thread = worker
         worker.start()
 
+    def reconcile_remote(self) -> None:
+        """Refresh/list and, when possible, read back the remote target once.
+
+        This method never starts another write. It is safe for both verified and
+        uncertain receipts and is the only recovery action exposed after an
+        ambiguous cloud result.
+        """
+
+        if self._reconciliation_receipt is None:
+            self._set_status("Steam Cloud: нет незавершённой reconciliation")
+            return
+        self._reconcile_after_finish = True
+        self._reconciliation_status = "refreshing"
+        if not self.is_busy:
+            self._reconcile_after_finish = False
+            self.start_connect()
+
     def _on_steam_web_ready(self) -> None:
         self._debug_succeeded = True
 
@@ -507,7 +539,31 @@ class CloudController(QObject):
         """Set the selected Data path after the presentation validates its row."""
 
         self._selected_file = cloud_file if cloud_file in self._files else None
+        self._on_selection_changed(preserve_prepared=self._reconciliation_receipt is not None)
+
+    def set_review_files(
+        self,
+        files: tuple[CloudFile, ...] | list[CloudFile],
+        *,
+        status: str = "Steam Cloud: review fixture · список прочитан",
+    ) -> None:
+        """Publish deterministic read-only rows for the visual-review harness.
+
+        The method never starts a transport, reads a remote slot, or enables a
+        write.  It exists so review rendering can exercise the same table and
+        selection path without masquerading as live Steam state.
+        """
+
+        if self.is_busy:
+            raise RuntimeError("нельзя заменить cloud review fixture во время операции")
+        self._files = tuple(files)
+        self._selected_file = self._files[0] if self._files else None
+        self._snapshot = None
+        self._prepared = None
+        self._set_status(status)
+        self._set_result("Review fixture: live Cloud write не выполнялся")
         self._on_selection_changed()
+        self.files_ready.emit(self._files)
 
     def analyze_selected(self) -> None:
         if self._refuse_while_busy():
@@ -564,6 +620,7 @@ class CloudController(QObject):
             not blocked
             and not self.is_busy
             and self._prepared is not None
+            and self._reconciliation_receipt is None
             and capability.writable
         )
         self.upload_available_changed.emit(can_upload)
@@ -576,6 +633,11 @@ class CloudController(QObject):
 
     def start_upload(self) -> None:
         if self._refuse_while_busy():
+            return
+        if self._reconciliation_receipt is not None:
+            self._on_failed(
+                "Cloud upload заблокирован до reconciliation; повторный WriteFile не выполнялся"
+            )
             return
         selected = self.selected_file()
         prepared = self._prepared
@@ -614,6 +676,7 @@ class CloudController(QObject):
         self.transport = transport
 
     def _on_files_ready(self, files) -> None:
+        reconciling = self._reconciliation_receipt is not None
         accepted: list[CloudFile] = []
         hidden_editor_artifacts = 0
         for cloud_file in files:
@@ -627,9 +690,14 @@ class CloudController(QObject):
         self._files = tuple(accepted)
         self._hidden_editor_artifacts = hidden_editor_artifacts
         self._snapshot = None
-        self._prepared = None
+        # Keep the committed edit in memory while a Cloud receipt is being
+        # reconciled.  It remains blocked by ``_reconciliation_receipt`` and
+        # can never trigger an automatic retry; it is cleared only after the
+        # remote SHA has been read back and verified.
+        if not reconciling:
+            self._prepared = None
         self._selected_file = None
-        self._on_selection_changed()
+        self._on_selection_changed(preserve_prepared=reconciling)
         hint = str(getattr(self.transport, "status_hint", "") or "").strip()
         status_prefix = (
             "Steam Cloud: найдено в Steam cache"
@@ -651,7 +719,37 @@ class CloudController(QObject):
         if not capability.writable:
             status += f" · только чтение: {capability.reason}"
         self._set_status(status)
+        reconciliation_target = self._reconciliation_target
+        reconciliation_selected = (
+            next(
+                (item for item in self._files if item.name == reconciliation_target),
+                None,
+            )
+            if reconciling
+            else None
+        )
+        # Publish the target before the presentation rebuilds its table.  That
+        # lets the view preserve the selected row while the read-back worker is
+        # being scheduled, instead of clearing it and racing into a stale
+        # "select a slot" error during the busy-state transition.
+        if reconciliation_selected is not None:
+            self._selected_file = reconciliation_selected
         self.files_ready.emit(self._files)
+        if self._reconciliation_receipt is not None:
+            if reconciliation_selected is None:
+                message = (
+                    f"Cloud reconciliation не нашла удалённый слот: "
+                    f"{reconciliation_target or '—'}"
+                )
+                self._reconciliation_status = "uncertain"
+                self._set_error(message)
+                self.reconciliation_failed.emit(message)
+                return
+            self._set_status("Cloud: список обновлён; проверяю удалённые bytes…")
+            # The list worker is still busy while this callback runs.  Defer
+            # the read-back until its finished signal, otherwise the busy guard
+            # reports a misleading missing-selection error.
+            self._reconcile_analyze_after_finish = True
 
     def select_profile(self, release_id: str) -> None:
         try:
@@ -677,6 +775,27 @@ class CloudController(QObject):
 
     def _on_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
         self._snapshot = snapshot
+        if self._reconciliation_receipt is not None:
+            receipt = self._reconciliation_receipt
+            if snapshot.info.sha256 == receipt.output_sha256:
+                self._reconciliation_receipt = None
+                self._reconciliation_target = None
+                self._reconciliation_status = "verified"
+                self._prepared = None
+                self._set_result(
+                    f"Cloud reconciliation verified / подтверждена: {snapshot.name}; SHA совпал."
+                )
+                self._set_status("Cloud: reconciliation verified")
+                self.reconciliation_ready.emit(snapshot)
+            else:
+                message = (
+                    f"Cloud reconciliation не подтверждена: SHA remote {snapshot.info.sha256[:12]}… "
+                    f"не совпал с receipt {receipt.output_sha256[:12]}…."
+                )
+                self._reconciliation_status = "uncertain"
+                self._set_error(message)
+                self.reconciliation_failed.emit(message)
+            return
         self._prepared = None
         self._set_result(
             f"Cloud snapshot: {snapshot.name}; CRC={'OK' if snapshot.info.crc_ok else 'FAIL'}; "
@@ -688,7 +807,14 @@ class CloudController(QObject):
     def _on_upload_ready(self, receipt: CloudReceipt) -> None:
         prepared = self._prepared
         output_size = len(prepared.data) if prepared is not None else None
-        self._prepared = None
+        # Do not discard the committed draft yet. A verified receipt still
+        # requires remote reconciliation, while an uncertain receipt must keep
+        # the state available for explicit reconciliation without permitting a
+        # second WriteFile attempt.
+        self._reconciliation_receipt = receipt
+        self._reconciliation_target = receipt.remote_path
+        self._reconciliation_status = "pending"
+        self._reconcile_after_finish = receipt.status == "verified"
         self.upload_available_changed.emit(False)
         size_text = f"; размер {output_size} B" if output_size is not None else ""
         if receipt.status == "verified":
@@ -708,9 +834,10 @@ class CloudController(QObject):
             self._set_status("Cloud: uncertain — требуется reconciliation")
         self.upload_ready.emit(receipt)
 
-    def _on_selection_changed(self) -> None:
+    def _on_selection_changed(self, *, preserve_prepared: bool = False) -> None:
         self._snapshot = None
-        self._prepared = None
+        if not preserve_prepared:
+            self._prepared = None
         self.upload_available_changed.emit(False)
 
     def _on_progress(self, message: str) -> None:
@@ -724,6 +851,20 @@ class CloudController(QObject):
 
     def _on_finished(self) -> None:
         self._thread = None
+        if self._reconcile_analyze_after_finish:
+            self._reconcile_analyze_after_finish = False
+            # Keep the controller busy across the list -> read-back handoff so
+            # callers cannot observe a false idle state and tear down the view
+            # before the reconciliation worker starts.
+            self.analyze_selected()
+            return
+        if self._reconcile_after_finish and self._reconciliation_receipt is not None:
+            self._reconcile_after_finish = False
+            # Start the explicit read/list reconciliation before returning from
+            # the worker lifecycle callback.  Starting it before emitting the
+            # idle transition prevents callers from racing the next QThread.
+            self.start_connect()
+            return
         self.set_busy(False)
         self.operation_progress.emit("Cloud operation завершена")
 

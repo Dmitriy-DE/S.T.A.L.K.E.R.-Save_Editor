@@ -3,21 +3,25 @@
     "height": 992,
     "width": 1586
   },
-  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
+  "comparison": {
+    "board_panel_rect": null,
+    "mode": "full-canvas-pixel-diff"
+  },
+  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
   "diff": {
-    "changed_pixel_ratio_threshold_12": 0.229288,
-    "changed_pixels_threshold_12": 360741,
+    "changed_pixel_ratio_threshold_12": 0.256349,
+    "changed_pixels_threshold_12": 403317,
     "height": 992,
-    "max_channel_delta": 255,
-    "mean_rgb_delta": 16.54,
+    "max_channel_delta": 246,
+    "mean_rgb_delta": 17.601,
     "width": 1586
   },
   "geometry": {
     "active_view": {
       "height": 807,
       "width": 1522,
-      "x": 0,
-      "y": 0
+      "x": 32,
+      "y": 122
     },
     "content": {
       "height": 827,
@@ -46,13 +50,45 @@
     "window": {
       "height": 992,
       "width": 1586,
-      "x": 2,
-      "y": 2
+      "x": 0,
+      "y": 0
     }
   },
   "reference_kind": "full canonical reference",
   "reference_source": "02_EDITOR_CANONICAL.png",
   "screen": "02-editor",
+  "screen_rects": {
+    "detail_column": {
+      "height": 756,
+      "width": 390,
+      "x": 1164,
+      "y": 173
+    },
+    "inventory_column": {
+      "height": 756,
+      "width": 767,
+      "x": 387,
+      "y": 173
+    },
+    "inventory_table": {
+      "height": 606,
+      "width": 737,
+      "x": 402,
+      "y": 314
+    },
+    "save_cta": {
+      "height": 42,
+      "width": 376,
+      "x": 1171,
+      "y": 837
+    },
+    "status_equipment_column": {
+      "height": 756,
+      "width": 345,
+      "x": 32,
+      "y": 173
+    }
+  },
   "tokens": {
     "font_family": "Liberation Sans Narrow",
     "palette": {

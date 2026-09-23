@@ -29,6 +29,55 @@ const state = {
   catalogsReady: null,
 };
 
+let referenceScreen = "library";
+
+function refreshReferenceData() {
+  if (state.snapshot) {
+    renderReferenceSnapshot(state.snapshot);
+    setStatus("Данные обновлены; исходный файл не изменён");
+  } else {
+    setStatus("Открой локальный файл сохранения", "error");
+  }
+}
+
+function footerActionsFor(screen) {
+  const actions = {
+    library: [
+      ["Enter", "Открыть", () => state.snapshot ? showReferenceScreen("editor") : el("file-input").click()],
+      ["I", "Импорт", () => el("file-input").click()],
+      ["R", "Обновить", refreshReferenceData],
+      ["F", "Фильтр", () => el("reference-library-search")?.focus()],
+    ],
+    editor: [
+      ["S", "Сохранить", () => { if (referenceChangeCount() > 0) showReferenceScreen("review"); }],
+      ["F", "Фильтр", () => el("reference-inventory-search")?.focus()],
+      ["Esc", "Назад", () => showReferenceScreen("library")],
+    ],
+    review: [
+      ["Enter", "Подтвердить", () => el("reference-review-save")?.click()],
+      ["Esc", "Отмена", () => showReferenceScreen("editor")],
+    ],
+    cloud: [["Esc", "Назад", () => showReferenceScreen("library")]],
+    history: [["Esc", "Назад", () => showReferenceScreen("library")]],
+    settings: [["Esc", "Назад", () => showReferenceScreen("library")]],
+  };
+  return actions[screen] ?? [];
+}
+
+function renderFooterActions() {
+  const container = el("reference-footer-actions");
+  if (!container) return;
+  container.replaceChildren(...footerActionsFor(referenceScreen).map(([key, label, callback]) => {
+    const button = document.createElement("button");
+    button.className = "reference-footer-action";
+    button.type = "button";
+    button.dataset.shortcut = key;
+    button.textContent = `${key}  ${label}`;
+    button.addEventListener("click", callback);
+    return button;
+  }));
+}
+
 function setStatus(text, kind = "") {
   if (!status) return;
   status.textContent = text;
@@ -41,6 +90,7 @@ function fail(error) {
 }
 
 function showReferenceScreen(name) {
+  referenceScreen = name;
   for (const screen of document.querySelectorAll(".reference-screen")) {
     screen.hidden = screen.id !== `reference-screen-${name}`;
     screen.classList.toggle("is-active", !screen.hidden);
@@ -48,6 +98,7 @@ function showReferenceScreen(name) {
   for (const button of document.querySelectorAll(".reference-nav-button")) {
     button.classList.toggle("is-active", button.dataset.referenceScreen === name);
   }
+  renderFooterActions();
 }
 
 function referenceChangeCount() {
@@ -82,7 +133,7 @@ function itemCategoryGlyph(category) {
   glyph.className = `zone-item-glyph zone-item-glyph-${value || "item"}`;
   glyph.setAttribute("role", "img");
   glyph.setAttribute("aria-label", `Категория предмета: ${category || "неизвестно"}`);
-  glyph.textContent = "▧";
+  glyph.textContent = "—";
   return glyph;
 }
 
@@ -180,7 +231,7 @@ function renderReferenceItemDetail(item) {
   if (!item) {
     el("reference-item-name").textContent = "Предмет не выбран";
     el("reference-item-type").textContent = "Выбери строку инвентаря";
-    el("reference-item-image").replaceChildren(document.createTextNode("▧"));
+    el("reference-item-image").replaceChildren(document.createTextNode("—"));
     el("reference-item-detail").textContent = "Неизвестные и неподтверждённые поля остаются read-only.";
     el("reference-item-gate").textContent = "НЕТ ВЫБОРА";
     reset.disabled = true;
@@ -468,12 +519,11 @@ function renderReferenceSnapshot(s) {
   el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
   el("reference-editor-state").textContent = editable ? "РЕДАКТИРУЕМЫЙ" : "READ-ONLY";
   el("reference-editor-state").className = `reference-chip ${editable ? "success" : "warning"}`;
-  el("reference-money").textContent = `◉  ${s.money === null ? "—" : s.money} ₽`;
+  el("reference-money").textContent = `ДЕНЬГИ  ${s.money === null ? "—" : s.money} ₽`;
   el("reference-money-input").value = String(s.money ?? 0);
   el("reference-money-input").disabled = !s.money_editable;
-  el("reference-money-stage").disabled = !s.money_editable;
   el("reference-money-clear").disabled = state.money === null;
-  el("reference-weight").textContent = "⚖  — кг";
+  el("reference-weight").textContent = "ВЕС  — кг";
   el("reference-source").innerHTML = "Источник<br>Локальный файл";
   el("reference-integrity").innerHTML = `Целостность<br>${s.crc_present ? (s.crc_ok ? "CRC PASS" : "CRC FAIL") : s.integrity_name}`;
   el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только чтение"}`;
@@ -595,12 +645,7 @@ for (const button of document.querySelectorAll(".reference-nav-button")) {
   button.addEventListener("click", () => showReferenceScreen(button.dataset.referenceScreen));
 }
 el("reference-open").addEventListener("click", () => el("file-input").click());
-el("reference-refresh").addEventListener("click", () => {
-  if (state.snapshot) {
-    renderReferenceSnapshot(state.snapshot);
-    setStatus("Данные обновлены; исходный файл не изменён");
-  } else setStatus("Открой локальный файл сохранения", "error");
-});
+el("reference-refresh").addEventListener("click", refreshReferenceData);
 el("reference-history").addEventListener("click", () => showReferenceScreen("history"));
 el("reference-editor-back").addEventListener("click", () => showReferenceScreen("library"));
 el("reference-character").addEventListener("click", () => {
@@ -625,7 +670,7 @@ el("reference-inventory-search").addEventListener("input", () => {
 el("reference-inventory-filter").addEventListener("change", () => {
   if (state.snapshot) renderReferenceEditor(state.snapshot);
 });
-el("reference-money-stage").addEventListener("click", () => {
+el("reference-money-input").addEventListener("input", () => {
   if (!state.snapshot?.money_editable) return;
   const value = Number(el("reference-money-input").value);
   if (!Number.isInteger(value) || value < 0 || value > 2_000_000_000) {
@@ -634,7 +679,8 @@ el("reference-money-stage").addEventListener("click", () => {
   }
   state.money = value === state.snapshot.money ? null : value;
   invalidate();
-  renderReferenceSnapshot(state.snapshot);
+  el("reference-money").textContent = `ДЕНЬГИ  ${value} ₽`;
+  el("reference-money-clear").disabled = state.money === null;
   setStatus("Баланс изменён в памяти; исходный файл не изменён");
 });
 el("reference-money-clear").addEventListener("click", () => {
@@ -710,9 +756,24 @@ for (const button of document.querySelectorAll(".support-copy")) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") showReferenceScreen(state.snapshot ? "library" : "library");
-  if (event.key.toLowerCase() === "i" && !event.ctrlKey && !event.metaKey) el("file-input").click();
-  if (event.key === "Enter" && state.snapshot && document.activeElement?.tagName !== "INPUT") showReferenceScreen("editor");
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const activeTag = document.activeElement?.tagName;
+  if (["INPUT", "TEXTAREA", "SELECT"].includes(activeTag) && event.key !== "Escape") return;
+  const pressedKey = event.key === "Escape" ? "esc" : event.key.toLowerCase();
+  const action = footerActionsFor(referenceScreen).find(([key]) => key.toLowerCase() === pressedKey);
+  if (!action) return;
+  event.preventDefault();
+  action[2]();
 });
+
+const settingsCategoryIcons = ["settings", "paths", "backups", "cloud", "diagnostics", "interface", "support"];
+for (const [index, button] of [...document.querySelectorAll(".reference-settings-category")].entries()) {
+  const icon = button.querySelector("img");
+  if (icon && settingsCategoryIcons[index]) {
+    icon.src = `assets/ui/shell_icons/${settingsCategoryIcons[index]}.svg`;
+  }
+}
+
+renderFooterActions();
 
 boot().catch(fail);

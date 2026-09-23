@@ -31,7 +31,9 @@ class SaveReviewView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(48, 34, 48, 34)
+        # This is a confirmation card, not a second full-screen editor.  Keep
+        # the application context visible around a bounded review surface.
+        root.setContentsMargins(220, 34, 220, 34)
         root.setSpacing(12)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ", self))
@@ -73,7 +75,12 @@ class SaveReviewView(QWidget):
         self.warning_label.setWordWrap(True)
         pipeline_layout.addWidget(self.warning_label)
         body.addWidget(pipeline_panel, 34)
-        root.addLayout(body, 1)
+        body_host = QWidget(self)
+        body_host.setObjectName("reviewBodyHost")
+        body_host.setLayout(body)
+        body_host.setMinimumHeight(390)
+        body_host.setMaximumHeight(470)
+        root.addWidget(body_host, 0)
 
         actions = QHBoxLayout()
         self.cancel_button = action_button("ОТМЕНА", self)
@@ -84,6 +91,8 @@ class SaveReviewView(QWidget):
         self.confirm_button.clicked.connect(self.confirmed)
         actions.addWidget(self.confirm_button)
         root.addLayout(actions)
+        root.addStretch(1)
+        root.insertStretch(0, 1)
 
     def set_source(self, text: str) -> None:
         self.source_label.setText(text)

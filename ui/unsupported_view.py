@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .style_components import action_button, panel, status_chip
@@ -22,7 +24,7 @@ class UnsupportedView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(100, 70, 100, 50)
+        root.setContentsMargins(250, 72, 250, 50)
         root.setSpacing(12)
         heading = QHBoxLayout()
         heading.addWidget(QLabel("РЕДАКТИРОВАНИЕ НЕДОСТУПНО", self))
@@ -36,6 +38,13 @@ class UnsupportedView(QWidget):
         self.detail_panel = panel(self, object_name="unsupportedDetailPanel")
         detail = QVBoxLayout(self.detail_panel)
         detail.setContentsMargins(16, 16, 16, 16)
+        self.preview_image = QLabel(self.detail_panel)
+        self.preview_image.setObjectName("unsupportedPreviewImage")
+        self.preview_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        preview = QPixmap(str(Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell" / "preview_zone.png"))
+        if not preview.isNull():
+            self.preview_image.setPixmap(preview.scaled(270, 170, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        detail.addWidget(self.preview_image, 0, Qt.AlignmentFlag.AlignLeft)
         self.file_label = QLabel("Файл не выбран", self.detail_panel)
         self.file_label.setObjectName("unsupportedFileLabel")
         self.file_label.setWordWrap(True)
@@ -44,7 +53,9 @@ class UnsupportedView(QWidget):
         self.reason_label.setWordWrap(True)
         detail.addWidget(self.reason_label)
         detail.addStretch(1)
-        root.addWidget(self.detail_panel, 1)
+        self.detail_panel.setMinimumHeight(300)
+        self.detail_panel.setMaximumHeight(360)
+        root.addWidget(self.detail_panel, 0)
         actions = QHBoxLayout()
         self.folder_button = action_button("ОТКРЫТЬ ПАПКУ СОХРАНЕНИЯ", self)
         self.folder_button.clicked.connect(self.folder_requested)
@@ -57,6 +68,8 @@ class UnsupportedView(QWidget):
         self.back_button.clicked.connect(self.back_requested)
         actions.addWidget(self.back_button)
         root.addLayout(actions)
+        root.addStretch(1)
+        root.insertStretch(0, 1)
 
     def set_snapshot(self, snapshot: Any, reason: str | None = None) -> None:
         self.file_label.setText(

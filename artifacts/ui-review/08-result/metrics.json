@@ -3,21 +3,23 @@
     "height": 992,
     "width": 1586
   },
-  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
-  "diff": {
-    "changed_pixel_ratio_threshold_12": 0.260859,
-    "changed_pixels_threshold_12": 410412,
-    "height": 992,
-    "max_channel_delta": 247,
-    "mean_rgb_delta": 14.054,
-    "width": 1586
+  "comparison": {
+    "board_panel_rect": {
+      "height": 325,
+      "width": 696,
+      "x": 18,
+      "y": 733
+    },
+    "mode": "board-derived-geometry"
   },
+  "data_policy": "review fixture derived from real parser bytes and official release catalog; no live write or remote state used",
+  "diff": null,
   "geometry": {
     "active_view": {
-      "height": 807,
-      "width": 1522,
-      "x": 0,
-      "y": 0
+      "height": 501,
+      "width": 1092,
+      "x": 33,
+      "y": 123
     },
     "content": {
       "height": 827,
@@ -46,13 +48,52 @@
     "window": {
       "height": 992,
       "width": 1586,
-      "x": 2,
-      "y": 2
+      "x": 0,
+      "y": 0
     }
   },
-  "reference_kind": "panel crop from canonical board placed on fixed canvas",
+  "reference_kind": "board panel geometry reference; no same-canvas pixel score",
   "reference_source": "04_REMAINING_STATES_BOARD_CANONICAL.png",
   "screen": "08-result",
+  "screen_rects": {
+    "editor_cta": {
+      "height": 33,
+      "width": 223,
+      "x": 283,
+      "y": 541
+    },
+    "history_cta": {
+      "height": 33,
+      "width": 162,
+      "x": 518,
+      "y": 541
+    },
+    "library_cta": {
+      "height": 33,
+      "width": 183,
+      "x": 692,
+      "y": 541
+    },
+    "modal_card": {
+      "height": 503,
+      "width": 1094,
+      "x": 32,
+      "y": 122
+    },
+    "receipt_panel": {
+      "height": 245,
+      "width": 592,
+      "x": 283,
+      "y": 284
+    },
+    "receipt_table": {
+      "height": 215,
+      "width": 562,
+      "x": 298,
+      "y": 299
+    },
+    "reconcile_cta": null
+  },
   "tokens": {
     "font_family": "Liberation Sans Narrow",
     "palette": {

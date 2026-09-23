@@ -67,8 +67,8 @@ def test_character_state_is_xray_only_and_has_faction_region(qtbot, synthetic_sa
         path=tmp_path / "save.sav",
         data=synthetic_save,
         info=inspect_save(synthetic_save, with_inventory=True),
-        format_id="soc",
-        release_id="soc",
+        format_id="stalker-soc",
+        release_id="stalker-soc",
         format_title="Shadow of Chornobyl",
     )
     view.set_snapshot(snapshot)
@@ -107,7 +107,8 @@ def test_main_window_routes_staged_save_through_visible_review(qtbot, synthetic_
     window._render_changes()
     window._request_reference_save()
 
-    assert window.reference_stack.currentWidget() is window.save_review_view
+    assert window.reference_stack.currentWidget() is window.editor_view
+    assert window._reference_modal_view is window.save_review_view
     assert window.save_review_view.changes_table.rowCount() == 1
 
 
@@ -127,4 +128,5 @@ def test_review_route_survives_previous_global_destination(
     window._render_changes()
     window._request_reference_save()
 
-    assert window.reference_stack.currentWidget() is window.save_review_view
+    assert window.reference_stack.currentWidget() is window.editor_view
+    assert window._reference_modal_view is window.save_review_view

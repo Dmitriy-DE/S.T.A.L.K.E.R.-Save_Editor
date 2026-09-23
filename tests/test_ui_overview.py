@@ -40,7 +40,7 @@ def test_editor_snapshot_is_parser_backed_and_xray_controls_are_conditional(
     assert "slot.sav" in window.editor_view.breadcrumb.text()
     assert window.editor_view.character_button.isHidden()
 
-    xray = replace(_snapshot(synthetic_save, tmp_path), release_id="soc")
+    xray = replace(_snapshot(synthetic_save, tmp_path), release_id="stalker-soc")
     window._render_snapshot(xray)
     assert not window.editor_view.character_button.isHidden()
 

@@ -67,7 +67,7 @@ def test_editor_table_stages_by_handle_after_filter_and_sort(qtbot, synthetic_sa
     qtbot.waitUntil(lambda: editor.selected_handle == stack_handle)
     assert editor.detail_view.count_spin.isEnabled()
     editor.detail_view.count_spin.setValue(3)
-    editor.detail_view.count_apply.click()
+    editor.detail_view.count_spin.setValue(3)
     assert window.staged_counts == {stack_handle: 3}
     assert window.snapshot is not None and window.snapshot.data == synthetic_save
     editor.search_edit.setText("30000001")
@@ -97,7 +97,7 @@ def test_money_form_stages_without_mutating_snapshot(qtbot, synthetic_save: byte
     assert editor.money_spin.isEnabled()
     assert editor.money_spin.value() == 100
     editor.money_spin.setValue(900)
-    editor.money_stage_button.click()
+    # The money field edits the shared draft directly; there is no per-field apply action.
     assert window.staged_money == 900
     assert window.snapshot is not None and window.snapshot.data == synthetic_save
     editor.money_clear_button.click()
@@ -108,7 +108,7 @@ def test_read_only_capabilities_disable_money_and_stack_staging(qtbot, synthetic
     window = _window(qtbot, synthetic_save, tmp_path, capabilities=FormatCapabilities(read_inventory=True))
     editor = window.editor_view
     assert not editor.money_spin.isEnabled()
-    assert not editor.money_stage_button.isEnabled()
+    assert not editor.money_spin.isEnabled()
     window._stage_stack_change(0x30000001, 3)
     assert window.staged_counts == {}
 
