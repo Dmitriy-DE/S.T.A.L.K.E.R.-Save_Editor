@@ -71,36 +71,26 @@ def test_web_snapshot_does_not_expose_soc_helmet_category() -> None:
     assert snapshot["equipment"][0]["category"] == "armor"
 
 
-def test_web_equipment_panel_contains_filters_and_bulk_repair_controls() -> None:
+def test_web_equipment_is_merged_into_the_canonical_editor() -> None:
     html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
     app = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
 
     for marker in (
-        'data-panel="equipment"',
-        'id="equipment-search"',
-        'id="equipment-filter"',
-        'id="equipment"',
-        'id="equipment-percent"',
-        'id="equipment-repair-selected"',
-        'id="equipment-repair-full"',
-        'id="equipment-repair-damaged"',
-        'id="equipment-repair-equipped"',
+        'id="reference-inventory-filter"',
+        'id="reference-equipment-summary"',
+        'id="reference-item-fields"',
+        'id="reference-inventory-table"',
+        'data-upgrade-field="m_upgrades"',
     ):
         assert marker in html
-    for option in (
-        'value="consumable"',
-        'value="ammo"',
-        'value="artifact"',
-        'value="quest"',
-    ):
-        assert option in html
+    assert 'data-panel="equipment"' not in html
     for marker in (
-        "function renderEquipment",
-        "stageEquipmentRepair",
-        'el("equipment-repair-damaged")',
-        'el("equipment-filter")',
-        'helmet_category_supported',
-        '"quest"].includes(filter)',
-        'value.includes("квест")',
+        "function renderReferenceEditor",
+        "function renderReferenceItemDetail",
+        "condition_editable",
+        "equipment_count",
+        "reference-equipment-summary",
+        "item.condition_editable",
+        "state.durability",
     ):
         assert marker in app

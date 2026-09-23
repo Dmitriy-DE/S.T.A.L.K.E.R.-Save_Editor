@@ -8,29 +8,11 @@ import pytest
 pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
-from PySide6.QtCore import Qt
-
 from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 from save_format import inspect_save
-from ui.changes_view import ChangesView
 from ui.main_window import LocalSnapshot, MainWindow
-
-
-def test_changes_view_exposes_explicit_in_place_replace_action(qtbot) -> None:
-    view = ChangesView()
-    qtbot.addWidget(view)
-
-    assert not view.replace_button.isEnabled()
-    view.set_actions_enabled(preview=True, apply=True, replace=True, busy=False)
-    assert view.replace_button.isEnabled()
-
-    with qtbot.waitSignal(view.replace_requested, timeout=1_000):
-        qtbot.mouseClick(view.replace_button, Qt.MouseButton.LeftButton)
-
-    view.set_actions_enabled(preview=True, apply=True, replace=False, busy=False)
-    assert not view.replace_button.isEnabled()
 
 
 def test_main_window_replaces_the_selected_local_slot_after_preview(
@@ -89,4 +71,9 @@ def test_main_window_replaces_the_selected_local_slot_after_preview(
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
 
     assert calls == [(source, backup_dir)]
-    assert "Исходный слот заменён" in window.changes_view.preview_status_label.text()
+    assert window.reference_stack.currentWidget() is window.save_result_view
+    assert window.save_result_view.heading_label.text() == "СОХРАНЕНИЕ УСПЕШНО ЗАПИСАНО"
+    assert "Output" in {
+        window.save_result_view.receipt_table.item(row, 0).text()
+        for row in range(window.save_result_view.receipt_table.rowCount())
+    }

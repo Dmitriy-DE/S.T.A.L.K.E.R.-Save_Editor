@@ -64,7 +64,7 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     # One-click save stays available while there are staged changes — it will
     # re-run the internal preview on click; only the cached preview is invalid.
     assert window.save_copy_button.isEnabled()
-    assert window.changes_view.preview_status_label.text().startswith("Preview недействителен")
+    assert window.editor_view.detail_view.module_status.text().startswith("Проверка сброшена")
     assert prepared is not None
 
 

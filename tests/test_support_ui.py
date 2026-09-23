@@ -51,8 +51,8 @@ def test_main_window_opens_support_dialog_from_title_bar(qtbot) -> None:
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
 
-    assert window.support_button.text() == "♡ Support project"
-    qtbot.mouseClick(window.support_button, Qt.MouseButton.LeftButton)
+    assert window.app_shell.support_button.text() == "♡  ПОДДЕРЖАТЬ ПРОЕКТ"
+    qtbot.mouseClick(window.app_shell.support_button, Qt.MouseButton.LeftButton)
     qtbot.waitUntil(
         lambda: window._support_dialog is not None
         and window._support_dialog.isVisible()
@@ -78,5 +78,5 @@ def test_web_support_shell_keeps_copyable_values_and_local_modal() -> None:
     assert "Binance ID: 434350727" in html
     assert "Address:" in html
     assert "navigator.clipboard.writeText" in script
-    assert 'textContent = "Copied"' in script
+    assert 'button.textContent = "Copied"' in script
     assert ".support-modal" in styles

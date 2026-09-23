@@ -1,4 +1,4 @@
-"""Canonical Steam Cloud screen backed by the existing fail-closed CloudView."""
+"""Canonical Steam Cloud screen backed by the fail-closed cloud controller."""
 
 from __future__ import annotations
 
@@ -18,19 +18,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .cloud_view import CloudView
+from .cloud_controller import CloudController
 from .style_components import action_button, panel, section_header, status_chip
 
 
 class CloudLibraryView(QWidget):
     """Reference presentation for cloud slots.
 
-    ``CloudView`` remains the owner of transport lifecycle, provenance checks,
+    ``CloudController`` remains the owner of transport lifecycle, provenance checks,
     immutable preview validation, and upload certainty.  This widget only
     mirrors its state and forwards explicit user intent to that backend.
     """
 
-    def __init__(self, backend: CloudView, parent: QWidget | None = None) -> None:
+    def __init__(self, backend: CloudController, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("cloudLibraryView")
         self.backend = backend
@@ -42,6 +42,10 @@ class CloudLibraryView(QWidget):
         backend.operation_failed.connect(self._on_error)
         backend.operation_progress.connect(self._on_progress)
         backend.busy_changed.connect(self._on_busy)
+        backend.status_changed.connect(self.status_chip.setText)
+        backend.result_changed.connect(self.result_label.setText)
+        backend.error_changed.connect(self._on_error)
+        backend.upload_available_changed.connect(self.upload_button.setEnabled)
         self._copy_profiles()
         self._on_files_ready(backend.files)
 
@@ -138,24 +142,25 @@ class CloudLibraryView(QWidget):
         root.addWidget(safety)
 
     def _copy_profiles(self) -> None:
-        source = self.backend.profile_combo
         self.profile_combo.blockSignals(True)
         self.profile_combo.clear()
-        for index in range(source.count()):
-            self.profile_combo.addItem(source.itemText(index), source.itemData(index))
-        self.profile_combo.setCurrentIndex(source.currentIndex())
+        profiles = self.backend.profiles
+        for profile in profiles:
+            self.profile_combo.addItem(profile.title, profile.release_id)
+        current_index = self.profile_combo.findData(self.backend.profile.release_id)
+        self.profile_combo.setCurrentIndex(max(0, current_index))
         self.profile_combo.blockSignals(False)
 
     def _profile_changed(self, index: int) -> None:
         if index < 0:
             return
-        self.backend.profile_combo.setCurrentIndex(index)
+        self.backend.select_profile(str(self.profile_combo.itemData(index)))
         self._on_files_ready(self.backend.files)
 
     def _selection_changed(self) -> None:
         row = self.save_table.currentRow()
-        if 0 <= row < self.backend.table.rowCount():
-            self.backend.table.selectRow(row)
+        selected_file = self.backend.files[row] if 0 <= row < len(self.backend.files) else None
+        self.backend.select_file(selected_file)
         selected = self.save_table.selectedItems()
         self.download_button.setEnabled(bool(selected) and self.backend.transport is not None and not self.backend.is_busy)
         self.upload_button.setEnabled(False)
@@ -176,18 +181,21 @@ class CloudLibraryView(QWidget):
                 f"{cloud_file.size} B",
                 str(cloud_file.timestamp),
                 "да" if cloud_file.is_persisted else "нет",
-                str(cloud_file.source),
+                "Неизвестно" if str(cloud_file.source) == "unknown" else str(cloud_file.source),
             )
             for column, value in enumerate(values):
                 self.save_table.setItem(row, column, QTableWidgetItem(value))
-        self.status_chip.setText("ПОДКЛЮЧЕНО" if files else "СПИСОК ПУСТ")
+        status = self.backend.status_text
+        if status.startswith("Steam Cloud:"):
+            status = status.removeprefix("Steam Cloud:").strip()
+        self.status_chip.setText(status.upper())
         self._selection_changed()
 
     def _on_snapshot_ready(self, snapshot) -> None:
         self.result_label.setText(
             f"Проверено: CRC {'PASS' if snapshot.info.crc_ok else 'FAIL'} · SHA {snapshot.info.sha256[:16]}…"
         )
-        self.detail_meta.setText(f"{snapshot.name}\nСнимок скачан; staged изменения ещё не созданы.")
+        self.detail_meta.setText(f"{snapshot.name}\nСнимок скачан; изменения ещё не созданы.")
         self.status_chip.setText("СНИМОК ПРОВЕРЕН")
 
     def _on_upload_ready(self, receipt) -> None:
@@ -200,11 +208,14 @@ class CloudLibraryView(QWidget):
         self.status_chip.setText("VERIFIED" if receipt.status == "verified" else "UNCERTAIN")
 
     def _on_error(self, message: str) -> None:
+        if not message:
+            return
         self.status_chip.setText("ОШИБКА")
         self.result_label.setText(message)
 
     def _on_progress(self, message: str) -> None:
-        self.result_label.setText(message)
+        if message != "Cloud operation завершена":
+            self.result_label.setText(message)
 
     def _on_busy(self, busy: bool) -> None:
         self.refresh_button.setEnabled(not busy)
@@ -213,10 +224,11 @@ class CloudLibraryView(QWidget):
         self.save_table.setEnabled(not busy)
         if busy:
             self.download_button.setEnabled(False)
+        else:
+            self._selection_changed()
 
     def set_prepared(self, prepared) -> None:
         self.backend.set_prepared(prepared)
-        self.upload_button.setEnabled(bool(prepared) and self.backend.upload_button.isEnabled())
 
     def set_catalog_roots(self, roots) -> None:
         self.backend.set_catalog_roots(roots)
@@ -229,6 +241,12 @@ class CloudLibraryView(QWidget):
     def set_error(self, message: str) -> None:
         self.backend.set_error(message)
         self._on_error(message)
+
+    def close(self) -> bool:
+        """Stop cloud workers before the presentation widget is destroyed."""
+
+        self.backend.close()
+        return super().close()
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         super().showEvent(event)

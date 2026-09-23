@@ -175,6 +175,7 @@ class ItemDetailView(QWidget):
             self.placement_combo.setEnabled(False)
             self.placement_apply.setEnabled(False)
             self.reset_button.setEnabled(False)
+            self.remove_button.setVisible(False)
             self.remove_button.setEnabled(False)
             self.upgrade_list.clear()
             self.module_status.setText("—")
@@ -222,6 +223,22 @@ class ItemDetailView(QWidget):
         self.condition_apply.setEnabled(writable_condition)
 
         placement_writable = bool(caps and caps.edit_placement and item.placement_editable)
+        self.placement_combo.blockSignals(True)
+        self.placement_combo.clear()
+        self.placement_combo.addItem("Инвентарь", ("inventory", None))
+        self.placement_combo.addItem("Пояс", ("belt", None))
+        self.placement_combo.addItem("Рюкзак", ("ruck", None))
+        for slot in range(1, 14):
+            self.placement_combo.addItem(f"Слот {slot}", ("slot", slot))
+        effective_placement = (
+            item.placement_type,
+            item.placement_slot if item.placement_type == "slot" else None,
+        )
+        for index in range(self.placement_combo.count()):
+            if self.placement_combo.itemData(index) == effective_placement:
+                self.placement_combo.setCurrentIndex(index)
+                break
+        self.placement_combo.blockSignals(False)
         self.placement_combo.setEnabled(placement_writable)
         self.placement_apply.setEnabled(placement_writable)
 
@@ -231,7 +248,7 @@ class ItemDetailView(QWidget):
         self.module_status.setText(
             "Модули/улучшения показаны как read-only evidence."
             if item.upgrades or item.modules
-            else "Для этого предмета модульные данные не разобраны."
+            else "Для этого предмета модульные данные не разобраны; read-only."
         )
         self.reset_button.setEnabled(
             item.handle in self._staged_counts
@@ -239,6 +256,11 @@ class ItemDetailView(QWidget):
             or item.handle in self._removed_handles
         )
         can_remove = bool(caps and caps.remove_items and item.remove_editable)
+        # Unsupported formats must not present a destructive affordance that
+        # can never succeed.  The capability remains truthful in the detail
+        # state (count/durability controls are visibly read-only), while the
+        # S2 add/remove surface is omitted entirely.
+        self.remove_button.setVisible(can_remove)
         self.remove_button.setEnabled(can_remove)
 
     def _emit_count(self) -> None:

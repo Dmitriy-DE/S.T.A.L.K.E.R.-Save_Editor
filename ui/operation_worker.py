@@ -48,7 +48,7 @@ class OperationWorker(QThread):
     def run(self) -> None:
         try:
             if self.mode == "preview":
-                self.progress.emit("Подготовка preview: проверка SHA и round-trip…")
+                self.progress.emit("Подготовка выходного файла: проверка SHA и round-trip…")
                 prepared = self.service.prepare(
                     self.data,
                     self.plan,

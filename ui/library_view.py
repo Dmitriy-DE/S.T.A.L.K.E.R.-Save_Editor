@@ -26,8 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from .formatting import human_size
-from .launcher_view import _slot_family
-from .save_slots_view import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot
+from .save_discovery import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot, _slot_family
 from .style_components import TextureFrame, action_button, panel, section_header, status_chip
 
 
@@ -175,7 +174,7 @@ class LibraryView(QWidget):
         if not preview_pixmap.isNull():
             self.preview_image.setPixmap(preview_pixmap)
             self.preview_image.setScaledContents(True)
-            self.preview_image.setToolTip("Декоративный preview зоны; thumbnail сейва не заявлен.")
+            self.preview_image.setToolTip("Декоративное изображение зоны; thumbnail сейва не заявлен.")
         preview_layout.addWidget(self.preview_image)
         self.preview_name = QLabel("Сохранение не выбрано", self.preview_panel)
         self.preview_name.setObjectName("libraryPreviewName")

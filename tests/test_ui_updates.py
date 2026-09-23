@@ -105,4 +105,4 @@ def test_main_window_manual_check_uses_injected_client(qtbot, tmp_path: Path) ->
     qtbot.waitUntil(lambda: client.calls == 1, timeout=1_000)
     qtbot.waitUntil(lambda: window._update_dialog is not None, timeout=1_000)
     assert window._update_dialog.status_label.text()
-    assert window.diagnostics_button.text() == "Отправить логи"
+    assert window.settings_reference_view.copy_diagnostics_button.text() == "СКОПИРОВАТЬ ДИАГНОСТИКУ"

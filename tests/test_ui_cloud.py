@@ -4,6 +4,7 @@ import hashlib
 import threading
 from dataclasses import replace
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -18,7 +19,8 @@ from editor.formats import FormatInspection
 from editor.models import EditPlan, PreparedEdit, SourceRef
 from editor.service import EditorService
 from steam_cloud import CloudFile
-from ui.cloud_view import CloudView
+from ui.cloud_controller import CloudController, CloudOperationWorker
+from ui.cloud_library_view import CloudLibraryView
 from ui.diagnostics_dialog import DiagnosticsDialog
 from ui.main_window import MainWindow
 
@@ -26,6 +28,40 @@ from ui.main_window import MainWindow
 # developer machine and not on a loaded CI runner, where the same test timed out
 # while the work was still progressing - a slow machine is not a defect.
 SIGNAL_TIMEOUT_MS = 30_000
+
+
+class CloudSurface(CloudLibraryView):
+    """Test harness joining canonical presentation and backend state."""
+
+    _ALIASES: ClassVar[dict[str, str]] = {
+        "table": "save_table",
+        "analyze_button": "download_button",
+        "status_label": "status_chip",
+        "intro_label": "read_only_banner",
+    }
+
+    def __init__(self, *args, **kwargs) -> None:
+        backend = CloudController(*args, **kwargs)
+        super().__init__(backend)
+        object.__setattr__(self, "_backend", backend)
+
+    def __getattr__(self, name: str):
+        alias = self._ALIASES.get(name)
+        if alias is not None:
+            return getattr(self, alias)
+        backend = object.__getattribute__(self, "_backend")
+        return getattr(backend, name)
+
+    def __setattr__(self, name: str, value) -> None:
+        if name not in {"_backend", "backend"} and "_backend" in self.__dict__:
+            backend = object.__getattribute__(self, "_backend")
+            if name in {"service", "worker_factory", "helper_finder", "helper_path", "backup_dir"}:
+                setattr(backend, name, value)
+                return
+        super().__setattr__(name, value)
+
+
+CloudView = CloudSurface
 
 
 class _ApprovedCloudService(EditorService):
@@ -220,8 +256,8 @@ def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
     )
     qtbot.addWidget(view)
 
-    assert "Сохранить" in view.intro_label.text()
-    assert "только для чтения" in view.intro_label.text()
+    assert "только чтение" in view.intro_label.text().casefold()
+    assert "WriteFile" in view.intro_label.text()
     assert "Загрузить в облако" not in view.intro_label.text()
 
 
@@ -331,7 +367,7 @@ def test_cloud_view_hides_editor_artifacts_and_explains_why(
 
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
     assert view._hidden_editor_artifacts == 1
-    assert "скрыто 1" in view.status_label.text()
+    assert "СКРЫТО 1" in view.status_label.text()
 
 
 def test_cloud_view_profile_switch_filters_the_selected_game_path(
@@ -483,9 +519,7 @@ def test_cloud_upload_log_contains_target_size_and_result(
     name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
     prepared = _prepared(synthetic_save, name)
-    from ui import cloud_view
-    from ui.cloud_view import CloudOperationWorker
-
+    from ui import cloud_controller
     worker = CloudOperationWorker(
         EditorService(),
         mode="upload",
@@ -499,7 +533,7 @@ def test_cloud_upload_log_contains_target_size_and_result(
     def record(message: str, *args: object, **_kwargs: object) -> None:
         records.append(message % args if args else message)
 
-    monkeypatch.setattr(cloud_view.LOGGER, "info", record)
+    monkeypatch.setattr(cloud_controller.LOGGER, "info", record)
     worker.run()
 
     text = "\n".join(records)
@@ -520,20 +554,20 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # The production registry stays read-only until M10 game evidence.  Use a
     # scoped approved cloud service so this test can still cover the cloud
     # preview/upload transaction without re-rendering the live window.
-    window.cloud_view.service = _ApprovedCloudService()
-    window.cloud_view.worker_factory = lambda _path: transport
-    window.cloud_view.helper_path = tmp_path / "helper"
-    window.cloud_view.backup_dir = tmp_path / "backups"
+    window.cloud_controller.service = _ApprovedCloudService()
+    window.cloud_controller.worker_factory = lambda _path: transport
+    window.cloud_controller.helper_path = tmp_path / "helper"
+    window.cloud_controller.backup_dir = tmp_path / "backups"
 
-    with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
-        window.cloud_view.start_connect()
+    with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.start_connect()
     qtbot.waitUntil(
-        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        lambda: not window.cloud_controller.is_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
-    window.cloud_view.table.selectRow(0)
-    with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
-        window.cloud_view.analyze_selected()
+    window.cloud_reference_view.save_table.selectRow(0)
+    with qtbot.waitSignal(window.cloud_controller.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.analyze_selected()
 
     assert window.snapshot is not None
     assert window.snapshot.source_kind == "cloud"
@@ -543,11 +577,11 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # running for a moment afterwards, and preview refuses to start while the
     # window is busy.  On a fast machine that window is too short to notice.
     qtbot.waitUntil(
-        lambda: not window._cloud_busy and window.cloud_view._thread is None,
+        lambda: not window._cloud_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
 
-    window.money_spin.setValue(900)
+    window.editor_view.money_spin.setValue(900)
     window._stage_money()
     with qtbot.waitSignal(window.preview_ready, timeout=SIGNAL_TIMEOUT_MS):
         window._start_preview()
@@ -555,7 +589,7 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
         window._start_cloud_upload()
 
     qtbot.waitUntil(
-        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        lambda: not window.cloud_controller.is_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
     assert blocker.args[0].status == "verified"
@@ -574,31 +608,31 @@ def test_main_window_one_click_save_uploads_cloud_snapshot(
         "question",
         staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
     )
-    window.cloud_view.service = _ApprovedCloudService()
-    window.cloud_view.worker_factory = lambda _path: transport
-    window.cloud_view.backup_dir = tmp_path / "backups"
+    window.cloud_controller.service = _ApprovedCloudService()
+    window.cloud_controller.worker_factory = lambda _path: transport
+    window.cloud_controller.backup_dir = tmp_path / "backups"
 
-    with qtbot.waitSignal(window.cloud_view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
-        window.cloud_view.start_connect()
+    with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.start_connect()
     qtbot.waitUntil(
-        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        lambda: not window.cloud_controller.is_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
-    window.cloud_view.table.selectRow(0)
-    with qtbot.waitSignal(window.cloud_view.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
-        window.cloud_view.analyze_selected()
+    window.cloud_reference_view.save_table.selectRow(0)
+    with qtbot.waitSignal(window.cloud_controller.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.analyze_selected()
     qtbot.waitUntil(
-        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        lambda: not window.cloud_controller.is_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
 
-    window.money_spin.setValue(900)
+    window.editor_view.money_spin.setValue(900)
     window._stage_money()
     with qtbot.waitSignal(window.apply_ready, timeout=SIGNAL_TIMEOUT_MS) as blocker:
         window._save_one_click()
 
     qtbot.waitUntil(
-        lambda: not window.cloud_view.is_busy and window.cloud_view._thread is None,
+        lambda: not window.cloud_controller.is_busy and window.cloud_controller._thread is None,
         timeout=SIGNAL_TIMEOUT_MS,
     )
     assert blocker.args[0].status == "verified"

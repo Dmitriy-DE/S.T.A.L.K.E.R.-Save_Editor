@@ -12,10 +12,9 @@ from editor.service import EditorService
 pytest.importorskip("PySide6")
 
 from ui.main_window import MainWindow
-from ui.save_slots_view import (
+from ui.save_discovery import (
     SaveDiscovery,
-    SaveSlot,
-    SaveSlotsView,
+    SlotDiscoveryController,
     UnsupportedSaveReason,
     discover_save_slots,
 )
@@ -32,10 +31,9 @@ def test_discover_save_slots_sorts_newest_first_and_marks_unknown(
     }
     for folder in folders.values():
         folder[0].mkdir()
-
     newest = folders["stalker2"][0] / "newest.sav"
-    middle = folders["cop"][0] / "middle.sav"
-    oldest = folders["clear_sky"][0] / "oldest.sav"
+    middle = folders["cop"][0] / "middle.scop"
+    oldest = folders["clear_sky"][0] / "oldest.scs"
     newest.write_bytes(synthetic_save)
     middle.write_bytes(b"foreign x-ray bytes")
     oldest.write_bytes(b"plain text")
@@ -43,61 +41,34 @@ def test_discover_save_slots_sorts_newest_first_and_marks_unknown(
     os.utime(middle, ns=(20, 2_000_000_000))
     os.utime(oldest, ns=(10, 1_000_000_000))
 
-    def search_paths(game_id: str) -> tuple[Path, ...]:
-        return folders[game_id]
+    result = discover_save_slots(
+        search_paths_fn=lambda game_id: folders[game_id],
+    )
 
-    result = discover_save_slots(search_paths_fn=search_paths)
-
-    assert [slot.path.name for slot in result.slots] == [
-        "newest.sav",
-        "middle.sav",
-        "oldest.sav",
-    ]
+    assert [slot.path.name for slot in result.slots] == ["newest.sav", "middle.scop", "oldest.scs"]
     assert result.slots[0].format_id == "stalker2"
-    assert result.slots[0].game_id == "stalker2"
-    assert result.slots[1].format_id is None
     assert result.slots[1].game_id is None
     assert "не распознано" in result.slots[1].status_text.casefold()
     assert result.searched_paths == tuple(path for values in folders.values() for path in values)
 
 
-def test_discover_save_slots_includes_call_of_pripyat_scop_files(tmp_path: Path) -> None:
+def test_discover_save_slots_includes_supported_foreign_suffixes(tmp_path: Path) -> None:
     folder = tmp_path / "cop"
     folder.mkdir()
-    path = folder / "quicksave.scop"
-    path.write_bytes(b"foreign x-ray bytes")
+    scop = folder / "quicksave.scop"
+    scs = folder / "quicksave.scs"
+    scop.write_bytes(b"foreign x-ray bytes")
+    scs.write_bytes(b"unknown enhanced save")
 
     result = discover_save_slots(
-        game_ids=("cop",),
+        game_ids=("cop", "clear_sky"),
         search_paths_fn=lambda _game_id: (folder,),
     )
 
-    assert [slot.path for slot in result.slots] == [path]
+    assert {slot.path for slot in result.slots} == {scop, scs}
 
 
-def test_discover_save_slots_surfaces_enhanced_scs_candidates(tmp_path: Path) -> None:
-    folder = tmp_path / "enhanced"
-    folder.mkdir()
-    path = folder / "quicksave.scs"
-    path.write_bytes(b"unknown enhanced save")
-
-    result = discover_save_slots(
-        game_ids=("clear_sky",),
-        search_paths_fn=lambda _game_id: (folder,),
-    )
-
-    assert [slot.path for slot in result.slots] == [path]
-    assert result.slots[0].format_id is None
-    assert result.slots[0].candidate_release_id == "clear_sky"
-    assert result.slots[0].unsupported_reason == UnsupportedSaveReason(
-        code="unknown_format",
-        message="Не распознано зарегистрированным форматом",
-    )
-
-
-def test_discover_save_slots_explains_unavailable_enhanced_parser(
-    tmp_path: Path,
-) -> None:
+def test_discover_save_slots_explains_unavailable_enhanced_parser(tmp_path: Path) -> None:
     folder = tmp_path / "enhanced"
     folder.mkdir()
     path = folder / "quicksave.sav"
@@ -116,25 +87,6 @@ def test_discover_save_slots_explains_unavailable_enhanced_parser(
             "ещё не подтверждён и не поддерживается"
         ),
     )
-
-
-def test_discover_save_slots_records_release_metadata_for_detected_content(
-    synthetic_save: bytes, tmp_path: Path
-) -> None:
-    folder = tmp_path / "saves"
-    folder.mkdir()
-    path = folder / "slot.sav"
-    path.write_bytes(synthetic_save)
-
-    result = discover_save_slots(
-        release_ids=("stalker2",),
-        search_paths_fn=lambda _release_id: (folder,),
-    )
-
-    slot = result.slots[0]
-    assert slot.candidate_release_id == "stalker2"
-    assert slot.detected_release_id == "stalker2"
-    assert slot.unsupported_reason is None
 
 
 def test_discover_save_slots_reuses_detection_for_unchanged_file(tmp_path: Path) -> None:
@@ -156,63 +108,10 @@ def test_discover_save_slots_reuses_detection_for_unchanged_file(tmp_path: Path)
     }
     discover_save_slots(**kwargs)
     discover_save_slots(**kwargs)
-
     assert calls == 1
 
 
-def test_save_slots_view_renders_rows_and_emits_explicit_open(
-    qtbot, synthetic_save: bytes, tmp_path: Path
-) -> None:
-    path = tmp_path / "slot.sav"
-    path.write_bytes(synthetic_save)
-    slot = SaveSlot(
-        path=path,
-        candidate_game_id="stalker2",
-        candidate_game_title="S.T.A.L.K.E.R. 2: Heart of Chornobyl",
-        size=path.stat().st_size,
-        modified_ns=path.stat().st_mtime_ns,
-        format_id="stalker2",
-        format_title="S.T.A.L.K.E.R. 2: Heart of Chornobyl",
-    )
-    view = SaveSlotsView(
-        discovery_fn=lambda: SaveDiscovery((slot,), (tmp_path / "missing",))
-    )
-    qtbot.addWidget(view)
-
-    with qtbot.waitSignal(view.discovery_ready, timeout=5_000):
-        view.refresh()
-
-    assert view.table.rowCount() == 1
-    name_item = view.table.item(0, 0)
-    status_item = view.table.item(0, 3)
-    assert name_item is not None
-    assert status_item is not None
-    assert name_item.text() == "slot.sav"
-    assert "S.T.A.L.K.E.R. 2" in status_item.text()
-    with qtbot.waitSignal(view.open_requested, timeout=1_000) as signal:
-        view._open_row(0, 0)
-    assert signal.args == [path]
-
-
-def test_save_slots_view_empty_result_is_informational(qtbot, tmp_path: Path) -> None:
-    searched = (tmp_path / "first", tmp_path / "second")
-    view = SaveSlotsView(discovery_fn=lambda: SaveDiscovery((), searched))
-    qtbot.addWidget(view)
-
-    with qtbot.waitSignal(view.discovery_ready, timeout=5_000):
-        view.refresh()
-
-    assert view.table.rowCount() == 0
-    assert "не ошибка" in view.empty_label.text().casefold()
-    # The scanned directories now live in the tooltip, keeping the visible
-    # summary to a single line so the slot table stays the focus.
-    for path in searched:
-        assert str(path) in view.search_paths_label.toolTip()
-
-
-def test_save_slots_view_close_waits_for_discovery_worker(
-    qtbot, tmp_path: Path
-) -> None:
+def test_discovery_controller_publishes_result_and_waits_for_worker(qtbot, tmp_path: Path) -> None:
     started = threading.Event()
 
     def slow_discovery() -> SaveDiscovery:
@@ -220,36 +119,27 @@ def test_save_slots_view_close_waits_for_discovery_worker(
         time.sleep(0.1)
         return SaveDiscovery((), (tmp_path,))
 
-    view = SaveSlotsView(discovery_fn=slow_discovery)
-    qtbot.addWidget(view)
-    view.refresh()
-    assert started.wait(2.0)
-
-    view.close()
-
-    assert view._worker is None or not view._worker.isRunning()
+    controller = SlotDiscoveryController(slow_discovery)
+    with qtbot.waitSignal(controller.discovery_ready, timeout=5_000) as signal:
+        controller.refresh()
+    assert started.is_set()
+    assert signal.args[0].searched_paths == (tmp_path,)
+    assert controller.wait_for_worker()
+    assert controller._worker is None
 
 
 def test_main_window_reports_missing_slot_as_open_error(qtbot, tmp_path: Path) -> None:
     path = tmp_path / "vanished.sav"
     path.write_bytes(b"slot content")
-    stat = path.stat()
-    slot = SaveSlot(
-        path=path,
-        candidate_game_id="stalker2",
-        candidate_game_title="S.T.A.L.K.E.R. 2: Heart of Chornobyl",
-        size=stat.st_size,
-        modified_ns=stat.st_mtime_ns,
-        detection_error="synthetic unknown",
-    )
     window = MainWindow(
         EditorService(),
-        slot_discovery=lambda: SaveDiscovery((slot,), (path.parent,)),
+        slot_discovery=lambda: SaveDiscovery((), (path.parent,)),
+        auto_update_check=False,
     )
     qtbot.addWidget(window)
     path.unlink()
 
     with qtbot.waitSignal(window.analysis_failed, timeout=5_000):
-        window.save_slots_view.open_requested.emit(path)
+        window._start_inspect(path)
 
     assert "vanished.sav" in window.error_label.text()

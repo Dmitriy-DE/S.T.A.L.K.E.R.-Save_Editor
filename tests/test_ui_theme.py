@@ -17,59 +17,33 @@ from ui.main_window import LocalSnapshot, MainWindow
 from ui.theme import COLORS, apply_theme, stylesheet
 
 
-def test_stalker_shell_exposes_zone_navigation_and_empty_metadata(qtbot) -> None:
-    window = MainWindow(EditorService())
+def test_reference_shell_exposes_canonical_navigation(qtbot) -> None:
+    window = MainWindow(EditorService(), auto_update_check=False)
     qtbot.addWidget(window)
 
-    assert window.app_title.text() == "S.T.A.L.K.E.R. Save Editor"
-    assert window.ui_hint.text() == "S2 / SAVE WORKBENCH"
-    assert window.launcher_button.text() == "← БИБЛИОТЕКА"
-    assert window.version_badge.text().startswith("v")
-    assert window.file_source_badge.text() == "ФАЙЛ НЕ ВЫБРАН"
-    assert window.meta_filename.text() == "Сейв не выбран"
-    assert window.integrity_badge.text() == "CRC-32: —"
-    assert window.format_badge.text() == "ФОРМАТ: —"
-    assert window.tabs.tabBar().isHidden()
-    assert window.sidebar.objectName() == "sidebar"
-    assert [button.text() for button in window.nav_buttons] == [
-        "Обзор",
-        "Инвентарь",
-        "Изменения",
-        "Резервные копии",
-        "Steam Cloud",
-        "Найденные сейвы",
-        "Настройки",
-        "Оборудование",
-    ]
+    assert window.app_shell.objectName() == "referenceShell"
+    assert tuple(button.text() for button in window.app_shell.navigation_buttons) == (
+        "ЛОКАЛЬНЫЕ СОХРАНЕНИЯ",
+        "STEAM CLOUD",
+        "ИСТОРИЯ",
+        "НАСТРОЙКИ",
+    )
     assert COLORS["bg_base"] in QApplication.instance().styleSheet()
-
-    qtbot.mouseClick(window.nav_buttons[1], Qt.MouseButton.LeftButton)
-    assert window.tabs.currentIndex() == 1
-    assert window.nav_buttons[1].isChecked()
+    qtbot.mouseClick(window.app_shell.navigation_buttons[2], Qt.MouseButton.LeftButton)
+    assert window.reference_stack.currentWidget() is window.history_reference_view
 
 
-def test_stalker_shell_metadata_tracks_real_snapshot(
-    qtbot, synthetic_save: bytes, tmp_path: Path
-) -> None:
+def test_reference_shell_metadata_tracks_real_snapshot(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     source = tmp_path / "локальный.sav"
     info = inspect_save(synthetic_save, with_inventory=True)
-    window = MainWindow(EditorService())
+    window = MainWindow(EditorService(), auto_update_check=False)
     qtbot.addWidget(window)
+    window._render_snapshot(LocalSnapshot(path=source, data=synthetic_save, info=info))
 
-    window._render_snapshot(
-        LocalSnapshot(path=source, data=synthetic_save, info=info)
-    )
-
-    assert window.file_source_badge.text() == "ЛОКАЛЬНЫЙ ФАЙЛ"
-    assert window.meta_filename.text() == source.name
-    assert f"SHA {info.sha256[:12]}" in window.meta_details.text()
-    assert window.integrity_badge.text() == "CRC-32: PASS"
-    assert window.format_badge.text() == "UE5 GVAS: НЕ ПОДТВЕРЖДЁН"
-    assert window.money_card_value.text() == "100"
-    assert window.inventory_card_value.text() == "2"
-    assert window.location_card_value.text() == "—"
-    assert window.time_card_value.text() == "—"
-    assert "экспериментальное" in window.support_label.text()
+    assert source.name in window.editor_view.breadcrumb.text()
+    assert "Локальный" in window.editor_view.source_label.text()
+    assert "CRC PASS" in window.editor_view.integrity_label.text()
+    assert "100" in window.editor_view.money_label.text()
 
 
 def test_apply_theme_does_not_reconfigure_the_application_twice() -> None:
@@ -92,25 +66,22 @@ def test_apply_theme_does_not_reconfigure_the_application_twice() -> None:
         def setPalette(self, palette: object) -> None:  # noqa: N802
             self.palettes.append(palette)
 
-        def setStyleSheet(self, stylesheet: str) -> None:  # noqa: N802
-            self.stylesheets.append(stylesheet)
+        def setStyleSheet(self, value: str) -> None:  # noqa: N802
+            self.stylesheets.append(value)
 
     app = cast(QApplication, ThemeProbe())
-
     apply_theme(app)
     apply_theme(app)
-
     assert app.styles == ["Fusion"]
     assert len(app.palettes) == 1
     assert len(app.stylesheets) == 1
 
 
-def test_theme_exposes_semantic_tokens_for_read_only_focus_and_feedback() -> None:
+def test_theme_exposes_semantic_tokens_and_packaged_font() -> None:
     css = stylesheet()
-
     assert {"sm", "md", "lg"} <= theme.SPACING.keys()
     assert {"body", "mono", "heading"} <= theme.TYPOGRAPHY.keys()
     assert {"text_read_only", "warning", "error", "border_focus"} <= COLORS.keys()
     assert 'QLabel[readOnly="true"]' in css
     assert "QPushButton:focus" in css
-    assert "QLabel#cloudErrorLabel" in css
+    assert "Liberation Sans Narrow" in css

@@ -48,6 +48,10 @@ if chrome_pack.is_dir():
 shell_pack = ROOT / "assets" / "ui" / "s2_shell"
 if shell_pack.is_dir():
     datas.append((str(shell_pack), "assets/ui/s2_shell"))
+
+font_pack = ROOT / "assets" / "fonts"
+if font_pack.is_dir():
+    datas.append((str(font_pack), "assets/fonts"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))

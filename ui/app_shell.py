@@ -101,6 +101,7 @@ class AppShell(QWidget):
         header_layout.setAlignment(nav, Qt.AlignmentFlag.AlignBottom)
 
         support = action_button("♡  ПОДДЕРЖАТЬ ПРОЕКТ", header, kind="support", object_name="supportProject")
+        self.support_button = support
         support.setFixedHeight(45)
         support.setFixedWidth(180)
         support.clicked.connect(self.support_requested)

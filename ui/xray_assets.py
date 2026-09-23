@@ -17,11 +17,27 @@ from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPixmap
 
 from editor.catalog import ItemCatalog, ItemDefinition
+from editor.icon_donor import discover_icon_donor_catalog
 from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
 _ICON_CELL_SIZE = 50
 _LOOSE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds")
+_DONOR_CACHE: dict[str | None, XRayIconResolver | None] = {}
+
+
+def donor_resolver_for(catalog: ItemCatalog | None) -> XRayIconResolver | None:
+    """Resolve a real icon atlas from another installed X-Ray release once."""
+
+    if catalog is None or catalog.source_root is not None:
+        return None
+    release_id = catalog.release_id
+    if release_id in _DONOR_CACHE:
+        return _DONOR_CACHE[release_id]
+    donor_catalog = discover_icon_donor_catalog(prefer_not=release_id)
+    resolver = XRayIconResolver(donor_catalog) if donor_catalog is not None else None
+    _DONOR_CACHE[release_id] = resolver
+    return resolver
 
 
 def _bundled_icon_dir() -> Path:

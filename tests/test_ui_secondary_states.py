@@ -8,7 +8,7 @@ pytest.importorskip("PySide6")
 
 from editor.service import EditorService
 from save_format import inspect_save
-from ui.backups_view import BackupView
+from ui.backup_controller import BackupController
 from ui.character_view import CharacterView
 from ui.cloud_library_view import CloudLibraryView
 from ui.history_view import HistoryView
@@ -36,7 +36,7 @@ def test_reference_stack_has_global_cloud_and_history_states(qtbot) -> None:
 
 
 def test_cloud_surface_exposes_read_only_gate_and_explicit_actions(qtbot) -> None:
-    backend = __import__("ui.cloud_view", fromlist=["CloudView"]).CloudView(
+    backend = __import__("ui.cloud_controller", fromlist=["CloudController"]).CloudController(
         EditorService(), helper_finder=lambda: None
     )
     view = CloudLibraryView(backend)
@@ -50,7 +50,7 @@ def test_cloud_surface_exposes_read_only_gate_and_explicit_actions(qtbot) -> Non
 
 
 def test_history_surface_keeps_restore_disabled_until_verified_preview(qtbot, tmp_path: Path) -> None:
-    backend = BackupView(backup_dirs=(tmp_path,))
+    backend = BackupController(backup_dirs=(tmp_path,))
     view = HistoryView(backend)
     qtbot.addWidget(view)
 

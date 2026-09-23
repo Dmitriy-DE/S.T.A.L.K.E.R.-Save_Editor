@@ -1,8 +1,10 @@
-"""Canonical backup-history surface backed by ``BackupView``."""
+"""Canonical backup-history surface backed by the backup controller."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSignalBlocker
+from pathlib import Path
+
+from PySide6.QtCore import QSignalBlocker, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -15,18 +17,25 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .backups_view import BackupView
+from .backup_controller import BackupController
 from .style_components import action_button, panel, section_header, status_chip
 
 
 class HistoryView(QWidget):
     """Journal presentation; restore remains disabled until backend verification."""
 
-    def __init__(self, backend: BackupView, parent: QWidget | None = None) -> None:
+    restore_requested = Signal(object, object)
+    restore_in_place_requested = Signal(object)
+    folder_open_requested = Signal(object)
+
+    def __init__(self, backend: BackupController, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("historyView")
         self.backend = backend
         self._build_ui()
+        backend.records_changed.connect(lambda _records: self._render())
+        backend.progress_changed.connect(self.set_progress)
+        backend.error_changed.connect(self.set_error)
         self._render()
 
     def _build_ui(self) -> None:
@@ -66,7 +75,7 @@ class HistoryView(QWidget):
         self.refresh_button.clicked.connect(self._refresh)
         toolbar.addWidget(self.refresh_button)
         self.open_folder_button = action_button("ОТКРЫТЬ ПАПКУ", table_panel)
-        self.open_folder_button.clicked.connect(self.backend._open_folder)
+        self.open_folder_button.clicked.connect(self._open_folder)
         toolbar.addWidget(self.open_folder_button)
         toolbar.addStretch(1)
         table_layout.addLayout(toolbar)
@@ -89,7 +98,7 @@ class HistoryView(QWidget):
         self.destination_edit.textChanged.connect(self._destination_changed)
         detail.addWidget(self.destination_edit)
         detail.addStretch(1)
-        self.preview_button = action_button("ПРОВЕРИТЬ BACKUP", self.detail_panel)
+        self.preview_button = action_button("ПРОВЕРИТЬ КОПИЮ", self.detail_panel)
         self.preview_button.setEnabled(False)
         self.preview_button.clicked.connect(self._preview)
         detail.addWidget(self.preview_button)
@@ -107,6 +116,11 @@ class HistoryView(QWidget):
     def _refresh(self) -> None:
         self.backend.refresh()
         self._render()
+
+    def refresh(self) -> None:
+        """Refresh the journal through the controller-owned data path."""
+
+        self._refresh()
 
     def _render(self) -> None:
         records = self.backend.records
@@ -126,10 +140,8 @@ class HistoryView(QWidget):
         self._selection_changed()
 
     def _selection_changed(self) -> None:
-        row = self.table.currentRow()
-        if 0 <= row < self.backend.table.rowCount():
-            self.backend.table.selectRow(row)
-        record = self.backend.selected_record()
+        record = self._selected_record()
+        self.backend.clear_preview()
         self.preview_button.setEnabled(record is not None)
         self.restore_button.setEnabled(False)
         self.restore_in_place_button.setEnabled(False)
@@ -141,24 +153,37 @@ class HistoryView(QWidget):
         self.detail_status.setText(f"Статус backup: {record.status}. Нажми проверку перед восстановлением.")
 
     def _preview(self) -> None:
-        self.backend.preview_restore()
-        self.detail_status.setText(self.backend.preview_label.text())
-        self.restore_in_place_button.setEnabled(self.backend.restore_in_place_button.isEnabled())
+        checked = self.backend.preview_restore(self._selected_record())
+        self.detail_status.setText(
+            self.backend.status_text if checked is not None else "Проверка backup не пройдена"
+        )
+        self.restore_in_place_button.setEnabled(
+            checked is not None and self.backend.can_restore_in_place(checked)
+        )
         self._destination_changed()
 
     def _destination_changed(self) -> None:
         self.restore_button.setEnabled(
-            self.backend._preview_record is not None and bool(self.destination_edit.text().strip())
+            self.backend.preview_record is not None and bool(self.destination_edit.text().strip())
         )
 
     def _restore(self) -> None:
-        if self.backend._preview_record is None:
+        if self.backend.preview_record is None:
             return
-        self.backend.destination_edit.setText(self.destination_edit.text())
-        self.backend._request_restore()
+        destination = self.destination_edit.text().strip()
+        if destination:
+            self.restore_requested.emit(self.backend.preview_record, Path(destination).expanduser())
 
     def _restore_in_place(self) -> None:
-        self.backend._request_restore_in_place()
+        if self.backend.preview_record is not None:
+            self.restore_in_place_requested.emit(self.backend.preview_record)
+
+    def _open_folder(self) -> None:
+        self.folder_open_requested.emit(self.backend.folder_for(self._selected_record()))
+
+    def _selected_record(self):
+        row = self.table.currentRow()
+        return self.backend.records[row] if 0 <= row < len(self.backend.records) else None
 
     def set_busy(self, busy: bool) -> None:
         self.backend.set_busy(busy)
@@ -175,12 +200,12 @@ class HistoryView(QWidget):
     def mark_restored(self, receipt) -> None:
         self.backend.mark_restored(receipt)
         self._render()
-        self.detail_status.setText(self.backend.preview_label.text())
+        self.detail_status.setText(self.backend.status_text)
 
     def mark_in_place_restored(self, receipt) -> None:
         self.backend.mark_in_place_restored(receipt)
         self._render()
-        self.detail_status.setText(self.backend.preview_label.text())
+        self.detail_status.setText(self.backend.status_text)
 
 
 __all__ = ["HistoryView"]

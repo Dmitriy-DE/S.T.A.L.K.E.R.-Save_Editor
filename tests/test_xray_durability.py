@@ -251,15 +251,14 @@ def test_qt_condition_editor_stages_percentage_without_mutating_snapshot(qtbot, 
         )
     )
 
-    view = window.inventory_view
+    view = window.editor_view
     view.table.selectRow(0)
     qtbot.waitUntil(lambda: view.selected_handle == 0x3456)
-    assert view.condition_spin.isEnabled()
-    assert view.condition_spin.value() == 25
-    assert "Экспериментально" in view.condition_status_label.text()
+    assert view.detail_view.condition_spin.isEnabled()
+    assert view.detail_view.condition_spin.value() == 25
 
-    view.condition_spin.setValue(75)
-    qtbot.mouseClick(view.condition_stage_button, Qt.MouseButton.LeftButton)
+    view.detail_view.condition_spin.setValue(75)
+    qtbot.mouseClick(view.detail_view.condition_apply, Qt.MouseButton.LeftButton)
 
     assert window.staged_durability == {0x3456: pytest.approx(0.75)}
     assert window.snapshot.data == data

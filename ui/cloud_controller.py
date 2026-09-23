@@ -3,25 +3,13 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal
-from PySide6.QtGui import QShowEvent
-from PySide6.QtWidgets import (
-    QComboBox,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtCore import QObject, QThread, QTimer, Signal
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import GameCatalog, ItemCatalog
@@ -41,7 +29,7 @@ from editor.steam_profiles import (
 )
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
-from steam_cloud import APP_ID, CloudFile, cloud_source_label, discover_helper
+from steam_cloud import APP_ID, CloudFile, discover_helper
 
 LOGGER = logging.getLogger("stalker2_save_editor.cloud")
 
@@ -114,7 +102,7 @@ class CloudOperationWorker(QThread):
         profile: SteamCloudProfile | None = None,
         release_id: str | None = None,
         catalog_roots: tuple[Path, ...] = (),
-        parent: QWidget | None = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.service = service
@@ -234,7 +222,7 @@ class CloudOperationWorker(QThread):
 
             if self.mode == "upload":
                 if self.prepared is None or self.backup_dir is None:
-                    raise SaveError("Для cloud upload нужен проверенный preview")
+                    raise SaveError("Для cloud upload нужна проверенная копия")
                 prepared = self.prepared
                 self.progress.emit("Cloud: fresh read и SHA…")
 
@@ -316,8 +304,8 @@ class SteamWebEnableWorker(QThread):
             self.completed.emit()
 
 
-class CloudView(QWidget):
-    """Connect explicitly, select a Data save, and display upload certainty."""
+class CloudController(QObject):
+    """Own Steam Cloud lifecycle and fail-closed transactions without UI."""
 
     files_ready = Signal(object)
     snapshot_ready = Signal(object)
@@ -325,6 +313,10 @@ class CloudView(QWidget):
     operation_failed = Signal(str)
     operation_progress = Signal(str)
     busy_changed = Signal(bool)
+    status_changed = Signal(str)
+    result_changed = Signal(str)
+    error_changed = Signal(str)
+    upload_available_changed = Signal(bool)
 
     PATH_COLUMN = 0
     SIZE_COLUMN = 1
@@ -342,7 +334,7 @@ class CloudView(QWidget):
         backup_dir: Path | None = None,
         app_id: int = APP_ID,
         catalog_roots: tuple[Path, ...] = (),
-        parent: QWidget | None = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.service = service
@@ -371,8 +363,11 @@ class CloudView(QWidget):
         self._thread: CloudOperationWorker | None = None
         self._debug_thread: SteamWebEnableWorker | None = None
         self._debug_succeeded = False
-        self._auto_connected = False
-        self._build_ui()
+        self._selected_file: CloudFile | None = None
+        self._external_busy = False
+        self.status_text = "Steam Cloud: не подключено"
+        self.result_text = ""
+        self.error_text = ""
 
     @property
     def files(self) -> tuple[CloudFile, ...]:
@@ -389,100 +384,21 @@ class CloudView(QWidget):
             or (self._debug_thread is not None and self._debug_thread.isRunning())
         )
 
-    def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+    @property
+    def profiles(self) -> tuple[SteamCloudProfile, ...]:
+        return tuple(steam_cloud_profiles())
 
-        self.intro_label = QLabel(
-            "Steam Cloud подключается в фоне. Выбери Data-сейв, внеси изменения "
-            "и нажми «Сохранить» в главной панели. Если backend доступен только "
-            "для чтения, Cloud остаётся только для чтения и запись не выполняется."
-        )
-        self.intro_label.setObjectName("cloudIntroLabel")
-        self.intro_label.setWordWrap(True)
-        layout.addWidget(self.intro_label)
+    def _set_status(self, text: str) -> None:
+        self.status_text = text
+        self.status_changed.emit(text)
 
-        profile_row = QHBoxLayout()
-        profile_row.addWidget(QLabel("Игра в Steam Cloud:"))
-        self.profile_combo = QComboBox()
-        profiles = steam_cloud_profiles()
-        for profile in profiles:
-            self.profile_combo.addItem(profile.title, profile.release_id)
-        current_index = next(
-            index
-            for index, profile in enumerate(profiles)
-            if profile.release_id == self.profile.release_id
-        )
-        self.profile_combo.setCurrentIndex(current_index)
-        self.profile_combo.currentIndexChanged.connect(self._on_profile_changed)
-        profile_row.addWidget(self.profile_combo, 1)
-        layout.addLayout(profile_row)
+    def _set_result(self, text: str) -> None:
+        self.result_text = text
+        self.result_changed.emit(text)
 
-        actions = QHBoxLayout()
-        self.analyze_button = QPushButton("Скачать выбранный сейв")
-        self.analyze_button.setEnabled(False)
-        self.analyze_button.clicked.connect(self.analyze_selected)
-        actions.addWidget(self.analyze_button)
-        self.upload_button = QPushButton("Загрузить в облако")
-        self.upload_button.setEnabled(False)
-        self.upload_button.clicked.connect(self.start_upload)
-        actions.addWidget(self.upload_button)
-        self.connect_button = QPushButton("Обновить список")
-        self.connect_button.clicked.connect(self.start_connect)
-        actions.addWidget(self.connect_button)
-        self.enable_web_button = QPushButton("Включить Steam Cloud web")
-        self.enable_web_button.setToolTip(
-            "Перезапустить Steam с -cef-enable-debugging, чтобы скачать cloud-файл "
-            "из уже авторизованной Steam-сессии"
-        )
-        self.enable_web_button.clicked.connect(self.start_steam_web)
-        actions.addWidget(self.enable_web_button)
-        actions.addStretch(1)
-        layout.addLayout(actions)
-
-        self.status_label = QLabel("Steam Cloud: подключаюсь…")
-        self.status_label.setWordWrap(True)
-        layout.addWidget(self.status_label)
-
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(
-            ["Data path", "Размер", "Timestamp", "Persisted", "Источник"]
-        )
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.table.setAlternatingRowColors(True)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.itemSelectionChanged.connect(self._on_selection_changed)
-        layout.addWidget(self.table, 1)
-
-        self.result_label = QLabel("")
-        self.result_label.setObjectName("cloudResultLabel")
-        self.result_label.setWordWrap(True)
-        self.result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        layout.addWidget(self.result_label)
-        self.progress_label = QLabel("")
-        self.progress_label.setWordWrap(True)
-        layout.addWidget(self.progress_label)
-        self.error_label = QLabel("")
-        self.error_label.setObjectName("cloudErrorLabel")
-        self.error_label.setWordWrap(True)
-        self.error_label.setVisible(False)
-        layout.addWidget(self.error_label)
-
-    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
-        super().showEvent(event)
-        # Connect once, automatically, the first time the tab is shown. The
-        # native worker needs no helper and no manual step; the user just sees
-        # the list appear.  Never auto-spawn a live worker thread under pytest:
-        # showing a window in a UI test would otherwise start a real Steam
-        # session and leave a thread to crash Qt teardown on Windows.
-        if self._auto_connected or "PYTEST_CURRENT_TEST" in os.environ:
-            return
-        self._auto_connected = True
-        if not self.is_busy and self.transport is None:
-            self.start_connect()
+    def _set_error(self, text: str) -> None:
+        self.error_text = text
+        self.error_changed.emit(text)
 
     def _resolve_helper(self) -> Path | None:
         # The native worker needs no helper; the discovered AppImage is only a
@@ -502,7 +418,7 @@ class CloudView(QWidget):
 
         if not self.is_busy:
             return False
-        self.status_label.setText("Steam Cloud: дождись завершения текущей операции")
+        self._set_status("Steam Cloud: дождись завершения текущей операции")
         return True
 
     def _start_worker(self, worker: CloudOperationWorker) -> None:
@@ -526,7 +442,7 @@ class CloudView(QWidget):
         helper = self._resolve_helper()
         self._close_transport()
         self.clear_error()
-        self.status_label.setText("Steam Cloud: подключение…")
+        self._set_status("Steam Cloud: подключение…")
         worker = CloudOperationWorker(
             self.service,
             mode="list",
@@ -546,11 +462,10 @@ class CloudView(QWidget):
 
     def start_steam_web(self) -> None:
         if self.is_busy:
-            self.status_label.setText("Steam Cloud: дождись завершения текущей операции")
+            self._set_status("Steam Cloud: дождись завершения текущей операции")
             return
         self._debug_succeeded = False
-        self.enable_web_button.setEnabled(False)
-        self.status_label.setText(
+        self._set_status(
             "Steam Cloud web: закрываю Steam и запускаю его с debug-портом…"
         )
         worker = SteamWebEnableWorker(self)
@@ -566,32 +481,33 @@ class CloudView(QWidget):
 
     def _on_steam_web_failed(self, message: str) -> None:
         self._debug_succeeded = False
-        self.error_label.setText(message)
-        self.error_label.setVisible(True)
+        self._set_error(message)
 
     def _on_steam_web_finished(self) -> None:
         succeeded = self._debug_succeeded
         self._debug_thread = None
-        self.enable_web_button.setEnabled(True)
         if succeeded:
-            self.status_label.setText("Steam Cloud web включён; обновляю список…")
+            self._set_status("Steam Cloud web включён; обновляю список…")
             QTimer.singleShot(0, self.start_connect)
-        elif not self.error_label.isVisible():
-            self.status_label.setText("Steam Cloud web не включён")
+        elif not self.error_text:
+            self._set_status("Steam Cloud web не включён")
 
     def _warn_if_still_connecting(self) -> None:
         if self.is_busy and self.transport is None:
-            self.status_label.setText(
+            self._set_status(
                 "Steam Cloud: всё ещё подключаюсь… Проверь, что клиент Steam "
                 "запущен и вошёл в аккаунт. Список появится, как только Steam "
                 "ответит; можно закрыть вкладку и вернуться позже."
             )
 
     def selected_file(self) -> CloudFile | None:
-        row = self.table.currentRow()
-        if 0 <= row < len(self._files):
-            return self._files[row]
-        return None
+        return self._selected_file
+
+    def select_file(self, cloud_file: CloudFile | None) -> None:
+        """Set the selected Data path after the presentation validates its row."""
+
+        self._selected_file = cloud_file if cloud_file in self._files else None
+        self._on_selection_changed()
 
     def analyze_selected(self) -> None:
         if self._refuse_while_busy():
@@ -622,17 +538,18 @@ class CloudView(QWidget):
     def set_prepared(self, prepared: PreparedEdit | None) -> None:
         self._prepared = None
         if prepared is None:
-            self.upload_button.setEnabled(False)
+            self._set_result("")
+            self.upload_available_changed.emit(False)
             return
         selected = self.selected_file()
         source = prepared.plan.source
         if source.kind != "cloud" or selected is None or source.locator != selected.name:
-            self.result_label.setText("Preview не относится к выбранному cloud Data path; upload запрещён")
-            self.upload_button.setEnabled(False)
+            self._set_result("Проверка не относится к выбранному cloud Data path; upload запрещён")
+            self.upload_available_changed.emit(False)
             return
         self._prepared = prepared
-        self.result_label.setText(
-            f"Cloud preview готов для {selected.name}; SHA {prepared.output_sha256[:12]}…"
+        self._set_result(
+            f"Проверка Cloud готова для {selected.name}; SHA {prepared.output_sha256[:12]}…"
         )
         self._refresh_upload_state()
 
@@ -649,10 +566,10 @@ class CloudView(QWidget):
             and self._prepared is not None
             and capability.writable
         )
-        self.upload_button.setEnabled(can_upload)
+        self.upload_available_changed.emit(can_upload)
         if self._prepared is not None and not capability.writable:
-            self.result_label.setText(
-                "Cloud preview готов, но upload отключён: "
+            self._set_result(
+                "Проверка Cloud готова, но upload отключён: "
                 f"{capability.reason}. WriteFile не запускался."
             )
         return capability
@@ -673,10 +590,10 @@ class CloudView(QWidget):
             self._refresh_upload_state()
             return
         if prepared is None or selected is None:
-            self._on_failed("Сначала выбери cloud slot и создай его preview")
+            self._on_failed("Сначала выбери cloud slot и выполни проверку")
             return
         if prepared.plan.source.kind != "cloud" or prepared.plan.source.locator != selected.name:
-            self._on_failed("Выбранный cloud slot не совпадает с preview; WriteFile не выполнялся")
+            self._on_failed("Выбранный cloud slot не совпадает с проверкой; WriteFile не выполнялся")
             return
         self.clear_error()
         worker = CloudOperationWorker(
@@ -711,18 +628,7 @@ class CloudView(QWidget):
         self._hidden_editor_artifacts = hidden_editor_artifacts
         self._snapshot = None
         self._prepared = None
-        self.table.setRowCount(len(self._files))
-        for row, cloud_file in enumerate(self._files):
-            values = (
-                cloud_file.name,
-                f"{cloud_file.size} B",
-                str(cloud_file.timestamp),
-                "да" if cloud_file.is_persisted else "нет",
-                cloud_source_label(cloud_file.source),
-            )
-            for column, value in enumerate(values):
-                self.table.setItem(row, column, QTableWidgetItem(value))
-        self.table.clearSelection()
+        self._selected_file = None
         self._on_selection_changed()
         hint = str(getattr(self.transport, "status_hint", "") or "").strip()
         status_prefix = (
@@ -744,13 +650,10 @@ class CloudView(QWidget):
         capability = cloud_write_capability(self.transport)
         if not capability.writable:
             status += f" · только чтение: {capability.reason}"
-        self.status_label.setText(status)
+        self._set_status(status)
         self.files_ready.emit(self._files)
 
-    def _on_profile_changed(self, index: int) -> None:
-        if index < 0:
-            return
-        release_id = self.profile_combo.itemData(index)
+    def select_profile(self, release_id: str) -> None:
         try:
             profile = steam_cloud_profile_for_release(str(release_id))
         except KeyError:
@@ -765,81 +668,67 @@ class CloudView(QWidget):
         self._files = ()
         self._snapshot = None
         self._prepared = None
-        self.table.setRowCount(0)
+        self._selected_file = None
         self._on_selection_changed()
         self.clear_error()
-        self.status_label.setText(
+        self._set_status(
             f"Steam Cloud: выбран профиль {profile.title}; нажми «Обновить список»"
         )
 
     def _on_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
         self._snapshot = snapshot
         self._prepared = None
-        self.result_label.setText(
+        self._set_result(
             f"Cloud snapshot: {snapshot.name}; CRC={'OK' if snapshot.info.crc_ok else 'FAIL'}; "
             f"SHA256 {snapshot.info.sha256}"
         )
-        self.status_label.setText("Cloud save скачан и проанализирован; staged preview ещё не создан")
+        self._set_status("Cloud save скачан и проанализирован; изменения ещё не подготовлены")
         self.snapshot_ready.emit(snapshot)
 
     def _on_upload_ready(self, receipt: CloudReceipt) -> None:
         prepared = self._prepared
         output_size = len(prepared.data) if prepared is not None else None
         self._prepared = None
-        self.upload_button.setEnabled(False)
+        self.upload_available_changed.emit(False)
         size_text = f"; размер {output_size} B" if output_size is not None else ""
         if receipt.status == "verified":
-            self.result_label.setText(
+            self._set_result(
                 "Cloud verified: persisted=true и read-back SHA совпали. "
                 f"Target: {receipt.remote_path}{size_text}. "
                 f"Original backup: {receipt.backup_path}; recovery: {receipt.recovery_path}"
             )
-            self.status_label.setText("Cloud: verified")
+            self._set_status("Cloud: verified")
         else:
-            self.result_label.setText(
+            self._set_result(
                 "Cloud uncertain: WriteFile уже отправлен, но результат не подтверждён. "
                 f"Target: {receipt.remote_path}{size_text}. Причина: {receipt.reason}. "
                 f"Original backup: {receipt.backup_path}; "
                 f"recovery: {receipt.recovery_path}. Повторный WriteFile запрещён."
             )
-            self.status_label.setText("Cloud: uncertain — требуется reconciliation")
+            self._set_status("Cloud: uncertain — требуется reconciliation")
         self.upload_ready.emit(receipt)
 
     def _on_selection_changed(self) -> None:
         self._snapshot = None
         self._prepared = None
-        self.upload_button.setEnabled(False)
-        self.analyze_button.setEnabled(self.selected_file() is not None and self.transport is not None)
+        self.upload_available_changed.emit(False)
 
     def _on_progress(self, message: str) -> None:
-        self.progress_label.setText(message)
+        self._set_status(message)
         self.operation_progress.emit(message)
 
     def _on_failed(self, message: str) -> None:
-        self.status_label.setText("Cloud operation не выполнена; WriteFile мог не запускаться")
-        self.error_label.setText(message)
-        self.error_label.setVisible(True)
+        self._set_status("Cloud operation не выполнена; WriteFile мог не запускаться")
+        self._set_error(message)
         self.operation_failed.emit(message)
 
     def _on_finished(self) -> None:
         self._thread = None
         self.set_busy(False)
-        self.analyze_button.setEnabled(self.selected_file() is not None and self.transport is not None)
         self.operation_progress.emit("Cloud operation завершена")
 
     def set_busy(self, busy: bool) -> None:
-        for widget in (
-            self.connect_button,
-            self.enable_web_button,
-            self.profile_combo,
-            self.table,
-            self.analyze_button,
-            self.upload_button,
-        ):
-            widget.setEnabled(not busy)
         if not busy:
-            self.enable_web_button.setEnabled(self._debug_thread is None)
-            self.analyze_button.setEnabled(self.selected_file() is not None and self.transport is not None)
             self._refresh_upload_state()
         self.busy_changed.emit(busy)
 
@@ -848,34 +737,15 @@ class CloudView(QWidget):
 
         if self.is_busy:
             return
-        self.connect_button.setEnabled(not busy)
-        self.enable_web_button.setEnabled(not busy and self._debug_thread is None)
-        self.table.setEnabled(not busy)
-        self.analyze_button.setEnabled(not busy and self.selected_file() is not None and self.transport is not None)
+        self._external_busy = busy
         self._refresh_upload_state(blocked=busy)
 
     def clear_error(self) -> None:
-        self.error_label.clear()
-        self.error_label.setVisible(False)
+        self._set_error("")
 
     def set_error(self, message: str) -> None:
-        self.error_label.setText(message)
-        self.error_label.setVisible(True)
-        self.progress_label.setText("Cloud operation остановлена")
-
-    def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
-        """Never let a running worker outlive the widget.
-
-        Qt aborts the process when a QThread is destroyed while it is still
-        running.  A close during a cloud operation - or a test tearing the view
-        down - used to risk exactly that.
-        """
-
-        if not self.stop_worker(30_000):
-            self.status_label.setText("Cloud operation ещё выполняется; окно закрыто не будет")
-            event.ignore()
-            return
-        super().closeEvent(event)
+        self._set_error(message)
+        self._set_status("Cloud operation остановлена")
 
     def stop_worker(self, timeout_ms: int) -> bool:
         """Cancel the cloud thread and prove it stopped before widget teardown."""
@@ -910,5 +780,10 @@ class CloudView(QWidget):
         if not self.is_busy:
             self._close_transport()
 
+    def close(self) -> None:
+        """Stop workers and release the transport during application teardown."""
 
-__all__ = ["CloudOperationWorker", "CloudSnapshot", "CloudView"]
+        self.stop_worker(30_000)
+
+
+__all__ = ["CloudController", "CloudOperationWorker", "CloudSnapshot", "SteamWebEnableWorker"]

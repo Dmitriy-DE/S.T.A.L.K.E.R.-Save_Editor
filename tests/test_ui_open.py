@@ -23,9 +23,9 @@ def test_local_open_is_async_and_populates_summary(qtbot, synthetic_save: bytes,
     assert window.edit_actions_enabled
     assert window.snapshot is not None
     assert window.snapshot.path == source
-    assert source.name in window.source_label.text()
-    assert "CRC: OK" in window.summary_label.text()
-    assert "Money: 100" in window.summary_label.text()
+    assert source.name in window.editor_view.breadcrumb.text()
+    assert "CRC PASS" in window.editor_view.integrity_label.text()
+    assert "100" in window.editor_view.money_label.text()
     assert window.snapshot.format_id == "stalker2"
     assert window.snapshot.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
 
@@ -42,13 +42,13 @@ def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tm
         window._start_inspect(source)
     qtbot.waitUntil(window.open_button.isEnabled, timeout=5_000)
     previous_snapshot = window.snapshot
-    previous_summary = window.summary_label.text()
+    previous_breadcrumb = window.editor_view.breadcrumb.text()
 
     with qtbot.waitSignal(window.analysis_failed, timeout=5_000):
         window._start_inspect(malformed)
 
     assert window.snapshot is previous_snapshot
-    assert window.summary_label.text() == previous_summary
+    assert window.editor_view.breadcrumb.text() == previous_breadcrumb
     assert "broken.sav" in window.error_label.text()
     assert window.edit_actions_enabled
 

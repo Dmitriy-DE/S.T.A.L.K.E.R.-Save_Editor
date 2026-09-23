@@ -88,6 +88,9 @@ class CharacterView(QWidget):
         self.warning_label.setObjectName("characterWarning")
         self.warning_label.setWordWrap(True)
         relations_layout.addWidget(self.warning_label)
+        # Controller-facing status surface; this is part of the canonical
+        # character page, not a legacy faction widget.
+        self.status_label = self.warning_label
         body.addWidget(relations, 66)
         root.addLayout(body, 1)
 

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSpinBox,
     QTableView,
     QVBoxLayout,
     QWidget,
@@ -19,12 +20,13 @@ from PySide6.QtWidgets import (
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import ItemCatalog
+from editor.equipment import EquipmentItem, equipment_items
 from save_format import InventoryItem
 
 from .inventory_model import InventoryTableModel
 from .item_detail_view import ItemDetailView
 from .style_components import action_button, panel, section_header, status_chip
-from .xray_assets import XRayIconResolver
+from .xray_assets import XRayIconResolver, donor_resolver_for
 
 
 class EditorView(QWidget):
@@ -38,6 +40,8 @@ class EditorView(QWidget):
     placement_stage_requested = Signal(int, str, object)
     remove_requested = Signal(int)
     reset_requested = Signal(int)
+    money_stage_requested = Signal(int)
+    money_clear_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -52,6 +56,7 @@ class EditorView(QWidget):
         self._staged_counts: Mapping[int, int] = {}
         self._staged_durability: Mapping[int, float] = {}
         self._removed_handles: Mapping[int, bool] = {}
+        self.equipment_rows: tuple[EquipmentItem, ...] = ()
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -79,6 +84,23 @@ class EditorView(QWidget):
         self.money_label = QLabel("◉  —", self.status_column)
         self.money_label.setObjectName("editorMetric")
         status_layout.addWidget(self.money_label)
+        money_controls = QHBoxLayout()
+        self.money_spin = QSpinBox(self.status_column)
+        self.money_spin.setRange(0, 2_000_000_000)
+        self.money_spin.setObjectName("editorMoneySpin")
+        self.money_spin.setEnabled(False)
+        money_controls.addWidget(self.money_spin, 1)
+        self.money_stage_button = action_button("ПРИМЕНИТЬ", self.status_column)
+        self.money_stage_button.setEnabled(False)
+        self.money_stage_button.clicked.connect(
+            lambda: self.money_stage_requested.emit(self.money_spin.value())
+        )
+        money_controls.addWidget(self.money_stage_button)
+        self.money_clear_button = action_button("×", self.status_column)
+        self.money_clear_button.setEnabled(False)
+        self.money_clear_button.clicked.connect(self.money_clear_requested)
+        money_controls.addWidget(self.money_clear_button)
+        status_layout.addLayout(money_controls)
         self.weight_label = QLabel("⚖  —", self.status_column)
         self.weight_label.setObjectName("editorMetric")
         status_layout.addWidget(self.weight_label)
@@ -168,10 +190,18 @@ class EditorView(QWidget):
     def set_snapshot(self, snapshot: Any) -> None:
         self._capabilities = snapshot.capabilities
         self._catalog = snapshot.catalog
-        self._icon_resolver = XRayIconResolver(self._catalog)
+        self._icon_resolver = XRayIconResolver(
+            self._catalog,
+            donor=donor_resolver_for(self._catalog),
+        )
         self.model.set_icon_provider(self._icon_for_item)
         self.model.set_name_provider(self._name_for_item)
         self._items = tuple(snapshot.info.inventory)
+        self.equipment_rows = equipment_items(
+            self._items,
+            release_id=str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")),
+            catalog=self._catalog,
+        )
         self.model.set_items(self._items)
         self.item_count_label.setText(f"Элементов: {len(self._items)}")
         self.breadcrumb.setText(f"{snapshot.format_title}  ›  {snapshot.path.name}")
@@ -180,31 +210,46 @@ class EditorView(QWidget):
         self.header_status.style().unpolish(self.header_status)
         self.header_status.style().polish(self.header_status)
         self.money_label.setText(f"◉  {snapshot.info.money if snapshot.info.money is not None else '—'} ₽")
+        self.money_spin.blockSignals(True)
+        self.money_spin.setValue(int(snapshot.info.money or 0))
+        self.money_spin.blockSignals(False)
+        money_writable = bool(
+            snapshot.capabilities.edit_money
+            and snapshot.info.money is not None
+            and snapshot.info.money_anchor_count == 1
+        )
+        self.money_spin.setEnabled(money_writable)
+        self.money_stage_button.setEnabled(money_writable)
+        self.money_clear_button.setEnabled(False)
         weight = sum(item.total_weight or 0.0 for item in self._items) if all(item.total_weight is not None for item in self._items) else None
         self.weight_label.setText(f"⚖  {weight:.1f} кг" if weight is not None else "⚖  — кг")
         self.source_label.setText("Источник\n" + ("Steam Cloud" if snapshot.source_kind == "cloud" else "Локальный"))
         self.integrity_label.setText("Целостность\n" + ("CRC PASS" if snapshot.info.crc_ok else "ПРОВЕРЬТЕ ДАННЫЕ"))
         self.capability_label.setText("Статус\n" + ("Редактируемый" if self.header_status.text() == "РЕДАКТИРУЕМЫЙ" else "Только чтение"))
-        self._render_equipment()
+        self._render_equipment_summary()
+        release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
+        self.character_button.setVisible(
+            release in {"soc", "cop", "clear_sky", "xray", "shadow_of_chornobyl", "call_of_pripyat"}
+        )
         self.selected_handle = None
         self.detail_view.set_item(None, self._capabilities)
         self.detail_view.set_item_icon(None)
         if self.model.visible_items():
             self.table.selectRow(0)
 
-    def _render_equipment(self) -> None:
+    def _render_equipment_summary(self) -> None:
         while self.equipment_list.count():
             item = self.equipment_list.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
                 widget.deleteLater()
-        for row in self._items[:6]:
-            button = QPushButton(f"▧  {row.display_name or row.type_key}", self.status_column)
+        for row in self.equipment_rows[:6]:
+            button = QPushButton(f"▧  {row.name or row.type_key}", self.status_column)
             button.setObjectName("equipmentSlot")
             button.setIcon(
                 self._icon_resolver.icon_for_item(
                     row.type_key,
-                    row.display_name,
+                    row.name,
                     row.category,
                     size=28,
                 )
@@ -271,6 +316,18 @@ class EditorView(QWidget):
             item.category,
             size=96,
         )
+
+    def set_money_draft(self, value: int | None) -> None:
+        if value is None:
+            return
+        self.money_label.setText(f"◉  {value} ₽")
+        self.money_spin.blockSignals(True)
+        self.money_spin.setValue(value)
+        self.money_spin.blockSignals(False)
+        self.money_clear_button.setEnabled(True)
+
+    def show_capability_message(self, message: str) -> None:
+        self.detail_view.module_status.setText(message)
 
 
 __all__ = ["EditorView"]

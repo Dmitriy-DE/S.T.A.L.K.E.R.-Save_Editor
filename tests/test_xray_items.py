@@ -55,10 +55,10 @@ def test_non_stack_item_remains_read_only_for_count_edits() -> None:
         )
 
 
-def test_item_change_surfaces_mark_add_and_remove_as_dangerous() -> None:
-    changes = Path(__file__).parents[1] / "ui" / "changes_view.py"
+def test_item_change_surfaces_keep_unproven_mutations_read_only() -> None:
+    detail = Path(__file__).parents[1] / "ui" / "item_detail_view.py"
     browser = Path(__file__).parents[1] / "web" / "app.js"
 
-    assert "ОПАСНО" in changes.read_text(encoding="utf-8")
-    assert "backup обязателен" in changes.read_text(encoding="utf-8")
+    assert "S2 add/remove surface is omitted" in detail.read_text(encoding="utf-8")
+    assert "backup обязателен" in browser.read_text(encoding="utf-8")
     assert "ОПАСНО" in browser.read_text(encoding="utf-8")

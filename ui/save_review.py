@@ -39,7 +39,7 @@ class SaveReviewView(QWidget):
         self.status_chip = status_chip("ПРОВЕРЬ ПЕРЕД ЗАПИСЬЮ", self, tone="warning")
         heading.addWidget(self.status_chip)
         root.addLayout(heading)
-        self.source_label = QLabel("Изменения останутся staged до подтверждения.", self)
+        self.source_label = QLabel("Изменения ожидают подтверждения.", self)
         self.source_label.setObjectName("reviewSourceLabel")
         self.source_label.setWordWrap(True)
         root.addWidget(self.source_label)
@@ -49,7 +49,7 @@ class SaveReviewView(QWidget):
         changes_panel = panel(self, object_name="reviewChangesPanel")
         changes_layout = QVBoxLayout(changes_panel)
         changes_layout.setContentsMargins(12, 12, 12, 12)
-        changes_layout.addWidget(section_header("ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ", "STAGED", changes_panel))
+        changes_layout.addWidget(section_header("ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ", "ПРОВЕРКА", changes_panel))
         self.changes_table = QTableWidget(0, 3, changes_panel)
         self.changes_table.setObjectName("reviewChangesTable")
         self.changes_table.setHorizontalHeaderLabels(("ОБЪЕКТ", "БЫЛО", "СТАНЕТ"))
@@ -65,7 +65,7 @@ class SaveReviewView(QWidget):
         pipeline_layout.addWidget(section_header("ЭТАПЫ СОХРАНЕНИЯ", "SAFETY GATE", pipeline_panel))
         self.pipeline_steps = QListWidget(pipeline_panel)
         self.pipeline_steps.setObjectName("reviewPipelineSteps")
-        for text in ("1  Проверить изменения и источник", "2  Создать verified backup", "3  Собрать immutable preview", "4  Записать атомарно и проверить SHA"):
+        for text in ("1  Проверить изменения и источник", "2  Создать проверенную копию", "3  Подготовить выходной файл", "4  Записать атомарно и проверить SHA"):
             self.pipeline_steps.addItem(QListWidgetItem(text))
         pipeline_layout.addWidget(self.pipeline_steps, 1)
         self.warning_label = QLabel("При uncertain write автоматический повтор запрещён.", pipeline_panel)

@@ -8,24 +8,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypeAlias
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal
-from PySide6.QtWidgets import (
-    QAbstractItemView,
-    QHBoxLayout,
-    QHeaderView,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtCore import QObject, QThread, Signal
 
 from editor.formats import SaveFormat, detect, detect_fast
 from editor.platforms import save_search_paths
 from editor.releases import official_releases, release_by_id
-
-from .formatting import human_size
 
 GAME_TITLES: dict[str, str] = {
     "stalker2": "S.T.A.L.K.E.R. 2: Heart of Chornobyl",
@@ -114,6 +101,22 @@ class SaveDiscovery:
     searched_paths: tuple[Path, ...]
 
 
+def _slot_family(slot: SaveSlot) -> str:
+    """Resolve a slot to a stable family without treating paths as proof."""
+
+    if slot.candidate_game_id in GAME_IDS:
+        return slot.candidate_game_id
+    for release_id in (slot.detected_release_id, slot.format_id, slot.candidate_release_id):
+        if not release_id:
+            continue
+        try:
+            descriptor = release_by_id(release_id)
+        except KeyError:
+            continue
+        return descriptor.family
+    return slot.candidate_game_id
+
+
 SearchPathsFn: TypeAlias = Callable[[str], Sequence[Path]]
 DetectFn: TypeAlias = Callable[[bytes], SaveFormat | None]
 SlotDiscoveryFn: TypeAlias = Callable[[], SaveDiscovery]
@@ -121,7 +124,7 @@ _DetectionCacheValue: TypeAlias = tuple[
     int, int, str | None, str | None, str | None, str | None, str | None
 ]
 
-# Discovery is repeated when the user changes tabs/settings and when several
+# Discovery is repeated when the user changes destinations/settings and when several
 # windows are created by the UI test harness.  Cache only the content-detection
 # result, never file bytes, and invalidate it on the ordinary size/mtime pair.
 # Opening a row still performs a fresh full inspection and SHA check.
@@ -336,7 +339,7 @@ class SlotDiscoveryWorker(QThread):
     def __init__(
         self,
         discovery_fn: SlotDiscoveryFn,
-        parent: QWidget | None = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.discovery_fn = discovery_fn
@@ -348,17 +351,15 @@ class SlotDiscoveryWorker(QThread):
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
 
-class SaveSlotsView(QWidget):
-    """Display discovered local slots and emit a path only on user action."""
+class SlotDiscoveryController(QObject):
+    """Own asynchronous local discovery without constructing a UI widget."""
 
     discovery_ready = Signal(object)
     discovery_failed = Signal(str)
-    open_requested = Signal(object)
-
     def __init__(
         self,
         discovery_fn: SlotDiscoveryFn = discover_save_slots,
-        parent: QWidget | None = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.discovery_fn = discovery_fn
@@ -366,7 +367,6 @@ class SaveSlotsView(QWidget):
         self._searched_paths: tuple[Path, ...] = ()
         self._worker: SlotDiscoveryWorker | None = None
         self._refresh_pending = False
-        self._build_ui()
 
     @property
     def slots(self) -> tuple[SaveSlot, ...]:
@@ -376,67 +376,12 @@ class SaveSlotsView(QWidget):
     def searched_paths(self) -> tuple[Path, ...]:
         return self._searched_paths
 
-    def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-
-        toolbar = QHBoxLayout()
-        self.refresh_button = QPushButton("Обновить список")
-        self.refresh_button.clicked.connect(self.refresh)
-        toolbar.addWidget(self.refresh_button)
-        self.status_label = QLabel("Список ещё не обновлялся")
-        self.status_label.setWordWrap(True)
-        toolbar.addWidget(self.status_label, 1)
-        layout.addLayout(toolbar)
-
-        self.search_paths_label = QLabel("Каталоги поиска появятся после обновления")
-        self.search_paths_label.setWordWrap(True)
-        self.search_paths_label.setObjectName("discoveryHint")
-        self.search_paths_label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        layout.addWidget(self.search_paths_label)
-
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(
-            ["Слот", "Размер", "Изменён", "Игра / статус"]
-        )
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.table.setAlternatingRowColors(True)
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-        self.table.cellDoubleClicked.connect(self._open_row)
-        layout.addWidget(self.table, 1)
-
-        self.empty_label = QLabel(
-            "Сохранения ещё не искали. Нажми «Обновить список»; слот открывается "
-            "только двойным щелчком."
-        )
-        self.empty_label.setWordWrap(True)
-        self.empty_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        layout.addWidget(self.empty_label)
-
-        self.error_label = QLabel("")
-        self.error_label.setWordWrap(True)
-        self.error_label.setVisible(False)
-        layout.addWidget(self.error_label)
-
     def refresh(self) -> None:
         """Start one read-only discovery run; never open a slot implicitly."""
 
         if self._worker is not None and self._worker.isRunning():
             self._refresh_pending = True
             return
-        self.refresh_button.setEnabled(False)
-        self.status_label.setText("Поиск сохранений… файлы не изменяются")
-        self.error_label.clear()
-        self.error_label.setVisible(False)
         worker = SlotDiscoveryWorker(self.discovery_fn, self)
         worker.completed.connect(self._on_discovery_ready)
         worker.failed.connect(self._on_discovery_failed)
@@ -450,17 +395,13 @@ class SaveSlotsView(QWidget):
         self.discovery_ready.emit(discovery)
 
     def _on_discovery_failed(self, message: str) -> None:
-        self.status_label.setText("Поиск не выполнен; текущий список сохранён")
-        self.error_label.setText(f"Не удалось найти сохранения: {message}")
-        self.error_label.setVisible(True)
         self.discovery_failed.emit(message)
 
     def _on_worker_finished(self) -> None:
-        self.refresh_button.setEnabled(True)
         self._worker = None
         if self._refresh_pending:
             self._refresh_pending = False
-            QTimer.singleShot(0, self.refresh)
+            self.refresh()
 
     def wait_for_worker(self, timeout_ms: int = 10_000) -> bool:
         """Wait for an in-flight discovery before the widget is destroyed."""
@@ -476,58 +417,9 @@ class SaveSlotsView(QWidget):
         self._refresh_pending = False
         return True
 
-    def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
-        if not self.wait_for_worker():
-            event.ignore()
-            return
-        event.accept()
-
     def _set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)
         self._searched_paths = tuple(Path(path) for path in discovery.searched_paths)
-        self.table.setRowCount(len(self._slots))
-        for row, slot in enumerate(self._slots):
-            values = (
-                slot.path.name,
-                human_size(slot.size),
-                _modified_text(slot.modified_ns),
-                slot.status_text,
-            )
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
-                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
-                self.table.setItem(row, column, item)
-        self.table.clearSelection()
-
-        # A one-line summary keeps the slot table the focus; the full list of
-        # scanned directories lives in the tooltip instead of a huge wall.
-        count = len(self._searched_paths)
-        paths = "\n".join(f"• {path}" for path in self._searched_paths)
-        self.search_paths_label.setText(
-            f"Искали в {count} стандартных каталогах (наведи, чтобы увидеть список; "
-            "ничего не создавалось и не изменялось)."
-            if count
-            else "Каталоги поиска не определены."
-        )
-        self.search_paths_label.setToolTip(paths or "пути не определены")
-        if self._slots:
-            self.empty_label.setText(
-                f"Найдено сохранений: {len(self._slots)}. "
-                "Открытие выполняется только двойным щелчком по строке."
-            )
-            self.status_label.setText(f"Найдено сохранений: {len(self._slots)}")
-        else:
-            self.empty_label.setText(
-                "Сохранения не найдены — это не ошибка. Проверь пути выше или "
-                "выбери файл вручную кнопкой «Открыть сохранение…»."
-            )
-            self.status_label.setText("Сохранения не найдены; ручной выбор доступен")
-        self.error_label.clear()
-        self.error_label.setVisible(False)
-
-    def _open_row(self, row: int, _column: int) -> None:
-        if 0 <= row < len(self._slots):
-            self.open_requested.emit(self._slots[row].path)
 
 
 __all__ = [
@@ -538,9 +430,10 @@ __all__ = [
     "SAVE_SUFFIXES",
     "SaveDiscovery",
     "SaveSlot",
-    "SaveSlotsView",
+    "SlotDiscoveryController",
     "SlotDiscoveryFn",
     "SlotDiscoveryWorker",
     "UnsupportedSaveReason",
+    "_slot_family",
     "discover_save_slots",
 ]

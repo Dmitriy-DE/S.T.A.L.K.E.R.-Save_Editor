@@ -167,8 +167,8 @@ def test_main_window_discovers_from_loaded_manual_save_root(
 
     window = MainWindow(EditorService(), settings_path=settings_path)
     qtbot.addWidget(window)
-    qtbot.waitUntil(window.save_slots_view.refresh_button.isEnabled, timeout=5_000)
+    qtbot.waitUntil(lambda: window.discovery_controller._worker is None, timeout=5_000)
 
-    discovered = [slot.path for slot in window.save_slots_view.slots]
+    discovered = [slot.path for slot in window.discovery_controller.slots]
     assert manual / "manual.sav" in discovered
-    assert window.save_slots_view.searched_paths[0] == manual
+    assert window.discovery_controller.searched_paths[0] == manual

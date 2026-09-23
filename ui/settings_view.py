@@ -81,6 +81,10 @@ class SettingsView(QWidget):
         self.settings = settings
         self.settings_path = Path(settings_path).expanduser()
         self.load_error = load_error
+        # Safety switches are policy, not preferences.  The visible rows below
+        # are deliberately labels, so no caller can turn off backup, warning,
+        # confirmation, or uncertain-write protection through this page.
+        self.core_safety_read_only = True
         self._build_ui()
         self._load_fields()
         self._refresh_warning()

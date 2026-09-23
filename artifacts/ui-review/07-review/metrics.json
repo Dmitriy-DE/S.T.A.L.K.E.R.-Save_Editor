@@ -1,0 +1,96 @@
+{
+  "actual_image": {
+    "height": 992,
+    "width": 1586
+  },
+  "data_policy": "synthetic parser fixture; no invented save fields are asserted",
+  "diff": {
+    "changed_pixel_ratio_threshold_12": 0.253864,
+    "changed_pixels_threshold_12": 399407,
+    "height": 992,
+    "max_channel_delta": 247,
+    "mean_rgb_delta": 17.107,
+    "width": 1586
+  },
+  "geometry": {
+    "active_view": {
+      "height": 807,
+      "width": 1522,
+      "x": 0,
+      "y": 0
+    },
+    "content": {
+      "height": 827,
+      "width": 1586,
+      "x": 0,
+      "y": 122
+    },
+    "footer": {
+      "height": 43,
+      "width": 1586,
+      "x": 0,
+      "y": 949
+    },
+    "header": {
+      "height": 122,
+      "width": 1586,
+      "x": 0,
+      "y": 0
+    },
+    "shell": {
+      "height": 992,
+      "width": 1586,
+      "x": 0,
+      "y": 0
+    },
+    "window": {
+      "height": 992,
+      "width": 1586,
+      "x": 2,
+      "y": 2
+    }
+  },
+  "reference_kind": "panel crop from canonical board placed on fixed canvas",
+  "reference_source": "04_REMAINING_STATES_BOARD_CANONICAL.png",
+  "screen": "07-review",
+  "tokens": {
+    "font_family": "Liberation Sans Narrow",
+    "palette": {
+      "bg_base": "#0C0D0A",
+      "bg_elevated": "#151814",
+      "bg_hover": "#23261F",
+      "bg_panel": "#101311",
+      "border": "#33382F",
+      "border_focus": "#D6A62D",
+      "border_subtle": "#242922",
+      "error": "#D85A45",
+      "error_surface": "#2A1B1A",
+      "olive": "#D6A62D",
+      "olive_dim": "#8F6F22",
+      "rust": "#A9532F",
+      "success": "#7BCB62",
+      "text": "#D8D2BE",
+      "text_disabled": "#716F67",
+      "text_read_only": "#C2BBA8",
+      "text_secondary": "#A29D90",
+      "warning": "#D6A62D",
+      "warning_surface": "#322814"
+    },
+    "spacing": {
+      "lg": 18,
+      "md": 12,
+      "sm": 8,
+      "xs": 4
+    },
+    "typography": {
+      "body": "\"Liberation Sans Narrow\"",
+      "heading": "\"Liberation Sans Narrow\"",
+      "mono": "\"Liberation Sans Narrow\""
+    }
+  },
+  "viewport": {
+    "dpr": 1,
+    "height": 992,
+    "width": 1586
+  }
+}

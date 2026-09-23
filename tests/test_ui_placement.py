@@ -40,19 +40,18 @@ def test_qt_placement_editor_stages_slot_without_mutating_snapshot(qtbot, tmp_pa
         )
     )
 
-    view = window.inventory_view
+    view = window.editor_view
     view.table.selectRow(0)
     qtbot.waitUntil(lambda: view.selected_handle == 0x3456)
 
-    assert view.placement_combo.isEnabled()
-    assert "Экспериментально" in view.placement_status_label.text()
+    assert view.detail_view.placement_combo.isEnabled()
     target = next(
         index
-        for index in range(view.placement_combo.count())
-        if view.placement_combo.itemData(index) == ("slot", 4)
+        for index in range(view.detail_view.placement_combo.count())
+        if view.detail_view.placement_combo.itemData(index) == ("slot", 4)
     )
-    view.placement_combo.setCurrentIndex(target)
-    qtbot.mouseClick(view.placement_stage_button, Qt.MouseButton.LeftButton)
+    view.detail_view.placement_combo.setCurrentIndex(target)
+    qtbot.mouseClick(view.detail_view.placement_apply, Qt.MouseButton.LeftButton)
 
     assert window.staged_placements == {0x3456: ("slot", 4)}
     assert window.snapshot is not None

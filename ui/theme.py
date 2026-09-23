@@ -11,6 +11,8 @@ from __future__ import annotations
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
+from .fonts import REFERENCE_FONT_FAMILY, load_reference_fonts
+
 PALETTE = {
     # Industrial S2-like grounds with an amber operational accent.
     "bg_base": "#0C0D0A",
@@ -39,9 +41,12 @@ PALETTE = {
 # Widget code consumes these semantic tokens instead of local visual constants.
 COLORS = PALETTE
 TYPOGRAPHY = {
-    "body": '"Liberation Sans Narrow", "Ubuntu Sans", "Noto Sans", sans-serif',
-    "heading": '"Liberation Sans Narrow", "Ubuntu Sans", "DejaVu Sans Condensed", sans-serif',
-    "mono": '"Ubuntu Mono", "DejaVu Sans Mono", monospace',
+    # The font is loaded from assets/fonts before this stylesheet is applied.
+    # Keep the family exact: a host fallback changes wrapping and therefore
+    # the fixed reference geometry.
+    "body": f'"{REFERENCE_FONT_FAMILY}"',
+    "heading": f'"{REFERENCE_FONT_FAMILY}"',
+    "mono": f'"{REFERENCE_FONT_FAMILY}"',
 }
 SPACING = {"xs": 4, "sm": 8, "md": 12, "lg": 18}
 
@@ -64,204 +69,6 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         font-size: 13px;
     }}
     QMainWindow, QWidget#appRoot {{ background: {c['bg_base']}; }}
-    QWidget#launcher {{
-        background: #090A08;
-    }}
-    QFrame#launcherHeader {{
-        background: {c['bg_panel']};
-        border: 1px solid {c['border']};
-    }}
-    QLabel#launcherBrand {{
-        background: transparent;
-        color: {c['olive']};
-        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
-        font-size: 22px;
-        font-weight: 800;
-        letter-spacing: 1px;
-    }}
-    QLabel#launcherTitle {{
-        background: transparent;
-        color: {c['text']};
-        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 1.4px;
-    }}
-    QLabel#launcherSubtitle, QLabel#launcherPanelHint {{
-        background: transparent;
-        color: {c['text_secondary']};
-        font-size: 11px;
-    }}
-    QFrame#launcherGamesPanel, QFrame#launcherSavesPanel {{
-        background: {c['bg_panel']};
-        border: 1px solid {c['border']};
-    }}
-    QLabel#launcherPanelHeading {{
-        background: transparent;
-        color: {c['olive']};
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
-    }}
-    QListWidget#launcherGameList {{
-        background: {c['bg_base']};
-        border: 1px solid {c['border_subtle']};
-        outline: none;
-    }}
-    QListWidget#launcherGameList::item {{
-        border-bottom: 1px solid {c['border_subtle']};
-        color: {c['text_secondary']};
-        padding: 13px 10px;
-    }}
-    QListWidget#launcherGameList::item:hover {{
-        background: {c['bg_hover']};
-        color: {c['text']};
-    }}
-    QListWidget#launcherGameList::item:selected {{
-        background: {c['bg_elevated']};
-        border-left: 3px solid {c['olive']};
-        color: {c['olive']};
-    }}
-    QTableWidget#launcherSaveTable {{
-        background: {c['bg_base']};
-        border: 1px solid {c['border_subtle']};
-        gridline-color: {c['border_subtle']};
-        outline: none;
-    }}
-    QLabel#launcherStatus {{
-        background: transparent;
-        color: {c['text_secondary']};
-        padding: 3px 0;
-    }}
-    QLabel#discoveryHint, QLabel#discoveryResults {{
-        background: transparent;
-        color: {c['text_secondary']};
-    }}
-    QLabel#launcherPathCount {{
-        background: transparent;
-        color: {c['olive_dim']};
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 10px;
-    }}
-    QPushButton#launcherPrimaryButton {{
-        color: #1A180F;
-        background: {c['olive']};
-        border-color: {c['olive']};
-        font-weight: 700;
-    }}
-    QPushButton#launcherPrimaryButton:hover {{
-        background: #E0B457;
-        border-color: #E0B457;
-    }}
-    QPushButton#launcherSecondaryButton, QPushButton#launcherCloudButton,
-    QPushButton#launcherOpenButton, QPushButton#launcherBackButton {{
-        color: {c['olive']};
-        border-color: {c['olive_dim']};
-    }}
-    QPushButton#launcherBackButton {{ padding: 5px 10px; }}
-    QFrame#titleBar {{
-        background: {c['bg_panel']};
-        border-bottom: 1px solid {c['border']};
-    }}
-    QLabel#appTitle {{
-        background: transparent;
-        color: {c['text']};
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-    }}
-    QLabel#versionBadge, QLabel#sourceBadge, QLabel#integrityBadge,
-    QLabel#formatBadge {{
-        background: {c['bg_elevated']};
-        border: 1px solid {c['border']};
-        border-radius: 4px;
-        color: {c['text_secondary']};
-        padding: 4px 8px;
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 11px;
-        font-weight: 600;
-    }}
-    QLabel#versionBadge {{ color: {c['olive']}; border-color: {c['olive_dim']}; }}
-    QLabel#sourceBadge {{ color: {c['olive']}; }}
-    QLabel#integrityBadge {{ color: {c['success']}; }}
-    QLabel#formatBadge {{ color: {c['text_secondary']}; }}
-    QFrame#metaBar {{
-        background: {c['bg_panel']};
-        border-bottom: 1px solid {c['border_subtle']};
-    }}
-    QLabel#metaFilename {{
-        background: transparent;
-        color: {c['text']};
-        font-size: 14px;
-        font-weight: 600;
-    }}
-    QLabel#metaDetails, QLabel#sourceLabel {{
-        background: transparent;
-        color: {c['text']};
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 11px;
-        selection-background-color: {c['olive_dim']};
-    }}
-    QFrame#sidebar {{
-        background: {c['bg_panel']};
-        border: 1px solid {c['border_subtle']};
-        border-radius: 6px;
-    }}
-    QLabel#sidebarHeading, QLabel#sidebarStatus {{
-        background: transparent;
-        color: {c['text_secondary']};
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 10px;
-        letter-spacing: 0.5px;
-    }}
-    QLabel#sidebarHeading {{ color: {c['olive']}; font-weight: 700; }}
-    QPushButton#navButton {{
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        color: {c['text_secondary']};
-        padding: 9px 10px;
-        text-align: left;
-    }}
-    QPushButton#navButton:hover {{
-        background: {c['bg_hover']};
-        color: {c['text']};
-        border-color: {c['border']};
-    }}
-    QPushButton#navButton:checked {{
-        background: {c['bg_elevated']};
-        border-color: {c['olive_dim']};
-        color: {c['olive']};
-        font-weight: 600;
-    }}
-    QFrame#contentPanel {{
-        background: {c['bg_panel']};
-        border: 1px solid {c['border_subtle']};
-        border-radius: 6px;
-    }}
-    QTabWidget::pane {{
-        background: {c['bg_panel']};
-        border: none;
-    }}
-    QFrame#metricCard {{
-        background: {c['bg_elevated']};
-        border: 1px solid {c['border']};
-        border-radius: 5px;
-    }}
-    QLabel#metricCaption {{
-        background: transparent;
-        color: {c['text_secondary']};
-        font-size: 11px;
-        text-transform: uppercase;
-    }}
-    QLabel#metricValue {{
-        background: transparent;
-        color: {c['text']};
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
-        font-size: 19px;
-        font-weight: 700;
-    }}
     QGroupBox {{
         background: {c['bg_panel']};
         border: 1px solid {c['border_subtle']};
@@ -300,23 +107,11 @@ def _base_stylesheet(c: dict[str, str]) -> str:
     QPushButton:focus {{ border: 2px solid {c['border_focus']}; }}
     QPushButton:pressed {{ background: {c['olive_dim']}; color: {c['bg_base']}; }}
     QPushButton:disabled {{ background: {c['bg_panel']}; color: {c['text_disabled']}; border-color: {c['border_subtle']}; }}
-    QPushButton#primarySaveButton {{
-        background: {c['olive']};
-        border-color: {c['olive']};
-        color: {c['bg_base']};
-        font-weight: 700;
-        padding: {s['sm']}px {s['lg']}px;
-    }}
-    QPushButton#primarySaveButton:disabled {{
-        background: {c['bg_elevated']};
-        color: {c['text_disabled']};
-        border-color: {c['border_subtle']};
-    }}
     QPushButton#supportButton {{
         background: {c['bg_elevated']};
         border: 1px solid {c['rust']};
         color: #D8BA8C;
-        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-family: {t['heading']};
         font-size: 12px;
         padding: 5px 10px;
     }}
@@ -332,7 +127,7 @@ def _base_stylesheet(c: dict[str, str]) -> str:
     QLabel#supportTitle {{
         background: transparent;
         color: #FFD23F;
-        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-family: {t['heading']};
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -341,7 +136,7 @@ def _base_stylesheet(c: dict[str, str]) -> str:
     QLabel#supportMethod {{
         background: transparent;
         color: #D4A64B;
-        font-family: "DejaVu Sans Condensed", "Arial Narrow", sans-serif;
+        font-family: {t['heading']};
         font-size: 14px;
         font-weight: 700;
     }}
@@ -354,7 +149,7 @@ def _base_stylesheet(c: dict[str, str]) -> str:
         background: {c['bg_base']};
         border: 1px solid {c['rust']};
         color: #D8BA8C;
-        font-family: "JetBrains Mono", "Cascadia Mono", monospace;
+        font-family: {t['mono']};
         padding: 6px 8px;
     }}
     QPushButton#supportCopyButton, QPushButton#supportCloseButton {{
@@ -778,6 +573,7 @@ def apply_theme(app: QApplication | None) -> None:
         return
     if bool(app.property("_save_editor_theme_applied")):
         return
+    load_reference_fonts()
     app.setStyle("Fusion")
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Window, QColor(COLORS["bg_base"]))
