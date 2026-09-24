@@ -43,7 +43,10 @@ class CloudSurface(CloudLibraryView):
     def __init__(self, *args, **kwargs) -> None:
         backend = CloudController(*args, **kwargs)
         super().__init__(backend)
-        object.__setattr__(self, "_backend", backend)
+        # Goes through __setattr__ below, which passes "_backend" straight to
+        # the Qt base class.  object.__setattr__ raises TypeError for Shiboken
+        # types on Python 3.11/3.12 ("can't apply this __setattr__").
+        self._backend = backend
 
     def __getattr__(self, name: str):
         alias = self._ALIASES.get(name)
