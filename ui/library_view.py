@@ -751,6 +751,9 @@ class LibraryView(QWidget):
                 tone="success" if slot.format_id is not None else "warning",
             )
             candidate_chip.setObjectName("libraryEditableChip")
+            if slot.unsupported_reason is not None:
+                candidate_chip.setToolTip(slot.unsupported_reason.message)
+                ready_label.setToolTip(slot.unsupported_reason.message)
             if slot.format_id is not None:
                 status_row_layout = QHBoxLayout(status_cell)
                 status_row_layout.setContentsMargins(4, 0, 2, 0)

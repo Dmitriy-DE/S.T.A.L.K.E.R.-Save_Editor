@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from save_format import SaveError, SaveInfo, inspect_save
+from save_format import WALLET_FIELD_ID, SaveError, SaveInfo, decompress_save, inspect_save
 
 from .capabilities import CapabilitySupport, FormatCapabilities, gate_mutations_for_release
 from .catalog import GameCatalog, ItemCatalog
@@ -169,6 +169,17 @@ class _Stalker2Format:
             info = inspect_save(data, with_inventory=False)
         except Exception as exc:
             return f"{type(exc).__name__}: {exc}"
+        if info.money_anchor_count == 0:
+            try:
+                raw = decompress_save(data)
+            except Exception:
+                raw = b""
+            if raw.count(WALLET_FIELD_ID) == 1:
+                # Read-only diagnosis; nothing is parsed from this layout.
+                return (
+                    "legacy S2 layout: wallet field present without the confirmed "
+                    "anchor (save from a launch build, re-save it in the game)"
+                )
         return (
             "подтверждённая wallet anchor встречается "
             f"{info.money_anchor_count} раз(а), ожидалась ровно 1"

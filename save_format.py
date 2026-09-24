@@ -45,6 +45,10 @@ MONEY_ANCHOR = bytes.fromhex(
     "0038010000000110cacfa848c8952149b51b9444000000000600000000060000"
 )
 
+# The GUID inside MONEY_ANCHOR.  Launch builds (v1.0.x, late 2024) keep it
+# once but with a different surrounding layout, so the anchor is absent.
+WALLET_FIELD_ID = MONEY_ANCHOR[8:20]
+
 # Object record fields confirmed on several nearby saves / UI screenshots.
 OBJ_POS_X_OFFSET = 11
 OBJ_POS_Y_OFFSET = 13

@@ -147,3 +147,18 @@ def test_original_xray_format_finds_catalog_from_a_save_path(tmp_path) -> None:
 
     assert catalog is not None
     assert catalog.resolve("ammo_test") is not None
+
+
+def test_s2_launch_layout_is_diagnosed_but_never_accepted() -> None:
+    import save_format as sf
+    from editor.formats import STALKER2_FORMAT
+    from ui.ux_copy import classify_analysis_error
+
+    raw = b"HEADER" + b"\x65\x72\xe2\x28\x00\x00\x01\x10" + sf.WALLET_FIELD_ID + b"\x0d\x00" * 8
+    data = sf.rebuild_uncompressed(raw)
+
+    assert not STALKER2_FORMAT.detect(data)
+    reason = STALKER2_FORMAT.detection_reason(data)
+    assert reason.startswith("legacy S2 layout")
+    assert classify_analysis_error(reason) == "old_s2_save"
+    assert classify_analysis_error("подтверждённая wallet anchor встречается 0 раз(а)") == "open"
