@@ -577,7 +577,17 @@ class MainWindow(QMainWindow):
             rows.append((f"Отношение: {faction_name}", "текущее", str(value)))
         for handle, values in sorted(self.staged_upgrades.items()):
             item = self._find_inventory_item(handle)
-            rows.append((self._item_name(item), "модификации", ", ".join(values) or "нет"))
+            installed = tuple(item.upgrades or ()) if item is not None else ()
+            added = len(set(values) - set(installed))
+            removed = len(set(installed) - set(values))
+            change = ", ".join(
+                part for part in (f"+{added}" if added else "", f"−{removed}" if removed else "") if part
+            )
+            rows.append((
+                f"{self._item_name(item)} · модификации",
+                f"{len(installed)} шт.",
+                f"{len(values)} шт. ({change})" if change else f"{len(values)} шт.",
+            ))
         for handle, (placement, slot) in sorted(self.staged_placements.items()):
             item = self._find_inventory_item(handle)
             target = {"ruck": "Рюкзак", "belt": "Пояс", "slot": f"Слот {slot}"}.get(placement, "Инвентарь")
@@ -592,9 +602,12 @@ class MainWindow(QMainWindow):
             rows.append(("Группировка игрока", "текущая", faction_name))
         return tuple(rows)
 
-    @staticmethod
-    def _item_name(item) -> str:
-        return item.display_name or "Неизвестный предмет" if item is not None else "Неизвестный предмет"
+    def _item_name(self, item) -> str:
+        """The same catalogue-aware name the inventory table shows."""
+
+        if item is None:
+            return "Неизвестный предмет"
+        return self.editor_view._name_for_item(item) or "Неизвестный предмет"
 
     def _request_reference_save(self) -> None:
         """Enter the visible review state; the legacy method remains test/API compatible."""
@@ -1324,7 +1337,8 @@ class MainWindow(QMainWindow):
         if not isinstance(values, (tuple, list)):
             self.editor_view.show_capability_message("Список улучшений отклонён")
             return
-        desired = tuple(str(value) for value in values)
+        # An upgrade vector cannot hold the same key twice; EditPlan rejects it.
+        desired = tuple(dict.fromkeys(str(value) for value in values))
         if desired == item.upgrades:
             self.staged_upgrades.pop(item.handle, None)
         else:
@@ -1639,6 +1653,15 @@ class MainWindow(QMainWindow):
         if source_kind not in ("local", "cloud"):
             raise SaveError(f"Неизвестный source kind: {source_kind}")
         kind: Literal["local", "cloud"] = "local" if source_kind == "local" else "cloud"
+        try:
+            return self._edit_plan(kind, locator)
+        except ValueError as exc:
+            # EditPlan validates the draft; report it like any refused save
+            # instead of letting the exception escape a Qt slot.
+            raise SaveError(str(exc)) from exc
+
+    def _edit_plan(self, kind: Literal["local", "cloud"], locator: str) -> EditPlan:
+        assert self.snapshot is not None
         return EditPlan(
             source=SourceRef(
                 kind=kind,
