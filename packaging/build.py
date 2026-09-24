@@ -582,6 +582,9 @@ stalker2-save-editor: library-not-linked-against-libc
 stalker2-save-editor: hardening-no-pie
 # The upstream provenance archive is retained in the runtime for license/source traceability.
 stalker2-save-editor: package-contains-timestamped-gzip
+# The UI loads its own copy of Liberation Sans Narrow from the bundle so its
+# layout never depends on which system fonts happen to be installed.
+stalker2-save-editor: duplicate-font-file
 """
 
 
