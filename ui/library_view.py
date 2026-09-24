@@ -553,16 +553,6 @@ class LibraryView(QWidget):
             (*self._activity_entries, (label, target, occurred_at, status))
         )
 
-    def set_recent_activity_from_snapshot(self, snapshot: Any, *, operation: str) -> None:
-        """Record a fact from a newly inspected snapshot without fabricating metadata."""
-
-        self.append_recent_activity(
-            operation,
-            Path(getattr(snapshot, "path", "—")).name,
-            "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён",
-            datetime.now().astimezone().isoformat(timespec="minutes"),
-        )
-
     def _family_slots(self, family: str | None) -> list[SaveSlot]:
         slots = [slot for slot in self._slots if family is None or _slot_family(slot) == family]
         query = self.search_edit.text().strip().casefold()

@@ -103,9 +103,6 @@ class InventoryTableModel(QAbstractTableModel):
             return self._visible[row]
         return None
 
-    def staged_count(self, handle: int) -> int | None:
-        return self._staged_counts.get(int(handle))
-
     def set_items(self, items: Iterable[InventoryItem]) -> None:
         self._items = tuple(items)
         # A new save snapshot cannot inherit edits from another source file.

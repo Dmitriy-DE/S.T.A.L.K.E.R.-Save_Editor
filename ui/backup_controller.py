@@ -88,9 +88,6 @@ class BackupController(QObject):
         self.records_changed.emit(self._records)
 
     @staticmethod
-    def _hash_text(value: str) -> str:
-        return f"{value[:12]}…" if value else "—"
-
     @staticmethod
     def _operation_text(operation: dict[str, object]) -> str:
         parts: list[str] = []

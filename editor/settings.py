@@ -104,38 +104,6 @@ class PathSettings:
             self.catalog_roots,
         )
 
-    def with_game_root(self, game_id: str, value: PathValue | None) -> PathSettings:
-        values = dict(self.game_roots)
-        if value is None:
-            values.pop(game_id, None)
-        else:
-            path = _normalise_path(value)
-            if path is None:
-                raise ValueError(f"path for {game_id!r} must not be null")
-            values[game_id] = path
-        return PathSettings(
-            self.steam_root,
-            tuple(values.items()),
-            self.save_roots,
-            self.catalog_roots,
-        )
-
-    def with_save_root(self, game_id: str, value: PathValue | None) -> PathSettings:
-        values = dict(self.save_roots)
-        if value is None:
-            values.pop(game_id, None)
-        else:
-            path = _normalise_path(value)
-            if path is None:
-                raise ValueError(f"path for {game_id!r} must not be null")
-            values[game_id] = path
-        return PathSettings(
-            self.steam_root,
-            self.game_roots,
-            tuple(values.items()),
-            self.catalog_roots,
-        )
-
     def with_catalog_root(self, game_id: str, value: PathValue | None) -> PathSettings:
         values = dict(self.catalog_roots)
         if value is None:

@@ -242,9 +242,6 @@ class ReleaseManifest:
             payload["optional_artifacts"] = optional
         return payload
 
-    def to_json(self) -> str:
-        return json.dumps(self.to_payload(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-
     def select(
         self,
         target: str,

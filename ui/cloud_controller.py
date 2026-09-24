@@ -917,10 +917,6 @@ class CloudController(QObject):
             except Exception:
                 pass
 
-    def close_transport(self) -> None:
-        if not self.is_busy:
-            self._close_transport()
-
     def close(self) -> None:
         """Stop workers and release the transport during application teardown."""
 
