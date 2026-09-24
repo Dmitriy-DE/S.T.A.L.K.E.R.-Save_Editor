@@ -305,3 +305,19 @@ def test_xray_catalog_reads_official_russian_localization_archive(tmp_path: Path
     assert bundle is not None
     assert bundle.factions.resolve("actor").display_name == "Наёмник"
     assert bundle.factions.resolve("csky").display_name == "Чистое небо"
+
+
+def test_localization_prefers_russian_tables_over_english(tmp_path: Path) -> None:
+    from editor.xray_catalog import _localization
+
+    for language, text in (("eng", "Exoskeleton"), ("rus", "Экзоскелет")):
+        folder = tmp_path / "configs" / "text" / language
+        folder.mkdir(parents=True)
+        (folder / "st_items_outfit.xml").write_text(
+            f'<string_table><string id="exo"><text>{text}</text></string></string_table>',
+            encoding="utf-8",
+        )
+
+    # Preferring text/eng left Call of Pripyat names in English in a
+    # Russian UI.
+    assert _localization(tmp_path)["exo"] == "Экзоскелет"

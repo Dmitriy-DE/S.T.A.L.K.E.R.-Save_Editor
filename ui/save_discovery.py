@@ -146,6 +146,17 @@ def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
                 "ещё не подтверждён и не поддерживается"
             ),
         )
+    if descriptor is not None and descriptor.family == "stalker2":
+        # Saves written by the launch builds (v1.0.x, late 2024) use an older
+        # player-data layout; the game upgrades a slot when it re-saves it.
+        return UnsupportedSaveReason(
+            code="unknown_format",
+            message=(
+                "Формат не распознан. Если это сохранение старой версии игры "
+                "(конец 2024 года), загрузите его в S.T.A.L.K.E.R. 2 и сохраните "
+                "заново — после этого редактор его откроет."
+            ),
+        )
     return UnsupportedSaveReason(
         code="unknown_format",
         message="Не распознано зарегистрированным форматом",

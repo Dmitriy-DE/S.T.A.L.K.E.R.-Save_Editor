@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from save_format import SaveError, SaveInfo, inspect_save
+from save_format import WALLET_FIELD_ID, SaveError, SaveInfo, decompress_save, inspect_save
 
 from .capabilities import CapabilitySupport, FormatCapabilities, gate_mutations_for_release
 from .catalog import GameCatalog, ItemCatalog
@@ -112,6 +112,42 @@ class FormatDetectionError(SaveError):
         )
 
 
+_PLAN_CAPABILITIES = (
+    ("money", "edit_money"),
+    ("stacks", "edit_stacks"),
+    ("durability", "edit_durability"),
+    ("detach", "remove_items"),
+    ("moves", "move_items"),
+    ("adds", "add_items"),
+    ("upgrades", "edit_upgrades"),
+    ("placements", "edit_placement"),
+    ("faction_relations", "edit_relations"),
+    ("player_faction", "edit_player_faction"),
+)
+
+
+def require_plan_capabilities(capabilities: FormatCapabilities, plan: EditPlan) -> None:
+    """Refuse any plan field whose capability is not writable for the format.
+
+    The UI hides such controls, but the CLI and other callers reach the
+    writer directly; the gate must hold at the format boundary too.
+    """
+
+    for field_name, capability in _PLAN_CAPABILITIES:
+        value = getattr(plan, field_name)
+        if value is None or value == ():
+            continue
+        support = capabilities.support(capability)
+        if not support.writable:
+            reason = f": {support.reason}" if support.reason else ""
+            raise SaveError(
+                f"{capability} не подтверждён для этого формата "
+                f"({support.maturity}){reason}"
+            )
+    if plan.raw or plan.attach:
+        raise SaveError("raw/attach patches are research-only and never written")
+
+
 _S2_RELEASE = release_by_id("stalker2")
 
 
@@ -169,6 +205,17 @@ class _Stalker2Format:
             info = inspect_save(data, with_inventory=False)
         except Exception as exc:
             return f"{type(exc).__name__}: {exc}"
+        if info.money_anchor_count == 0:
+            try:
+                raw = decompress_save(data)
+            except Exception:
+                raw = b""
+            if raw.count(WALLET_FIELD_ID) == 1:
+                # Read-only diagnosis; nothing is parsed from this layout.
+                return (
+                    "legacy S2 layout: wallet field present without the confirmed "
+                    "anchor (save from a launch build, re-save it in the game)"
+                )
         return (
             "подтверждённая wallet anchor встречается "
             f"{info.money_anchor_count} раз(а), ожидалась ровно 1"
@@ -262,6 +309,7 @@ class _Stalker2Format:
         catalog: ItemCatalog | None = None,
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
+        require_plan_capabilities(self.capabilities, plan)
         return prepare_edit(data, plan)
 
 
@@ -423,6 +471,7 @@ class _XRayFormat:
         catalog: ItemCatalog | None = None,
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
+        require_plan_capabilities(self.capabilities, plan)
         selected_catalog = catalog or self.catalog_for_source(source_name)
         return prepare_xray(
             data,

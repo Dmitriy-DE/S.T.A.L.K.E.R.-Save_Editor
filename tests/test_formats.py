@@ -147,3 +147,37 @@ def test_original_xray_format_finds_catalog_from_a_save_path(tmp_path) -> None:
 
     assert catalog is not None
     assert catalog.resolve("ammo_test") is not None
+
+
+def test_s2_launch_layout_is_diagnosed_but_never_accepted() -> None:
+    import save_format as sf
+    from editor.formats import STALKER2_FORMAT
+    from ui.ux_copy import classify_analysis_error
+
+    raw = b"HEADER" + b"\x65\x72\xe2\x28\x00\x00\x01\x10" + sf.WALLET_FIELD_ID + b"\x0d\x00" * 8
+    data = sf.rebuild_uncompressed(raw)
+
+    assert not STALKER2_FORMAT.detect(data)
+    reason = STALKER2_FORMAT.detection_reason(data)
+    assert reason.startswith("legacy S2 layout")
+    assert classify_analysis_error(reason) == "old_s2_save"
+    assert classify_analysis_error("подтверждённая wallet anchor встречается 0 раз(а)") == "open"
+
+
+def test_s2_prepare_refuses_fields_the_capability_matrix_keeps_read_only(synthetic_save: bytes) -> None:
+    import hashlib
+
+    import pytest
+
+    from editor.formats import STALKER2_FORMAT
+    from editor.models import EditPlan, SourceRef
+    from save_format import SaveError
+
+    source = SourceRef(kind="local", locator="slot.sav", sha256=hashlib.sha256(synthetic_save).hexdigest())
+    # The UI hid these, but the CLI reached the S2 writer directly.
+    with pytest.raises(SaveError, match="edit_stacks"):
+        STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, stacks=((0x30000001, 3),)))
+    with pytest.raises(SaveError, match="remove_items"):
+        STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, detach=((0x30000001, False),)))
+    prepared = STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, money=123))
+    assert prepared.output_sha256

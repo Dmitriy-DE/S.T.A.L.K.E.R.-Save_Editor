@@ -170,3 +170,12 @@ def test_prepare_edit_rejects_unproven_add_for_stalker2(synthetic_save: bytes) -
 
     with pytest.raises(sf.SaveError, match="Добавление предметов"):
         prepare_edit(synthetic_save, plan)
+
+
+def test_edit_plan_rejects_editing_an_item_it_also_removes() -> None:
+    source = SourceRef(kind="local", locator="slot.sav", sha256="a" * 64)
+    with pytest.raises(ValueError, match="also removes"):
+        EditPlan(source=source, detach=((5, False),), durability=((5, 0.5),))
+    with pytest.raises(ValueError, match="also removes"):
+        EditPlan(source=source, detach=((5, False),), placements=((5, "ruck", None),))
+    assert EditPlan(source=source, detach=((5, False),), durability=((6, 0.5),)).detach

@@ -8,6 +8,7 @@ from typing import Literal
 MessageSeverity = Literal["info", "success", "warning", "error"]
 ErrorKind = Literal[
     "open",
+    "old_s2_save",
     "corrupt",
     "source_changed",
     "backup",
@@ -55,6 +56,16 @@ ERROR_COPY: dict[ErrorKind, ErrorCopy] = {
         title="Не удалось открыть сохранение",
         message="Файл повреждён, не поддерживается или изменён другой программой.",
         severity="error",
+        primary_action="Выбрать другой файл",
+    ),
+    "old_s2_save": ErrorCopy(
+        error_code="S2_LEGACY_LAYOUT",
+        title="Сохранение старой версии игры",
+        message=(
+            "Похоже, это сохранение S.T.A.L.K.E.R. 2 из версии конца 2024 года. "
+            "Загрузите его в игре и сохраните заново — после этого редактор его откроет."
+        ),
+        severity="warning",
         primary_action="Выбрать другой файл",
     ),
     "corrupt": ErrorCopy(
@@ -241,6 +252,10 @@ def classify_analysis_error(message: str) -> ErrorKind:
         )
     ):
         return "corrupt"
+    # The only S2 detector refusal seen on real saves: launch-build (v1.0.x)
+    # slots keep the wallet GUID in an older layout.
+    if "legacy s2 layout" in value:
+        return "old_s2_save"
     return "open"
 
 
