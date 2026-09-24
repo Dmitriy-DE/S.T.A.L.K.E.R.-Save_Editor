@@ -43,7 +43,6 @@ def test_library_filters_save_rows_and_opens_selected_slot(qtbot, tmp_path: Path
     qtbot.addWidget(view)
     stalker2 = tmp_path / "stalker2.sav"
     cop = tmp_path / "cop.scop"
-    view.set_installed_families({"stalker2"})
     view.set_discovery(
         SaveDiscovery(
             slots=(
@@ -55,7 +54,7 @@ def test_library_filters_save_rows_and_opens_selected_slot(qtbot, tmp_path: Path
     )
 
     assert view.save_table.rowCount() == 2
-    assert "1 сохранений" in view.game_list.item(1).text()
+    assert "1 сохранение" in view.game_list.item(1).text()
     view.game_list.setCurrentRow(1)
     assert view.save_table.rowCount() == 1
     row_title = view.save_table.cellWidget(0, 0)

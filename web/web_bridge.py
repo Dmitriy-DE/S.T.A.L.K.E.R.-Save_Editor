@@ -17,7 +17,7 @@ import editor.codec as codec
 import save_format as sf
 from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
-from editor.equipment import equipment_items, helmet_category_supported
+from editor.equipment import category_label, equipment_items, helmet_category_supported
 from editor.formats import detect_or_raise
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
@@ -184,6 +184,18 @@ def install_catalogs(payload: str) -> None:
         }
     )
 
+def _item_name(catalog: ItemCatalog | None, item: sf.InventoryItem) -> str:
+    """Prefer the catalogue name, like the desktop table does."""
+
+    if catalog is not None:
+        definition = catalog.resolve(item.type_key)
+        if definition is None and item.display_name:
+            definition = catalog.resolve_key_or_display_name(item.display_name)
+        if definition is not None and definition.display_name:
+            return definition.display_name
+    return item.display_name or "Неизвестный объект"
+
+
 def analyze(data: bytes, name: str) -> str:
     """Parse one save and return a JSON snapshot for the page."""
 
@@ -339,13 +351,23 @@ def analyze(data: bytes, name: str) -> str:
                     "handle": item.handle,
                     "handle_hex": item.handle_hex,
                     "category": item.category,
+                    "product_category": (
+                        equipment_by_handle[item.handle].category
+                        if item.handle in equipment_by_handle
+                        else "other"
+                    ),
+                    "category_label": category_label(
+                        equipment_by_handle[item.handle].category
+                        if item.handle in equipment_by_handle
+                        else "other"
+                    ),
                     "type_key": item.type_key,
                     "position": item.position,
                     "size_text": item.size_text,
                     "count": item.count,
                     "total_weight": None if item.total_weight is None else round(item.total_weight, 3),
                     "weight_known": item.total_weight is not None,
-                    "name": item.display_name or "Неизвестный объект",
+                    "name": _item_name(catalog, item),
                     "condition": item.condition,
                     "condition_editable": bool(item.condition_editable),
                     "storage": item.storage,

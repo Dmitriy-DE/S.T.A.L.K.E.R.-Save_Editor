@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 from editor.storage import BackupRecord
 
 from .backup_controller import BackupController
+from .formatting import human_datetime, source_display_name
 from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import BACKUP_STATUS_COPY, technical_details
@@ -69,7 +70,7 @@ class HistoryView(QWidget):
             reference_game_rail(
                 self,
                 object_name="historyGameRail",
-                active_family="stalker2",
+                active_family="all",
             ),
             0,
         )
@@ -93,8 +94,15 @@ class HistoryView(QWidget):
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        for column in (0, 2, 3, 4):
+        for column in (0, 2, 4):
             self.table.horizontalHeader().setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        # The backup file name is long and technical: keep it narrow, elided in
+        # the middle, with the full name in the tooltip, so the table never
+        # needs a horizontal scrollbar.
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.table.horizontalHeader().resizeSection(3, 190)
+        self.table.setTextElideMode(Qt.TextElideMode.ElideMiddle)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.itemSelectionChanged.connect(self._selection_changed)
         table_layout.addWidget(self.table, 1)
         toolbar = QHBoxLayout()
@@ -177,7 +185,8 @@ class HistoryView(QWidget):
             for record in self.backend.records
             if not self._source_filter
             or self._source_filter in record.source_path.casefold()
-            or self._source_filter in Path(record.source_path).name.casefold()
+            or self._source_filter
+            in source_display_name(record.source_path, record.backup_path).casefold()
         )
         self._visible_records = records
         with QSignalBlocker(self.table):
@@ -185,14 +194,16 @@ class HistoryView(QWidget):
             for row, record in enumerate(records):
                 self.table.insertRow(row)
                 values = (
-                    record.created_at or "—",
-                    Path(record.source_path).name if record.source_path else "Неизвестный источник",
+                    human_datetime(record.created_at),
+                    source_display_name(record.source_path, record.backup_path),
                     self._operation_label(record.operation),
                     Path(record.backup_path).name,
                     BACKUP_STATUS_COPY.get(record.status, "Требует проверки"),
                 )
                 for column, value in enumerate(values):
                     item = QTableWidgetItem("" if column == 4 else str(value))
+                    if column == 3:
+                        item.setToolTip(str(value))
                     self.table.setItem(row, column, item)
                 tone = {
                     "verified": "success",
@@ -219,9 +230,7 @@ class HistoryView(QWidget):
             self.destination_edit.clear()
             self.details_button.setEnabled(bool(self._technical_error_details))
             return
-        self.detail_name.setText(
-            Path(record.source_path).name if record.source_path else "Неизвестный источник"
-        )
+        self.detail_name.setText(source_display_name(record.source_path, record.backup_path))
         self.detail_name.setToolTip("")
         self.detail_status.setText(BACKUP_STATUS_COPY.get(record.status, "Требует проверки"))
         self.detail_status.setToolTip("")

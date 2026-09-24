@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -70,6 +71,18 @@ def build() -> dict[str, Any]:
     }
 
 
+INDEX = ROOT / "web" / "index.html"
+_VERSION_BADGE = re.compile(r'(<span class="badge badge-version">)v[^<]*(</span>)')
+
+
+def _versioned_index() -> str:
+    """Stamp the shipped VERSION into the page header badge."""
+
+    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    html = INDEX.read_text(encoding="utf-8")
+    return _VERSION_BADGE.sub(lambda match: f"{match.group(1)}v{version}{match.group(2)}", html, count=1)
+
+
 def static_assets_current() -> bool:
     return all(
         (ROOT / target).is_file()
@@ -102,6 +115,12 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
+        if INDEX.read_text(encoding="utf-8") != _versioned_index():
+            print(
+                "web/index.html version badge is stale; run python3 tools/build_web_bundle.py",
+                file=sys.stderr,
+            )
+            return 1
         if not static_assets_current():
             print(
                 "web display font assets are out of date; run python3 tools/build_web_bundle.py",
@@ -115,6 +134,10 @@ def main(argv: list[str] | None = None) -> int:
         BUNDLE.write_text(rendered, encoding="utf-8")
         print(f"updated {BUNDLE.relative_to(ROOT)} ({bundle['source_sha256'][:12]}…)")
     write_static_assets()
+    stamped = _versioned_index()
+    if INDEX.read_text(encoding="utf-8") != stamped:
+        INDEX.write_text(stamped, encoding="utf-8")
+        print(f"updated {INDEX.relative_to(ROOT)} version badge")
     return 0
 
 

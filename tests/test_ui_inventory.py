@@ -193,19 +193,13 @@ def test_equipment_cards_match_slot_hierarchy_and_options_select_the_item(
     cards = editor.status_column.findChildren(QToolButton, "equipmentSlot")
     captions = [label.text() for label in editor.status_column.findChildren(QLabel, "equipmentSlotCaption")]
 
-    assert len(cards) == 6
-    assert captions == [
-        "ОСНОВНОЕ ОРУЖИЕ",
-        "ДОП. ОРУЖИЕ",
-        "БРОНЯ",
-        "ШЛЕМ",
-        "ДЕТЕКТОР",
-        "КОНТЕЙНЕР",
-    ]
-    option = editor.status_column.findChild(QToolButton, "equipmentSlotOptions")
-    assert option is not None
-    option.click()
-    assert editor.selected_handle == editor.equipment_rows[0].handle
+    # Cards come from the real loadout categories; a quest container is not
+    # equipment and the first weapon is not claimed to be the "primary" one.
+    assert len(cards) == 5
+    assert captions == ["ОРУЖИЕ", "ОРУЖИЕ", "БРОНЯ", "ШЛЕМ", "ДЕТЕКТОР"]
+    weapon_handles = {row.handle for row in editor.equipment_rows if row.category == "weapon"}
+    cards[0].click()
+    assert editor.selected_handle in weapon_handles
 
 
 def test_editor_visual_fixture_keeps_canonical_inventory_order_and_counts() -> None:
@@ -276,14 +270,10 @@ def test_s2_review_equipment_caption_uses_official_item_key_with_cop_catalog(
         )
         if label.isVisible()
     ]
-    assert captions[:6] == [
-        "ОСНОВНОЕ ОРУЖИЕ",
-        "ДОП. ОРУЖИЕ",
-        "БРОНЯ",
-        "ШЛЕМ",
-        "ДЕТЕКТОР",
-        "КОНТЕЙНЕР",
-    ]
+    # Labels come from the item category, never from a hard-coded fixture key.
+    assert captions[:2] == ["ОРУЖИЕ", "ОРУЖИЕ"]
+    assert "КОНТЕЙНЕР" not in captions
+    assert "ОСНОВНОЕ ОРУЖИЕ" not in captions
 
 
 def test_confirmed_s2_armor_condition_is_editable(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:

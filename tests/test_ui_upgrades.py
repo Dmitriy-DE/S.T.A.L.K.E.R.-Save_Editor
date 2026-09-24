@@ -27,7 +27,7 @@ def test_canonical_item_detail_keeps_unconfirmed_upgrades_as_evidence(
     editor = window.editor_view
     editor.table.selectRow(0)
     qtbot.waitUntil(lambda: editor.selected_handle is not None)
-    assert editor.detail_view.module_status.text() == "Данные о модификациях недоступны."
+    assert editor.detail_view.upgrade_status.text() == "Данные о модификациях недоступны."
 
 
 def test_item_detail_presents_unresolved_upgrade_keys_as_readable_evidence(
@@ -53,4 +53,4 @@ def test_item_detail_presents_unresolved_upgrade_keys_as_readable_evidence(
     assert "up_firsta_ak74" in view._details_dialog.text.toPlainText()
     assert view.upgrade_list.item(0).sizeHint().height() == 26
     assert view.upgrade_list.maximumHeight() >= 110
-    assert view.module_status.text() == "Модули и улучшения доступны только для просмотра."
+    assert view.upgrade_status.text() == "Модули и улучшения доступны только для просмотра."

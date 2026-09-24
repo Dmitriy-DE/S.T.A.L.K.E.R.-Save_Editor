@@ -6,8 +6,7 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QFontDatabase, QIcon, QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QFontDatabase, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QApplication, QListWidget, QWidget
 
 from editor.capabilities import FormatCapabilities
@@ -153,27 +152,14 @@ def test_s2_item_detail_hides_unsupported_remove_control(
     assert not view.count_spin.isEnabled()
 
 
-def test_item_detail_preview_fills_the_canonical_wide_art_slot(qtbot) -> None:
-    from ui.item_detail_view import _wide_detail_pixmap
+def test_item_detail_preview_keeps_the_artwork_aspect_ratio(qtbot) -> None:
+    from ui.item_detail_view import _detail_pixmap
 
-    source = QPixmap(80, 80)
-    source.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(source)
-    painter.fillRect(source.rect(), QColor(180, 180, 180, 32))
-    painter.fillRect(10, 30, 60, 20, QColor("#eeeeee"))
-    painter.end()
+    source = QPixmap(80, 40)
+    source.fill(QColor("#eeeeee"))
 
-    result = _wide_detail_pixmap(QIcon(source))
+    result = _detail_pixmap(QIcon(source))
 
-    assert result.size() == QSize(355, 80)
-    image = result.toImage()
-    opaque = [
-        (x, y)
-        for y in range(image.height())
-        for x in range(image.width())
-        if image.pixelColor(x, y).alpha() > 200
-    ]
-    assert min(x for x, _y in opaque) <= 5
-    assert max(x for x, _y in opaque) >= 349
-    assert min(y for _x, y in opaque) <= 5
-    assert max(y for _x, y in opaque) >= 74
+    # A tall helmet or a square artifact must not be stretched to 355x80.
+    assert result.height() == 80
+    assert result.width() == 160

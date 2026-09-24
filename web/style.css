@@ -276,3 +276,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px s
   .reference-footer-status { width: 100%; margin-left: 0; }
   .downloads { padding: 8px 12px; }
 }
+
+.reference-panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}

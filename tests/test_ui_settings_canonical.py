@@ -73,7 +73,7 @@ def test_settings_content_starts_at_canonical_vertical_anchor_without_moving_act
         view.paths_panel,
         view.cloud_panel,
         view.diagnostics_panel,
-    )] == [0, 190, 395, 545]
+    )] == [0, 156, 402, 552]
     assert view.save_button.y() == 755
 
 

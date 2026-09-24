@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from PySide6.QtCore import QRect, QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
@@ -18,55 +18,47 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from editor.capabilities import FormatCapabilities
 from editor.catalog import UpgradeCatalog
+from editor.equipment import category_label
 from save_format import InventoryItem
 
+from .formatting import count_ru
 from .style_components import action_button, panel, section_header, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
-_DETAIL_TYPE_LABELS = {
-    "mp_wpn_ak74": "Штурмовая винтовка",
-    "mp_wpn_toz34": "Дробовик",
-    "cs_heavy_outfit": "Броня",
-    "helm_respirator": "Шлем",
-    "detector_advanced": "Детектор",
-    "zat_b33_safe_container": "Контейнер",
+_DETAIL_IMAGE_SIZE = QSize(355, 80)
+_PLACEMENT_LABELS = {"belt": "Пояс", "ruck": "Рюкзак"}
+_SOURCE_LABELS = {
+    "actor_inventory": "инвентарь игрока",
+    "grid": "инвентарь",
+    "equipped": "экипировка",
 }
 
 
-def _wide_detail_pixmap(icon: QIcon) -> QPixmap:
-    """Place resolver artwork into the broad weapon-art slot used by the reference."""
+def _detail_pixmap(icon: QIcon) -> QPixmap:
+    """Scale resolver artwork into the detail slot without distorting it."""
 
-    source = icon.pixmap(QSize(380, 86)).toImage()
+    source = icon.pixmap(QSize(420, 160))
     if source.isNull():
         return QPixmap()
-    left, top, right, bottom = source.width(), source.height(), -1, -1
-    for alpha_threshold in (128, 8):
-        for y in range(source.height()):
-            for x in range(source.width()):
-                if source.pixelColor(x, y).alpha() > alpha_threshold:
-                    left = min(left, x)
-                    top = min(top, y)
-                    right = max(right, x)
-                    bottom = max(bottom, y)
-        if right >= left and bottom >= top:
-            break
-    if right < left or bottom < top:
-        return QPixmap()
-    cropped = source.copy(QRect(left, top, right - left + 1, bottom - top + 1))
-    return QPixmap.fromImage(
-        cropped.scaled(
-            QSize(355, 80),
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
+    return source.scaled(
+        _DETAIL_IMAGE_SIZE,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
     )
+
+
+def _placement_text(placement_type: str | None, slot: int | None) -> str:
+    if placement_type == "slot":
+        return f"Слот {slot}" if slot is not None else "Слот"
+    return _PLACEMENT_LABELS.get(str(placement_type), "—")
 
 
 class ItemDetailView(QWidget):
@@ -75,6 +67,7 @@ class ItemDetailView(QWidget):
     count_stage_requested = Signal(int, int)
     durability_stage_requested = Signal(int, float)
     placement_stage_requested = Signal(int, str, object)
+    upgrades_stage_requested = Signal(int, object)
     remove_requested = Signal(int)
     reset_requested = Signal(int)
 
@@ -82,14 +75,20 @@ class ItemDetailView(QWidget):
         super().__init__(parent)
         self.setObjectName("itemDetailView")
         self._item: InventoryItem | None = None
+        self._display_name: str | None = None
+        self._category_key: str | None = None
         self._capabilities: FormatCapabilities | None = None
         self._upgrade_catalog: UpgradeCatalog | None = None
         self._staged_counts: Mapping[int, int] = {}
         self._staged_durability: Mapping[int, float] = {}
+        self._staged_placements: Mapping[int, tuple[str, int | None]] = {}
+        self._staged_upgrades: Mapping[int, tuple[str, ...]] = {}
         self._removed_handles: Mapping[int, bool] = {}
         self._item_icon: QIcon | None = None
+        self._pixmap_cache: dict[int, QPixmap] = {}
         self._operation_detail_text = ""
         self._details_dialog: TechnicalDetailsDialog | None = None
+        self._upgrades_writable = False
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -108,7 +107,7 @@ class ItemDetailView(QWidget):
         body.setContentsMargins(0, 0, 5, 4)
         body.setSpacing(4)
         self.status_chip = status_chip("ТОЛЬКО ПРОСМОТР", self.detail_content, tone="neutral")
-        detail_header = section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", parent=self.detail_content)
+        detail_header = section_header("ПРЕДМЕТ", parent=self.detail_content)
         detail_header.setObjectName("detailHeader")
         detail_header.setFixedHeight(40)
         detail_header_layout = detail_header.layout()
@@ -118,20 +117,17 @@ class ItemDetailView(QWidget):
         body.addWidget(detail_header)
         self.name_label = QLabel("Предмет не выбран", self.detail_content)
         self.name_label.setObjectName("detailItemName")
+        self.name_label.setWordWrap(True)
         body.addWidget(self.name_label)
         self.type_label = QLabel("Выбери строку инвентаря", self.detail_content)
         self.type_label.setObjectName("detailItemType")
         body.addWidget(self.type_label)
-        self.image_label = QLabel("—", self.detail_content)
+        self.image_label = QLabel("", self.detail_content)
         self.image_label.setObjectName("detailItemImage")
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setFixedHeight(86)
         body.addWidget(self.image_label)
-        self.description_label = QLabel("Данные взяты из открытого сохранения.", self.detail_content)
-        self.description_label.setObjectName("detailDescription")
-        self.description_label.setWordWrap(True)
-        body.addWidget(self.description_label)
-        body.addSpacing(14)
+        body.addSpacing(8)
 
         self.detail_tabs: list[QPushButton] = []
         tabs = QHBoxLayout()
@@ -143,64 +139,85 @@ class ItemDetailView(QWidget):
             button.clicked.connect(lambda _checked=False, selected=index: self._select_detail_tab(selected))
             tabs.addWidget(button, 1)
             self.detail_tabs.append(button)
-        self.detail_tabs[0].setChecked(True)
         body.addLayout(tabs)
 
-        form_panel = panel(self.detail_content, object_name="detailFields")
-        form = QFormLayout(form_panel)
-        form.setContentsMargins(10, 10, 10, 10)
-        form.setSpacing(8)
+        self.detail_pages = QStackedWidget(self.detail_content)
+        self.detail_pages.setObjectName("detailPages")
+        body.addWidget(self.detail_pages)
+
+        # Page 0: the values this save can change for the selected item.
+        form_panel = panel(self.detail_pages, object_name="detailFields")
+        form_layout = QVBoxLayout(form_panel)
+        form_layout.setContentsMargins(10, 10, 10, 10)
+        form_layout.setSpacing(6)
+        self.detail_form = QFormLayout()
+        self.detail_form.setSpacing(8)
         self.count_spin = QSpinBox(form_panel)
         self.count_spin.setRange(1, 1_000_000)
+        self.count_spin.setKeyboardTracking(False)
         self.count_spin.valueChanged.connect(lambda _value: self._emit_count())
-        form.addRow("Количество", self.count_spin)
-
+        self.detail_form.addRow("Количество", self.count_spin)
         self.condition_spin = QDoubleSpinBox(form_panel)
         self.condition_spin.setRange(0.0, 100.0)
         self.condition_spin.setDecimals(1)
         self.condition_spin.setSuffix(" %")
+        self.condition_spin.setKeyboardTracking(False)
         self.condition_spin.valueChanged.connect(lambda _value: self._emit_condition())
-        form.addRow("Состояние", self.condition_spin)
-
+        self.detail_form.addRow("Состояние", self.condition_spin)
         self.placement_combo = QComboBox(form_panel)
-        self.placement_combo.addItem("Инвентарь", ("inventory", None))
-        self.placement_combo.addItem("Пояс", ("belt", None))
-        self.placement_combo.addItem("Рюкзак", ("ruck", None))
         self.placement_combo.currentIndexChanged.connect(lambda _index: self._emit_placement())
-        form.addRow("Размещение", self.placement_combo)
-        body.addWidget(form_panel)
+        self.detail_form.addRow("Размещение", self.placement_combo)
+        form_layout.addLayout(self.detail_form)
+        self.fields_note = QLabel("", form_panel)
+        self.fields_note.setObjectName("detailFieldsNote")
+        self.fields_note.setWordWrap(True)
+        form_layout.addWidget(self.fields_note)
+        self.detail_pages.addWidget(form_panel)
 
-        body.addSpacing(14)
-        self.upgrade_heading = QLabel(
-            "УСТАНОВЛЕННЫЕ МОДУЛИ / УЛУЧШЕНИЯ",
-            self.detail_content,
-        )
+        # Page 1: installed modules / upgrades, editable only where proven.
+        upgrades_page = QWidget(self.detail_pages)
+        upgrades_layout = QVBoxLayout(upgrades_page)
+        upgrades_layout.setContentsMargins(0, 6, 0, 0)
+        upgrades_layout.setSpacing(6)
+        self.upgrade_heading = QLabel("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ", upgrades_page)
         self.upgrade_heading.setObjectName("detailUpgradesHeading")
-        body.addWidget(self.upgrade_heading)
-        self.upgrade_list = QListWidget(self.detail_content)
+        upgrades_layout.addWidget(self.upgrade_heading)
+        self.upgrade_list = QListWidget(upgrades_page)
         self.upgrade_list.setObjectName("detailUpgradeList")
-        self.upgrade_list.setMaximumHeight(118)
-        body.addWidget(self.upgrade_list)
-        self.module_status = QLabel("—", self.detail_content)
-        self.module_status.setObjectName("detailModuleStatus")
-        self.module_status.setWordWrap(True)
-        body.addWidget(self.module_status)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.detail_content)
+        self.upgrade_list.setMinimumHeight(118)
+        upgrades_layout.addWidget(self.upgrade_list, 1)
+        self.upgrade_status = QLabel("", upgrades_page)
+        self.upgrade_status.setObjectName("detailUpgradeStatus")
+        self.upgrade_status.setWordWrap(True)
+        upgrades_layout.addWidget(self.upgrade_status)
+        self.upgrade_apply_button = action_button("ПРИМЕНИТЬ МОДИФИКАЦИИ", upgrades_page)
+        self.upgrade_apply_button.setObjectName("detailUpgradeApply")
+        self.upgrade_apply_button.clicked.connect(self._emit_upgrades)
+        upgrades_layout.addWidget(self.upgrade_apply_button)
+        self.detail_pages.addWidget(upgrades_page)
+
+        # Page 2: read-only characteristics and the technical escape hatch.
+        facts_page = QWidget(self.detail_pages)
+        facts_layout = QVBoxLayout(facts_page)
+        facts_layout.setContentsMargins(0, 6, 0, 0)
+        facts_layout.setSpacing(6)
+        self.description_label = QLabel("Данные взяты из открытого сохранения.", facts_page)
+        self.description_label.setObjectName("detailDescription")
+        self.description_label.setWordWrap(True)
+        self.description_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        facts_layout.addWidget(self.description_label)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", facts_page)
         self.details_button.setObjectName("itemTechnicalDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._show_technical_details)
-        body.addWidget(self.details_button)
-        feature_row = QHBoxLayout()
-        feature_row.setSpacing(6)
-        self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self.detail_content, tone="success")
-        self.read_only_feature_chip = status_chip("ТОЛЬКО ПРОСМОТР", self.detail_content, tone="neutral")
-        self.feature_help = QLabel("?", self.detail_content)
-        self.feature_help.setObjectName("detailFeatureHelp")
-        feature_row.addWidget(self.verified_feature_chip)
-        feature_row.addWidget(self.read_only_feature_chip)
-        feature_row.addWidget(self.feature_help)
-        feature_row.addStretch(1)
-        body.addLayout(feature_row)
+        facts_layout.addWidget(self.details_button)
+        facts_layout.addStretch(1)
+        self.detail_pages.addWidget(facts_page)
+
+        self.module_status = QLabel("", self.detail_content)
+        self.module_status.setObjectName("detailModuleStatus")
+        self.module_status.setWordWrap(True)
+        body.addWidget(self.module_status)
         body.addStretch(1)
         self.detail_scroll.setWidget(self.detail_content)
         root.addWidget(self.detail_scroll, 1)
@@ -215,6 +232,7 @@ class ItemDetailView(QWidget):
         self.reset_button = action_button("СБРОСИТЬ", self)
         self.reset_button.setFixedHeight(38)
         self.reset_button.setEnabled(False)
+        self.reset_button.setToolTip("Отменить черновые изменения выбранного предмета")
         self.reset_button.clicked.connect(self._emit_reset)
         actions.addWidget(self.reset_button)
         self.remove_button = action_button("УДАЛИТЬ ПРЕДМЕТ", self, kind="danger")
@@ -223,24 +241,12 @@ class ItemDetailView(QWidget):
         self.remove_button.clicked.connect(self._emit_remove)
         actions.addWidget(self.remove_button)
         root.addLayout(actions)
+        self._select_detail_tab(0)
 
     def _select_detail_tab(self, index: int) -> None:
         for button_index, button in enumerate(self.detail_tabs):
             button.setChecked(button_index == index)
-        if index == 1 and self._item is not None:
-            self.module_status.setText(
-                "Установленные модули и улучшения доступны только для просмотра."
-            )
-        elif index == 2 and self._item is not None:
-            self.module_status.setText(
-                "Характеристики показываются по открытому сохранению."
-            )
-        elif self._item is not None:
-            self.module_status.setText(
-                "Модули и улучшения доступны только для просмотра."
-                if self._item.upgrades or self._item.modules
-                else "Данные о модификациях недоступны."
-            )
+        self.detail_pages.setCurrentIndex(index)
 
     def set_item(
         self,
@@ -251,6 +257,10 @@ class ItemDetailView(QWidget):
         staged_counts: Mapping[int, int] | None = None,
         staged_durability: Mapping[int, float] | None = None,
         removed_handles: Mapping[int, bool] | None = None,
+        staged_placements: Mapping[int, tuple[str, int | None]] | None = None,
+        staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
+        display_name: str | None = None,
+        category_key: str | None = None,
     ) -> None:
         self._item = item
         self._capabilities = capabilities
@@ -258,19 +268,39 @@ class ItemDetailView(QWidget):
         self._staged_counts = staged_counts or {}
         self._staged_durability = staged_durability or {}
         self._removed_handles = removed_handles or {}
+        self._staged_placements = staged_placements or {}
+        self._staged_upgrades = staged_upgrades or {}
+        self._display_name = display_name
+        self._category_key = category_key
         self._render()
 
     def set_item_icon(self, icon: QIcon | None) -> None:
         self._item_icon = icon
-        self._render()
+        self._render_icon()
 
     def set_operation_details(self, value: str) -> None:
         self._operation_detail_text = str(value or "")
         self.details_button.setVisible(bool(self._item or self._operation_detail_text))
 
     def set_change_count(self, count: int) -> None:
-        self.save_button.setText(f"СОХРАНИТЬ {count} ИЗМЕНЕНИЙ")
+        self.save_button.setText(
+            f"СОХРАНИТЬ {count_ru(count, 'ИЗМЕНЕНИЕ', 'ИЗМЕНЕНИЯ', 'ИЗМЕНЕНИЙ')}"
+        )
         self.save_button.setEnabled(count > 0)
+
+    def _render_icon(self) -> None:
+        icon = self._item_icon
+        if self._item is None or icon is None or icon.isNull():
+            self.image_label.clear()
+            return
+        key = icon.cacheKey()
+        pixmap = self._pixmap_cache.get(key)
+        if pixmap is None:
+            pixmap = _detail_pixmap(icon)
+            if len(self._pixmap_cache) > 64:
+                self._pixmap_cache.clear()
+            self._pixmap_cache[key] = pixmap
+        self.image_label.setPixmap(pixmap)
 
     def _render(self) -> None:
         item = self._item
@@ -279,129 +309,202 @@ class ItemDetailView(QWidget):
             self.name_label.setText("Предмет не выбран")
             self.type_label.setText("Выбери строку инвентаря")
             self.description_label.setText("Данные взяты из открытого сохранения.")
-            self.status_chip.setText("ТОЛЬКО ПРОСМОТР")
-            self.count_spin.setEnabled(False)
-            self.condition_spin.setEnabled(False)
-            self.placement_combo.setEnabled(False)
+            self._set_status("ТОЛЬКО ПРОСМОТР", "neutral")
+            for widget in (self.count_spin, self.condition_spin, self.placement_combo):
+                self.detail_form.setRowVisible(widget, False)
+            self.fields_note.setText("")
             self.reset_button.setEnabled(False)
             self.remove_button.setVisible(False)
             self.remove_button.setEnabled(False)
             self.upgrade_list.clear()
-            self.module_status.setText("—")
+            self.upgrade_apply_button.setVisible(False)
+            self.upgrade_status.setText("")
+            self.module_status.setText("")
             self.details_button.setVisible(bool(self._operation_detail_text))
             self.image_label.clear()
-            self.image_label.setText("—")
             return
 
-        label = item.display_name or "Неизвестный объект"
-        self.name_label.setText(label)
+        self.name_label.setText(self._display_name or item.display_name or "Неизвестный предмет")
         self.details_button.setVisible(True)
-        type_label = _DETAIL_TYPE_LABELS.get(item.type_key, item.category)
-        self.type_label.setText(type_label)
-        weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
-        source_labels = {
-            "actor_inventory": "инвентарь игрока",
-            "grid": "инвентарь",
-            "equipped": "экипировка",
-        }
-        source = source_labels.get(str(item.observation_source or ""), "открытое сохранение")
-        self.description_label.setText(f"Вес: {weight}\nИсточник: {source}")
-        if self._item_icon is not None and not self._item_icon.isNull():
-            self.image_label.setPixmap(_wide_detail_pixmap(self._item_icon))
-            self.image_label.setText("")
-        else:
-            self.image_label.setText("—")
+        self.type_label.setText(
+            category_label(self._category_key) if self._category_key else item.category
+        )
 
-        stack_support = caps.support("edit_stacks") if caps is not None else None
-        condition_support = caps.support("edit_durability") if caps is not None else None
         writable_stack = bool(caps and caps.edit_stacks and item.editable_count)
-        writable_condition = bool(caps and caps.edit_durability and item.condition_editable and item.condition is not None)
-        experimental = any(
-            support is not None and support.maturity == "experimental"
-            for support in (stack_support, condition_support)
+        writable_condition = bool(
+            caps and caps.edit_durability and item.condition_editable and item.condition is not None
         )
-        self.status_chip.setText(
-            "Экспериментальная функция"
-            if experimental
-            else "ПРОВЕРЕНО"
-            if writable_stack or writable_condition
-            else "ТОЛЬКО ПРОСМОТР"
+        placement_writable = bool(
+            caps and caps.edit_placement and item.placement_editable and item.placement_type is not None
         )
-        self.status_chip.setProperty("tone", "warning" if experimental else "success" if writable_stack or writable_condition else "neutral")
-        self.status_chip.style().unpolish(self.status_chip)
-        self.status_chip.style().polish(self.status_chip)
+        self._upgrades_writable = bool(
+            caps
+            and caps.edit_upgrades
+            and item.upgrades is not None
+            and item.upgrades_editable
+            and self._upgrade_catalog is not None
+        )
+        can_remove = bool(caps and caps.remove_items and item.remove_editable)
+        supports = []
+        if caps is not None:
+            for writable, name in (
+                (writable_stack, "edit_stacks"),
+                (writable_condition, "edit_durability"),
+                (placement_writable, "edit_placement"),
+                (self._upgrades_writable, "edit_upgrades"),
+                (can_remove, "remove_items"),
+            ):
+                if writable:
+                    supports.append(caps.support(name))
+        if not supports:
+            self._set_status("ТОЛЬКО ПРОСМОТР", "neutral")
+        elif any(support.maturity == "experimental" for support in supports):
+            self._set_status("ЭКСПЕРИМЕНТАЛЬНО", "warning")
+        else:
+            self._set_status("МОЖНО ИЗМЕНИТЬ", "success")
 
+        # Rows the save does not have are hidden instead of showing "0 %".
+        has_count = item.count is not None
         count = self._staged_counts.get(item.handle, item.count or 1)
         self.count_spin.blockSignals(True)
-        self.count_spin.setMaximum(max(1, item.count_max))
+        self.count_spin.setMaximum(max(1, item.count_max, count))
         self.count_spin.setValue(count)
         self.count_spin.blockSignals(False)
         self.count_spin.setEnabled(writable_stack)
+        self.detail_form.setRowVisible(self.count_spin, has_count)
 
+        has_condition = item.condition is not None
         condition = self._staged_durability.get(item.handle, item.condition or 0.0)
         self.condition_spin.blockSignals(True)
         self.condition_spin.setValue(condition * 100.0)
         self.condition_spin.blockSignals(False)
         self.condition_spin.setEnabled(writable_condition)
+        self.detail_form.setRowVisible(self.condition_spin, has_condition)
 
-        placement_writable = bool(caps and caps.edit_placement and item.placement_editable)
-        self.placement_combo.blockSignals(True)
-        self.placement_combo.clear()
-        self.placement_combo.addItem("Инвентарь", ("inventory", None))
-        self.placement_combo.addItem("Пояс", ("belt", None))
-        self.placement_combo.addItem("Рюкзак", ("ruck", None))
-        for slot in range(1, 14):
-            self.placement_combo.addItem(f"Слот {slot}", ("slot", slot))
-        effective_placement = (
+        has_placement = item.placement_type is not None
+        staged_place = self._staged_placements.get(item.handle)
+        effective_placement = staged_place or (
             item.placement_type,
             item.placement_slot if item.placement_type == "slot" else None,
         )
+        self.placement_combo.blockSignals(True)
+        self.placement_combo.clear()
+        # Exactly the values the X-Ray place codec accepts.
+        self.placement_combo.addItem("Рюкзак", ("ruck", None))
+        self.placement_combo.addItem("Пояс", ("belt", None))
+        for slot in range(1, 14):
+            self.placement_combo.addItem(f"Слот {slot}", ("slot", slot))
         for index in range(self.placement_combo.count()):
-            if self.placement_combo.itemData(index) == effective_placement:
+            if tuple(self.placement_combo.itemData(index)) == tuple(effective_placement):
                 self.placement_combo.setCurrentIndex(index)
                 break
         self.placement_combo.blockSignals(False)
         self.placement_combo.setEnabled(placement_writable)
+        self.detail_form.setRowVisible(self.placement_combo, has_placement)
 
-        self.upgrade_list.clear()
-        upgrade_values = item.upgrades or item.modules or ()
-        for index, value in enumerate(upgrade_values, start=1):
-            raw_key = str(value)
-            definition = (
-                self._upgrade_catalog.resolve(raw_key)
-                if self._upgrade_catalog is not None
-                else None
+        if not (has_count or has_condition or has_placement):
+            self.fields_note.setText("Для этого предмета в сохранении нет изменяемых полей.")
+        elif not (writable_stack or writable_condition or placement_writable):
+            self.fields_note.setText("Эти значения доступны только для просмотра.")
+        else:
+            self.fields_note.setText("")
+
+        self._render_upgrades(item)
+        weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
+        source = _SOURCE_LABELS.get(str(item.observation_source or ""), "открытое сохранение")
+        facts = [f"Вес: {weight}", f"Источник: {source}"]
+        if has_placement:
+            facts.append(
+                "Размещение: "
+                + _placement_text(item.placement_type, item.placement_slot)
             )
-            catalog_name = definition.display_name if definition is not None else None
-            # Generated catalogs can contain localization tokens rather than
-            # translated labels. Keep those identifiers out of the normal
-            # screen; retain the exact key in the explicit detail dialog.
-            label = (
-                catalog_name
-                if catalog_name and not catalog_name.casefold().startswith("st_")
-                else f"Улучшение {index}"
-            )
-            row = QListWidgetItem(label)
-            row.setSizeHint(QSize(0, 26))
-            row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
-            self.upgrade_list.addItem(row)
-        self.module_status.setText(
-            "Модули и улучшения доступны только для просмотра."
-            if item.upgrades or item.modules
-            else "Данные о модификациях недоступны."
-        )
+        if item.count is not None:
+            facts.append(f"Количество в сохранении: {item.count}")
+        self.description_label.setText("\n".join(facts))
         self.reset_button.setEnabled(
-            item.handle in self._staged_counts
-            or item.handle in self._staged_durability
-            or item.handle in self._removed_handles
+            any(
+                item.handle in mapping
+                for mapping in (
+                    self._staged_counts,
+                    self._staged_durability,
+                    self._removed_handles,
+                    self._staged_placements,
+                    self._staged_upgrades,
+                )
+            )
         )
-        can_remove = bool(caps and caps.remove_items and item.remove_editable)
         # Unsupported formats must not present a destructive affordance that
-        # can never succeed.  The capability remains truthful in the detail
-        # state (count/durability controls are visibly read-only), while the
-        # S2 add/remove surface is omitted entirely.
+        # can never succeed; the S2 add/remove surface is omitted entirely.
         self.remove_button.setVisible(can_remove)
         self.remove_button.setEnabled(can_remove)
+        self.remove_button.setText(
+            "ВЕРНУТЬ ПРЕДМЕТ" if item.handle in self._removed_handles else "УДАЛИТЬ ПРЕДМЕТ"
+        )
+        self._render_icon()
+
+    def _upgrade_label(self, key: str, index: int) -> str:
+        """Readable name, or a neutral placeholder: raw IDs live in details."""
+
+        catalog = self._upgrade_catalog
+        definition = catalog.resolve(key) if catalog is not None else None
+        name = definition.display_name if definition is not None else None
+        # Generated catalogs can contain localization tokens rather than
+        # translated labels; those are not readable names either.
+        if name and not name.casefold().startswith("st_"):
+            return name
+        return f"Улучшение {index}"
+
+    def _render_upgrades(self, item: InventoryItem) -> None:
+        self.upgrade_list.blockSignals(True)
+        self.upgrade_list.clear()
+        installed = tuple(item.upgrades or item.modules or ())
+        effective = self._staged_upgrades.get(item.handle, installed)
+        catalog = self._upgrade_catalog
+        if self._upgrades_writable and catalog is not None:
+            keys = list(installed)
+            keys.extend(
+                definition.key
+                for definition in catalog.for_item(item.type_key)
+                if definition.key not in keys
+            )
+            for index, key in enumerate(keys, start=1):
+                entry = QListWidgetItem(self._upgrade_label(key, index))
+                entry.setData(Qt.ItemDataRole.UserRole, key)
+                entry.setSizeHint(QSize(0, 26))
+                entry.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+                entry.setCheckState(
+                    Qt.CheckState.Checked if key in effective else Qt.CheckState.Unchecked
+                )
+                self.upgrade_list.addItem(entry)
+            self.upgrade_apply_button.setVisible(bool(keys))
+            self.upgrade_heading.setText(f"МОДИФИКАЦИИ · УСТАНОВЛЕНО {len(effective)}")
+            self.upgrade_status.setText(
+                "Отметь модификации и нажми «Применить». Запись — экспериментальная, "
+                "перед сохранением создаётся резервная копия."
+                if keys
+                else "Для этого предмета в каталоге нет модификаций."
+            )
+        else:
+            for index, value in enumerate(effective, start=1):
+                label = self._upgrade_label(str(value), index)
+                row = QListWidgetItem(label)
+                row.setSizeHint(QSize(0, 26))
+                row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
+                self.upgrade_list.addItem(row)
+            self.upgrade_apply_button.setVisible(False)
+            self.upgrade_heading.setText("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ")
+            self.upgrade_status.setText(
+                "Модули и улучшения доступны только для просмотра."
+                if effective
+                else "Данные о модификациях недоступны."
+            )
+        self.upgrade_list.blockSignals(False)
+
+    def _set_status(self, text: str, tone: str) -> None:
+        self.status_chip.setText(text)
+        self.status_chip.setProperty("tone", tone)
+        self.status_chip.style().unpolish(self.status_chip)
+        self.status_chip.style().polish(self.status_chip)
 
     def _show_technical_details(self) -> None:
         item = self._item
@@ -413,6 +516,7 @@ class ItemDetailView(QWidget):
                 (
                     f"Идентификатор предмета: {item.handle_hex}",
                     f"Ключ типа: {item.type_key}",
+                    f"Категория в сохранении: {item.category}",
                     f"Источник данных: {item.observation_source or 'не определено'}",
                 )
             )
@@ -442,6 +546,16 @@ class ItemDetailView(QWidget):
             value = self.placement_combo.currentData()
             if isinstance(value, (tuple, list)) and len(value) == 2:
                 self.placement_stage_requested.emit(self._item.handle, str(value[0]), value[1])
+
+    def _emit_upgrades(self) -> None:
+        if self._item is None or not self._upgrades_writable:
+            return
+        values = tuple(
+            str(self.upgrade_list.item(index).data(Qt.ItemDataRole.UserRole))
+            for index in range(self.upgrade_list.count())
+            if self.upgrade_list.item(index).checkState() == Qt.CheckState.Checked
+        )
+        self.upgrades_stage_requested.emit(self._item.handle, values)
 
     def _emit_reset(self) -> None:
         if self._item is not None:

@@ -9,7 +9,6 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
-    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -20,9 +19,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.releases import is_xray_original_release
+from editor.releases import is_xray_original_release, release_by_id
 
-from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+from .style_components import (
+    action_button,
+    panel,
+    reference_game_rail,
+    section_header,
+    select_rail_family,
+    status_chip,
+)
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
@@ -40,6 +46,7 @@ class CharacterView(QWidget):
         self.snapshot: Any | None = None
         self.editable = False
         self._staged: Mapping[str, int] = {}
+        self._staged_player_faction: str | None = None
         self._details_dialog: TechnicalDetailsDialog | None = None
         self._technical_detail_text = ""
         self._diagnostic_detail_text = ""
@@ -58,12 +65,13 @@ class CharacterView(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(10)
+        self.game_rail = reference_game_rail(
+            self,
+            object_name="characterGameRail",
+            active_family="cop",
+        )
         body.addWidget(
-            reference_game_rail(
-                self,
-                object_name="characterGameRail",
-                active_family="cop",
-            ),
+            self.game_rail,
             0,
         )
         workspace = QHBoxLayout()
@@ -85,28 +93,8 @@ class CharacterView(QWidget):
         self.player_faction_button.setEnabled(False)
         self.player_faction_button.clicked.connect(self._stage_player_faction)
         profile_layout.addWidget(self.player_faction_button)
-        facts_panel = panel(profile, object_name="characterFactsPanel")
-        facts_layout = QGridLayout(facts_panel)
-        facts_layout.setContentsMargins(8, 8, 8, 8)
-        facts_layout.setHorizontalSpacing(18)
-        facts_layout.setVerticalSpacing(5)
-        facts_layout.addWidget(section_header("ПАРАМЕТРЫ", "ТОЛЬКО ПРОСМОТР", facts_panel), 0, 0, 1, 2)
-        for row, label in enumerate(
-            ("Здоровье", "Выносливость", "Радиация", "Ранг", "Репутация", "Карма"),
-            start=1,
-        ):
-            value = QLabel("—", facts_panel)
-            value.setObjectName("characterUnavailableValue")
-            facts_layout.addWidget(QLabel(label, facts_panel), row, 0)
-            facts_layout.addWidget(value, row, 1)
-        profile_layout.addWidget(facts_panel)
-        facts_note = QLabel(
-            "Эти данные недоступны для этого сохранения.",
-            profile,
-        )
-        facts_note.setObjectName("characterFactsNote")
-        facts_note.setWordWrap(True)
-        profile_layout.addWidget(facts_note)
+        # Health, rank, reputation etc. are not parsed from any supported save;
+        # a panel of permanent dashes only suggested otherwise.
         profile_layout.addStretch(1)
         workspace.addWidget(profile, 34)
 
@@ -159,6 +147,10 @@ class CharacterView(QWidget):
         self.snapshot = snapshot
         self._diagnostic_detail_text = ""
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
+        try:
+            select_rail_family(self.game_rail, release_by_id(release).family)
+        except KeyError:
+            select_rail_family(self.game_rail, None)
         capabilities = getattr(snapshot, "capabilities", None)
         self.editable = bool(
             is_xray_original_release(release)
@@ -191,11 +183,17 @@ class CharacterView(QWidget):
 
     def set_state(self, staged_relations: Mapping[str, int] | None = None, player_faction: str | None = None) -> None:
         self._staged = staged_relations or {}
-        if player_faction is not None:
-            index = self.player_faction_combo.findData(player_faction)
-            if index >= 0:
-                self.player_faction_combo.setCurrentIndex(index)
+        self._staged_player_faction = player_faction
         self._render_factions()
+
+    @staticmethod
+    def _faction_label(faction) -> str:
+        name = faction.display_name or f"Группировка {faction.numeric_id}"
+        # Clear Sky and SoC keep separate "actor_*" communities for the player;
+        # without a marker they read as duplicates ("Бандит", "Бандит").
+        if faction.key == "actor" or faction.key.startswith("actor_"):
+            return f"{name} (игрок)"
+        return name
 
     def _render_factions(self) -> None:
         snapshot = self.snapshot
@@ -221,8 +219,7 @@ class CharacterView(QWidget):
         for faction in definitions:
             row = self.faction_table.rowCount()
             self.faction_table.insertRow(row)
-            name = faction.display_name or f"Группировка {faction.numeric_id}"
-            self.faction_table.setItem(row, 0, QTableWidgetItem(name))
+            self.faction_table.setItem(row, 0, QTableWidgetItem(self._faction_label(faction)))
             has_current_value = faction.numeric_id in current
             current_value = current.get(faction.numeric_id, 0)
             self.faction_table.setItem(
@@ -249,12 +246,33 @@ class CharacterView(QWidget):
             else:
                 self.faction_table.setItem(row, 2, QTableWidgetItem(str(staged)))
                 self.faction_table.setItem(row, 3, QTableWidgetItem("Только просмотр"))
+        current_player = next(
+            (
+                faction
+                for faction in definitions
+                if faction.numeric_id == info.player_faction_index
+            ),
+            None,
+        )
+        self.player_faction_label.setText(
+            f"Группировка игрока: {self._faction_label(current_player)}"
+            if current_player is not None
+            else "Группировка игрока: не определена"
+        )
+        self.player_faction_combo.blockSignals(True)
         for faction in definitions:
-            label = faction.display_name or f"Группировка {faction.numeric_id}"
             index = self.player_faction_combo.count()
-            self.player_faction_combo.addItem(label, faction.key)
+            self.player_faction_combo.addItem(self._faction_label(faction), faction.key)
             if not faction.display_name:
                 self.player_faction_combo.setItemData(index, "", Qt.ItemDataRole.ToolTipRole)
+        wanted = self._staged_player_faction or (
+            current_player.key if current_player is not None else None
+        )
+        if wanted is not None:
+            index = self.player_faction_combo.findData(wanted)
+            if index >= 0:
+                self.player_faction_combo.setCurrentIndex(index)
+        self.player_faction_combo.blockSignals(False)
         self.player_faction_combo.setEnabled(self.editable and bool(definitions))
         self.player_faction_button.setEnabled(self.editable and bool(definitions))
 

@@ -175,6 +175,10 @@ def reference_game_rail(
         if family == active_family:
             selected_row = row
     games.setCurrentRow(selected_row)
+    # Display-only: it shows which game the screen is about.  Letting it take
+    # clicks would suggest a filter that does not exist.
+    games.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+    games.setFocusPolicy(Qt.FocusPolicy.NoFocus)
     layout.addWidget(games, 1)
     zone = TextureFrame(
         rail,
@@ -187,12 +191,25 @@ def reference_game_rail(
     zone_layout = QVBoxLayout(zone)
     zone_layout.setContentsMargins(12, 20, 12, 12)
     zone_layout.addStretch(1)
-    note = QLabel("ОДНИ СОХРАНЯЮТ ИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИЮ.", zone)
+    note = QLabel("ОДНИ СОХРАНЯЮТ ИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ.", zone)
     note.setObjectName("zoneDecorationText")
     note.setWordWrap(True)
     zone_layout.addWidget(note)
     layout.addWidget(zone)
     return rail
+
+
+def select_rail_family(rail: QWidget, family: str | None) -> None:
+    """Highlight one family (or "all") on a display-only game rail."""
+
+    games = rail.findChild(QListWidget, "referenceSecondaryGameList")
+    if games is None:
+        return
+    wanted = family or "all"
+    for row in range(games.count()):
+        if games.item(row).data(Qt.ItemDataRole.UserRole) == wanted:
+            games.setCurrentRow(row)
+            return
 
 
 def key_hint(key: str, text: str, parent: QWidget | None = None) -> QWidget:
@@ -217,5 +234,6 @@ __all__ = [
     "primary_button",
     "reference_game_rail",
     "section_header",
+    "select_rail_family",
     "status_chip",
 ]

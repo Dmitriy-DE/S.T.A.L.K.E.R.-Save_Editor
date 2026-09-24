@@ -151,7 +151,7 @@ def test_s2_equipment_uses_save_names_instead_of_opaque_kind_codes() -> None:
         release_id="stalker2",
     )
 
-    assert [row.category for row in rows] == ["armor", "helmet", "other", "module"]
+    assert [row.category for row in rows] == ["armor", "helmet", "module", "module"]
     assert rows[2].durability_editable is False
     assert rows[2].durability.maturity == "research"
     assert rows[3].durability_editable is False

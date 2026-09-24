@@ -152,6 +152,12 @@ def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
     )
 
 
+# S.T.A.L.K.E.R. 2 keeps its campaign index and telemetry next to the slots
+# with the same ``.sav`` suffix.  They are not player saves and can never be
+# opened by the editor, so the library must not list them.
+_NON_SLOT_FILENAMES = frozenset({"campaignssave.sav", "analyticsdata.sav"})
+
+
 def discover_save_slots(
     *,
     game_ids: Sequence[str] = GAME_IDS,
@@ -200,6 +206,8 @@ def discover_save_slots(
 
             for path in entries:
                 if path in slot_seen or path.suffix.casefold() not in SAVE_SUFFIXES:
+                    continue
+                if path.name.casefold() in _NON_SLOT_FILENAMES:
                     continue
                 try:
                     if not path.is_file():

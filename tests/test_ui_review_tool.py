@@ -83,7 +83,11 @@ def test_library_save_rows_separate_filename_from_release_subtitle(
 
     assert s2_cell is not None and cop_cell is not None
     assert view.save_table.item(0, 0).text() == ""
-    assert s2_cell.findChild(QLabel, "libraryRowTitle").text() == slots[0].path.stem
+    title = s2_cell.findChild(QLabel, "libraryRowTitle")
+    # Long GUID names are elided in the middle; the full name stays reachable.
+    assert title.toolTip() == slots[0].path.name
+    head, _, tail = title.text().partition("…")
+    assert slots[0].path.stem.startswith(head) and slots[0].path.stem.endswith(tail)
     assert s2_cell.findChild(QLabel, "libraryRowSubtitle").text() == "S.T.A.L.K.E.R. 2"
     assert cop_cell.findChild(QLabel, "libraryRowSubtitle").text() == "Быстрое сохранение"
     assert s2_cell.property("selected") is True

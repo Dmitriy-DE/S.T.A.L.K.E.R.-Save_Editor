@@ -312,11 +312,11 @@ function renderReferenceItemDetail(item) {
   const selectedImage = el("reference-item-image");
   selectedImage.replaceChildren(itemGlyph(item));
   el("reference-item-name").textContent = item.name ?? "Неизвестный объект";
-  el("reference-item-type").textContent = item.category ?? "Предмет";
+  el("reference-item-type").textContent = item.category_label ?? item.category ?? "Предмет";
   el("reference-item-detail").textContent = `Позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Это значение нельзя изменить.`;
   el("reference-item-detail").title = "";
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
-  el("reference-item-gate").textContent = writable ? "ПРОВЕРЕНО" : "ТОЛЬКО ПРОСМОТР";
+  el("reference-item-gate").textContent = writable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
   el("reference-item-gate").className = `reference-chip ${writable ? "success" : "warning"}`;
   reset.disabled = !referenceItemStaged(item);
 
@@ -419,10 +419,13 @@ function visibleReferenceItems(s) {
   const query = el("reference-inventory-search").value.trim().toLowerCase();
   const filter = el("reference-inventory-filter").value;
   return (s.inventory ?? []).filter((item) => {
-    const category = String(item.category ?? "other").toLowerCase();
-    const categoryMatch = filter === "all" || category === filter || (filter === "outfit" && ["armor", "helmet", "outfit"].includes(category));
+    // Tabs use the shared product taxonomy; the parser's own labels
+    // ("Патроны", "Гранаты/стак") are never compared with the tab keys.
+    const category = String(item.product_category ?? "other");
+    const groups = { outfit: ["armor", "helmet", "device"], other: ["other", "module"] };
+    const categoryMatch = filter === "all" || (groups[filter] ?? [filter]).includes(category);
     if (!categoryMatch) return false;
-    return !query || [item.name, item.category, item.type_key, item.handle_hex].join(" ").toLowerCase().includes(query);
+    return !query || [item.name, item.category, item.category_label, item.type_key, item.handle_hex].join(" ").toLowerCase().includes(query);
   });
 }
 
@@ -472,7 +475,12 @@ function renderReferenceEditor(s) {
     });
     selectCell.append(itemGlyph(item), select);
     row.append(selectCell);
-    for (const value of [item.name, item.category]) {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button, input, select")) return;
+      state.referenceSelectedHandle = item.handle;
+      renderReferenceEditor(s);
+    });
+    for (const value of [item.name, item.category_label ?? item.category]) {
       const cell = document.createElement("td");
       cell.textContent = value ?? "—";
       row.append(cell);
@@ -487,7 +495,7 @@ function renderReferenceEditor(s) {
     condition.textContent = formatCondition(state.durability.get(item.handle) ?? item.condition);
     row.append(condition);
     const support = document.createElement("td");
-    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "ПРОВЕРЕНО" : "ТОЛЬКО ПРОСМОТР";
+    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
     support.className = support.textContent === "ТОЛЬКО ПРОСМОТР" ? "muted" : "";
     row.append(support);
     const action = document.createElement("td");
@@ -509,11 +517,15 @@ function renderReferenceAdd(s) {
   const select = el("reference-add-select");
   const button = el("reference-add-button");
   if (!select || !button) return;
-  select.replaceChildren(...(s.catalog_items ?? []).map((item) => {
+  // Named entries first; an unnamed definition shows its key instead of
+  // hundreds of identical "Предмет из каталога" options.
+  const catalogItems = [...(s.catalog_items ?? [])].sort((a, b) =>
+    Number(a.name === a.key) - Number(b.name === b.key) || String(a.name).localeCompare(String(b.name), "ru"));
+  select.replaceChildren(...catalogItems.map((item) => {
     const option = document.createElement("option");
     option.value = item.key;
-    option.textContent = item.name === item.key ? "Предмет из каталога" : item.name;
-    option.title = "";
+    option.textContent = item.name;
+    option.title = item.key;
     return option;
   }));
   const enabled = Boolean(s.capabilities?.add_items && s.catalog_available && select.options.length);

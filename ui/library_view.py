@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 
 from editor.releases import release_by_id
 
-from .formatting import human_money, human_size
+from .formatting import count_ru, currency_suffix, human_datetime, human_money, human_size
 from .save_discovery import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot, _slot_family
 from .style_components import TextureFrame, action_button, panel, section_header, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
@@ -38,17 +38,7 @@ from .ux_copy import technical_details
 
 def _modified_text(modified_ns: int) -> str:
     try:
-        value = datetime.fromtimestamp(modified_ns / 1_000_000_000)
-        today = datetime.now().date()
-        if value.date() == today:
-            return value.strftime("Сегодня, %H:%M")
-        if value.date() == today - timedelta(days=1):
-            return value.strftime("Вчера, %H:%M")
-        months = (
-            "янв", "фев", "мар", "апр", "май", "июн",
-            "июл", "авг", "сен", "окт", "ноя", "дек",
-        )
-        return f"{value.day:02d} {months[value.month - 1]}, {value:%H:%M}"
+        return human_datetime(datetime.fromtimestamp(modified_ns / 1_000_000_000))
     except (OverflowError, OSError, ValueError):
         return "—"
 
@@ -84,7 +74,6 @@ class LibraryView(QWidget):
         self.setObjectName("libraryView")
         self._slots: tuple[SaveSlot, ...] = ()
         self._searched_paths: tuple[Path, ...] = ()
-        self._installed_families: set[str] = set()
         self._visible_slots: list[SaveSlot] = []
         self._snapshot: Any | None = None
         self._activity_entries: list[tuple[str, str, str, str]] = []
@@ -154,7 +143,7 @@ class LibraryView(QWidget):
         zone_layout.setContentsMargins(26, 20, 12, 12)
         zone_layout.addStretch(1)
         zone_label = QLabel(
-            "ОДНИ СОХРАНЯЮТ\nИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИЮ.",
+            "ОДНИ СОХРАНЯЮТ\nИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ.",
             self.zone_panel,
         )
         zone_label.setObjectName("libraryZoneDecorationText")
@@ -425,10 +414,6 @@ class LibraryView(QWidget):
         body.addWidget(self.preview_panel, 0)
         root.addLayout(body, 1)
 
-    def set_installed_families(self, families: Iterable[str]) -> None:
-        self._installed_families = set(families)
-        self._render_game_list()
-
     def set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)
         self._searched_paths = tuple(discovery.searched_paths)
@@ -559,13 +544,7 @@ class LibraryView(QWidget):
 
     @staticmethod
     def _activity_time(value: str) -> str:
-        if not value:
-            return "—"
-        try:
-            timestamp = datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
-            return _modified_text(int(timestamp * 1_000_000_000))
-        except (OverflowError, OSError, ValueError):
-            return value
+        return human_datetime(value)
 
     def append_recent_activity(
         self, label: str, target: str, status: str, occurred_at: str = ""
@@ -594,6 +573,11 @@ class LibraryView(QWidget):
 
     @staticmethod
     def _row_subtitle(slot: SaveSlot) -> str:
+        parts = {part.casefold() for part in slot.path.parts}
+        if "userdata" in parts and "remote" in parts:
+            # Steam keeps its own synced copy of cloud saves; label it so it
+            # is not mistaken for a duplicate of the game's local slot.
+            return "Копия Steam Cloud на диске"
         stem = slot.path.stem.casefold()
         if "auto" in stem:
             return "Автосохранение"
@@ -655,8 +639,12 @@ class LibraryView(QWidget):
         text_layout = QVBoxLayout(text_column)
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.setSpacing(1)
-        title = QLabel(slot.path.stem, text_column)
+        title = QLabel(text_column)
         title.setObjectName("libraryRowTitle")
+        title.setText(
+            title.fontMetrics().elidedText(slot.path.stem, Qt.TextElideMode.ElideMiddle, 200)
+        )
+        title.setToolTip(slot.path.name)
         title.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         subtitle = QLabel(self._row_subtitle(slot), text_column)
         subtitle.setObjectName("libraryRowSubtitle")
@@ -675,7 +663,9 @@ class LibraryView(QWidget):
         previous = self.game_list.currentRow()
         self.game_list.blockSignals(True)
         self.game_list.clear()
-        all_item = QListWidgetItem(f"ВСЕ ИГРЫ\n{len(self._slots)} сохранений")
+        all_item = QListWidgetItem(
+            f"ВСЕ ИГРЫ\n{count_ru(len(self._slots), 'сохранение', 'сохранения', 'сохранений')}"
+        )
         all_icon = QIcon(str(_SHELL_ICONS / "game-grid.svg"))
         if not all_icon.isNull():
             all_item.setIcon(all_icon)
@@ -685,7 +675,9 @@ class LibraryView(QWidget):
         for family in GAME_IDS:
             count = len([slot for slot in self._slots if _slot_family(slot) == family])
             label = self._family_labels.get(family, GAME_TITLES.get(family, family))
-            item = QListWidgetItem(f"{label}\n{count} сохранений")
+            item = QListWidgetItem(
+                f"{label}\n{count_ru(count, 'сохранение', 'сохранения', 'сохранений')}"
+            )
             family_icon = QIcon(str(_SHELL_ICONS / "radiation.svg"))
             if not family_icon.isNull():
                 item.setIcon(family_icon)
@@ -801,8 +793,11 @@ class LibraryView(QWidget):
             title_cell.setProperty("selected", is_selected)
             title_cell.style().unpolish(title_cell)
             title_cell.style().polish(title_cell)
-            for name in ("libraryRowTitle", "libraryRowSubtitle"):
-                label = title_cell.findChild(QLabel, name)
+            status_cell = self.save_table.cellWidget(row, 4)
+            labels = [title_cell.findChild(QLabel, name) for name in ("libraryRowTitle", "libraryRowSubtitle")]
+            if status_cell is not None:
+                labels.append(status_cell.findChild(QLabel, "libraryReadyLabel"))
+            for label in labels:
                 if label is None:
                     continue
                 label.setProperty("rowSelected", is_selected)
@@ -843,7 +838,8 @@ class LibraryView(QWidget):
             self.preview_editable_chip.setText("РЕДАКТИРУЕМЫЙ" if editable else "ТОЛЬКО ПРОСМОТР")
             self.preview_editable_chip.setProperty("tone", "success" if editable else "neutral")
             money = human_money(info.money) if info.money is not None else "—"
-            self.money_summary.setText(f"{money} ₽")
+            currency = currency_suffix(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", ""))
+            self.money_summary.setText(f"{money} {currency}")
             self.items_summary.setText(str(len(info.inventory)))
             equipment_count = sum(
                 1
@@ -860,7 +856,9 @@ class LibraryView(QWidget):
                 if conditions
                 else "—"
             )
-            self.equipment_summary.setText(f"{equipment_count} комплектов")
+            self.equipment_summary.setText(
+                count_ru(equipment_count, "предмет", "предмета", "предметов")
+            )
             self.condition_summary.setText(average_condition)
             self.preview_integrity_chip.setText(
             "Сохранение проверено" if info.crc_ok else "Файл не прошёл проверку"

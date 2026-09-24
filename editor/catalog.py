@@ -325,16 +325,15 @@ class ItemCatalog:
         if len(keys) != len(set(keys)):
             raise ValueError("duplicate item key in catalog")
         object.__setattr__(self, "items", items)
+        # The table resolves names on every repaint; keep lookups O(1).
+        object.__setattr__(self, "_by_key", {item.key: item for item in items})
         if self.source_root is not None:
             object.__setattr__(self, "source_root", Path(self.source_root))
 
     def resolve(self, key: str) -> ItemDefinition | None:
         """Return the exact serialized key, without fuzzy/SID guessing."""
 
-        for item in self.items:
-            if item.key == key:
-                return item
-        return None
+        return self._by_key.get(key)  # type: ignore[attr-defined]
 
     def resolve_display_name(self, display_name: str) -> ItemDefinition | None:
         """Resolve one unique official display name without fuzzy matching.

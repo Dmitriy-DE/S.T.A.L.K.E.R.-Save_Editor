@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,12 +14,31 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizeGrip,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from .style_components import TextureFrame, action_button, key_hint
+
+
+def app_version() -> str:
+    """Read the shipped VERSION file (source tree or PyInstaller bundle)."""
+
+    roots = [Path(__file__).resolve().parents[1]]
+    bundle = getattr(sys, "_MEIPASS", None)
+    if bundle:
+        roots.insert(0, Path(bundle))
+    for root in roots:
+        try:
+            value = (root / "VERSION").read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if value:
+            return value
+    # Unknown build: report the lowest version so any release is "newer".
+    return "0.0.0"
 
 
 @dataclass(frozen=True)
@@ -58,6 +78,12 @@ class _ChromeHeader(TextureFrame):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt override
         if event.button() == Qt.MouseButton.LeftButton and not self.window().isMaximized():
+            # Wayland ignores QWidget.move() on top-level windows; only the
+            # compositor may move them.  startSystemMove works on X11 too.
+            handle = self.window().windowHandle()
+            if handle is not None and handle.startSystemMove():
+                event.accept()
+                return
             self._drag_offset = event.globalPosition().toPoint() - self.window().frameGeometry().topLeft()
             event.accept()
             return
@@ -142,7 +168,7 @@ class AppShell(QWidget):
         brand_font.setStretch(68)
         title.setFont(brand_font)
         title_row.addWidget(title)
-        version = QLabel("v0.5.21", header)
+        version = QLabel(f"v{app_version()}", header)
         version.setObjectName("referenceVersion")
         title_row.addWidget(version, 0, Qt.AlignmentFlag.AlignBottom)
         title_row.addStretch(1)
@@ -256,6 +282,11 @@ class AppShell(QWidget):
         )
         self.footer_status.setObjectName("footerStatus")
         footer_layout.addWidget(self.footer_status)
+        # The window is frameless, so it needs an explicit resize handle.
+        self.size_grip = QSizeGrip(footer)
+        self.size_grip.setObjectName("windowSizeGrip")
+        self.size_grip.setToolTip("Изменить размер окна")
+        footer_layout.addWidget(self.size_grip, 0, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
         root.addWidget(footer)
 
         self.set_active_destination("library")
@@ -341,6 +372,9 @@ class AppShell(QWidget):
             item = self._footer_action_layout.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # deleteLater alone leaves the old hint painted until the
+                # next event-loop turn, overlapping the new one.
+                widget.hide()
                 widget.deleteLater()
         for index, action in enumerate(rendered):
             if index:
@@ -353,4 +387,4 @@ class AppShell(QWidget):
             )
 
 
-__all__ = ["AppShell"]
+__all__ = ["AppShell", "app_version"]

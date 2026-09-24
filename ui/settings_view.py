@@ -7,9 +7,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QIcon, QPainter
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -46,35 +45,6 @@ def _display_path(path: Path) -> str:
     except ValueError:
         return str(expanded)
     return str(Path("~") / relative)
-
-
-class _ReadOnlySwitch(QCheckBox):
-    """A semantic switch that displays an enforced policy without toggling it."""
-
-    def __init__(self, checked: bool, *, label: str, parent: QWidget) -> None:
-        super().__init__(parent)
-        self.setObjectName("settingsToggle")
-        self.setChecked(checked)
-        self.setEnabled(False)
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.setAccessibleName(label)
-        self.setToolTip(f"{label}: правило безопасности, изменить нельзя")
-        self.setFixedSize(42, 24)
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - Qt override
-        del event
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        checked = self.isChecked()
-        track = QColor("#3f8a4b" if checked else "#282c2a")
-        edge = QColor("#78cb69" if checked else "#444a42")
-        painter.setPen(edge)
-        painter.setBrush(track)
-        painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 11, 11)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#e9eadc" if checked else "#d8d2be"))
-        knob_x = 30 if checked else 12
-        painter.drawEllipse(knob_x - 7, 5, 14, 14)
 
 
 class _SettingsCategoryStack:
@@ -348,11 +318,13 @@ class SettingsView(QWidget):
         # while the canonical overview keeps the compact reference density.
         intro.setVisible(False)
         self.safety_labels = []
-        for text, enabled_state in (
-            ("Автоматически проверять обновления", True),
-            ("Показывать технические предупреждения для experimental-функций", True),
-            ("Подтверждать запись перед сохранением", True),
-            ("Открывать последний источник при запуске", False),
+        # Fixed safety policies, stated as facts.  They used to be drawn as
+        # switches that could not be switched, one of them for a feature that
+        # does not exist.
+        for text, policy in (
+            ("Проверка обновлений при запуске", "Включена"),
+            ("Подтверждение перед записью сохранения", "Всегда"),
+            ("Проверенная резервная копия перед записью", "Всегда"),
         ):
             row = QFrame(self.general_panel)
             row.setObjectName("settingsSafetyRowFrame")
@@ -369,15 +341,15 @@ class SettingsView(QWidget):
             status_layout.setSpacing(8)
             status_host.setFixedWidth(153)
             status_layout.setSpacing(21)
-            toggle = _ReadOnlySwitch(enabled_state, label=text, parent=status_host)
-            enabled = QLabel("Включено" if enabled_state else "Выключено", status_host)
+            enabled = QLabel(policy, status_host)
             enabled.setObjectName("settingsRowStatus")
-            enabled.setProperty("enabledState", "on" if enabled_state else "off")
-            status_layout.addWidget(toggle)
+            enabled.setProperty("enabledState", "on")
+            enabled.setToolTip("Правило безопасности редактора; не отключается")
+            status_layout.addStretch(1)
             status_layout.addWidget(enabled)
             row_layout.addWidget(status_host)
             layout.addWidget(row)
-        self.general_panel.setFixedHeight(179)
+        self.general_panel.setFixedHeight(145)
 
     def _build_paths_panel(self) -> None:
         layout = QVBoxLayout(self.paths_panel)
@@ -486,7 +458,9 @@ class SettingsView(QWidget):
         self.warning_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.warning_label)
         layout.addStretch(1)
-        self.paths_panel.setFixedHeight(194)
+        # The rows need their own height; a smaller fixed box made the path
+        # fields, status chips and buttons overlap.
+        self.paths_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
     def _build_backups_panel(self) -> None:
         layout = QVBoxLayout(self.backups_panel)

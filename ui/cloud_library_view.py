@@ -22,9 +22,18 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.releases import release_by_id
+
 from .cloud_controller import CloudController
 from .formatting import human_size
-from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+from .style_components import (
+    action_button,
+    panel,
+    reference_game_rail,
+    section_header,
+    select_rail_family,
+    status_chip,
+)
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import (
     CLOUD_COPY,
@@ -101,14 +110,12 @@ class CloudLibraryView(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(10)
-        body.addWidget(
-            reference_game_rail(
-                self,
-                object_name="cloudGameRail",
-                active_family="stalker2",
-            ),
-            0,
+        self.game_rail = reference_game_rail(
+            self,
+            object_name="cloudGameRail",
+            active_family="stalker2",
         )
+        body.addWidget(self.game_rail, 0)
         workspace = QHBoxLayout()
         workspace.setSpacing(10)
         table_panel = panel(self, object_name="cloudTablePanel")
@@ -221,12 +228,22 @@ class CloudLibraryView(QWidget):
         current_index = self.profile_combo.findData(self.backend.profile.release_id)
         self.profile_combo.setCurrentIndex(max(0, current_index))
         self.profile_combo.blockSignals(False)
+        self._sync_rail()
 
     def _profile_changed(self, index: int) -> None:
         if index < 0:
             return
         self.backend.select_profile(str(self.profile_combo.itemData(index)))
+        self._sync_rail()
         self._on_files_ready(self.backend.files)
+
+    def _sync_rail(self) -> None:
+        release_id = self.profile_combo.currentData()
+        try:
+            family = release_by_id(str(release_id)).family if release_id else None
+        except KeyError:
+            family = None
+        select_rail_family(self.game_rail, family)
 
     def _selection_changed(self) -> None:
         row = self.save_table.currentRow()

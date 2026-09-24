@@ -132,14 +132,19 @@ def test_settings_category_indices_use_one_canonical_order(qtbot, index: int) ->
     assert view.settings_stack.currentWidget() is view._settings_pages[index]
 
 
-def test_settings_safety_switches_are_real_read_only_controls(qtbot) -> None:
+def test_settings_safety_policies_are_stated_not_drawn_as_dead_switches(qtbot) -> None:
     window = MainWindow(EditorService(), auto_update_check=False)
     qtbot.addWidget(window)
-    switches = window.settings_reference_view.findChildren(QCheckBox, "settingsToggle")
+    view = window.settings_reference_view
 
-    assert len(switches) == 4
-    assert [switch.isChecked() for switch in switches] == [True, True, True, False]
-    assert all(not switch.isEnabled() for switch in switches)
+    assert view.findChildren(QCheckBox, "settingsToggle") == []
+    labels = [label.text() for label in view.safety_labels]
+    assert labels == [
+        "Проверка обновлений при запуске",
+        "Подтверждение перед записью сохранения",
+        "Проверенная резервная копия перед записью",
+    ]
+    assert not any("последний источник" in label for label in labels)
 
 
 def test_settings_category_rail_has_the_canonical_zone_illustration(qtbot) -> None:
@@ -339,7 +344,7 @@ def test_money_edit_updates_shared_draft_without_field_apply_button(
     assert not hasattr(window.editor_view, "money_stage_button")
     window.editor_view.money_spin.setValue(900)
     assert window.staged_money == 900
-    assert window.editor_view.save_button.text() == "СОХРАНИТЬ 1 ИЗМЕНЕНИЙ"
+    assert window.editor_view.save_button.text() == "СОХРАНИТЬ 1 ИЗМЕНЕНИЕ"
 
 
 def test_library_inspector_never_reuses_a_different_snapshot(qtbot, tmp_path: Path) -> None:

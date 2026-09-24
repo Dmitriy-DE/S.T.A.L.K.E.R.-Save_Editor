@@ -501,6 +501,7 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QLabel#libraryRowSubtitle {{ color: {c['text_secondary']}; font-size: 13px; }}
     QLabel#libraryRowTitle[rowSelected="true"] {{ color: #151713; }}
     QLabel#libraryRowSubtitle[rowSelected="true"] {{ color: #454238; }}
+    QLabel#libraryReadyLabel[rowSelected="true"] {{ color: #151713; }}
     QTableWidget#librarySaveTable QLabel#libraryEditableChip {{ padding-left: 4px; padding-right: 4px; font-size: 11px; }}
     QLabel#libraryActivityText {{ background: transparent; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 12px; line-height: 1.35; }}
     QTableWidget#libraryActivityTable {{ background: transparent; border: none; gridline-color: {c['border_subtle']}; color: {c['text_secondary']}; font-family: {t['mono']}; font-size: 14px; }}
