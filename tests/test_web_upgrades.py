@@ -132,4 +132,4 @@ def test_web_inventory_ui_has_catalog_bound_upgrade_controls() -> None:
     assert "upgrade_editable" in script
     assert "m_upgrades" in page
     assert "state.upgrades" in script
-    assert "backup обязателен" in script
+    assert "Исходный файл не изменяется" in page

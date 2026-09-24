@@ -64,7 +64,6 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     # One-click save stays available while there are staged changes — it will
     # re-run the internal preview on click; only the cached preview is invalid.
     assert window.save_copy_button.isEnabled()
-    assert window.changes_view.preview_status_label.text().startswith("Preview недействителен")
     assert prepared is not None
 
 
@@ -125,7 +124,16 @@ def test_stale_preview_is_rejected_before_export(
     with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
         window._start_apply(output, backup_dir)
     assert not output.exists()
-    assert "SHA256" in window.error_label.text()
+    assert window.error_label.text() == (
+        "Файл изменился после открытия. Открой его заново и повтори изменения."
+    )
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert "SHA" in window._details_dialog.text.toPlainText()
 
 
 def test_worker_error_is_reported_and_close_does_not_abort_running_operation(
@@ -161,7 +169,16 @@ def test_worker_error_is_reported_and_close_does_not_abort_running_operation(
     window._stage_stack_change(0x30000001, 4)
     with qtbot.waitSignal(window.operation_failed, timeout=UI_TIMEOUT_MS):
         window._start_preview()
-    assert "injected preview failure" in window.error_label.text()
+    assert window.error_label.text() == (
+        "Попробуй ещё раз. Если проблема повторится, открой технические детали."
+    )
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert "injected preview failure" in window._details_dialog.text.toPlainText()
 
 
 def test_one_click_save_confirms_once_then_replaces_open_slot_with_backup(

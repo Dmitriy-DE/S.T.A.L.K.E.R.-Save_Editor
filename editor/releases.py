@@ -199,6 +199,12 @@ class ReleaseDescriptor:
     equipment: EquipmentRegistry | None = None
 
     @property
+    def is_xray_original(self) -> bool:
+        """Whether this registry entry is one of the supported original X-Ray releases."""
+
+        return self.edition == "original" and self.family != "stalker2"
+
+    @property
     def app_id(self) -> int:
         """Return the sole Steam app ID owned by this release descriptor."""
 
@@ -353,10 +359,22 @@ def release_by_app_id(app_id: int) -> ReleaseDescriptor:
         raise KeyError(f"Unknown official Steam app ID: {app_id!r}") from exc
 
 
+def is_xray_original_release(release_id: str | None) -> bool:
+    """Return the canonical X-Ray routing predicate for an official release ID."""
+
+    if not release_id:
+        return False
+    try:
+        return release_by_id(str(release_id)).is_xray_original
+    except KeyError:
+        return False
+
+
 __all__ = [
     "EquipmentFeature",
     "EquipmentRegistry",
     "ReleaseDescriptor",
+    "is_xray_original_release",
     "official_releases",
     "release_by_app_id",
     "release_by_id",

@@ -42,11 +42,10 @@ def test_qt_delete_button_shows_equipped_blocker_and_does_not_stage(
         )
     )
 
-    view = window.inventory_view
+    view = window.editor_view
     view.table.selectRow(0)
     qtbot.waitUntil(lambda: view.selected_handle == info.inventory[0].handle)
 
-    assert not view.remove_item_button.isEnabled()
-    assert "equipped" in view.editability_label.text()
+    assert view.detail_view.remove_button.isHidden()
     window._stage_item_remove(info.inventory[0].handle)
     assert window.staged_detach == {}

@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -338,6 +339,92 @@ def load_catalog_payload(
             upgrades = UpgradeCatalog(release_id, source_root, tuple(upgrade_definitions))
 
         loaded[release_id] = CatalogBundle(release_id, items, factions, upgrades)
+    return _borrow_series_names(loaded)
+
+
+_CYRILLIC_RE = re.compile(r"[А-Яа-яЁё]")
+# Firearms, suits and helmets carry different names between the three games
+# (Clear Sky's ``wpn_val`` is «Лавина», not the Call of Pripyat name), so they
+# never borrow.  Artifacts, rounds, food, medicine and devices do not change.
+_NO_BORROW_PREFIXES = ("wpn_", "helm_", "mp_")
+_NO_BORROW_FAMILIES = ("weapon", "outfit")
+# Community keys whose meaning differs per game (the player's own faction).
+_NO_BORROW_FACTIONS = frozenset({"actor"})
+
+
+def _is_russian(name: str | None) -> bool:
+    return bool(name and _CYRILLIC_RE.search(name))
+
+
+def _donor_item_name(donors: list[CatalogBundle], key: str) -> str | None:
+    for donor in donors:
+        definition = donor.items.resolve(key)
+        if definition is not None and _is_russian(definition.display_name):
+            return definition.display_name
+    return None
+
+
+def _borrow_series_names(loaded: dict[str, CatalogBundle]) -> dict[str, CatalogBundle]:
+    """Fill a missing/English X-Ray name from a sibling game's Russian name.
+
+    The Call of Pripyat snapshot was generated from an English install and
+    lacks most names.  The editor UI is Russian, so identical keys that keep
+    their meaning across the trilogy reuse the Russian label.  Presentation
+    only: keys, serializer metadata and write capabilities are untouched.
+    """
+
+    xray = [
+        release_id
+        for release_id in loaded
+        if release_by_id(release_id).family != "stalker2"
+    ]
+    for release_id in xray:
+        bundle = loaded[release_id]
+        donors = [loaded[other] for other in xray if other != release_id]
+
+        items = []
+        for item in bundle.items.items:
+            family = (item.serialization_family or "").casefold()
+            borrow = (
+                not _is_russian(item.display_name)
+                and not item.key.casefold().startswith(_NO_BORROW_PREFIXES)
+                and not item.key.casefold().endswith("_outfit")
+                and not family.startswith(_NO_BORROW_FAMILIES)
+            )
+            name = _donor_item_name(donors, item.key) if borrow else None
+            items.append(replace(item, display_name=name) if name else item)
+        factions = bundle.factions
+        if factions is not None:
+            borrowed = []
+            for faction in factions.factions:
+                name = None
+                if (
+                    not _is_russian(faction.display_name)
+                    and faction.key not in _NO_BORROW_FACTIONS
+                ):
+                    for donor in donors:
+                        if donor.factions is None:
+                            continue
+                        match = next(
+                            (
+                                candidate
+                                for candidate in donor.factions.factions
+                                if candidate.key == faction.key
+                                and _is_russian(candidate.display_name)
+                            ),
+                            None,
+                        )
+                        if match is not None:
+                            name = match.display_name
+                            break
+                borrowed.append(replace(faction, display_name=name) if name else faction)
+            factions = replace(factions, factions=tuple(borrowed))
+        loaded[release_id] = CatalogBundle(
+            release_id,
+            replace(bundle.items, items=tuple(items)),
+            factions,
+            bundle.upgrades,
+        )
     return loaded
 
 

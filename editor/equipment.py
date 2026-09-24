@@ -191,6 +191,34 @@ def _s2_name_category(name: str | None) -> EquipmentCategory | None:
     return None
 
 
+_S2_ARTIFACT_RE = re.compile(r"^[a-z]artifact[a-z]")
+_S2_AMMO_RE = re.compile(r"^(?:[ap]\d{3}|apg7|grenade)")
+_S2_QUEST_RE = re.compile(r"pda$|pda_|_pda|keycard|(?:^|_)keys?(?:_|$)|keys$")
+_S2_MODULE_RE = re.compile(r"_mag[a-z]*$|silen|scope|toprail")
+
+
+def _s2_observed_category(name: str | None) -> EquipmentCategory | None:
+    """Classify save-local S2 SIDs whose serializer kind code is misleading.
+
+    Observed on real saves: artifacts arrive as ``GArtifactBud``, rounds as
+    ``A762NATOS``, quest PDAs and keys with weapon/ammo kind codes, and
+    magazines/suppressors/scopes as consumables.  Presentation only.
+    """
+
+    normalized = re.sub(r"\s+", "_", (name or "").strip()).casefold()
+    if not normalized:
+        return None
+    if _S2_ARTIFACT_RE.match(normalized):
+        return "artifact"
+    if _S2_AMMO_RE.match(normalized):
+        return "ammo"
+    if _S2_QUEST_RE.search(normalized):
+        return "quest"
+    if _S2_MODULE_RE.search(normalized):
+        return "module"
+    return None
+
+
 def _name_category(name: str | None) -> EquipmentCategory | None:
     """Map an observed serialized name to a safe product category."""
 
@@ -199,6 +227,10 @@ def _name_category(name: str | None) -> EquipmentCategory | None:
         return category
     normalized = re.sub(r"\s+", "_", (name or "").strip()).casefold()
     if normalized.startswith(("device_", "detector_")):
+        return "device"
+    # X-Ray serialises binoculars through the weapon class, but players see
+    # them as a device in the binocular slot, not as a gun.
+    if normalized.startswith("wpn_binoc"):
         return "device"
     if normalized.startswith(("attach_", "attachment_", "addon_", "upgrade_")):
         return "module"
@@ -213,7 +245,7 @@ def _device_subtype(name: str | None) -> DeviceSubtype:
         ("nvg_", "nvg", "nightvision", "night_vision", "пнв")
     ):
         return "nvg"
-    if normalized.startswith(("binocular", "binoculars", "бинокл")):
+    if normalized.startswith(("binocular", "binoculars", "бинокл", "wpn_binoc")):
         return "binocular"
     if "detector" in normalized or "scanner" in normalized or "детектор" in normalized:
         return "detector"
@@ -261,7 +293,11 @@ def _text_category(value: str | None) -> EquipmentCategory | None:
         token in normalized for token in ("устрой", "детектор", "device")
     ):
         return "device"
-    if normalized in {"ammo", "ammunition"} or "боеприп" in normalized:
+    # The X-Ray and S2 parsers label rounds "Патроны" and grenade stacks
+    # "Гранаты/стак"; both belong to the ammunition tab, not "other".
+    if normalized in {"ammo", "ammunition"} or any(
+        token in normalized for token in ("боеприп", "патрон", "гранат", "grenade")
+    ):
         return "ammo"
     if normalized in {"artifact", "артефакт"} or "артеф" in normalized:
         return "artifact"
@@ -332,6 +368,11 @@ def _classify(
     if release_id != "stalker2" and parser_named_category is not None:
         return parser_named_category
     if release_id == "stalker2" and definition is None:
+        observed = _s2_observed_category(item.display_name)
+        if observed is not None:
+            return observed
+        if item.category == "Расходник":
+            return "consumable"
         if key.startswith(("ammo_", "ammunition_")):
             return "ammo"
         if key.startswith(("artifact_", "artefact_")):
@@ -481,6 +522,26 @@ def equipment_items(
     return tuple(result)
 
 
+EQUIPMENT_CATEGORY_LABELS: dict[str, str] = {
+    "weapon": "Оружие",
+    "armor": "Броня",
+    "helmet": "Шлем",
+    "module": "Модуль",
+    "device": "Устройство",
+    "consumable": "Расходник",
+    "ammo": "Боеприпасы",
+    "artifact": "Артефакт",
+    "quest": "Квестовый предмет",
+    "other": "Прочее",
+}
+
+
+def category_label(category: str | None) -> str:
+    """Return the Russian product label shared by the desktop and web UIs."""
+
+    return EQUIPMENT_CATEGORY_LABELS.get(str(category or "other"), "Прочее")
+
+
 def helmet_category_supported(release_id: str) -> bool:
     """Return whether this release has a separate helmet product category."""
 
@@ -517,6 +578,7 @@ def equipment_support_for_release(release_id: str) -> EquipmentSupport:
 
 
 __all__ = [
+    "EQUIPMENT_CATEGORY_LABELS",
     "DeviceSubtype",
     "EquipmentCategory",
     "EquipmentItem",
@@ -527,6 +589,7 @@ __all__ = [
     "FeatureSupport",
     "ObservationState",
     "SupportMaturity",
+    "category_label",
     "equipment_items",
     "equipment_support_for_release",
     "helmet_category_supported",

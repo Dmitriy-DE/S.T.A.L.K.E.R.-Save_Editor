@@ -139,7 +139,7 @@ def test_bundled_pack_beats_glyph_for_unpacked_key(qtbot) -> None:
 
 
 def test_donor_only_discovered_when_own_game_missing(tmp_path: Path, monkeypatch) -> None:
-    import ui.inventory_view as view
+    import ui.xray_assets as view
 
     calls: list[str | None] = []
 
@@ -148,19 +148,19 @@ def test_donor_only_discovered_when_own_game_missing(tmp_path: Path, monkeypatch
         return _donor_catalog(tmp_path)
 
     monkeypatch.setattr(view, "discover_icon_donor_catalog", fake_discover)
-    view._donor_cache.clear()
+    view._DONOR_CACHE.clear()
 
     installed = catalog_from_items(
         "stalker-cs", (), source_root=tmp_path / "gamedata"
     )
-    assert view._donor_resolver_for(installed) is None
+    assert view.donor_resolver_for(installed) is None
     assert calls == []  # installed game reads its own atlas; no discovery
 
     missing = _metadata_only_catalog()
-    resolver = view._donor_resolver_for(missing)
+    resolver = view.donor_resolver_for(missing)
     assert resolver is not None
     assert calls == ["stalker-cop"]
 
     # Cached: a second lookup for the same release does not rescan.
-    assert view._donor_resolver_for(missing) is resolver
+    assert view.donor_resolver_for(missing) is resolver
     assert calls == ["stalker-cop"]

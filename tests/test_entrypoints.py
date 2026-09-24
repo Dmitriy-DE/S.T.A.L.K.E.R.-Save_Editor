@@ -14,7 +14,7 @@ import importlib
 import pytest
 
 CORE_MODULES = ("save_format", "steam_cloud", "cli", "editor", "editor.platforms")
-QT_MODULES = ("ui", "ui.theme", "ui.cloud_view", "ui.main_window")
+QT_MODULES = ("ui", "ui.theme", "ui.cloud_controller", "ui.main_window")
 
 
 @pytest.mark.parametrize("name", CORE_MODULES)

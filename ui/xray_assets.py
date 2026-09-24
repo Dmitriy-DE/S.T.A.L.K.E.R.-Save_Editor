@@ -17,11 +17,27 @@ from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPixmap
 
 from editor.catalog import ItemCatalog, ItemDefinition
+from editor.icon_donor import discover_icon_donor_catalog
 from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
 _ICON_CELL_SIZE = 50
 _LOOSE_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".dds")
+_DONOR_CACHE: dict[str | None, XRayIconResolver | None] = {}
+
+
+def donor_resolver_for(catalog: ItemCatalog | None) -> XRayIconResolver | None:
+    """Resolve a real icon atlas from another installed X-Ray release once."""
+
+    if catalog is None or catalog.source_root is not None:
+        return None
+    release_id = catalog.release_id
+    if release_id in _DONOR_CACHE:
+        return _DONOR_CACHE[release_id]
+    donor_catalog = discover_icon_donor_catalog(prefer_not=release_id)
+    resolver = XRayIconResolver(donor_catalog) if donor_catalog is not None else None
+    _DONOR_CACHE[release_id] = resolver
+    return resolver
 
 
 def _bundled_icon_dir() -> Path:
@@ -266,6 +282,47 @@ def category_icon(category: str | None, size: int = 28) -> QIcon:
     else:
         painter.drawRect(rect)
         painter.drawPoint(size // 2, size // 2)
+    painter.end()
+    return QIcon(canvas)
+
+
+def fit_icon(icon: QIcon, width: int, height: int | None = None) -> QIcon:
+    """Fit an existing resolver icon into a larger presentation slot.
+
+    Qt deliberately does not upscale a small bundled ``QIcon`` when a view
+    asks for a larger pixmap.  The canonical editor uses the same resolver
+    art at three different scales, so crop transparent atlas padding first and
+    then fit the actual art into the requested slot.
+    """
+
+    width = max(1, int(width))
+    height = max(1, int(height if height is not None else width))
+    source = icon.pixmap(max(width, height), max(width, height))
+    if source.isNull():
+        return QIcon()
+    image = source.toImage().convertToFormat(_RGBA_FORMAT)
+    left, top, right, bottom = image.width(), image.height(), -1, -1
+    for y in range(image.height()):
+        for x in range(image.width()):
+            if image.pixelColor(x, y).alpha() > 8:
+                left = min(left, x)
+                top = min(top, y)
+                right = max(right, x)
+                bottom = max(bottom, y)
+    if right >= left and bottom >= top:
+        image = image.copy(QRect(left, top, right - left + 1, bottom - top + 1))
+    fitted = QPixmap.fromImage(
+        image.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    )
+    canvas = QPixmap(width, height)
+    canvas.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(canvas)
+    painter.drawPixmap((width - fitted.width()) // 2, (height - fitted.height()) // 2, fitted)
     painter.end()
     return QIcon(canvas)
 
@@ -566,4 +623,4 @@ class XRayIconResolver:
         return None
 
 
-__all__ = ["XRayIconResolver", "category_icon", "decode_dds"]
+__all__ = ["XRayIconResolver", "category_icon", "decode_dds", "fit_icon"]

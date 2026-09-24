@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest"><img src="https://img.shields.io/github/v/release/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor?style=flat-square&label=release&color=C69A3E" alt="Latest release"/></a>
+  <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/test.yml?branch=main&style=flat-square&label=tests" alt="Tests"/></a>
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+"/>
   <img src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Windows x64"/>
   <img src="https://img.shields.io/badge/Linux-x86__64-FCC624?style=flat-square&logo=linux&logoColor=000" alt="Linux x86_64"/>
@@ -11,254 +12,105 @@
 </p>
 
 <p align="center">
-  <a href="https://stalker-save-editor.pages.dev"><b>Open in browser</b></a>
-  ·
   <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest"><b>Download desktop</b></a>
+  ·
+  <a href="https://stalker-save-editor.pages.dev"><b>Open in browser</b></a>
   ·
   <a href="https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues"><b>Report an issue</b></a>
 </p>
 
 # S.T.A.L.K.E.R. Save Editor
 
-A cross-platform **S.T.A.L.K.E.R. Save Editor** for the official PC releases of **S.T.A.L.K.E.R. 2** and the original **Shadow of Chernobyl / Clear Sky / Call of Pripyat** trilogy.
+A save editor for the official PC releases of **S.T.A.L.K.E.R. 2: Heart of
+Chornobyl** and the original **Shadow of Chornobyl / Clear Sky / Call of
+Pripyat** trilogy — as a desktop app for Windows and Linux, a CLI, and a
+browser build that never uploads your save.
 
-The project uses **one Python editing core** across the Qt desktop app, CLI and browser build. Local files are analysed offline; unsupported structures stay read-only instead of being guessed.
-
-> **Safety first:** edits are staged and verified before saving. The main desktop
-> **Сохранить** action asks once, creates a verified backup, and atomically updates
-> the opened local slot; Steam Cloud writes remain explicit and guarded by
-> backup/hash verification.
-
-The current release line is `0.5.21`. A release is published only from a clean
-tagged commit after the Linux and Windows packaged gates pass.
+It reads the save, shows your money, inventory and loadout, lets you change
+what the format is proven to support, and writes the result only after a
+verified backup. Anything the editor cannot decode with certainty stays
+read-only instead of being guessed.
 
 <p align="center">
-  <img src="./assets/readme/workbench.svg" width="100%" alt="S.T.A.L.K.E.R. Save Editor workbench"/>
+  <img src="./assets/readme/editor.webp" width="100%" alt="Editor: Call of Pripyat inventory, loadout and item panel"/>
 </p>
+<p align="center">
+  <img src="./assets/readme/library.webp" width="100%" alt="Save library across all four games"/>
+</p>
+<p align="center"><sub>Real desktop UI rendered from the repository's synthetic review fixtures.</sub></p>
 
-<p align="center"><sub>Illustrative values; the layout and controls are reconstructed from the actual desktop/browser UI.</sub></p>
+## Highlights
 
-## What it does
-
-- discovers local saves for supported official PC releases;
-- detects the game/release from file contents instead of trusting the filename;
-- reads money, inventory and technical container metadata;
-- edits only capabilities proven for the detected format;
-- stages changes before writing;
-- verifies CRC / Kraken framing / parser round-trip where applicable;
-- exports a new local copy;
-- provides a Qt desktop app, CLI and browser build over the same core;
-- supports S.T.A.L.K.E.R. 2 Steam Cloud from the desktop app;
-- packages standalone Windows and Linux builds — **Python is not required for end users**.
+- **One library for the whole series.** Finds local saves for all four games
+  (Steam / Proton paths included), detects the game from the file contents,
+  not the file name, and shows date, size and status at a glance.
+- **Real loadout view.** Weapons, armour, helmet and detector the save marks
+  as equipped, plus the artifacts on your belt.
+- **Edit what is proven.** Money, stack counts, catalogue item add/remove,
+  weapon/armour condition, placement, X-Ray upgrades and faction relations —
+  each gated per game and per save, experimental writes clearly marked.
+- **Safe by construction.** Changes are staged as a draft; one «Сохранить»
+  click re-checks the source hash, writes a verified backup, replaces the
+  file atomically and reads it back. History restores any backup.
+- **Steam Cloud for S.T.A.L.K.E.R. 2.** Download a cloud slot, edit it and
+  upload it back with an explicit confirmation; an uncertain Steam write is
+  reconciled, never retried blindly.
+- **No Python required** for the Windows installer/portable build, the Linux
+  portable build or the Debian package.
 
 ## Game support
 
-| Game | Status | Editing surface |
+| Game | Editable | Experimental* |
 |---|---|---|
-| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | Supported / experimental equipment writers | money, confirmed stack edits, catalog names/icons, source-backed weapon and armor condition editing where the exact owned-row anchor is present, read-only weapon modules/devices/upgrades, desktop Steam Cloud |
-| **Shadow of Chernobyl — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations and confirmed equipment fields |
-| **Clear Sky — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; experimental equipment/upgrades where the exact format anchor is proven |
-| **Call of Pripyat — Original** | Supported | X-Ray inventory, money, confirmed stacks, catalogue-backed item operations; helmet/equipment/upgrades where the exact format anchor is proven |
-| **Enhanced Editions** | Not yet supported | release/path profiles exist, but parsing and editing stay disabled until format evidence is available |
-| **Mods / unknown save formats** | Out of scope | fail closed |
+| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | money | weapon and armour condition where the exact owned-row anchor is present; Steam Cloud round-trip |
+| **Call of Pripyat** | money, stacks, catalogue item add/remove | condition, placement, upgrades, faction relations, player faction |
+| **Clear Sky** | money, stacks, catalogue item add/remove | condition, placement, upgrades, faction relations, player faction |
+| **Shadow of Chornobyl** | money, stacks, catalogue item add/remove | condition, placement, faction relations, player faction |
+| **Enhanced Editions** | — detected and shown read-only until format evidence exists | |
+| **Mods / unknown formats** | — refused (fail closed) | |
 
-### S.T.A.L.K.E.R. 2 boundaries
+<sub>* Written and verified by parser round-trip; in-game acceptance is still
+being confirmed ([#97](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/97)).
+S.T.A.L.K.E.R. 2 stacks, modules, devices and upgrades are shown read-only.</sub>
 
-The project intentionally does **not** pretend that every visible catalogue entry can already be reconstructed inside a save.
-
-Still read-only / research-gated in S2:
-
-- arbitrary item creation from SID;
-- weapon condition editing for unsupported/ambiguous serializers;
-- weapon/equipment upgrade mutation without a proven serializer path;
-- unknown GVAS inventory structures;
-- unsupported Enhanced Edition containers.
-
-S2 catalog metadata is read from a selected loose Zone Kit/Workshop or game
-resource root. CFG prototype names, common JSON localization exports, and
-loose PNG/JPG/WebP/BMP/DDS icon assets are presentation-only data: they improve
-the inventory display but do not turn a prototype SID into a save writer.
-Workshop overlays are never used as a save destination, and packed `.pak`
-resources are not unpacked by the editor.
+Item names and icons come from the installed game or a bundled metadata
+snapshot. For S.T.A.L.K.E.R. 2, point **Settings → Paths** at a Zone Kit or
+Workshop resource folder to get localized names and icons; without it the
+editor shows the save's own item IDs. Round-trip verification proves the file
+is well-formed, not that the game accepts every change — keep the backup until
+you have loaded the save in game.
 
 ## Download
 
-The latest release ships four end-user packages.
-
 | Platform | Package |
 |---|---|
-| Windows | [Installer (.exe)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64-setup.exe) |
-| Windows | [Portable (.zip)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64.zip) |
-| Linux / Debian / Ubuntu | [.deb package](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/stalker2-save-editor_amd64.deb) |
+| Windows | [Installer (.exe)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64-setup.exe) · [Portable (.zip)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-windows-x86_64.zip) |
+| Debian / Ubuntu | [.deb package](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/stalker2-save-editor_amd64.deb) |
 | Linux | [Portable (.tar.gz)](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/latest/download/SaveEditor-linux-x86_64.tar.gz) |
-| Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) |
+| Browser | [stalker-save-editor.pages.dev](https://stalker-save-editor.pages.dev) — the save stays in your browser tab |
 
-The release pipeline is also prepared for a signed APT channel through the
-same R2 download Worker. The v0.5.21 direct `.deb` is published, but the APT
-repository is intentionally still unavailable until the original private
-signing key is present; do not generate a replacement key for an existing
-channel. After the key and repository have been published, Debian/Ubuntu users
-can install and receive later package versions with the normal package manager:
+Every release ships `SHA256SUMS` and an update manifest (`latest.json`). The
+desktop app checks for updates in the background (автообновление):
+Windows portable and Linux portable builds verify size and SHA-256 and swap
+files only after the app exits; the installer and the `.deb` hand the verified
+package to the system installer. Binaries are mirrored to a Cloudflare R2
+download Worker.
 
-```bash
-curl -fsSL https://save-editor-downloads.save-editor.workers.dev/apt/repository-key.asc \
-  | gpg --dearmor | sudo tee /usr/share/keyrings/stalker2-save-editor.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/stalker2-save-editor.gpg] https://save-editor-downloads.save-editor.workers.dev/apt stable main" \
-  | sudo tee /etc/apt/sources.list.d/stalker2-save-editor.list >/dev/null
-sudo apt update
-sudo apt install stalker2-save-editor
-```
-
-The previous `v0.5.20` assets remain available as direct downloads. The signed
-APT channel will be enabled only after its original key, package, R2 read-back
-and disposable `apt update` gates pass.
-
-Checksums are published with each GitHub release. The `v0.5.21` release was
-published after the clean tagged build and public read-back gates passed.
-Current stable release: [v0.5.21](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases/tag/v0.5.21).
-
-## Desktop workflow
+## How a save is written
 
 ```text
-Библиотека сейвов
-    ↓
-choose / import save
-    ↓
-content-based format detection
-    ↓
-inspect inventory + metadata
-    ↓
-stage supported edits
-    ↓
-click «Сохранить» and confirm once
-    ↓
-internal preview + CRC/SHA verification
-    ↓
-verified backup + atomic save
+open save ─► detect game from content ─► parse inventory & metadata
+    │
+    ▼
+stage edits (draft only, file untouched)
+    │
+    ▼  «Сохранить» + one confirmation
+re-check source SHA ─► verified backup ─► atomic replace ─► read-back + re-parse
 ```
 
-The preview, backup and write stages are internal to the normal desktop flow;
-the technical change journal remains available for diagnostics, but it is not a
-required extra tab or action. Steam Cloud keeps its separate explicit upload
-confirmation and fail-closed transaction because a remote write can be
-uncertain after Steam accepts it.
-
-The desktop app exposes a release-aware Steam Cloud flow for S.T.A.L.K.E.R. 2,
-the original trilogy and separate Enhanced Edition profiles. Each profile carries
-its Steam app ID and remote save root into native, helper, cache and CDP paths;
-the UI reports which backend answered. Native calls use bounded subprocesses so a
-stuck Steam call cannot freeze the Qt UI indefinitely. Upload remains explicit,
-backup/hash guarded and reports verified versus uncertain outcomes. Only a native
-or helper backend that explicitly advertises write support can enable upload.
-Steam web/CDP and local-cache discovery remain read-only as listing/read sources;
-when native RemoteStorage initializes successfully, the same transport may list
-through web/cache and still upload through native `FileWrite`. A
-preflight refusal is a definite no-write result. An exception after `WriteFile`
-may have reached Steam, is reported as uncertain, and is never retried
-automatically.
-
-Every cloud row also shows its provenance: Steam RemoteStorage, helper, Steam
-Cloud web, local Steam cache, or cache metadata. A cache metadata row is a
-remote listing without downloaded bytes; the app never sends it to native
-`FileRead` by mistake. The **Отправить логи** button collects only bounded,
-rotated technical logs, redacts local home paths and secret-like values, and
-returns an opaque report id. Save bytes are not included.
-
-Cloud upload keeps the selected original `Data/<slot>.sav` locator. Old
-editor-generated `-edited.sav`/`.edited.sav` entries are hidden from the
-picker and rejected as upload targets; the app does not delete them remotely.
-Changed S2 payloads are re-encoded with the bundled Kraken encoder. Desktop
-packages fail closed if that encoder is missing, so the old 15 MB stored-block
-fallback cannot be uploaded as a replacement save.
-
-## Updates and standalone packages
-
-Each GitHub release publishes separate Windows installer and portable ZIP files,
-Linux portable `tar.gz`, Debian `.deb`, `latest.json` and `SHA256SUMS`. The
-signed APT channel mirrors the Debian package and its repository metadata:
-
-- the installer creates the normal Windows installation and shortcut;
-- **Windows portable** ZIP and **Linux portable** tar.gz require neither Python
-  nor installation;
-- desktop checks `latest.json` in the background and has a manual
-  **автообновление** action;
-- portable updates verify size and SHA-256, then replace files only after the
-  application exits; Windows installer and Linux `.deb` updates launch the
-  verified system handoff and require explicit confirmation/privilege approval.
-- An installed Linux `.deb` is detected separately from Linux portable, so its
-  update check selects the `.deb` artifact instead of downloading a tarball.
-- APT installations update through `apt update`/`apt upgrade`; direct `.deb`
-  downloads and Linux portable remain independent fallback installation paths.
-
-The manifest and binaries are also mirrored to the public Cloudflare R2 download
-worker. Redirect destinations are checked before the updater contacts them.
-Invalid manifests, unexpected hosts, network failures or hash mismatches leave
-the current installation untouched; a failed cleanup after a successful portable
-swap leaves the recoverable backup in place without rolling the new version back.
-
-Tag publication prepares the stable files once, uploads and reads those exact
-bytes back through the public Worker, and only then attaches the same directory
-to GitHub Release. Missing Cloudflare credentials fail the release job instead
-of silently publishing a split GitHub-only release.
-
-Old v0.5.14 installations do not contain the corrected package detection and
-installer handoff. Install the current `.deb` once from the release page; later
-checks can hand the verified package to `pkexec apt-get` (or the desktop
-installer fallback) automatically.
-
-Release preparation and R2 read-back use the repository tools:
-
-```bash
-make release-manifest ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-make apt-repo VERSION=0.5.21 OUTPUT_DIR=release-output APT_SIGNING_KEY=<key-id>
-make r2-publish ARTIFACT_DIR=release-input OUTPUT_DIR=release-output
-```
-
-## Browser build
-
-The browser version runs the same Python core through **Pyodide/WebAssembly**.
-
-- the save stays in the browser tab;
-- there is no application backend receiving the file;
-- supported local edits can be downloaded as a new copy;
-- decoder, Pyodide and shared core resources load concurrently; the catalogue
-  continues in the background, while analysis waits for it before exposing data;
-- Steam Cloud is desktop-only.
-
-Run it locally:
-
-```bash
-make web-serve
-# http://localhost:8765
-```
-
-## Architecture
-
-```text
-                    ┌──────────────────────┐
-                    │   shared Python core │
-                    │ parser / editor /    │
-                    │ preview / verify     │
-                    └──────────┬───────────┘
-                               │
-             ┌─────────────────┼─────────────────┐
-             │                 │                 │
-             ▼                 ▼                 ▼
-      Qt desktop app          CLI        Browser / Pyodide
-             │                                   │
-             ▼                                   ▼
-      Steam Cloud / local                    local files
-```
-
-Important boundaries:
-
-- **UI does not own save mutation logic** — it goes through the shared editor service.
-- **Unknown fields remain opaque/read-only.**
-- **Content detection wins over path assumptions.**
-- **Round-trip correctness is not treated as proof of in-game semantic acceptance.**
-- **Live Steam writes and game load/re-save checks are kept separate from automated CI.**
-- **S2 weapon/helmet condition, arbitrary equipment creation/upgrades and Enhanced
-  Edition parsing stay read-only until controlled differential and in-game evidence exists.**
+Steam Cloud uploads keep the original `Data/<slot>.sav` locator, back up the
+remote bytes first and report *verified* versus *uncertain* results. The app
+never deletes cloud files.
 
 ## Run from source
 
@@ -267,71 +119,64 @@ Requires Python 3.11+.
 ```bash
 git clone https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor.git
 cd S.T.A.L.K.E.R.-Save_Editor
-
 python3 -m pip install -r requirements.txt
-python3 -m ui
+python3 -m ui              # desktop app
+python3 cli.py --help      # command line
+make web-serve             # browser build on http://localhost:8765
 ```
 
-Windows:
+## Architecture
 
-```powershell
-py -3 -m pip install -r requirements.txt
-py -3 -m ui
+```text
+                 ┌──────────────────────────────┐
+                 │   shared Python editing core │
+                 │ detect · parse · prepare ·   │
+                 │ verify · backup · publish    │
+                 └──────────────┬───────────────┘
+            ┌───────────────────┼───────────────────┐
+            ▼                   ▼                   ▼
+    Qt desktop (PySide6)       CLI          Browser (Pyodide)
+            │
+            ▼
+   local saves · Steam Cloud
 ```
 
-CLI:
+- The UI never owns mutation logic; every surface goes through the same
+  editor service and capability gates.
+- Unknown fields stay opaque; content detection wins over paths.
+- Live game and Steam writes are kept out of automated CI.
 
-```bash
-python3 cli.py --help
-```
-
-The CLI supports the same bounded edit surface where the selected format is
-confirmed: money, stacks, durability, upgrades and placement. Unsupported S2
-equipment structures and Enhanced Edition bytes fail closed instead of being
-written through a guessed serializer.
-
-Developer checks:
+## Development
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
-make check
+make check      # ruff, mypy, generated web/theme checks
+make test       # full pytest suite (runs against a throwaway user profile)
 ```
 
-CI covers source tests plus packaged diagnostics for Linux and Windows. Release builds also produce the Windows installer, portable archives, Debian package, manifest and SHA-256 checksums.
-
-## Project status
-
-The current stable release is shown in the badge above. Release history and binaries are available on the [Releases](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/releases) page.
-
-The detailed engineering/evidence log remains in [docs/STATUS.md](docs/STATUS.md). Format research and validation evidence live under [docs/evidence/](docs/evidence/).
-
-The public Issues board is for **bugs, user-facing features and roadmap items**. Internal research notes and implementation cards belong in the repository documentation, not as dozens of open user-facing tickets.
+Maintainers prepare a release from CI-built packages with
+`make release-manifest`; see [CONTRIBUTING.md](CONTRIBUTING.md) and
+[docs/RELEASE.md](docs/RELEASE.md). The engineering log lives in
+[docs/STATUS.md](docs/STATUS.md) and format evidence in
+[docs/evidence/](docs/evidence/).
 
 ## Roadmap
 
 - [S.T.A.L.K.E.R. 2: expand equipment editing beyond confirmed armour anchors](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/95)
-- [Enhanced Editions: add safe format detection and parser support](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/96)
+- [Enhanced Editions: safe format detection and parser support](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/96)
 - [Validate experimental X-Ray equipment mutations in game](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/97)
-- [Steam Cloud: broaden support and improve runtime diagnostics](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/98)
-- [UX: simplify save flow without weakening backup and verification](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/99)
+- [Steam Cloud: broader support and runtime diagnostics](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/98)
+
 ## Contributing
 
-Bug reports and focused feature requests are welcome.
-
-Before opening a bug, include:
-
-- game + edition;
-- editor version;
-- desktop / browser / CLI;
-- OS;
-- what you expected;
-- what happened;
-- whether the original save still loads.
-
-Do **not** attach personal save files publicly unless you are comfortable publishing their contents. A minimal synthetic/reproducible sample is preferred.
+Bug reports and focused feature requests are welcome. Please include the game
+and edition, editor version, desktop/browser/CLI, OS, what you expected, what
+happened, and whether the original save still loads. Do not attach personal
+saves publicly unless you are comfortable publishing their contents.
 
 ## License
 
-GNU GPL v3. See [LICENSE](LICENSE).
+GNU GPL v3 — see [LICENSE](LICENSE).
 
-S.T.A.L.K.E.R. and related names/assets belong to their respective owners. This project is an independent community tool and is not affiliated with GSC Game World.
+S.T.A.L.K.E.R. and related names and assets belong to their respective owners.
+This is an independent community tool, not affiliated with GSC Game World.

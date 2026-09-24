@@ -9,6 +9,11 @@ node --check web/app.js
 git diff --check
 ```
 
+The test suite runs against a throwaway user profile created in
+`tests/conftest.py` (HOME, XDG and APPDATA point to a temp directory), and
+static `QMessageBox` helpers are stubbed so nothing can block a headless run.
+Do not rely on files in your real home directory from a test.
+
 Do not add personal saves, Steam session material, credentials, generated
 release directories, or machine-specific paths. Parser and Steam Cloud changes
 must retain the backup, source-hash, CRC/framing, atomic replacement and

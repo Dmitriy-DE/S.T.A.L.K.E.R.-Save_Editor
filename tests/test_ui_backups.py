@@ -10,12 +10,14 @@ pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel
 
 import editor.storage as storage
 from editor.models import EditPlan, SourceRef
 from editor.prepare import prepare_edit
 from editor.service import EditorService
-from ui.backups_view import BackupView
+from ui.backup_controller import BackupController
+from ui.history_view import HistoryView
 from ui.main_window import MainWindow
 
 
@@ -38,7 +40,7 @@ def _write_journal(journal: Path, backup_path: Path, sha256: str) -> None:
     )
 
 
-def test_backup_view_renders_statuses_and_requires_preview_before_restore(
+def test_history_view_renders_statuses_and_requires_preview_before_restore(
     qtbot, tmp_path: Path, synthetic_save: bytes
 ) -> None:
     backup_dir = tmp_path / "backups"
@@ -50,28 +52,30 @@ def test_backup_view_renders_statuses_and_requires_preview_before_restore(
     missing = backup_dir / "missing_ORIGINAL.sav"
     _write_journal(missing.with_suffix(".json"), missing, expected_sha)
 
-    view = BackupView((backup_dir,))
+    view = HistoryView(BackupController((backup_dir,)))
     qtbot.addWidget(view)
     view.refresh()
 
     assert view.table.rowCount() == 2
-    statuses = [
-        view.table.item(row, view.STATUS_COLUMN).text()
-        for row in range(view.table.rowCount())
-    ]
-    assert "Проверено" in statuses
-    assert "Отсутствует" in statuses
+    statuses = []
+    for row in range(view.table.rowCount()):
+        status_chip = view.table.cellWidget(row, 4)
+        assert isinstance(status_chip, QLabel)
+        statuses.append(status_chip.text())
+    assert "Готово к восстановлению" in statuses
+    assert "Файл не найден" in statuses
     assert not view.restore_button.isEnabled()
     assert not view.restore_in_place_button.isEnabled()
 
-    valid_row = statuses.index("Проверено")
+    valid_row = statuses.index("Готово к восстановлению")
     view.table.selectRow(valid_row)
     view.destination_edit.setText(str(tmp_path / "restored.sav"))
     qtbot.mouseClick(view.preview_button, Qt.MouseButton.LeftButton)
 
     assert view.restore_button.isEnabled()
     assert not view.restore_in_place_button.isEnabled()
-    assert "SHA256" in view.preview_label.text()
+    assert view.detail_status.text() == "Резервная копия проверена. Её можно восстановить."
+    assert "SHA" not in view.detail_status.text()
 
 
 def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
@@ -86,9 +90,9 @@ def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
 
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
-    window.backups_view.backup_dirs = (backup_dir,)
-    window.backups_view.refresh()
-    record = window.backups_view.records[0]
+    window.backup_controller.backup_dirs = (backup_dir,)
+    window.backup_controller.refresh()
+    record = window.backup_controller.records[0]
     destination = tmp_path / "restored.sav"
 
     with qtbot.waitSignal(window.restore_ready, timeout=5_000):
@@ -96,7 +100,9 @@ def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
 
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
     assert destination.read_bytes() == synthetic_save
-    assert "Копия восстановлена" in window.backups_view.preview_label.text()
+    assert window.history_reference_view.detail_status.text() == (
+        "Резервная копия восстановлена и проверена."
+    )
 
 
 def test_main_window_can_restore_verified_backup_to_original_slot(
@@ -119,15 +125,17 @@ def test_main_window_can_restore_verified_backup_to_original_slot(
 
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
-    window.backups_view.backup_dirs = (backup_dir,)
-    window.backups_view.refresh()
-    window.backups_view.table.selectRow(0)
-    qtbot.mouseClick(window.backups_view.preview_button, Qt.MouseButton.LeftButton)
-    assert window.backups_view.restore_in_place_button.isEnabled()
+    window.backup_controller.backup_dirs = (backup_dir,)
+    window.backup_controller.refresh()
+    window.history_reference_view.table.selectRow(0)
+    qtbot.mouseClick(window.history_reference_view.preview_button, Qt.MouseButton.LeftButton)
+    assert window.history_reference_view.restore_in_place_button.isEnabled()
 
     with qtbot.waitSignal(window.restore_ready, timeout=5_000):
         window._start_restore_in_place(record)
 
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
     assert source.read_bytes() == synthetic_save
-    assert "Исходный слот восстановлен" in window.backups_view.preview_label.text()
+    assert window.history_reference_view.detail_status.text() == (
+        "Исходное сохранение восстановлено и проверено."
+    )
