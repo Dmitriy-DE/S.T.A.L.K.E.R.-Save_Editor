@@ -44,6 +44,12 @@ def review_output(tmp_path_factory: pytest.TempPathFactory, qapp) -> Path:
     return output
 
 
+def _near(actual: int, expected: int, tolerance: int = 2) -> bool:
+    """Vertical anchors move by a pixel between Linux and Windows fonts."""
+
+    return abs(actual - expected) <= tolerance
+
+
 def _metrics(output: Path, screen: str) -> dict:
     return json.loads((output / screen / "metrics.json").read_text(encoding="utf-8"))
 
@@ -204,7 +210,7 @@ def test_editor_review_metrics_track_visible_equipment_rows_and_breadcrumb(revie
     assert len(cards) == 4
     assert len({(card["x"], card["y"]) for card in cards}) == 4
     assert {"back_button", "breadcrumb_separator", "breadcrumb"} <= rects.keys()
-    assert rects["back_button"]["y"] == 130
+    assert _near(rects["back_button"]["y"], 130)
     assert rects["status_equipment_column"] == {
         "x": 24,
         "y": 173,
@@ -217,24 +223,24 @@ def test_editor_review_metrics_keep_detail_stack_on_the_canonical_anchors(review
     metrics = _metrics(review_output, "02-editor")
     rects = metrics["screen_rects"]
 
-    assert rects["detail_header"]["y"] == 174
+    assert _near(rects["detail_header"]["y"], 174)
     assert rects["detail_header"]["height"] == 40
-    assert rects["detail_name"]["y"] == 218
-    assert rects["detail_type"]["y"] == 262
-    assert rects["detail_image"]["y"] == 281
+    assert _near(rects["detail_name"]["y"], 218)
+    assert _near(rects["detail_type"]["y"], 262)
+    assert _near(rects["detail_image"]["y"], 281)
     # Description moved into the "ХАРАКТЕРИСТИКИ" tab; tabs follow the art.
-    assert rects["detail_tabs"][0]["y"] == 379
-    assert rects["detail_fields"]["y"] == 429
-    assert rects["save_cta"]["y"] == 829
+    assert _near(rects["detail_tabs"][0]["y"], 379)
+    assert _near(rects["detail_fields"]["y"], 429)
+    assert _near(rects["save_cta"]["y"], 829)
 
 
 def test_editor_review_metrics_place_equipment_title_above_canonical_cards(review_output: Path) -> None:
     metrics = _metrics(review_output, "02-editor")
     rects = metrics["screen_rects"]
 
-    assert rects["equipment_header"]["y"] == 414
+    assert _near(rects["equipment_header"]["y"], 414)
     assert rects["equipment_header"]["height"] == 31
-    assert rects["equipment_cards"][0]["y"] == 451
+    assert _near(rects["equipment_cards"][0]["y"], 451)
 
 
 def test_library_search_and_sort_controls_match_canonical_proportions(review_output: Path) -> None:
@@ -251,10 +257,10 @@ def test_editor_inventory_table_starts_at_the_canonical_vertical_anchor(review_o
     metrics = _metrics(review_output, "02-editor")
 
     rects = metrics["screen_rects"]
-    assert rects["inventory_table"]["y"] == 319
-    assert rects["inventory_header"]["y"] == 320
+    assert _near(rects["inventory_table"]["y"], 319)
+    assert _near(rects["inventory_header"]["y"], 320)
     assert rects["inventory_header"]["height"] == 34
-    assert rects["inventory_first_row"]["y"] == 354
+    assert _near(rects["inventory_first_row"]["y"], 354)
 
 
 def test_decoration_builder_writes_review_textures_to_its_asset_directory(
