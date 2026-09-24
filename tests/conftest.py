@@ -1,10 +1,63 @@
 from __future__ import annotations
 
+import os
 import struct
+import tempfile
+from pathlib import Path
 
 import pytest
 
 import save_format as sf
+
+_ISOLATED_ENV_KEYS = (
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "XDG_DATA_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_STATE_HOME",
+    "XDG_CACHE_HOME",
+)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Run every test against an empty, disposable user profile.
+
+    Without this the UI suite read the developer's real saves, settings,
+    backups and diagnostics log.  A test that passed only because that log
+    existed hung CI forever on the "journal is empty" message box.
+    """
+
+    del config
+    profile = Path(tempfile.mkdtemp(prefix="save-editor-test-home-"))
+    for key in _ISOLATED_ENV_KEYS:
+        target = profile / key.casefold()
+        target.mkdir(parents=True, exist_ok=True)
+        os.environ[key] = str(target)
+
+
+@pytest.fixture(autouse=True)
+def _no_external_applications(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never let a test launch an app or block on a modal message box.
+
+    Static ``QMessageBox`` helpers run a nested event loop that waits for a
+    human; headless CI then hangs until the job timeout.  Tests that need a
+    specific answer still monkeypatch these helpers themselves.
+    """
+
+    try:
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtWidgets import QMessageBox
+    except ImportError:  # the core environment has no Qt
+        return
+    monkeypatch.setattr(QDesktopServices, "openUrl", staticmethod(lambda _url: True))
+    no = QMessageBox.StandardButton.No
+    ok = QMessageBox.StandardButton.Ok
+    monkeypatch.setattr(QMessageBox, "question", staticmethod(lambda *_a, **_k: no))
+    monkeypatch.setattr(QMessageBox, "warning", staticmethod(lambda *_a, **_k: no))
+    monkeypatch.setattr(QMessageBox, "information", staticmethod(lambda *_a, **_k: ok))
+    monkeypatch.setattr(QMessageBox, "critical", staticmethod(lambda *_a, **_k: ok))
 
 
 def _object_record(

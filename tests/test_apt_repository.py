@@ -74,9 +74,20 @@ Expire-Date: 0
     sys.platform == "win32",
     reason="Debian repository integration requires the POSIX dpkg and APT toolchain",
 )
-def test_build_repository_creates_signed_debian_layout(tmp_path: Path) -> None:
+def test_build_repository_creates_signed_debian_layout(
+    tmp_path: Path, request: pytest.FixtureRequest
+) -> None:
     package = _make_package(tmp_path)
     gpg_home, key_id = _make_keyring(tmp_path)
+    # gpg starts a per-home agent daemon; stop it so every run does not leave
+    # one behind in /tmp.
+    request.addfinalizer(
+        lambda: subprocess.run(
+            ["gpgconf", "--homedir", str(gpg_home), "--kill", "gpg-agent"],
+            check=False,
+            capture_output=True,
+        )
+    )
     output = tmp_path / "apt"
 
     files = build_repository(

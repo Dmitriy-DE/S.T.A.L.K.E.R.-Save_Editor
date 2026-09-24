@@ -40,7 +40,7 @@ def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tm
 
     with qtbot.waitSignal(window.analysis_ready, timeout=5_000):
         window._start_inspect(source)
-    qtbot.waitUntil(window.open_button.isEnabled, timeout=5_000)
+    qtbot.waitUntil(lambda: window._inspect_thread is None, timeout=5_000)
     previous_snapshot = window.snapshot
     previous_breadcrumb = window.editor_view.breadcrumb.text()
 
