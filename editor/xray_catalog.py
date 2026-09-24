@@ -338,6 +338,30 @@ def _parse_slots(value: str | None) -> tuple[str, ...]:
     )
 
 
+# The editor UI is Russian.  Multi-language installs ship text/rus next to
+# text/eng; preferring English left Call of Pripyat names in English.
+_LANGUAGE_PREFERENCE = (("rus", "ru"), ("eng", "en"))
+
+
+def _preferred_language(entries, name_of):
+    """Keep only the string tables of the most preferred language present."""
+
+    entries = tuple(entries)
+    for codes in _LANGUAGE_PREFERENCE:
+        chosen = tuple(
+            entry
+            for entry in entries
+            if any(
+                f"/{folder}/{code}/" in f"/{name_of(entry).casefold()}/"
+                for folder in ("text", "localization")
+                for code in codes
+            )
+        )
+        if chosen:
+            return chosen
+    return entries
+
+
 def _localization(root: Path, files: Mapping[str, bytes] | None = None) -> dict[str, str]:
     values: dict[str, str] = {}
     raw_files: Iterable[tuple[str, bytes]]
@@ -354,14 +378,7 @@ def _localization(root: Path, files: Mapping[str, bytes] | None = None) -> dict[
             for path in base.rglob("*.xml")
             if path.is_file()
         )
-        preferred = tuple(
-            path
-            for path in all_candidates
-            if "/text/eng/" in f"/{path.as_posix().casefold()}/"
-            or "/text/en/" in f"/{path.as_posix().casefold()}/"
-            or "/localization/eng/" in f"/{path.as_posix().casefold()}/"
-        )
-        candidates = preferred or all_candidates
+        candidates = _preferred_language(all_candidates, lambda path: path.as_posix())
         raw_files = ((path.as_posix(), path.read_bytes()) for path in candidates)
     else:
         all_files = tuple(
@@ -373,16 +390,7 @@ def _localization(root: Path, files: Mapping[str, bytes] | None = None) -> dict[
                 or "/localization/" in f"/{name.casefold()}"
             )
         )
-        preferred_files = tuple(
-            (name, data)
-            for name, data in all_files
-            if "/text/eng/" in f"/{name.casefold()}/"
-            or "/text/en/" in f"/{name.casefold()}/"
-            or "/localization/eng/" in f"/{name.casefold()}/"
-        )
-        raw_files = (
-            preferred_files or all_files
-        )
+        raw_files = _preferred_language(all_files, lambda entry: entry[0])
     for name, data in raw_files:
         try:
             tree = ET.fromstring(data)
