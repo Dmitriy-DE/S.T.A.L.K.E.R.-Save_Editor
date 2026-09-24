@@ -1259,7 +1259,14 @@ class MainWindow(QMainWindow):
             message = f"Удаление отменено для {item.display_name or 'предмета'}"
         else:
             self.staged_detach[handle] = True
-            self.staged_counts.pop(handle, None)
+            # A removed item cannot also be edited; drop its other drafts.
+            for mapping in (
+                self.staged_counts,
+                self.staged_durability,
+                self.staged_upgrades,
+                self.staged_placements,
+            ):
+                mapping.pop(handle, None)
             message = f"Подготовлено удаление: {item.display_name or 'предмет'}"
         self._render_changes()
         self._invalidate_preview("изменился список удалений")

@@ -119,6 +119,17 @@ class EditPlan:
             raise ValueError("Duplicate move handle in edit plan")
         if len({handle for handle, _ in detach}) != len(detach):
             raise ValueError("Duplicate detach handle in edit plan")
+        removed = {handle for handle, _ in detach}
+        edited = (
+            {handle for handle, _ in stacks}
+            | {handle for handle, _ in durability}
+            | {handle for handle, _ in upgrades}
+            | {handle for handle, *_ in placements}
+            | {handle for handle, *_ in moves}
+        )
+        if removed & edited:
+            # The writer would edit an object it has just removed.
+            raise ValueError("Edit plan changes an item that it also removes")
         if len({handle for handle, *_ in attach}) != len(attach):
             raise ValueError("Duplicate attach handle in edit plan")
         if len({(item_key, destination) for item_key, _, destination in adds}) != len(adds):

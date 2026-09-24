@@ -355,6 +355,11 @@ class ItemDetailView(QWidget):
             and self._upgrade_catalog is not None
         )
         can_remove = bool(caps and caps.remove_items and item.remove_editable)
+        if item.handle in self._removed_handles:
+            # Editing an item that is staged for removal would make the plan
+            # contradict itself; only "ВЕРНУТЬ ПРЕДМЕТ" stays available.
+            writable_stack = writable_condition = placement_writable = False
+            self._upgrades_writable = False
         supports = []
         if caps is not None:
             for writable, name in (
@@ -412,7 +417,9 @@ class ItemDetailView(QWidget):
         self.placement_combo.setEnabled(placement_writable)
         self.detail_form.setRowVisible(self.placement_combo, has_placement)
 
-        if not (has_count or has_condition or has_placement):
+        if item.handle in self._removed_handles:
+            self.fields_note.setText("Предмет будет удалён при сохранении.")
+        elif not (has_count or has_condition or has_placement):
             self.fields_note.setText("Для этого предмета в сохранении нет изменяемых полей.")
         elif not (writable_stack or writable_condition or placement_writable):
             self.fields_note.setText("Эти значения доступны только для просмотра.")
