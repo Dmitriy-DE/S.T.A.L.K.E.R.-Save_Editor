@@ -112,6 +112,42 @@ class FormatDetectionError(SaveError):
         )
 
 
+_PLAN_CAPABILITIES = (
+    ("money", "edit_money"),
+    ("stacks", "edit_stacks"),
+    ("durability", "edit_durability"),
+    ("detach", "remove_items"),
+    ("moves", "move_items"),
+    ("adds", "add_items"),
+    ("upgrades", "edit_upgrades"),
+    ("placements", "edit_placement"),
+    ("faction_relations", "edit_relations"),
+    ("player_faction", "edit_player_faction"),
+)
+
+
+def require_plan_capabilities(capabilities: FormatCapabilities, plan: EditPlan) -> None:
+    """Refuse any plan field whose capability is not writable for the format.
+
+    The UI hides such controls, but the CLI and other callers reach the
+    writer directly; the gate must hold at the format boundary too.
+    """
+
+    for field_name, capability in _PLAN_CAPABILITIES:
+        value = getattr(plan, field_name)
+        if value is None or value == ():
+            continue
+        support = capabilities.support(capability)
+        if not support.writable:
+            reason = f": {support.reason}" if support.reason else ""
+            raise SaveError(
+                f"{capability} не подтверждён для этого формата "
+                f"({support.maturity}){reason}"
+            )
+    if plan.raw or plan.attach:
+        raise SaveError("raw/attach patches are research-only and never written")
+
+
 _S2_RELEASE = release_by_id("stalker2")
 
 
@@ -273,6 +309,7 @@ class _Stalker2Format:
         catalog: ItemCatalog | None = None,
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
+        require_plan_capabilities(self.capabilities, plan)
         return prepare_edit(data, plan)
 
 
@@ -434,6 +471,7 @@ class _XRayFormat:
         catalog: ItemCatalog | None = None,
         game_catalog: GameCatalog | None = None,
     ) -> PreparedEdit:
+        require_plan_capabilities(self.capabilities, plan)
         selected_catalog = catalog or self.catalog_for_source(source_name)
         return prepare_xray(
             data,

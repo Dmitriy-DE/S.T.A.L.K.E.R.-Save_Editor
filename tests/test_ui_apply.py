@@ -50,7 +50,7 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     _show_snapshot(window, source, synthetic_save)
 
     assert not window.preview_button.isEnabled()
-    window._stage_stack_change(0x30000001, 3)
+    window._stage_money(300)
     assert window.preview_button.isEnabled()
     window._start_preview()
     qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
@@ -59,7 +59,7 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     qtbot.waitUntil(window.save_copy_button.isEnabled, timeout=UI_TIMEOUT_MS)
     prepared = window.prepared_edit
 
-    window._stage_stack_change(0x30000001, 4)
+    window._stage_money(400)
     assert window.prepared_edit is None
     # One-click save stays available while there are staged changes — it will
     # re-run the internal preview on click; only the cached preview is invalid.
@@ -116,7 +116,7 @@ def test_stale_preview_is_rejected_before_export(
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
     _show_snapshot(window, source, synthetic_save)
-    window._stage_stack_change(0x30000001, 3)
+    window._stage_money(300)
     window._start_preview()
     qtbot.waitUntil(lambda: window.prepared_edit is not None, timeout=UI_TIMEOUT_MS)
 
