@@ -415,6 +415,17 @@ function renderReferenceItemDetail(item) {
   }
 }
 
+// S.T.A.L.K.E.R. 2 pays in coupons; the original trilogy uses roubles.
+function currencySuffix(s) {
+  return String(s?.release_id ?? "").startsWith("stalker2") ? "куп." : "₽";
+}
+
+function formatMoney(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString("ru-RU") : String(value);
+}
+
 function visibleReferenceItems(s) {
   const query = el("reference-inventory-search").value.trim().toLowerCase();
   const filter = el("reference-inventory-filter").value;
@@ -611,14 +622,14 @@ function renderReferenceSnapshot(s) {
   const editable = Boolean(caps.edit_money || caps.edit_stacks || caps.edit_durability || caps.edit_placement || caps.edit_upgrades);
   el("reference-preview-capability").textContent = capabilityLabel(editable);
   el("reference-preview-capability").className = `reference-chip ${editable ? "success" : "warning"}`;
-  el("reference-summary-money").innerHTML = `ДЕНЬГИ<br>${s.money ?? "—"} ₽`;
+  el("reference-summary-money").innerHTML = `ДЕНЬГИ<br>${formatMoney(s.money)} ${currencySuffix(s)}`;
   el("reference-summary-items").innerHTML = `ПРЕДМЕТЫ<br>${s.inventory_count ?? "—"}`;
   el("reference-summary-equipment").innerHTML = `ЭКИПИРОВКА<br>${s.equipment_count ?? "—"}`;
   el("reference-summary-condition").innerHTML = `${BROWSER_UI_COPY.integritySummary}<br>${integrityLabel(s)}`;
   el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
   el("reference-editor-state").textContent = capabilityLabel(editable);
   el("reference-editor-state").className = `reference-chip ${editable ? "success" : "warning"}`;
-  el("reference-money").textContent = `ДЕНЬГИ  ${s.money === null ? "—" : s.money} ₽`;
+  el("reference-money").textContent = `ДЕНЬГИ  ${formatMoney(s.money)} ${currencySuffix(s)}`;
   el("reference-money-input").value = String(s.money ?? 0);
   el("reference-money-input").disabled = !s.money_editable;
   el("reference-money-clear").disabled = state.money === null;
@@ -801,7 +812,7 @@ el("reference-money-input").addEventListener("input", () => {
   }
   state.money = value === state.snapshot.money ? null : value;
   invalidate();
-  el("reference-money").textContent = `ДЕНЬГИ  ${value} ₽`;
+  el("reference-money").textContent = `ДЕНЬГИ  ${formatMoney(value)} ${currencySuffix(state.snapshot)}`;
   el("reference-money-clear").disabled = state.money === null;
   setStatus("Баланс изменён в памяти; исходный файл не изменён");
 });
