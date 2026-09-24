@@ -233,6 +233,13 @@ def test_update_client_downloads_and_rejects_changed_bytes(tmp_path: Path) -> No
             client.download(result.artifact, destination)
         assert not destination.exists()
 
+        # A body longer than the manifest size is cut off while downloading.
+        (tmp_path / "SaveEditor-windows-x86_64.zip").write_bytes(b"x" * (result.artifact.size * 3))
+        with pytest.raises(ManifestError, match="larger than the manifest size"):
+            client.download(result.artifact, destination)
+        assert not destination.exists()
+        assert not list(tmp_path.glob(".downloaded.zip.*.part"))
+
 
 def test_update_client_selects_windows_installer_artifact(tmp_path: Path) -> None:
     payload = _manifest_files(tmp_path)

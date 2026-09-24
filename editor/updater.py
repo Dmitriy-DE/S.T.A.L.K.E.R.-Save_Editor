@@ -191,7 +191,15 @@ class UpdateClient:
         temporary = Path(temporary_name)
         try:
             with self._open(artifact.url) as response, temporary.open("wb") as output:
+                written = 0
                 for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                    written += len(chunk)
+                    # Stop a wrong or endless body early instead of filling
+                    # the disk before the size/SHA check can reject it.
+                    if written > artifact.size:
+                        raise ManifestError(
+                            f"update download is larger than the manifest size {artifact.size}"
+                        )
                     output.write(chunk)
             artifact.verify(temporary)
             os.replace(temporary, destination)
