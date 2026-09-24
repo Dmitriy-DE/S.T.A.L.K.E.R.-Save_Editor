@@ -66,10 +66,12 @@ def human_datetime(value: datetime | str | None, *, now: datetime | None = None)
         value = value.astimezone()
     current = now or datetime.now()
     today = current.date()
+    # Never pass Cyrillic to strftime: on Windows it encodes the format with
+    # the C locale and raises UnicodeEncodeError outside Russian locales.
     if value.date() == today:
-        return value.strftime("Сегодня, %H:%M")
+        return f"Сегодня, {value:%H:%M}"
     if value.date() == today - timedelta(days=1):
-        return value.strftime("Вчера, %H:%M")
+        return f"Вчера, {value:%H:%M}"
     month = _MONTHS_RU[value.month - 1]
     year = "" if value.year == today.year else f" {value.year}"
     return f"{value.day:02d} {month}{year}, {value:%H:%M}"

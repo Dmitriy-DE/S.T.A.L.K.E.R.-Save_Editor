@@ -241,7 +241,8 @@ def test_settings_log_action_opens_the_real_local_journal(
     window._open_diagnostics_log()
 
     assert len(opened) == 1
-    assert opened[0].toLocalFile() == str(journal)
+    # QUrl reports "C:/..." on Windows; compare paths, not separators.
+    assert Path(opened[0].toLocalFile()) == journal
 
 
 def test_settings_backup_action_opens_an_existing_backup_directory(

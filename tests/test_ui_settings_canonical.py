@@ -47,14 +47,16 @@ def test_settings_category_navigation_keeps_path_fields_and_save_semantics(qtbot
     view.category_buttons[1].click()
     assert view.settings_stack.currentWidget() is view.paths_panel
     assert view.paths_panel.isVisible()
-    view.steam_root_edit.setText("/tmp/steam")
+    # An absolute path on every OS; "/tmp/steam" has no drive on Windows.
+    steam_root = tmp_path / "steam"
+    view.steam_root_edit.setText(str(steam_root))
     view.category_buttons[0].click()
     assert view.settings_stack.currentWidget() is view.general_panel
     view.category_buttons[6].click()
     assert view.settings_stack.currentWidget() is view.support_panel
     assert view.support_panel.isVisible()
     view.save()
-    assert view.settings.steam_root == Path("/tmp/steam")
+    assert view.settings.steam_root == steam_root
 
 
 def test_settings_content_starts_at_canonical_vertical_anchor_without_moving_actions(
@@ -67,14 +69,19 @@ def test_settings_content_starts_at_canonical_vertical_anchor_without_moving_act
     apply_theme(QApplication.instance())
     qtbot.wait(20)
 
-    assert view.settings_scroll.y() == 63
-    assert [page.y() for page in (
+    # Font metrics differ by a pixel between Linux and Windows.
+    assert abs(view.settings_scroll.y() - 63) <= 2
+    pages = (
         view.general_panel,
         view.paths_panel,
         view.cloud_panel,
         view.diagnostics_panel,
-    )] == [0, 156, 402, 552]
-    assert view.save_button.y() == 755
+    )
+    assert pages[0].y() == 0
+    # Panels are stacked in order and never overlap (heights follow fonts).
+    for upper, lower in zip(pages, pages[1:]):
+        assert lower.y() >= upper.y() + upper.height()
+    assert abs(view.save_button.y() - 755) <= 2
 
 
 def test_settings_panel_headers_and_path_controls_fit_without_overlap(qtbot, tmp_path: Path) -> None:
