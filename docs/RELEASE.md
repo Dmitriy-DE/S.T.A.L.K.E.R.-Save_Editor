@@ -1,5 +1,29 @@
 # Проверка и выпуск
 
+## v0.6.0 — канонический редизайн — 2026-09-25
+
+Тег `v0.6.0` на commit `4256879` (main после PR #127, #128, #129). Tagged
+workflow [#36069147209](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/36069147209)
+прошёл source gate, Linux portable/`.deb` (glibc 2.35, lintian) и Windows
+portable/installer smoke. Первая попытка тега остановилась на lintian
+`duplicate-font-file` (встроенный Liberation Sans Narrow) — добавлен
+обоснованный override (#129), неопубликованный тег перенесён.
+
+Release job, как и раньше, остановился на отсутствующих `CLOUDFLARE_*`/
+`APT_SIGNING_*` secrets. Те же CI-байты опубликованы вручную:
+`tools/publish_release.py --publish-r2 --verify-r2` (R2 read-back через
+публичный Worker, `latest.json` = `0.6.0`, commit `4256879`) и
+`gh release create`. Все четыре публичные ссылки `releases/latest/download/…`
+скачаны заново и совпали с `SHA256SUMS`. APT не публиковался (исходный ключ
+утерян). Веб-версия задеплоена на Cloudflare Pages и показывает v0.6.0.
+
+| Файл | Размер | SHA-256 |
+|---|---:|---|
+| `SaveEditor-windows-x86_64.zip` | 63,673,462 | `60f3198c237c60dae0e10a6e5f8ebbc3083947ee454cfebaf74e1368545a8fc3` |
+| `SaveEditor-windows-x86_64-setup.exe` | 39,064,520 | `4c1756cd18a2d7810a1a6bc030c8b28eea1b649870380fa7669e59e7d790ac75` |
+| `SaveEditor-linux-x86_64.tar.gz` | 81,518,395 | `7c6f1778c8800ac4237e3adacd08f2cffa84cacf54c77e7c292230f209ddd3ee` |
+| `stalker2-save-editor_amd64.deb` | 86,265,680 | `26c9c1464c9ec38a43dcfd0f65445fb62817256f9d42aa6198f29c9070c3ac8e` |
+
 ## v0.5.21 — published root release; APT pending key recovery — 2026-09-22
 
 Публичный root-релиз завершён из commit
