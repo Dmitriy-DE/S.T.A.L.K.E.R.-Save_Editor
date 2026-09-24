@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -79,7 +80,7 @@ def test_settings_content_starts_at_canonical_vertical_anchor_without_moving_act
     )
     assert pages[0].y() == 0
     # Panels are stacked in order and never overlap (heights follow fonts).
-    for upper, lower in zip(pages, pages[1:]):
+    for upper, lower in pairwise(pages):
         assert lower.y() >= upper.y() + upper.height()
     assert abs(view.save_button.y() - 755) <= 2
 
