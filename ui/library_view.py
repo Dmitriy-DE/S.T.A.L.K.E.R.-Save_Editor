@@ -199,7 +199,6 @@ class LibraryView(QWidget):
         self.save_table.setIconSize(QSize(84, 50))
         header = self.save_table.horizontalHeader()
         header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
@@ -413,6 +412,19 @@ class LibraryView(QWidget):
         self.preview_panel.setFixedWidth(380)
         body.addWidget(self.preview_panel, 0)
         root.addLayout(body, 1)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        # On a narrow or short window keep the columns and rows that matter:
+        # the release is repeated in each row's subtitle and the size in the
+        # preview, and the decorative zone art would hide the game list.
+        compact = self.width() < 1380
+        self.save_table.setColumnHidden(1, compact)
+        self.save_table.setColumnHidden(3, compact)
+        self.save_table.horizontalHeader().resizeSection(0, 250 if compact else 315)
+        for column, (normal, narrow) in {0: (170, 140), 2: (120, 100), 3: (174, 150)}.items():
+            self.activity_table.setColumnWidth(column, narrow if compact else normal)
+        self.zone_panel.setVisible(self.height() >= 760)
 
     def set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)

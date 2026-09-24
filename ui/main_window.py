@@ -15,8 +15,8 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Literal
 
-from PySide6.QtCore import QEvent, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QEvent, QSize, Qt, QThread, QTimer, QUrl, Signal
+from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -223,11 +223,28 @@ class MainWindow(QMainWindow):
         apply_theme(application if isinstance(application, QApplication) else None)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setWindowTitle("S.T.A.L.K.E.R. — Save Editor")
-        self.resize(1280, 820)
         self.setMinimumSize(960, 620)
+        self.resize(self._initial_size())
         self._build_ui()
         if self._auto_update_check:
             QTimer.singleShot(0, lambda: self.check_for_updates(manual=False))
+
+    @staticmethod
+    def _initial_size() -> QSize:
+        """Open at the canonical 1586x992 when the screen allows it.
+
+        The layout is designed for that canvas; the old fixed 1280x820 start
+        size pushed table columns behind a horizontal scrollbar on every
+        normal desktop.
+        """
+
+        screen = QGuiApplication.primaryScreen()
+        if screen is None:
+            return QSize(1280, 820)
+        available = screen.availableGeometry()
+        width = max(960, min(1586, int(available.width() * 0.94)))
+        height = max(620, min(992, int(available.height() * 0.94)))
+        return QSize(width, height)
 
     def _build_ui(self) -> None:
         root = QWidget(self)

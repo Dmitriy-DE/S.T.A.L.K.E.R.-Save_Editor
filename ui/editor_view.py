@@ -50,6 +50,17 @@ _DEVICE_CARD_TITLES = {
     "nvg": "ПНВ",
 }
 _LOW_PRIORITY_KEYS = ("wpn_knife", "device_pda", "device_torch", "wpn_binoc")
+_CATEGORY_TABS = (
+    ("ВСЕ", "Все"),
+    ("ОРУЖИЕ", "weapon"),
+    ("БОЕПРИПАСЫ", "ammo"),
+    ("СНАРЯЖЕНИЕ", "armor"),
+    ("РАСХОДНИКИ", "consumable"),
+    ("АРТЕФАКТЫ", "artifact"),
+    ("КЛЮЧИ", "quest"),
+    ("ПРОЧЕЕ", "other"),
+)
+_COMPACT_CATEGORY_LABELS = ("ВСЕ", "ОРУЖ.", "ПАТР.", "СНАР.", "РАСХ.", "АРТ.", "КЛЮЧИ", "ПРОЧ.")
 
 
 class ConditionBarDelegate(QStyledItemDelegate):
@@ -328,8 +339,9 @@ class EditorView(QWidget):
         categories = QHBoxLayout()
         categories.setSpacing(4)
         self.category_buttons: list[QPushButton] = []
-        for label, value in (("ВСЕ", "Все"), ("ОРУЖИЕ", "weapon"), ("БОЕПРИПАСЫ", "ammo"), ("СНАРЯЖЕНИЕ", "armor"), ("РАСХОДНИКИ", "consumable"), ("АРТЕФАКТЫ", "artifact"), ("КЛЮЧИ", "quest"), ("ПРОЧЕЕ", "other")):
+        for label, value in _CATEGORY_TABS:
             button = QPushButton(label, self.inventory_column)
+            button.setToolTip(label.capitalize())
             button.setObjectName("categoryButton")
             # Qt's Fusion style adds the inherited button padding back to the
             # size hint after the app stylesheet is installed. Keep the tab
@@ -407,6 +419,37 @@ class EditorView(QWidget):
         self.save_button = self.detail_view.save_button
         self.save_button.clicked.connect(self.save_requested)
 
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        # Below the canonical width the inventory would otherwise lose its
+        # count/weight/condition columns behind a horizontal scrollbar.
+        compact = self.width() < 1380
+        if getattr(self, "_compact", None) == compact:
+            return
+        self._compact = compact
+        self.status_column.setFixedWidth(290 if compact else 362)
+        self.detail_column.setFixedWidth(360 if compact else 393)
+        self.detail_view.set_compact(compact)
+        self.table.setColumnHidden(InventoryTableModel.CATEGORY_COLUMN, compact)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(
+            InventoryTableModel.NAME_COLUMN,
+            QHeaderView.ResizeMode.Stretch if compact else QHeaderView.ResizeMode.Interactive,
+        )
+        for column in (
+            InventoryTableModel.COUNT_COLUMN,
+            InventoryTableModel.WEIGHT_COLUMN,
+        ):
+            header.setSectionResizeMode(
+                column,
+                QHeaderView.ResizeMode.ResizeToContents if compact else QHeaderView.ResizeMode.Interactive,
+            )
+        if not compact:
+            self.table.setColumnWidth(InventoryTableModel.NAME_COLUMN, 250)
+        labels = _COMPACT_CATEGORY_LABELS if compact else tuple(label for label, _value in _CATEGORY_TABS)
+        for button, label in zip(self.category_buttons, labels, strict=True):
+            button.setText(label)
+
     def _add_info_row(
         self,
         parent_layout: QVBoxLayout,
@@ -439,7 +482,7 @@ class EditorView(QWidget):
         return value
 
     def _set_category(self, category: str) -> None:
-        values = ("Все", "weapon", "ammo", "armor", "consumable", "artifact", "quest", "other")
+        values = tuple(value for _label, value in _CATEGORY_TABS)
         for button, value in zip(self.category_buttons, values, strict=True):
             button.setChecked(value == category)
         self.model.set_category(category)

@@ -135,6 +135,7 @@ class ItemDetailView(QWidget):
         for index, label in enumerate(("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")):
             button = QPushButton(label, self.detail_content)
             button.setObjectName("detailTab")
+            button.setToolTip(label.capitalize())
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, selected=index: self._select_detail_tab(selected))
             tabs.addWidget(button, 1)
@@ -242,6 +243,15 @@ class ItemDetailView(QWidget):
         actions.addWidget(self.remove_button)
         root.addLayout(actions)
         self._select_detail_tab(0)
+
+    def set_compact(self, compact: bool) -> None:
+        labels = (
+            ("ОСНОВНОЕ", "МОДИФ.", "ХАРАКТ.")
+            if compact
+            else ("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")
+        )
+        for button, label in zip(self.detail_tabs, labels, strict=True):
+            button.setText(label)
 
     def _select_detail_tab(self, index: int) -> None:
         for button_index, button in enumerate(self.detail_tabs):
