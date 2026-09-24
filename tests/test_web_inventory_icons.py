@@ -22,5 +22,6 @@ def test_web_inventory_exposes_xray_placement_editor() -> None:
 
     assert "renderReferenceItemDetail" in script
     assert "state.placements" in script
-    assert "SInvItemPlace" in script
+    assert "placement_type" in script
+    assert "placement_slot" in script
     assert "placements" in script.split("state.bridge.prepare", 1)[1]

@@ -10,6 +10,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .style_components import action_button, panel, status_chip
+from .ux_copy import ERROR_COPY, technical_details
 
 
 class UnsupportedView(QWidget):
@@ -27,11 +28,11 @@ class UnsupportedView(QWidget):
         root.setContentsMargins(40, 30, 40, 30)
         root.setSpacing(8)
         heading = QHBoxLayout()
-        heading.addWidget(QLabel("РЕДАКТИРОВАНИЕ НЕДОСТУПНО", self))
+        heading.addWidget(QLabel(ERROR_COPY["unsupported"].title, self))
         heading.addStretch(1)
-        heading.addWidget(status_chip("READ-ONLY", self, tone="warning"))
+        heading.addWidget(status_chip("ТОЛЬКО ПРОСМОТР", self, tone="warning"))
         root.addLayout(heading)
-        self.writer_label = QLabel("Этот релиз распознан, но для него нет подтверждённого безопасного writer.", self)
+        self.writer_label = QLabel(ERROR_COPY["unsupported"].message, self)
         self.writer_label.setObjectName("unsupportedWriterLabel")
         self.writer_label.setWordWrap(True)
         root.addWidget(self.writer_label)
@@ -49,7 +50,10 @@ class UnsupportedView(QWidget):
         self.file_label.setObjectName("unsupportedFileLabel")
         self.file_label.setWordWrap(True)
         detail.addWidget(self.file_label)
-        self.reason_label = QLabel("Сохранение можно диагностировать и открыть в папке, но запись в него не выполняется.", self.detail_panel)
+        self.reason_label = QLabel(
+            "Файл можно проверить и просмотреть. Изменения пока недоступны.",
+            self.detail_panel,
+        )
         self.reason_label.setWordWrap(True)
         detail.addWidget(self.reason_label)
         detail.addStretch(1)
@@ -64,7 +68,9 @@ class UnsupportedView(QWidget):
         self.diagnostics_button.clicked.connect(self.diagnostics_requested)
         actions.addWidget(self.diagnostics_button)
         actions.addStretch(1)
-        self.back_button = action_button("←  ВЕРНУТЬСЯ В БИБЛИОТЕКУ", self, kind="primary")
+        self.back_button = action_button(
+            ERROR_COPY["unsupported"].primary_action.upper(), self, kind="primary"
+        )
         self.back_button.clicked.connect(self.back_requested)
         actions.addWidget(self.back_button)
         root.addLayout(actions)
@@ -74,11 +80,16 @@ class UnsupportedView(QWidget):
     def set_snapshot(self, snapshot: Any, reason: str | None = None) -> None:
         self.file_label.setText(
             f"{snapshot.path.name}\n"
-            f"Формат: {getattr(snapshot, 'format_title', getattr(snapshot, 'format_id', 'unknown'))}\n"
-            f"SHA-256: {snapshot.info.sha256}"
+            f"Формат: {getattr(snapshot, 'format_title', None) or 'Неизвестный формат'}"
         )
-        if reason:
-            self.reason_label.setText(reason)
+        self.file_label.setToolTip(
+            technical_details(
+                f"Идентификатор формата: {getattr(snapshot, 'format_id', None)}\n"
+                f"SHA-256: {snapshot.info.sha256}\nФайл: {snapshot.path}"
+            )
+        )
+        self.reason_label.setText(ERROR_COPY["unsupported"].message)
+        self.reason_label.setToolTip(technical_details(reason))
 
 
 __all__ = ["UnsupportedView"]

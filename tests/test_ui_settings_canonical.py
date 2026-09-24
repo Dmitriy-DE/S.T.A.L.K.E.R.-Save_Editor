@@ -34,7 +34,7 @@ def test_settings_reference_has_seven_categories_and_safety_panels(qtbot, tmp_pa
     assert view.diagnostics_panel.objectName() == "diagnosticsSettingsPanel"
     assert view.save_button.text().startswith("СОХРАНИТЬ")
     assert any(
-        "uncertain" in label.text().casefold()
+        "не подтвердил запись" in label.text().casefold()
         for label in view.cloud_panel.findChildren(type(view.safety_labels[0]))
     )
     assert view.core_safety_read_only is True

@@ -26,7 +26,7 @@ def test_browser_keeps_local_only_and_does_not_use_screenshot_chrome() -> None:
     html = (ROOT / "web/index.html").read_text(encoding="utf-8")
     css = (ROOT / "web/style.css").read_text(encoding="utf-8")
     js = (ROOT / "web/app.js").read_text(encoding="utf-8")
-    assert "Steam Cloud и native paths недоступны" in html
+    assert "Steam Cloud и файлы компьютера недоступны" in html
     assert "border-image" not in css
     assert "showReferenceScreen" in js
     assert "renderReferenceReview" in js

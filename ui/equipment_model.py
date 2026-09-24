@@ -10,6 +10,8 @@ from PySide6.QtGui import QBrush, QColor, QIcon
 
 from editor.equipment import EquipmentItem
 
+from .ux_copy import technical_details
+
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
 IconProvider: TypeAlias = Callable[[EquipmentItem], QIcon | None]
 _EMPTY_INDEX = QModelIndex()
@@ -33,14 +35,14 @@ _LOCATION_LABELS = {
     "unknown": "Не определено",
 }
 _OBSERVATION_SOURCE_LABELS = {
-    "actor_inventory": "actor inventory",
-    "grid": "grid",
-    "equipped": "equipped-owned",
+    "actor_inventory": "инвентарь игрока",
+    "grid": "инвентарь",
+    "equipped": "экипировка",
 }
 _MATURITY_LABELS = {
-    "unsupported": "Недоступно",
+    "unsupported": "Только просмотр",
     "research": "Исследуется",
-    "experimental": "Экспериментально",
+    "experimental": "Экспериментальная функция",
     "verified": "Проверено",
 }
 
@@ -63,7 +65,7 @@ class EquipmentTableModel(QAbstractTableModel):
         "Прочность",
         "Поддержка",
         "Улучшения",
-        "Handle",
+        "Идентификатор",
     )
 
     def __init__(self, parent=None) -> None:
@@ -265,12 +267,14 @@ class EquipmentTableModel(QAbstractTableModel):
 
     def _tooltip(self, item: EquipmentItem, column: int) -> str:
         if column == self.SUPPORT_COLUMN:
-            return item.durability.reason or _MATURITY_LABELS[item.durability.maturity]
+            if item.durability.maturity == "unsupported":
+                return "Это значение нельзя изменить."
+            return _MATURITY_LABELS[item.durability.maturity]
         if column == self.NAME_COLUMN:
             family = item.serializer_family or "не определено"
             source = _OBSERVATION_SOURCE_LABELS.get(
                 item.observation_source,
-                item.observation_source,
+                "открытое сохранение",
             )
             device = (
                 f"\nУстройство: {item.device_subtype}"
@@ -278,16 +282,15 @@ class EquipmentTableModel(QAbstractTableModel):
                 else ""
             )
             return (
-                f"Type-key: {item.type_key}\n"
-                f"Serializer family: {family}\n"
-                f"Источник: {source}{device}"
+                f"Источник: {source}{device}\n"
+                f"{technical_details(f'Ключ типа: {item.type_key}; семейство формата: {family}; идентификатор: {item.handle_hex}')}"
             )
         if column == self.UPGRADES_COLUMN:
             if item.modules is None and item.upgrades is None:
-                return "Модули и улучшения для этого предмета не прочитаны"
+                return "Данные о модификациях недоступны."
             return self._display(item, column)
         if column == self.CONDITION_COLUMN and item.condition is None:
-            return item.durability.reason or "Прочность отсутствует"
+            return "Состояние предмета неизвестно."
         return self._display(item, column)
 
     def _rebuild(self) -> None:

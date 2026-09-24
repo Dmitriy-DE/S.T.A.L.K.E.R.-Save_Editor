@@ -67,6 +67,15 @@ from .support_dialog import SupportDialog
 from .theme import apply_theme
 from .unsupported_view import UnsupportedView
 from .update_dialog import UpdateCheckWorker, UpdateDialog
+from .ux_copy import (
+    ERROR_COPY,
+    ErrorKind,
+    classify_analysis_error,
+    classify_operation_error,
+    format_error_details,
+    present_error,
+    technical_details,
+)
 
 
 def _default_s2_capabilities() -> FormatCapabilities:
@@ -211,6 +220,8 @@ class MainWindow(QMainWindow):
         self._cloud_busy = False
         self._support_dialog: SupportDialog | None = None
         self._diagnostics_dialog: DiagnosticsDialog | None = None
+        self._error_dialog: QMessageBox | None = None
+        self._details_dialog: QMessageBox | None = None
         self._update_client = update_client
         self._auto_update_check = auto_update_check
         self._update_thread: UpdateCheckWorker | None = None
@@ -402,7 +413,11 @@ class MainWindow(QMainWindow):
                 if record.source_path
                 else record.backup_path.name,
                 record.created_at,
-                "Проверено" if record.status == "verified" else record.status,
+                {
+                    "verified": "Файл проверен",
+                    "missing": "Резервная копия недоступна",
+                    "corrupt": "Резервная копия повреждена",
+                }.get(record.status, "Требует проверки"),
             )
             for record in tuple(records or ())
         ]
@@ -497,7 +512,9 @@ class MainWindow(QMainWindow):
             return
         release = (self.snapshot.release_id or self.snapshot.format_id).casefold()
         if not is_xray_original_release(release):
-            self.status_label.setText("Персонаж и группировки доступны только для X-Ray сейвов")
+            self.status_label.setText(
+                "Персонаж и группировки доступны только для сохранений X-Ray."
+            )
             return
         self.character_view.set_snapshot(self.snapshot)
         self.character_view.set_state(
@@ -529,31 +546,48 @@ class MainWindow(QMainWindow):
             rows.append(("Баланс", f"{before} ₽", f"{human_money(self.staged_money)} ₽"))
         for handle, value in sorted(self.staged_counts.items()):
             item = self._find_inventory_item(handle)
-            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
+            name = self._item_name(item)
             rows.append((f"{name} · количество", str(item.count if item is not None else "—"), str(value)))
         for handle, durability_value in sorted(self.staged_durability.items()):
             item = self._find_inventory_item(handle)
-            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
+            name = self._item_name(item)
             before = "—" if item is None or item.condition is None else f"{item.condition * 100:.0f}%"
             rows.append((f"{name} · состояние", before, f"{durability_value * 100:.0f}%"))
         for handle in sorted(self.staged_detach):
             item = self._find_inventory_item(handle)
-            name = (item.display_name or item.type_key) if item is not None else f"0x{handle:08X}"
-            rows.append((name, "в сейве", "удалить"))
+            name = self._item_name(item)
+            rows.append((name, "в сохранении", "удалить"))
         for item_key, quantity in sorted(self.staged_adds.items()):
-            rows.append((item_key, "нет", f"добавить × {quantity}"))
+            definition = self.snapshot.catalog.resolve(item_key) if self.snapshot.catalog else None
+            rows.append((definition.display_name if definition and definition.display_name else "Предмет", "нет", f"добавить × {quantity}"))
         for key, value in sorted(self.staged_faction_relations.items()):
-            rows.append((f"goodwill · {key}", "текущее", str(value)))
+            faction = (
+                self.snapshot.game_catalog.factions.resolve(key)
+                if self.snapshot.game_catalog is not None
+                else None
+            )
+            faction_name = faction.display_name if faction and faction.display_name else "Группировка"
+            rows.append((f"Отношение: {faction_name}", "текущее", str(value)))
         for handle, values in sorted(self.staged_upgrades.items()):
             item = self._find_inventory_item(handle)
-            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "улучшения", ", ".join(values) or "нет"))
+            rows.append((self._item_name(item), "модификации", ", ".join(values) or "нет"))
         for handle, (placement, slot) in sorted(self.staged_placements.items()):
             item = self._find_inventory_item(handle)
-            target = placement if slot is None else f"{placement}:{slot}"
-            rows.append((item.type_key if item is not None else f"0x{handle:08X}", "позиция", target))
+            target = {"ruck": "Рюкзак", "belt": "Пояс", "slot": f"Слот {slot}"}.get(placement, "Инвентарь")
+            rows.append((self._item_name(item), "размещение", target))
         if self.staged_player_faction is not None:
-            rows.append(("Группировка игрока", "текущая", self.staged_player_faction))
+            faction = (
+                self.snapshot.game_catalog.factions.resolve(self.staged_player_faction)
+                if self.snapshot.game_catalog is not None
+                else None
+            )
+            faction_name = faction.display_name if faction and faction.display_name else "Группировка"
+            rows.append(("Группировка игрока", "текущая", faction_name))
         return tuple(rows)
+
+    @staticmethod
+    def _item_name(item) -> str:
+        return item.display_name or "Неизвестный предмет" if item is not None else "Неизвестный предмет"
 
     def _request_reference_save(self) -> None:
         """Enter the visible review state; the legacy method remains test/API compatible."""
@@ -564,7 +598,7 @@ class MainWindow(QMainWindow):
         rows = self._reference_change_rows()
         self.save_review_view.set_source(
             f"Источник: {self.snapshot.path.name} · "
-            f"изменений: {len(rows)} · bytes исходного сейва пока не изменены"
+            f"Подготовлено {len(rows)} изменений. Оригинальный файл пока не изменён."
         )
         self.save_review_view.set_changes(rows)
         self._show_reference_modal(self.save_review_view, base_widget=self.editor_view)
@@ -586,7 +620,7 @@ class MainWindow(QMainWindow):
         self._save_one_click()
 
     def _cancel_reference_save(self) -> None:
-        self.status_label.setText("Сохранение отменено; изменения сохранены в памяти")
+        self.status_label.setText("Сохранение отменено. Черновик изменений сохранён.")
         self._show_reference_editor()
 
     def _show_reference_modal(self, view: QWidget, *, base_widget: QWidget | None = None) -> None:
@@ -642,19 +676,20 @@ class MainWindow(QMainWindow):
         self.save_result_view.set_receipt(
             receipt,
             status=getattr(receipt, "status", None),
+            change_count=self._draft_change_count(),
         )
         # The receipt is visible immediately, but the editor may only be
         # reopened after the actual published bytes have been re-inspected (or
         # Cloud has completed remote reconciliation).
         pending_message = (
-            "Cloud write имеет локальный receipt; ожидаю remote reconciliation, редактор заблокирован."
+            "Steam проверяет результат записи. Редактор откроется после подтверждения."
             if getattr(receipt, "remote_path", None) is not None
-            else "Запись подтверждена локально; проверяю фактически сохранённое состояние…"
+            else "Запись завершена. Проверяем сохранённое состояние…"
         )
         self.save_result_view.set_editor_ready(False, pending_message)
         if cloud_reconciliation and getattr(receipt, "status", None) == "verified":
             self.save_result_view.subtitle.setText(
-                "Write подтверждён receipt; обновляю список Cloud и сверяю remote SHA."
+                "Запись подтверждена. Обновляем список Steam Cloud…"
             )
         base = self.reference_stack.currentWidget()
         if base in {
@@ -665,7 +700,7 @@ class MainWindow(QMainWindow):
             base = self.editor_view if self.snapshot is not None else self.library_view
         self._show_reference_modal(self.save_result_view, base_widget=base)
         self.app_shell.set_active_destination(
-            "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library",
+                "cloud" if self.snapshot is not None and self.snapshot.source_kind == "cloud" else "library",
             emit=False,
         )
         self.app_shell.set_footer_actions(
@@ -812,7 +847,7 @@ class MainWindow(QMainWindow):
         if client is None:
             if manual:
                 self.status_label.setText(
-                    "Автообновления доступны только в portable/package-сборке"
+                    "Автообновления доступны только в установленной версии приложения."
                 )
             return
         installation = self._update_installation_info()
@@ -880,14 +915,15 @@ class MainWindow(QMainWindow):
         self.discovery_controller.refresh()
 
     def _on_slot_discovery_failed(self, message: str) -> None:
-        self.status_label.setText(f"Поиск слотов не выполнен: {message}")
+        self.status_label.setText("Не удалось обновить список сохранений.")
+        self.status_label.setToolTip(technical_details(message))
 
     def open_local(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть сохранение S.T.A.L.K.E.R.",
             "",
-            "S.T.A.L.K.E.R. saves (*.sav *.scop *.scs);;Все файлы (*)",
+            "Сохранения S.T.A.L.K.E.R. (*.sav *.scop *.scs);;Все файлы (*)",
         )
         if filename:
             self._start_inspect(Path(filename))
@@ -937,17 +973,15 @@ class MainWindow(QMainWindow):
         self.analysis_ready.emit(snapshot)
 
     def _on_analysis_failed(self, message: str) -> None:
-        filename = self._pending_path.name if self._pending_path else "Сейв"
-        self.status_label.setText("Анализ не выполнен; предыдущий корректный snapshot сохранён")
-        display_message = (
-            message
-            if message.startswith("Error: Формат файла ")
-            else f"{filename}: {message}"
-        )
-        self.error_label.setText(display_message)
+        kind = classify_analysis_error(message)
+        copy = ERROR_COPY[kind]
+        self.status_label.setText(copy.title)
+        self.library_view.set_analysis_error(copy.message, details=message)
+        self.error_label.setText(copy.message)
+        self.error_label.setToolTip(format_error_details(present_error(kind, message)))
         self.error_label.setVisible(True)
-        self.library_view.set_analysis_error(display_message)
         self._show_library()
+        self._show_copy_error(kind, message, self.open_local)
         self.analysis_failed.emit(message)
 
     def _on_inspect_thread_finished(self) -> None:
@@ -993,10 +1027,12 @@ class MainWindow(QMainWindow):
             self.staged_player_faction,
         )
         self.library_view.status_label.setText(
-            f"{snapshot.path.name} · {human_size(len(snapshot.data))} · "
-            f"SHA {info.sha256[:12]}…"
+            f"{snapshot.path.name} · {human_size(len(snapshot.data))} · файл проверен"
         )
-        self.status_label.setText("CORE: READY  |  CRC / SHA / BACKUP ВКЛЮЧЕНЫ")
+        self.library_view.status_label.setToolTip(
+            technical_details(f"SHA-256: {info.sha256}\nCRC: {'PASS' if info.crc_ok else 'FAIL'}")
+        )
+        self.status_label.setText("Редактор готов")
         self.error_label.clear()
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True
@@ -1038,12 +1074,12 @@ class MainWindow(QMainWindow):
             value = self.editor_view.money_spin.value()
         if not self.snapshot.capabilities.edit_money:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает редактирование денег"
+                "Редактирование баланса недоступно для этого сохранения."
             )
             return
         if info.money is None or info.money_anchor_count != 1:
             self.editor_view.show_capability_message(
-                "Только чтение: wallet anchor не подтверждён"
+                "Это значение нельзя изменить."
             )
             return
         if not (0 <= value <= 2_000_000_000):
@@ -1056,8 +1092,8 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview("изменилось значение баланса")
         self.status_label.setText(
-            f"Подготовлено изменений: баланс={'нет' if self.staged_money is None else self.staged_money}, "
-            f"предметов={len(self.staged_counts)}; байты сейва не изменены"
+            f"Подготовлено {len(self.staged_counts) + int(self.staged_money is not None)} изменений. "
+            "Оригинальный файл пока не изменён."
         )
 
     def _clear_money(self) -> None:
@@ -1066,7 +1102,7 @@ class MainWindow(QMainWindow):
             self._render_money(self.snapshot.info)
             self._render_changes()
             self._invalidate_preview("черновик баланса очищен")
-        self.status_label.setText("Баланс возвращён к исходному значению; bytes сейва не изменены")
+        self.status_label.setText("Баланс возвращён к исходному значению. Оригинальный файл пока не изменён.")
 
     def _find_inventory_item(self, handle: int):
         if self.snapshot is None:
@@ -1079,13 +1115,13 @@ class MainWindow(QMainWindow):
     def _stage_stack_change(self, handle: int, new_count: int) -> None:
         if self.snapshot is not None and not self.snapshot.capabilities.edit_stacks:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает редактирование stack count"
+                "Редактирование количества недоступно для этого сохранения."
             )
             return
         item = self._find_inventory_item(handle)
         if item is None:
             self.editor_view.show_capability_message(
-                f"Только чтение: handle 0x{int(handle):08X} не найден в текущем snapshot"
+                "Предмет больше не найден в открытом сохранении."
             )
             return
         value = int(new_count)
@@ -1095,10 +1131,7 @@ class MainWindow(QMainWindow):
             )
             return
         if not item.editable_count:
-            reason = "count не извлечён" if item.count is None else (
-                "count=1" if item.count <= 1 else f"неподтверждённый kind={item.kind_code}"
-            )
-            self.editor_view.show_capability_message(f"Только чтение: {reason}")
+            self.editor_view.show_capability_message("Это значение нельзя изменить.")
             return
         if value == item.count:
             self.staged_counts.pop(item.handle, None)
@@ -1107,7 +1140,7 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview("изменилось значение количества")
         self.status_label.setText(
-            f"Подготовлено изменений: {len(self.staged_counts)}; байты сейва не изменены"
+            f"Подготовлено {len(self.staged_counts)} изменений. Оригинальный файл пока не изменён."
         )
 
     def _stage_item_add(self, item_key: str, quantity: int) -> None:
@@ -1115,14 +1148,14 @@ class MainWindow(QMainWindow):
             return
         if not self.snapshot.capabilities.add_items:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает добавление предметов"
+                "Добавление предметов недоступно для этого сохранения."
             )
             return
         catalog = self.snapshot.catalog
         definition = catalog.resolve(item_key) if catalog is not None else None
         if definition is None:
             self.editor_view.show_capability_message(
-                f"Предмет {item_key!r} отсутствует в официальном каталоге"
+                "Этот предмет отсутствует в каталоге и не может быть добавлен."
             )
             return
         value = int(quantity)
@@ -1137,14 +1170,16 @@ class MainWindow(QMainWindow):
             and value > definition.max_stack
         ):
             self.editor_view.show_capability_message(
-                f"Для {item_key} допустимо не больше {definition.max_stack} за стак"
+                f"Для {definition.display_name or 'этого предмета'} допустимо не больше "
+                f"{definition.max_stack} за одну группу."
             )
             return
         self.staged_adds[item_key] = value
         self._render_changes()
         self._invalidate_preview("изменилось добавление предмета")
         self.status_label.setText(
-            f"Подготовлено добавление: {item_key} × {value}; байты сейва не изменены"
+            f"Подготовлено добавление предмета: {definition.display_name or 'предмет'} × {value}. "
+            "Оригинальный файл пока не изменён."
         )
 
     def _stage_item_remove(self, handle: int) -> None:
@@ -1152,44 +1187,44 @@ class MainWindow(QMainWindow):
             return
         if not self.snapshot.capabilities.remove_items:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает удаление предметов"
+                "Удаление предметов недоступно для этого сохранения."
             )
             return
         item = self._find_inventory_item(handle)
         if item is None:
             self.editor_view.show_capability_message(
-                f"Только чтение: handle 0x{int(handle):04X} не найден"
+                "Предмет больше не найден в открытом сохранении."
             )
             return
         if not item.remove_editable:
             self.editor_view.show_capability_message(
-                item.remove_reason or "Только чтение: удаление этого объекта заблокировано"
+                "Этот предмет нельзя удалить в текущем сохранении."
             )
             return
         handle = int(handle)
         if handle in self.staged_detach:
             self.staged_detach.pop(handle, None)
-            message = f"Удаление отменено для {item.type_key}"
+            message = f"Удаление отменено для {item.display_name or 'предмета'}"
         else:
             self.staged_detach[handle] = True
             self.staged_counts.pop(handle, None)
-            message = f"Удаление подготовлено для {item.type_key}"
+            message = f"Подготовлено удаление: {item.display_name or 'предмет'}"
         self._render_changes()
         self._invalidate_preview("изменился список удалений")
-        self.status_label.setText(f"{message}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText(f"{message}. Оригинальный файл пока не изменён.")
 
     def _stage_item_durability(self, handle: int, condition: float) -> None:
         if self.snapshot is None:
             return
         if not self.snapshot.capabilities.edit_durability:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает редактирование прочности"
+                "Редактирование состояния недоступно для этого сохранения."
             )
             return
         item = self._find_inventory_item(handle)
         if item is None or not item.condition_editable or item.condition is None:
             self.editor_view.show_capability_message(
-                f"Только чтение: handle 0x{int(handle):04X} не имеет подтверждённого condition"
+                "Это значение нельзя изменить."
             )
             return
         value = float(condition)
@@ -1203,7 +1238,8 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview("изменилось значение прочности")
         self.status_label.setText(
-            f"Прочность подготовлена для {item.type_key}; байты сейва не изменены"
+            f"Подготовлено изменение состояния: {item.display_name or 'предмет'}. "
+            "Оригинальный файл пока не изменён."
         )
 
     def _clear_item_durability(self, handle: int) -> None:
@@ -1215,7 +1251,10 @@ class MainWindow(QMainWindow):
         self.staged_durability.pop(item.handle, None)
         self._render_changes()
         self._invalidate_preview("черновик прочности очищен")
-        self.status_label.setText(f"Прочность очищена для {item.type_key}; bytes сейва не изменены")
+        self.status_label.setText(
+            f"Изменение состояния отменено для {item.display_name or 'предмета'}. "
+            "Оригинальный файл пока не изменён."
+        )
 
     def _finish_equipment_repair(self, result: RepairStageResult, *, action: str) -> None:
         for handle, value in result.changes:
@@ -1231,10 +1270,10 @@ class MainWindow(QMainWindow):
         details = "; ".join(
             f"0x{item.handle:04X}: {item.reason}" for item in result.skipped[:3]
         )
-        if details:
-            parts.append(details)
         self.editor_view.show_capability_message(". ".join(parts))
-        self.status_label.setText("Оборудование подготовлено; bytes сейва не изменены — нужна проверка")
+        if details:
+            self.editor_view.detail_view.module_status.setToolTip(technical_details(details))
+        self.status_label.setText("Изменения снаряжения подготовлены. Оригинальный файл пока не изменён.")
 
     def _stage_equipment_repair(self, handle: int, percentage: float) -> None:
         result = stage_repair(self.equipment_rows, (int(handle),), percentage)
@@ -1242,13 +1281,13 @@ class MainWindow(QMainWindow):
 
     def _stage_equipment_bulk_repair(self, filter_name: str, percentage: float) -> None:
         result = stage_bulk_repair(self.equipment_rows, filter_name, percentage)  # type: ignore[arg-type]
-        self._finish_equipment_repair(result, action=f"Массовый ремонт ({filter_name})")
+        self._finish_equipment_repair(result, action="Массовый ремонт")
 
     def _reset_equipment_repair(self, handle: int) -> None:
         self.staged_durability.pop(int(handle), None)
         self._render_changes()
         self._invalidate_preview("черновик прочности оборудования очищен")
-        self.status_label.setText("Прочность очищена; bytes сейва не изменены")
+        self.status_label.setText("Изменения состояния отменены. Оригинальный файл пока не изменён.")
 
     def _stage_item_upgrades(self, handle: int, values: object) -> None:
         if self.snapshot is None:
@@ -1256,13 +1295,13 @@ class MainWindow(QMainWindow):
         capabilities = self.snapshot.capabilities
         if not capabilities.edit_upgrades:
             self.editor_view.show_capability_message(
-                "Только чтение: правка улучшений не подтверждена для этого релиза"
+                "Данные о модификациях недоступны для этого сохранения."
             )
             return
         item = self._find_inventory_item(handle)
         if item is None or item.upgrades is None or not item.upgrades_editable:
             self.editor_view.show_capability_message(
-                f"Только чтение: handle 0x{int(handle):08X} не имеет подтверждённого upgrades vector"
+                "Это значение нельзя изменить."
             )
             return
         if not isinstance(values, (tuple, list)):
@@ -1275,7 +1314,10 @@ class MainWindow(QMainWindow):
             self.staged_upgrades[item.handle] = desired
         self._render_changes()
         self._invalidate_preview("изменился список улучшений")
-        self.status_label.setText(f"Улучшения подготовлены для {item.type_key}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText(
+            f"Подготовлены изменения модификаций: {item.display_name or 'предмет'}. "
+            "Оригинальный файл пока не изменён."
+        )
 
     def _clear_item_upgrades(self, handle: int) -> None:
         if self.snapshot is None:
@@ -1286,20 +1328,23 @@ class MainWindow(QMainWindow):
         self.staged_upgrades.pop(item.handle, None)
         self._render_changes()
         self._invalidate_preview("черновик улучшений очищен")
-        self.status_label.setText(f"Улучшения очищены для {item.type_key}; bytes сейва не изменены")
+        self.status_label.setText(
+            f"Изменения модификаций отменены для {item.display_name or 'предмета'}. "
+            "Оригинальный файл пока не изменён."
+        )
 
     def _stage_item_placement(self, handle: int, placement_type: str, slot_id: object) -> None:
         if self.snapshot is None:
             return
         if not self.snapshot.capabilities.edit_placement:
             self.editor_view.show_capability_message(
-                "Только чтение: формат не разрешает редактирование позиции"
+                "Изменение размещения недоступно для этого сохранения."
             )
             return
         item = self._find_inventory_item(handle)
         if item is None or not item.placement_editable or item.placement_type is None:
             self.editor_view.show_capability_message(
-                f"Только чтение: handle 0x{int(handle):04X} не имеет подтверждённого client-data place"
+                "Это значение нельзя изменить."
             )
             return
         normalized_type = str(placement_type).strip().casefold()
@@ -1308,19 +1353,19 @@ class MainWindow(QMainWindow):
         elif isinstance(slot_id, int):
             normalized_slot = slot_id
         else:
-            self.editor_view.show_capability_message("Только чтение: номер слота имеет неподдержанный тип")
+            self.editor_view.show_capability_message("Это значение нельзя изменить.")
             return
         current = (item.placement_type, item.placement_slot if item.placement_type == "slot" else None)
         desired = (normalized_type, normalized_slot)
         if desired == current:
             self.staged_placements.pop(item.handle, None)
-            message = f"Позиция очищена для {item.type_key}"
+            message = f"Размещение сброшено для {item.display_name or 'предмета'}"
         else:
             self.staged_placements[item.handle] = desired
-            message = f"Позиция подготовлена для {item.type_key}: {normalized_type}"
+            message = f"Подготовлено изменение размещения: {item.display_name or 'предмет'}"
         self._render_changes()
         self._invalidate_preview("изменилось размещение предмета")
-        self.status_label.setText(f"{message}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText(f"{message}. Оригинальный файл пока не изменён.")
 
     def _clear_item_placement(self, handle: int) -> None:
         if self.snapshot is None:
@@ -1331,31 +1376,37 @@ class MainWindow(QMainWindow):
         self.staged_placements.pop(item.handle, None)
         self._render_changes()
         self._invalidate_preview("черновик размещения очищен")
-        self.status_label.setText(f"Позиция очищена для {item.type_key}; bytes сейва не изменены")
+        self.status_label.setText(
+            f"Размещение сброшено для {item.display_name or 'предмета'}. "
+            "Оригинальный файл пока не изменён."
+        )
 
     def _stage_faction_relation(self, key: str, goodwill: int) -> None:
         if self.snapshot is None:
             return
         capabilities = self.snapshot.capabilities
         if not capabilities.edit_relations or not self.snapshot.info.faction_relations_editable:
-            self.character_view.status_label.setText("Только чтение: формат не разрешает редактирование отношений")
+            self.character_view.status_label.setText("Отношения доступны только для просмотра.")
             return
         game_catalog = self.snapshot.game_catalog
         if game_catalog is None:
-            self.character_view.status_label.setText("Только чтение: официальный faction catalog не найден")
+            self.character_view.status_label.setText("Данные о группировках недоступны для этого сохранения.")
             return
         try:
             faction = game_catalog.factions.resolve(key)
         except CatalogLookupError as exc:
-            self.character_view.status_label.setText(str(exc))
+            self.character_view.status_label.setText("Не удалось найти эту группировку.")
+            self.character_view.status_label.setToolTip(technical_details(exc))
             return
         if faction.numeric_id is None:
-            self.character_view.status_label.setText(f"Только чтение: у {key} нет подтверждённого numeric community id")
+            self.character_view.status_label.setText("Изменение недоступно для этой группировки.")
             return
         minimum = game_catalog.factions.goodwill_min
         maximum = game_catalog.factions.goodwill_max
         if minimum is None or maximum is None or not minimum <= goodwill <= maximum:
-            self.character_view.status_label.setText(f"Goodwill отклонён: допустим диапазон {minimum}…{maximum}")
+            self.character_view.status_label.setText(
+                f"Отношение должно быть от {minimum} до {maximum}."
+            )
             return
         current = dict(self.snapshot.info.faction_relations).get(faction.numeric_id, 0)
         if int(goodwill) == current:
@@ -1365,38 +1416,44 @@ class MainWindow(QMainWindow):
         self.character_view.set_state(self.staged_faction_relations, self.staged_player_faction)
         self._render_changes()
         self._invalidate_preview("изменилось отношение группировки")
-        self.status_label.setText(f"Отношение изменено: {key} → {goodwill}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText(
+            f"Подготовлено изменение отношения: {faction.display_name or 'группировка'}. "
+            "Оригинальный файл пока не изменён."
+        )
 
     def _stage_player_faction(self, key: str) -> None:
         if self.snapshot is None:
             return
         capabilities = self.snapshot.capabilities
         if not capabilities.edit_player_faction or not self.snapshot.info.player_faction_editable:
-            self.character_view.status_label.setText("Только чтение: принадлежность игрока не подтверждена для этого сейва")
+            self.character_view.status_label.setText("Принадлежность игрока доступна только для просмотра.")
             return
         game_catalog = self.snapshot.game_catalog
         if game_catalog is None:
-            self.character_view.status_label.setText("Только чтение: официальный faction catalog не найден")
+            self.character_view.status_label.setText("Данные о группировках недоступны для этого сохранения.")
             return
         try:
             faction = game_catalog.factions.resolve(key)
         except CatalogLookupError as exc:
-            self.character_view.status_label.setText(str(exc))
+            self.character_view.status_label.setText("Не удалось найти эту группировку.")
+            self.character_view.status_label.setToolTip(technical_details(exc))
             return
         if faction.numeric_id is None:
-            self.character_view.status_label.setText(f"Только чтение: у {key} нет подтверждённого numeric community id")
+            self.character_view.status_label.setText("Изменение недоступно для этой группировки.")
             return
         self.staged_player_faction = None if faction.numeric_id == self.snapshot.info.player_faction_index else key
         self.character_view.set_state(self.staged_faction_relations, self.staged_player_faction)
         self._render_changes()
         self._invalidate_preview("изменилось принадлежность игрока")
-        self.status_label.setText(f"Принадлежность игрока изменена: {key}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText("Подготовлено изменение группировки. Оригинальный файл пока не изменён.")
 
     def _clear_selected_stack(self, handle: int) -> None:
         self.staged_counts.pop(int(handle), None)
         self._render_changes()
         self._invalidate_preview("черновик количества очищен")
-        self.status_label.setText(f"Подготовлено изменений: {len(self.staged_counts)}; bytes сейва не изменены — нужна проверка")
+        self.status_label.setText(
+            f"Подготовлено {len(self.staged_counts)} изменений. Оригинальный файл пока не изменён."
+        )
 
     def _reset_editor_item(self, handle: int) -> None:
         """Clear draft fields for one item without touching source bytes."""
@@ -1409,7 +1466,7 @@ class MainWindow(QMainWindow):
         self.staged_placements.pop(handle, None)
         self._render_changes()
         self._invalidate_preview("черновик предмета сброшен")
-        self.status_label.setText("Черновик предмета сброшен; исходные байты не изменены")
+        self.status_label.setText("Изменения предмета отменены. Оригинальный файл пока не изменён.")
 
     def _clear_all_stacks(self) -> None:
         self.staged_counts.clear()
@@ -1426,7 +1483,7 @@ class MainWindow(QMainWindow):
             self._render_factions(self.snapshot.info)
         self._render_changes()
         self._invalidate_preview("все черновики очищены")
-        self.status_label.setText("Все изменения очищены; bytes сейва не изменены")
+        self.status_label.setText("Все изменения отменены. Оригинальный файл пока не изменён.")
 
     def _render_changes(self) -> None:
         self.editor_view.set_draft(
@@ -1483,18 +1540,100 @@ class MainWindow(QMainWindow):
         self.cloud_controller.set_external_busy(local_busy if not self._cloud_busy else False)
 
     def _show_operation_error(self, message: str) -> None:
-        self.status_label.setText("Операция не выполнена")
-        self.error_label.setText(message)
-        self.error_label.setVisible(True)
+        kind = classify_operation_error(message)
+        actions = {
+            "source_changed": lambda: self._start_inspect(Path(self.snapshot.path))
+            if self.snapshot is not None
+            else self.open_local(),
+            "backup": self._show_settings,
+            "verify": self._show_reference_editor,
+            "cloud_unavailable": self.cloud_controller.start_connect,
+            "cloud_write_unavailable": self.cloud_controller.start_connect,
+            "cloud_uncertain": self.cloud_controller.reconcile_remote,
+        }
+        self.status_label.setText(ERROR_COPY[kind].title)
+        self._show_copy_error(kind, message, actions.get(kind, self._show_reference_editor))
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.set_error(message)
-        self.cloud_controller.set_error(message)
+        if (self.snapshot is not None and self.snapshot.source_kind == "cloud") or kind.startswith("cloud_"):
+            self.cloud_controller.set_error(message)
         self.operation_failed.emit(message)
+
+    def _show_copy_error(
+        self,
+        kind: ErrorKind,
+        details: str,
+        action,
+    ) -> None:
+        """Show short copy with a working primary action and opt-in diagnostics."""
+
+        copy = present_error(kind, details)
+        self.error_label.setText(copy.message)
+        detail_text = format_error_details(copy)
+        self.error_label.setToolTip(detail_text)
+        self.error_label.setVisible(True)
+        previous = self._error_dialog
+        if previous is not None:
+            previous.close()
+        dialog = QMessageBox(self)
+        dialog.setObjectName("uxErrorDialog")
+        icon = {
+            "info": QMessageBox.Icon.Information,
+            "success": QMessageBox.Icon.Information,
+            "warning": QMessageBox.Icon.Warning,
+            "error": QMessageBox.Icon.Critical,
+        }[copy.severity]
+        dialog.setIcon(icon)
+        dialog.setText(copy.title)
+        dialog.setInformativeText(copy.message)
+        primary = dialog.addButton(copy.primary_action, QMessageBox.ButtonRole.AcceptRole)
+        details_button = None
+        if copy.secondary_action is not None and copy.technical_details is not None:
+            details_button = dialog.addButton(
+                copy.secondary_action,
+                QMessageBox.ButtonRole.ActionRole,
+            )
+
+        def clicked(button) -> None:
+            if button is primary:
+                action()
+            elif button is details_button:
+                self._show_technical_details(detail_text)
+
+        dialog.buttonClicked.connect(clicked)
+        dialog.finished.connect(
+            lambda _result, current=dialog: setattr(self, "_error_dialog", None)
+            if self._error_dialog is current
+            else None
+        )
+        self._error_dialog = dialog
+        dialog.open()
+
+    def _show_technical_details(self, details: str) -> None:
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        dialog = QMessageBox(self)
+        dialog.setObjectName("technicalDetailsDialog")
+        dialog.setIcon(QMessageBox.Icon.Information)
+        dialog.setWindowTitle("Технические детали")
+        dialog.setText("Технические детали")
+        dialog.setInformativeText(details)
+        dialog.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        dialog.setStandardButtons(QMessageBox.StandardButton.Close)
+        dialog.finished.connect(
+            lambda _result, current=dialog: setattr(self, "_details_dialog", None)
+            if self._details_dialog is current
+            else None
+        )
+        self._details_dialog = dialog
+        dialog.open()
 
     def _invalidate_preview(self, reason: str) -> None:
         self.prepared_edit = None
-        safe_reason = reason.replace("staged", "черновик").replace("preview", "проверка")
-        self.editor_view.show_capability_message(f"Проверка сброшена: {safe_reason}")
+        self.editor_view.show_capability_message(
+            "Проверка перед сохранением сброшена. Проверь изменения ещё раз."
+        )
+        self.editor_view.detail_view.module_status.setToolTip(technical_details(reason))
         self.cloud_controller.set_prepared(None)
         if hasattr(self, "cloud_reference_view"):
             self.cloud_reference_view.set_prepared(None)
@@ -1587,8 +1726,9 @@ class MainWindow(QMainWindow):
             self._on_operation_failed("Черновик изменился во время проверки; повтори проверку")
             return
         self.prepared_edit = prepared
-        self.editor_view.show_capability_message(
-            f"Проверка готова: SHA {prepared.output_sha256[:12]}…"
+        self.editor_view.show_capability_message("Проверка готова. Можно сохранить изменения.")
+        self.editor_view.detail_view.module_status.setToolTip(
+            technical_details(f"SHA-256 результата: {prepared.output_sha256}")
         )
         self.cloud_controller.set_prepared(prepared)
         if hasattr(self, "cloud_reference_view"):
@@ -1608,7 +1748,15 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Проверено; можно сохранить")
 
     def _on_operation_progress(self, message: str) -> None:
-        self.status_label.setText(message)
+        value = str(message).casefold()
+        if "восстановление" in value:
+            display = "Восстанавливаем резервную копию…"
+        elif "backup" in value or "sha" in value or "round-trip" in value:
+            display = "Проверяем изменения и резервную копию…"
+        else:
+            display = "Сохраняем изменения…"
+        self.status_label.setText(display)
+        self.status_label.setToolTip(technical_details(message))
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.set_progress(message)
 
@@ -1619,7 +1767,8 @@ class MainWindow(QMainWindow):
         self._pending_replace = False
         if "SHA256" in message or "Источник изменился" in message:
             self.prepared_edit = None
-            self.editor_view.show_capability_message("Проверка сброшена: SHA источника изменился")
+            self.editor_view.show_capability_message("Файл изменился после открытия.")
+            self.editor_view.detail_view.module_status.setToolTip(technical_details(message))
             self.cloud_controller.set_prepared(None)
         self._show_operation_error(message)
 
@@ -1635,9 +1784,9 @@ class MainWindow(QMainWindow):
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Сохранить копию сейва",
+            "Сохранить копию сохранения",
             str(Path(self.snapshot.path).with_name(f"{Path(self.snapshot.path).stem}-edited.sav")),
-            "S.T.A.L.K.E.R. saves (*.sav *.scop *.scs);;Все файлы (*)",
+            "Сохранения S.T.A.L.K.E.R. (*.sav *.scop *.scs);;Все файлы (*)",
         )
         if path:
             self._start_apply(Path(path))
@@ -1650,14 +1799,14 @@ class MainWindow(QMainWindow):
         if self.snapshot.source_kind == "cloud":
             title = "Загрузить изменения в Steam Cloud?"
             message = (
-                "Изменения будут проверены и загружены в выбранный cloud-сейв.\n\n"
-                "Перед записью автоматически создаётся backup и recovery-копия. "
+                "Изменения будут проверены и загружены в выбранное сохранение Steam Cloud.\n\n"
+                "Перед записью автоматически создаются резервная и дополнительная копии. "
                 "Продолжить?"
             )
         else:
             title = "Сохранить изменения?"
             message = (
-                f"Изменения будут записаны в открытый сейв:\n{self.snapshot.path}\n\n"
+                f"Изменения будут записаны в открытое сохранение:\n{self.snapshot.path}\n\n"
                 "Перед записью автоматически создаётся проверенная резервная копия. "
                 "Продолжить?"
             )
@@ -1683,7 +1832,7 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Дождись завершения текущей операции")
             return
         if self.snapshot is None:
-            self._show_operation_error("Сначала открой сейв")
+            self._show_operation_error("Сначала открой сохранение.")
             return
         if not self._has_staged_changes() and self.prepared_edit is None:
             self._show_operation_error("Нет подготовленных изменений")
@@ -1877,20 +2026,16 @@ class MainWindow(QMainWindow):
         was_replace = self._operation_kind == "replace"
         self.prepared_edit = None
         if was_replace:
-            self.status_label.setText(
-                f"Сохранено: {receipt.output_path} · резервная копия создана"
-            )
+            self.status_label.setText("Сохранение записано. Проверяем результат…")
         else:
-            self.status_label.setText(
-                f"Сохранено: {receipt.output_path} · бэкап исходного сделан"
-            )
+            self.status_label.setText("Проверенная копия сохранена. Проверяем результат…")
         self._post_save_receipt = receipt
         self._start_post_save_reinspect(Path(receipt.output_path))
         self.backup_controller.refresh()
         self._record_recent_activity(
             "Локальное сохранение",
             str(receipt.output_path),
-            f"SHA {receipt.output_sha256[:12]}…",
+            "Сохранение проверено",
         )
         self._show_save_result(receipt)
         self.apply_ready.emit(receipt)
@@ -1912,35 +2057,46 @@ class MainWindow(QMainWindow):
         worker.finished.connect(self._on_post_save_reinspect_finished)
         worker.finished.connect(worker.deleteLater)
         self._post_save_reinspect_thread = worker
-        self.status_label.setText("Сохранено; повторно проверяю записанный слот…")
+        self.status_label.setText("Проверяем сохранённый файл…")
         worker.start()
 
     def _on_post_save_reinspect_ready(self, snapshot: LocalSnapshot) -> None:
         self._render_snapshot(snapshot, show_editor=False)
-        self.status_label.setText("Сохранено и повторно проверено; подготовлено 0 изменений")
+        self.status_label.setText("Сохранение проверено. Подготовлено 0 изменений.")
         self._enable_verified_result_editor(
-            "Сохранение повторно прочитано; snapshot обновлён, подготовлено 0 изменений."
+            "Сохранение записано и проверено. Резервная копия создана."
         )
         self._record_recent_activity(
             "Повторная проверка локального слота",
             str(snapshot.path),
-            f"SHA {snapshot.info.sha256[:12]}…",
+            "Сохранение проверено",
         )
 
     def _on_post_save_reinspect_failed(self, message: str) -> None:
         # The local receipt already proves the writer's read-back. Keep the
         # previous snapshot rather than presenting it as the newly written one,
         # and make the reconciliation failure visible on the library surface.
-        display = f"Повторная проверка записанного слота не выполнена: {message}"
-        self.status_label.setText("Сохранение записано; требуется повторная проверка")
+        display = ERROR_COPY["post_save_check"].message
+        self.status_label.setText("Не удалось повторно проверить сохранение")
         self.save_result_view.set_editor_ready(
             False,
             "Сохранение записано, но повторная проверка не завершилась; редактор пока заблокирован.",
         )
         self.app_shell.set_footer_actions((("Esc", "К библиотеке", self._show_library),))
         self.error_label.setText(display)
+        self.error_label.setToolTip(technical_details(message))
         self.error_label.setVisible(True)
-        self.library_view.set_analysis_error(display)
+        self.library_view.set_analysis_error(display, details=message)
+        path = (
+            Path(self._post_save_receipt.output_path)
+            if self._post_save_receipt is not None
+            else (Path(self.snapshot.path) if self.snapshot is not None else None)
+        )
+        self._show_copy_error(
+            "post_save_check",
+            message,
+            lambda: self._start_inspect(path) if path is not None else self.open_local(),
+        )
 
     def _on_post_save_reinspect_finished(self) -> None:
         self._post_save_reinspect_thread = None
@@ -1956,7 +2112,7 @@ class MainWindow(QMainWindow):
         if self._operation_thread is not None and self._operation_thread.isRunning():
             return
         if getattr(record, "status", None) != "verified":
-            self._show_operation_error("Выбранный backup не прошёл проверку SHA256")
+            self._show_operation_error("Резервная копия не прошла проверку")
             return
         worker = RestoreWorker(self.service, record, Path(output_path), parent=self)
         worker.completed.connect(self._on_restore_ready)
@@ -1973,11 +2129,11 @@ class MainWindow(QMainWindow):
     def _on_restore_ready(self, receipt) -> None:
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.mark_restored(receipt)
-        self.status_label.setText(f"Копия восстановлена: {receipt.output_path}")
+        self.status_label.setText("Резервная копия восстановлена и проверена.")
         self._record_recent_activity(
             "Восстановление копии",
             str(receipt.output_path),
-            f"SHA {receipt.output_sha256[:12]}…",
+            "Резервная копия проверена",
         )
         self.restore_ready.emit(receipt)
 
@@ -1985,7 +2141,7 @@ class MainWindow(QMainWindow):
         if self._operation_thread is not None and self._operation_thread.isRunning():
             return
         if getattr(record, "status", None) != "verified":
-            self._show_operation_error("Выбранный backup не прошёл проверку SHA256")
+            self._show_operation_error("Резервная копия не прошла проверку")
             return
         worker = RestoreWorker(self.service, record, in_place=True, parent=self)
         worker.completed.connect(self._on_restore_in_place_ready)
@@ -2002,11 +2158,11 @@ class MainWindow(QMainWindow):
     def _on_restore_in_place_ready(self, receipt) -> None:
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.mark_in_place_restored(receipt)
-        self.status_label.setText(f"Исходный слот восстановлен: {receipt.output_path}")
+        self.status_label.setText("Исходное сохранение восстановлено и проверено.")
         self._record_recent_activity(
             "Восстановление исходного слота",
             str(receipt.output_path),
-            f"SHA {receipt.output_sha256[:12]}…",
+            "Сохранение проверено",
         )
         self.restore_ready.emit(receipt)
 
@@ -2028,26 +2184,26 @@ class MainWindow(QMainWindow):
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)
         self.status_label.setText(
-            f"Cloud snapshot готов: {snapshot.name}; выбери изменения и выполни проверку"
+            f"Сохранение из Steam Cloud открыто: {snapshot.name}. Выбери изменения для сохранения."
         )
         self._record_recent_activity(
             "Cloud скачивание",
             snapshot.name,
-            f"SHA {snapshot.info.sha256[:12]}…",
+            "Сохранение проверено" if snapshot.info.crc_ok else "Файл повреждён или изменён",
         )
 
     def _start_cloud_upload(self) -> None:
         if self.prepared_edit is None:
-            self._show_operation_error("Сначала выполни проверку cloud-сейва")
+            self._show_operation_error("Сначала проверь сохранение из Steam Cloud.")
             return
-        self.status_label.setText("Cloud upload: подготовка…")
+        self.status_label.setText("Подготовка сохранения в Steam Cloud…")
         self.cloud_controller.start_upload()
 
     def _on_cloud_upload_ready(self, receipt) -> None:
         self.status_label.setText(
-            "Cloud: verified — выполняю reconciliation"
+            "Запись проверена. Обновляем список Steam Cloud…"
             if receipt.status == "verified"
-            else "Cloud: uncertain — требуется reconciliation"
+            else ERROR_COPY["cloud_uncertain"].title
         )
         self._update_action_buttons()
         self._post_save_receipt = receipt
@@ -2055,7 +2211,9 @@ class MainWindow(QMainWindow):
         self._record_recent_activity(
             "Cloud запись",
             receipt.remote_path,
-            "Проверено" if receipt.status == "verified" else "Требуется reconciliation",
+            "Запись успешно проверена"
+            if receipt.status == "verified"
+            else "Steam не подтвердил запись",
         )
         self.apply_ready.emit(receipt)
 
@@ -2075,29 +2233,41 @@ class MainWindow(QMainWindow):
             game_catalog=snapshot.game_catalog,
         )
         self._render_snapshot(local_snapshot, show_editor=False)
-        self.status_label.setText("Cloud reconciliation подтверждена; подготовлено 0 изменений")
+        self.status_label.setText("Запись успешно проверена. Подготовлено 0 изменений.")
         self._enable_verified_result_editor(
-            "Cloud remote read-back подтверждён; snapshot обновлён, подготовлено 0 изменений."
+            "Сохранение записано и проверено. Резервная копия создана."
         )
         self._record_recent_activity(
             "Cloud запись и проверка",
             snapshot.name,
-            f"SHA {snapshot.info.sha256[:12]}…",
+            "Запись успешно проверена",
         )
 
     def _on_cloud_reconciliation_failed(self, message: str) -> None:
         self.save_result_view.set_editor_ready(
             False,
-            "Cloud reconciliation не подтверждена; состояние не очищено и запись не повторяется автоматически.",
+            ERROR_COPY["cloud_uncertain"].message,
         )
         self.app_shell.set_footer_actions((("Esc", "К библиотеке", self._show_library),))
-        self._show_operation_error(message)
+        self.status_label.setText(ERROR_COPY["cloud_uncertain"].title)
+        self._show_copy_error(
+            "cloud_uncertain",
+            message,
+            self.cloud_controller.reconcile_remote,
+        )
 
     def _on_cloud_operation_failed(self, message: str) -> None:
         self._show_operation_error(message)
 
     def _on_cloud_progress(self, message: str) -> None:
-        self.status_label.setText(message)
+        value = str(message).casefold()
+        display = (
+            "Проверяем сохранение в Steam Cloud…"
+            if any(term in value for term in ("sha", "read", "persist", "reconcil"))
+            else "Выполняется действие в Steam Cloud…"
+        )
+        self.status_label.setText(display)
+        self.status_label.setToolTip(technical_details(message))
 
     def _on_cloud_busy(self, busy: bool) -> None:
         self._cloud_busy = busy
@@ -2114,13 +2284,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt override
         if self._operation_thread is not None and self._operation_thread.isRunning():
             self.status_label.setText(
-                "Операция ещё выполняется; закрой окно после завершения, чтобы не оборвать запись"
+                "Сохранение ещё выполняется. Дождись его завершения перед закрытием."
             )
             event.ignore()
             return
         if self.cloud_controller.is_busy and not self.cloud_controller.stop_worker(30_000):
             self.status_label.setText(
-                "Cloud operation ещё выполняется; окно закрыто не будет"
+                "Действие в Steam Cloud ещё выполняется. Дождись его завершения перед закрытием."
             )
             event.ignore()
             return
@@ -2135,7 +2305,7 @@ class MainWindow(QMainWindow):
             self._update_thread.wait(2_000)
             if self._update_thread.isRunning():
                 self.status_label.setText(
-                    "Проверка обновлений ещё выполняется; окно закрыто не будет"
+                    "Проверка обновлений ещё выполняется. Дождись её завершения перед закрытием."
                 )
                 event.ignore()
                 return

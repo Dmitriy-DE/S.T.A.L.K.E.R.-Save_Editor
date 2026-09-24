@@ -199,7 +199,7 @@ def test_diagnostics_dialog_previews_before_sending_and_reports_success(
 
     assert started.wait(2)
     qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
-    assert "Проверка" in dialog.preview_label.text()
+    assert "Обезличенный архив подготовлен" in dialog.preview_label.text()
     assert "report-123" in dialog.status_label.text()
 
 
@@ -256,8 +256,8 @@ def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
     )
     qtbot.addWidget(view)
 
-    assert "только чтение" in view.intro_label.text().casefold()
-    assert "WriteFile" in view.intro_label.text()
+    assert "только после проверки" in view.intro_label.text().casefold()
+    assert "твоего подтверждения" in view.intro_label.text().casefold()
     assert "Загрузить в облако" not in view.intro_label.text()
 
 
@@ -314,7 +314,9 @@ def test_cloud_view_empty_list_has_explicit_state(qtbot, synthetic_save: bytes, 
 
     _wait_cloud_idle(qtbot, view)
     assert view.table.rowCount() == 0
-    assert "0" in view.status_label.text()
+    assert view.status_label.text() == "ПОДКЛЮЧЕНО"
+    assert view.detail_name.text() == "Подходящие сохранения не найдены"
+    assert view.detail_meta.text() == "В выбранном профиле нет доступных сохранений."
     assert not view.analyze_button.isEnabled()
 
 
@@ -367,7 +369,9 @@ def test_cloud_view_hides_editor_artifacts_and_explains_why(
 
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
     assert view._hidden_editor_artifacts == 1
-    assert "СКРЫТО 1" in view.status_label.text()
+    assert view.status_label.text() == "ПОДКЛЮЧЕНО"
+    assert "Технические детали:" in view.status_label.toolTip()
+    assert "скрыто 1" in view.status_label.toolTip()
 
 
 def test_cloud_view_profile_switch_filters_the_selected_game_path(
@@ -460,7 +464,7 @@ def test_cloud_view_keeps_upload_disabled_until_transport_is_writable(
     view.set_prepared(prepared)
 
     assert not view.upload_button.isEnabled()
-    assert "read-only" in view.result_label.text()
+    assert view.result_label.text() == "Запись в Steam Cloud сейчас недоступна."
 
     transport.write_capability = CloudWriteCapability(True, "native writer ready")
     view.set_prepared(prepared)
@@ -508,9 +512,11 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     assert len(transport.write_calls) == 1
     assert view.upload_button.isEnabled() is False
     if persisted:
-        assert "verified" in view.result_label.text().lower()
+        assert view.result_label.text() == "Запись успешно проверена."
     else:
-        assert "uncertain" in view.result_label.text().lower()
+        assert view.result_label.text() == (
+            "Неясно, записались ли изменения. Мы не будем повторять запись автоматически."
+        )
 
 
 def test_cloud_upload_log_contains_target_size_and_result(

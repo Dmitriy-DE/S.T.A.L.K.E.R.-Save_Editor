@@ -142,4 +142,8 @@ def test_main_window_reports_missing_slot_as_open_error(qtbot, tmp_path: Path) -
     with qtbot.waitSignal(window.analysis_failed, timeout=5_000):
         window._start_inspect(path)
 
-    assert "vanished.sav" in window.error_label.text()
+    assert window.error_label.text() == (
+        "Файл повреждён, не поддерживается или изменён другой программой."
+    )
+    assert "Технические детали:" in window.error_label.toolTip()
+    assert "vanished.sav" in window.error_label.toolTip()

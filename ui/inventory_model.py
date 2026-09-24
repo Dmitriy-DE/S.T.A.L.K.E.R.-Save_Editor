@@ -14,6 +14,8 @@ from PySide6.QtGui import QBrush, QColor, QIcon
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
+from .ux_copy import technical_details
+
 # Qt calls these overrides with either index type; narrowing the signature to
 # QModelIndex alone is a Liskov violation the type checker rejects once the Qt
 # stubs are installed.
@@ -54,12 +56,12 @@ class InventoryTableModel(QAbstractTableModel):
         "ТИП",
         "Позиция",
         "Размер",
-        "Type-key",
+        "Идентификатор типа",
         "КОЛ-ВО",
         "ВЕС (КГ)",
         "СОСТОЯНИЕ",
         "Поддержка",
-        "Handle",
+        "Идентификатор",
     )
     _CHANGED_BRUSH = QBrush(QColor("#fff2cc"))
     _CHANGED_TEXT_BRUSH = QBrush(QColor("#151713"))
@@ -381,37 +383,33 @@ class InventoryTableModel(QAbstractTableModel):
     def _tooltip(self, item: InventoryItem, column: int) -> str:
         if column == self.NAME_COLUMN:
             display_name = self._display_name(item)
-            type_key = (
-                item.type_key
+            label = (
+                "Название предмета взято из каталога."
+                if self._name_provider is not None and display_name != item.display_name
+                else "Название предмета из сохранения."
                 if item.display_name is not None
-                else f"0x{item.type_key}"
+                else "Название предмета не определено."
             )
             return (
-                (
-                    "Имя получено из каталога/локализации; сохраняется исходный type-key. "
-                    if self._name_provider is not None and display_name != item.display_name
-                    else "Сериализованное имя section key; каталог/перевод не загружен. "
-                    if item.display_name is not None
-                    else "Имя не определено: каталог SID/type-key ещё не подтверждён. "
-                )
-                + f"{display_name} · Type-key: {type_key}"
+                f"{label}\n"
+                f"{technical_details(f'Идентификатор: {item.handle_hex}; ключ типа: {item.type_key}')}"
             )
         if column == self.HANDLE_COLUMN:
-            return f"Стабильный идентификатор: {item.handle_hex}"
+            return technical_details(f"Идентификатор: {item.handle_hex}")
         if column == self.SUPPORT_COLUMN:
             return self._support_text(item)
         if column == self.CONDITION_COLUMN:
             if item.condition is None:
-                return "— : формат сейва не хранит прочность для этого предмета"
+                return "Для этого предмета состояние не указано."
             if item.condition_editable:
-                return "STATE condition f32; UPDATE q8 mirror подтверждён"
-            return "Condition прочитан; writer не подтверждён"
+                return "Состояние предмета можно изменить."
+            return "Это значение нельзя изменить."
         if column == self.COUNT_COLUMN and item.count is None:
-            return "— : это не стек, количество в сейве не хранится"
+            return "Для этого предмета количество не указано."
         if column == self.WEIGHT_COLUMN and item.total_weight is None:
-            return "— : вес не хранится в этом формате сейва (только в конфигах игры)"
+            return "Вес для этого предмета неизвестен."
         if column == self.SIZE_COLUMN and self._display_value(item, column) in {"—", "неизвестно"}:
-            return "— : размер в ячейках не хранится в этом формате сейва"
+            return "Размер предмета неизвестен."
         return self._display_value(item, column)
 
     @staticmethod
@@ -419,12 +417,12 @@ class InventoryTableModel(QAbstractTableModel):
         if item.editable_count:
             return "Количество можно изменить"
         if item.count is None:
-            return "Только чтение: count не извлечён"
+            return "Это значение нельзя изменить."
         if item.count <= 1:
-            return "Только чтение: count=1"
+            return "Для этого предмета нельзя изменить количество."
         if item.kind_code not in EDITABLE_STACK_KIND_CODES:
-            return f"Только чтение: неизвестный kind={item.kind_code}"
-        return "Только чтение: запись не подтверждена"
+            return "Это значение нельзя изменить."
+        return "Количество нельзя изменить для этого предмета."
 
     @staticmethod
     def _condition_text(item: InventoryItem) -> str:

@@ -27,6 +27,7 @@ from editor.catalog import UpgradeCatalog
 from save_format import InventoryItem
 
 from .style_components import action_button, panel, section_header, status_chip
+from .ux_copy import technical_details
 
 _DETAIL_TYPE_LABELS = {
     "mp_wpn_ak74": "Штурмовая винтовка",
@@ -103,7 +104,7 @@ class ItemDetailView(QWidget):
         body = QVBoxLayout(self.detail_content)
         body.setContentsMargins(0, 0, 5, 4)
         body.setSpacing(4)
-        self.status_chip = status_chip("READ-ONLY", self.detail_content, tone="neutral")
+        self.status_chip = status_chip("ТОЛЬКО ПРОСМОТР", self.detail_content, tone="neutral")
         detail_header = section_header("РЕДАКТИРОВАНИЕ ПРЕДМЕТА", parent=self.detail_content)
         detail_header.setObjectName("detailHeader")
         detail_header.setFixedHeight(40)
@@ -123,7 +124,7 @@ class ItemDetailView(QWidget):
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self.image_label.setFixedHeight(86)
         body.addWidget(self.image_label)
-        self.description_label = QLabel("Данные отображаются только из текущего snapshot.", self.detail_content)
+        self.description_label = QLabel("Данные взяты из открытого сохранения.", self.detail_content)
         self.description_label.setObjectName("detailDescription")
         self.description_label.setWordWrap(True)
         body.addWidget(self.description_label)
@@ -184,7 +185,7 @@ class ItemDetailView(QWidget):
         feature_row = QHBoxLayout()
         feature_row.setSpacing(6)
         self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self.detail_content, tone="success")
-        self.read_only_feature_chip = status_chip("READ-ONLY", self.detail_content, tone="neutral")
+        self.read_only_feature_chip = status_chip("ТОЛЬКО ПРОСМОТР", self.detail_content, tone="neutral")
         self.feature_help = QLabel("?", self.detail_content)
         self.feature_help.setObjectName("detailFeatureHelp")
         feature_row.addWidget(self.verified_feature_chip)
@@ -220,17 +221,17 @@ class ItemDetailView(QWidget):
             button.setChecked(button_index == index)
         if index == 1 and self._item is not None:
             self.module_status.setText(
-                "Установленные модули и улучшения доступны как read-only evidence."
+                "Установленные модули и улучшения доступны только для просмотра."
             )
         elif index == 2 and self._item is not None:
             self.module_status.setText(
-                "Характеристики показываются только из текущего snapshot."
+                "Характеристики показываются по открытому сохранению."
             )
         elif self._item is not None:
             self.module_status.setText(
-                "Модули/улучшения показаны как read-only evidence."
+                "Модули и улучшения доступны только для просмотра."
                 if self._item.upgrades or self._item.modules
-                else "Для этого предмета модульные данные не разобраны; read-only."
+                else "Данные о модификациях недоступны."
             )
 
     def set_item(
@@ -265,8 +266,8 @@ class ItemDetailView(QWidget):
         if item is None:
             self.name_label.setText("Предмет не выбран")
             self.type_label.setText("Выбери строку инвентаря")
-            self.description_label.setText("Данные отображаются только из текущего snapshot.")
-            self.status_chip.setText("READ-ONLY")
+            self.description_label.setText("Данные взяты из открытого сохранения.")
+            self.status_chip.setText("ТОЛЬКО ПРОСМОТР")
             self.count_spin.setEnabled(False)
             self.condition_spin.setEnabled(False)
             self.placement_combo.setEnabled(False)
@@ -284,7 +285,13 @@ class ItemDetailView(QWidget):
         type_label = _DETAIL_TYPE_LABELS.get(item.type_key, item.category)
         self.type_label.setText(type_label)
         weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
-        self.description_label.setText(f"Вес: {weight}\nИсточник: {item.observation_source or 'snapshot'}")
+        source_labels = {
+            "actor_inventory": "инвентарь игрока",
+            "grid": "инвентарь",
+            "equipped": "экипировка",
+        }
+        source = source_labels.get(str(item.observation_source or ""), "открытое сохранение")
+        self.description_label.setText(f"Вес: {weight}\nИсточник: {source}")
         if self._item_icon is not None and not self._item_icon.isNull():
             self.image_label.setPixmap(_wide_detail_pixmap(self._item_icon))
             self.image_label.setText("")
@@ -299,7 +306,13 @@ class ItemDetailView(QWidget):
             support is not None and support.maturity == "experimental"
             for support in (stack_support, condition_support)
         )
-        self.status_chip.setText("ЭКСПЕРИМЕНТАЛЬНО" if experimental else "ПРОВЕРЕНО" if writable_stack or writable_condition else "READ-ONLY")
+        self.status_chip.setText(
+            "Экспериментальная функция"
+            if experimental
+            else "ПРОВЕРЕНО"
+            if writable_stack or writable_condition
+            else "ТОЛЬКО ПРОСМОТР"
+        )
         self.status_chip.setProperty("tone", "warning" if experimental else "success" if writable_stack or writable_condition else "neutral")
         self.status_chip.style().unpolish(self.status_chip)
         self.status_chip.style().polish(self.status_chip)
@@ -356,13 +369,13 @@ class ItemDetailView(QWidget):
             )
             row = QListWidgetItem(label)
             row.setSizeHint(QSize(0, 26))
-            row.setToolTip(f"Ключ из сохранения: {raw_key}")
+            row.setToolTip(technical_details(f"Идентификатор модификации: {raw_key}"))
             row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
             self.upgrade_list.addItem(row)
         self.module_status.setText(
-            "Модули/улучшения показаны как read-only evidence."
+            "Модули и улучшения доступны только для просмотра."
             if item.upgrades or item.modules
-            else "Для этого предмета модульные данные не разобраны; read-only."
+            else "Данные о модификациях недоступны."
         )
         self.reset_button.setEnabled(
             item.handle in self._staged_counts

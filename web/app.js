@@ -3,6 +3,12 @@
 // operations deliberately remain desktop-only.
 
 import { installCatalogs, loadCoreResources } from "./bootstrap.js";
+import {
+  capabilityLabel,
+  errorPresentation,
+  integrityLabel,
+  technicalDetails,
+} from "./ux_copy.js";
 
 const PYODIDE_VERSION = "0.28.3";
 const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -82,11 +88,15 @@ function setStatus(text, kind = "") {
   if (!status) return;
   status.textContent = text;
   status.className = `reference-footer-status${kind ? ` ${kind}` : ""}`;
+  status.title = "";
 }
 
-function fail(error) {
+function fail(error, kind = "generic") {
   console.error(error);
-  setStatus(String(error && error.message ? error.message : error), "error");
+  const details = String(error && error.message ? error.message : error);
+  const presentation = errorPresentation(kind, details);
+  setStatus(presentation.message, "error");
+  status.title = technicalDetails(presentation.technicalDetails, presentation.errorCode);
 }
 
 function showReferenceScreen(name) {
@@ -147,8 +157,8 @@ function itemGlyph(item) {
   let candidateIndex = 0;
   const setSource = () => {
     const candidate = candidates[candidateIndex];
-    img.alt = `Иконка: ${candidate}`;
-    img.title = candidate;
+    img.alt = `Иконка предмета: ${item.name ?? item.category ?? "предмет"}`;
+    img.title = technicalDetails(candidate);
     img.src = `icons/${encodeURIComponent(candidate)}.png`;
   };
   img.addEventListener("error", () => {
@@ -177,30 +187,33 @@ function renderReferenceReview() {
   if (state.money !== null) rows.push(["Баланс", String(state.snapshot.money ?? "—"), String(state.money)]);
   for (const [handle, count] of state.stacks) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? `0x${handle.toString(16)}`, String(item?.count ?? "—"), String(count)]);
+    rows.push([item?.name ?? "Предмет", String(item?.count ?? "—"), String(count)]);
   }
   for (const [handle, condition] of state.durability) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? `0x${handle.toString(16)}`, formatCondition(item?.condition), formatCondition(condition)]);
+    rows.push([item?.name ?? "Предмет", formatCondition(item?.condition), formatCondition(condition)]);
   }
   for (const [handle, placement] of state.placements) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? `0x${handle.toString(16)}`, placementLabel(item?.placement_type, item?.placement_slot), placementLabel(placement[0], placement[1])]);
+    rows.push([item?.name ?? "Предмет", placementLabel(item?.placement_type, item?.placement_slot), placementLabel(placement[0], placement[1])]);
   }
   for (const [handle, values] of state.upgrades) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? `0x${handle.toString(16)}`, (item?.upgrades ?? []).join(", ") || "нет", values.join(", ") || "нет"]);
+    rows.push([item?.name ?? "Предмет", upgradeNames(item, item?.upgrades), upgradeNames(item, values)]);
   }
-  for (const [key, quantity] of state.adds) rows.push([key, "нет", `добавить × ${quantity}`]);
+  for (const [key, quantity] of state.adds) {
+    const catalogItem = (state.snapshot.catalog_items ?? []).find((item) => item.key === key);
+    rows.push([catalogItem?.name ?? "Предмет из каталога", "нет", `добавить × ${quantity}`]);
+  }
   for (const handle of state.detach) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? `0x${handle.toString(16)}`, "в сейве", "удалить"]);
+    rows.push([item?.name ?? "Предмет", "в сохранении", "удалить"]);
   }
   for (const [key, goodwill] of state.relations) {
     const row = state.snapshot.faction_relations?.find((entry) => entry.key === key);
-    rows.push([key, String(row?.value ?? 0), String(goodwill)]);
+    rows.push([row?.name ?? "Группировка", String(row?.value ?? 0), String(goodwill)]);
   }
-  if (state.playerFaction !== null) rows.push(["Группировка игрока", "текущая", state.playerFaction]);
+  if (state.playerFaction !== null) rows.push(["Группировка игрока", "текущая", factionName(state.playerFaction)]);
   table.tBodies[0].replaceChildren(...(rows.length ? rows.map((values) => {
     const tr = document.createElement("tr");
     for (const value of values) {
@@ -224,6 +237,18 @@ function upgradeDefinitionsFor(item) {
   );
 }
 
+function upgradeNames(item, keys) {
+  const definitions = upgradeDefinitionsFor(item);
+  return (keys ?? []).map((key) => definitions.find((entry) => entry.key === key)?.name ?? "Неизвестная модификация").join(", ") || "нет";
+}
+
+function factionName(key) {
+  const faction = (state.snapshot?.catalog_factions ?? []).find((entry) => entry.key === key);
+  return faction && faction.name !== faction.key
+    ? faction.name
+    : `Группировка ${faction?.numeric_id ?? ""}`.trim();
+}
+
 function renderReferenceItemDetail(item) {
   const fields = el("reference-item-fields");
   fields.replaceChildren();
@@ -232,7 +257,7 @@ function renderReferenceItemDetail(item) {
     el("reference-item-name").textContent = "Предмет не выбран";
     el("reference-item-type").textContent = "Выбери строку инвентаря";
     el("reference-item-image").replaceChildren(document.createTextNode("—"));
-    el("reference-item-detail").textContent = "Неизвестные и неподтверждённые поля остаются read-only.";
+    el("reference-item-detail").textContent = "Это значение нельзя изменить.";
     el("reference-item-gate").textContent = "НЕТ ВЫБОРА";
     reset.disabled = true;
     return;
@@ -241,10 +266,13 @@ function renderReferenceItemDetail(item) {
   const selectedImage = el("reference-item-image");
   selectedImage.replaceChildren(itemGlyph(item));
   el("reference-item-name").textContent = item.name ?? "Неизвестный объект";
-  el("reference-item-type").textContent = `${item.category ?? "—"} · ${item.type_key ?? "—"}`;
-  el("reference-item-detail").textContent = `Handle ${item.handle_hex ?? "—"} · позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Неизвестные поля остаются read-only.`;
+  el("reference-item-type").textContent = item.category ?? "Предмет";
+  el("reference-item-detail").textContent = `Позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Это значение нельзя изменить.`;
+  el("reference-item-detail").title = technicalDetails(
+    `Идентификатор: ${item.type_key ?? "—"}; handle: ${item.handle_hex ?? "—"}`,
+  );
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
-  el("reference-item-gate").textContent = writable ? "ДОСТУПНО ПО CAPABILITY" : "READ-ONLY";
+  el("reference-item-gate").textContent = writable ? "ПРОВЕРЕНО" : "ТОЛЬКО ПРОСМОТР";
   el("reference-item-gate").className = `reference-chip ${writable ? "success" : "warning"}`;
   reset.disabled = !referenceItemStaged(item);
 
@@ -277,7 +305,7 @@ function renderReferenceItemDetail(item) {
       option.selected = placementType === current[0] && slotId === current[1];
       select.append(option);
     }
-    select.title = "Экспериментально: SInvItemPlace; backup обязателен";
+    select.title = "Экспериментальная функция. Перед изменениями создаётся резервная копия.";
     select.addEventListener("change", () => {
       const [placementType, rawSlot] = select.value.split(":");
       const slotId = rawSlot === undefined ? null : Number(rawSlot);
@@ -299,11 +327,12 @@ function renderReferenceItemDetail(item) {
         const option = document.createElement("option");
         const definition = definitions.find((entry) => entry.key === key);
         option.value = key;
-        option.textContent = definition ? `${definition.name} · ${key}` : `Неизвестный ID · ${key}`;
+        option.textContent = definition ? definition.name : "Неизвестное улучшение";
+        option.title = technicalDetails(key);
         option.selected = effective.includes(key);
         select.append(option);
       }
-      select.title = "Экспериментально: m_upgrades; backup обязателен";
+      select.title = "Экспериментальная функция. Перед изменениями создаётся резервная копия.";
       select.addEventListener("change", () => {
         const values = [...select.selectedOptions].map((option) => option.value);
         if (values.length === item.upgrades.length && values.every((key, index) => key === item.upgrades[index])) state.upgrades.delete(item.handle);
@@ -315,7 +344,8 @@ function renderReferenceItemDetail(item) {
     } else {
       const evidence = document.createElement("div");
       evidence.className = "reference-readonly-detail";
-      evidence.textContent = `Улучшения: ${item.upgrades.join(", ") || "нет"} · read-only evidence`;
+      evidence.textContent = "Улучшения доступны только для просмотра.";
+      evidence.title = technicalDetails(item.upgrades.join(", ") || "Нет данных");
       fields.append(evidence);
     }
   }
@@ -325,7 +355,9 @@ function renderReferenceItemDetail(item) {
     remove.type = "button";
     remove.textContent = state.detach.has(item.handle) ? "ОТМЕНИТЬ УДАЛЕНИЕ" : "УДАЛИТЬ ПРЕДМЕТ";
     remove.disabled = !item.remove_editable;
-    remove.title = `ОПАСНО: ${item.remove_reason || "Удаление этого объекта заблокировано без подтверждённой capability"}`;
+    remove.title = item.remove_reason
+      ? technicalDetails(item.remove_reason)
+      : "Удалить предмет";
     remove.addEventListener("click", () => {
       if (state.detach.has(item.handle)) state.detach.delete(item.handle);
       else {
@@ -413,8 +445,8 @@ function renderReferenceEditor(s) {
     condition.textContent = formatCondition(state.durability.get(item.handle) ?? item.condition);
     row.append(condition);
     const support = document.createElement("td");
-    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "ПРОВЕРЕНО" : "READ-ONLY";
-    support.className = support.textContent === "READ-ONLY" ? "muted" : "";
+    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "ПРОВЕРЕНО" : "ТОЛЬКО ПРОСМОТР";
+    support.className = support.textContent === "ТОЛЬКО ПРОСМОТР" ? "muted" : "";
     row.append(support);
     const action = document.createElement("td");
     action.textContent = item.remove_editable ? "…" : "—";
@@ -438,7 +470,8 @@ function renderReferenceAdd(s) {
   select.replaceChildren(...(s.catalog_items ?? []).map((item) => {
     const option = document.createElement("option");
     option.value = item.key;
-    option.textContent = item.name === item.key ? item.key : `${item.name} · ${item.key}`;
+    option.textContent = item.name === item.key ? "Предмет из каталога" : item.name;
+    option.title = item.name === item.key ? technicalDetails(item.key) : "";
     return option;
   }));
   const enabled = Boolean(s.capabilities?.add_items && s.catalog_available && select.options.length);
@@ -454,7 +487,7 @@ function renderReferenceCharacter(s) {
   panel.replaceChildren();
   panel.hidden = !supported;
   if (!supported) {
-    panel.textContent = "Персонаж и группировки для этого формата недоступны; данные не выдумываются.";
+    panel.textContent = "Данные о персонаже и группировках недоступны для этого сохранения.";
     panel.hidden = false;
     return;
   }
@@ -463,7 +496,8 @@ function renderReferenceCharacter(s) {
     for (const faction of factions) {
       const option = document.createElement("option");
       option.value = faction.key;
-      option.textContent = faction.name === faction.key ? faction.key : `${faction.name} · ${faction.key}`;
+      option.textContent = faction.name === faction.key ? `Группировка ${faction.numeric_id}` : faction.name;
+      option.title = faction.name === faction.key ? technicalDetails(faction.key) : "";
       option.selected = faction.numeric_id === s.player_faction_index || faction.key === state.playerFaction;
       select.append(option);
     }
@@ -498,26 +532,37 @@ function renderReferenceCharacter(s) {
       renderReferenceCharacter(s);
       renderReferenceReview();
     });
-    addDetailField(panel, relation.name ?? relation.key, input);
+    addDetailField(panel, relation.name ?? "Группировка", input);
   }
 }
 
 function renderReferenceSnapshot(s) {
   el("reference-game-count").textContent = "1 сохранение";
   el("reference-preview-name").textContent = s.name;
-  el("reference-preview-meta").innerHTML = `Игра: ${s.format_title}<br>Источник: локальное сохранение<br>Размер: ${s.size_text}<br>SHA: ${s.sha256.slice(0, 12)}…`;
-  el("reference-preview-status").textContent = s.crc_present ? (s.crc_ok ? "ПРОВЕРЕНО · CRC PASS" : "ОШИБКА CRC") : `ПРОВЕРЕНО · ${s.integrity_name}`;
+  const previewMeta = el("reference-preview-meta");
+  previewMeta.replaceChildren();
+  for (const [index, line] of [
+    `Игра: ${s.format_title}`,
+    "Источник: локальное сохранение",
+    `Размер: ${s.size_text}`,
+    `Целостность: ${integrityLabel(s)}`,
+  ].entries()) {
+    if (index) previewMeta.append(document.createElement("br"));
+    previewMeta.append(document.createTextNode(line));
+  }
+  previewMeta.title = technicalDetails(`SHA-256: ${s.sha256}`);
+  el("reference-preview-status").textContent = integrityLabel(s).toUpperCase();
   el("reference-activity").textContent = `Проанализирован ${s.name}; исходный файл не изменён.`;
   const caps = s.capabilities ?? {};
   const editable = Boolean(caps.edit_money || caps.edit_stacks || caps.edit_durability || caps.edit_placement || caps.edit_upgrades);
-  el("reference-preview-capability").textContent = editable ? "РЕДАКТИРУЕМЫЙ" : "READ-ONLY";
+  el("reference-preview-capability").textContent = capabilityLabel(editable);
   el("reference-preview-capability").className = `reference-chip ${editable ? "success" : "warning"}`;
   el("reference-summary-money").innerHTML = `ДЕНЬГИ<br>${s.money ?? "—"} ₽`;
   el("reference-summary-items").innerHTML = `ПРЕДМЕТЫ<br>${s.inventory_count ?? "—"}`;
   el("reference-summary-equipment").innerHTML = `ЭКИПИРОВКА<br>${s.equipment_count ?? "—"}`;
-  el("reference-summary-condition").innerHTML = `ЦЕЛОСТНОСТЬ<br>${s.crc_present ? (s.crc_ok ? "CRC PASS" : "CRC FAIL") : s.integrity_name}`;
+  el("reference-summary-condition").innerHTML = `ЦЕЛОСТНОСТЬ<br>${integrityLabel(s)}`;
   el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
-  el("reference-editor-state").textContent = editable ? "РЕДАКТИРУЕМЫЙ" : "READ-ONLY";
+  el("reference-editor-state").textContent = capabilityLabel(editable);
   el("reference-editor-state").className = `reference-chip ${editable ? "success" : "warning"}`;
   el("reference-money").textContent = `ДЕНЬГИ  ${s.money === null ? "—" : s.money} ₽`;
   el("reference-money-input").value = String(s.money ?? 0);
@@ -525,9 +570,9 @@ function renderReferenceSnapshot(s) {
   el("reference-money-clear").disabled = state.money === null;
   el("reference-weight").textContent = "ВЕС  — кг";
   el("reference-source").innerHTML = "Источник<br>Локальный файл";
-  el("reference-integrity").innerHTML = `Целостность<br>${s.crc_present ? (s.crc_ok ? "CRC PASS" : "CRC FAIL") : s.integrity_name}`;
-  el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только чтение"}`;
-  el("reference-equipment-summary").textContent = `${s.equipment_count ?? 0} объектов оборудования · неподтверждённое остаётся read-only`;
+  el("reference-integrity").innerHTML = `Целостность<br>${integrityLabel(s)}`;
+  el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только просмотр"}`;
+  el("reference-equipment-summary").textContent = `${s.equipment_count ?? 0} объектов оборудования · неподтверждённые данные нельзя изменить`;
   renderReferenceEditor(s);
   renderReferenceCharacter(s);
 }
@@ -556,16 +601,17 @@ async function boot() {
   state.catalogsReady = installCatalogs({ bridge });
   state.catalogsReady.catch(fail);
   el("file-input").disabled = false;
-  setStatus(`Ядро готово · SHA ${bundle.source_sha256.slice(0, 12)}… · можно выбрать сейв`);
+  setStatus("Редактор готов. Выбери локальное сохранение.");
+  status.title = technicalDetails(`SHA-256 исходного кода: ${bundle.source_sha256}`);
   state.catalogsReady.then(
-    () => { if (!state.snapshot) setStatus("Ядро и каталог готовы. Открой локальный файл сохранения."); },
+    () => { if (!state.snapshot) setStatus("Приложение готово. Открой локальный файл сохранения."); },
     () => {},
   );
 }
 
 async function openFile(file) {
   if (!state.bridge || !state.catalogsReady) return;
-  setStatus(`Чтение ${file.name}…`, "busy");
+  setStatus("Открытие сохранения…", "busy");
   try {
     const bytesReady = file.arrayBuffer();
     await state.catalogsReady;
@@ -587,7 +633,7 @@ async function openFile(file) {
     renderSnapshot(snapshot);
     setStatus(`Анализ завершён за ${Math.round(performance.now() - t0)} мс; исходный файл не изменён`);
   } catch (error) {
-    fail(error);
+    fail(error, "open");
   }
 }
 
@@ -601,8 +647,8 @@ function invalidate() {
 
 function preview() {
   try {
-    if (!state.snapshot || !state.bridge) throw new Error("Сначала открой сейв");
-    setStatus("Проверка изменений и создание immutable output…", "busy");
+    if (!state.snapshot || !state.bridge) throw new Error("Сначала открой сохранение");
+    setStatus("Проверка изменений и создание копии…", "busy");
     const result = JSON.parse(state.bridge.prepare(
       state.money,
       JSON.stringify([...state.stacks.entries()]),
@@ -615,11 +661,12 @@ function preview() {
       JSON.stringify([...state.placements.entries()].map(([handle, [placementType, slotId]]) => [handle, placementType, slotId])),
     ));
     state.prepared = result;
-    el("reference-review-status").textContent = `Копия проверена: ${result.size_text}, SHA ${result.output_sha256.slice(0, 16)}…; исходные байты не изменены.`;
+    el("reference-review-status").textContent = `Копия проверена (${result.size_text}). Оригинальный файл пока не изменён.`;
+    el("reference-review-status").title = technicalDetails(`SHA-256 копии: ${result.output_sha256}`);
     setStatus("Проверка выполнена; можно скачать копию");
     return result;
   } catch (error) {
-    fail(error);
+    fail(error, "verify");
     return null;
   }
 }
@@ -637,7 +684,7 @@ function download() {
     URL.revokeObjectURL(url);
     setStatus(`Сохранена проверенная копия ${name}; исходный файл не изменён.`);
   } catch (error) {
-    fail(error);
+    fail(error, "verify");
   }
 }
 
@@ -653,7 +700,7 @@ el("reference-character").addEventListener("click", () => {
   if (!state.snapshot) return;
   renderReferenceCharacter(state.snapshot);
   details.hidden = !details.hidden;
-  setStatus(details.hidden ? "Персонаж скрыт" : "Персонаж и группировки показаны; неизвестные поля не выдумываются");
+  setStatus(details.hidden ? "Персонаж скрыт" : "Данные о персонаже и группировках показаны.");
 });
 el("reference-save").addEventListener("click", () => {
   if (referenceChangeCount() > 0) showReferenceScreen("review");
@@ -713,7 +760,7 @@ el("reference-add-button").addEventListener("click", () => {
   state.adds.set(key, quantity);
   invalidate();
   renderReferenceEditor(state.snapshot);
-  setStatus(`Добавление ${key} подготовлено; исходный файл не изменён`);
+  setStatus(`Добавлен предмет: ${definition?.name ?? "из каталога"}. Оригинальный файл пока не изменён.`);
 });
 el("file-input").addEventListener("change", (event) => {
   const file = event.target.files?.[0];
@@ -749,9 +796,9 @@ for (const button of document.querySelectorAll(".support-copy")) {
       copied = document.execCommand("copy");
       input.remove();
     }
-    if (copied) button.textContent = "Copied";
-    else button.textContent = "Copy failed";
-    setTimeout(() => { button.textContent = "Copy"; }, 1400);
+    if (copied) button.textContent = "Скопировано";
+    else button.textContent = "Не удалось скопировать";
+    setTimeout(() => { button.textContent = "Копировать"; }, 1400);
   });
 }
 

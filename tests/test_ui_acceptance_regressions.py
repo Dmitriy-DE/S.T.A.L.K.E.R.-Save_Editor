@@ -54,7 +54,7 @@ def test_enhanced_edition_library_candidate_is_read_only(qtbot, tmp_path: Path) 
     status_cell = view.save_table.cellWidget(0, 4)
     assert status_cell is not None
     labels = [label.text() for label in status_cell.findChildren(QLabel)]
-    assert "Только чтение" in labels
+    assert "Только просмотр" in labels
     assert "Экспериментальный" in labels
     assert "Редактируемый" not in labels
 
@@ -271,7 +271,9 @@ def test_cloud_review_rows_show_names_and_formatted_times_without_writing(qtbot)
 
     view = window.cloud_reference_view
     assert view.save_table.item(0, 0).text() == "auto_save_12.sav"
-    assert view.save_table.item(0, 0).toolTip() == file.name
+    assert view.save_table.item(0, 0).toolTip() == (
+        f"Технические детали:\nПуть в Steam Cloud: {file.name}"
+    )
     assert view.save_table.item(0, 2).text() != str(file.timestamp)
     assert view.detail_name.text() == "auto_save_12.sav"
     assert not view.upload_button.isEnabled()
@@ -404,7 +406,7 @@ def test_library_refreshes_snapshot_summary_when_discovery_arrives_later(
     )
 
     assert view.money_summary.text() == "321 ₽"
-    assert view.preview_integrity_value.text() == "Проверено"
+    assert view.preview_integrity_value.text() == "Файл проверен"
 
 
 def test_analysis_failure_is_attached_and_does_not_route_to_editor(
@@ -418,10 +420,13 @@ def test_analysis_failure_is_attached_and_does_not_route_to_editor(
 
     assert window.reference_stack.currentWidget() is window.library_view
     assert window.error_label.parent() is window.library_view
-    assert "missing.sav" in window.error_label.text()
+    assert window.error_label.text() == (
+        "Файл повреждён, не поддерживается или изменён другой программой."
+    )
+    assert "missing.sav" in window.error_label.toolTip()
 
 
-def test_completed_analysis_returns_the_global_footer_to_core_ready(
+def test_completed_analysis_leaves_a_friendly_ready_status(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:
     window = MainWindow(EditorService(), auto_update_check=False)
@@ -434,7 +439,7 @@ def test_completed_analysis_returns_the_global_footer_to_core_ready(
         )
     )
 
-    assert window.status_label.text() == "CORE: READY  |  CRC / SHA / BACKUP ВКЛЮЧЕНЫ"
+    assert window.status_label.text() == "Редактор готов"
 
 
 def test_verified_local_save_reinspects_written_slot_and_clears_draft(
@@ -555,8 +560,10 @@ def test_uncertain_cloud_result_exposes_reconcile_without_retry(qtbot, tmp_path:
 
     assert view.reconcile_button.isVisible()
     assert not view.editor_button.isEnabled()
-    assert "ОБНОВИТЬ STEAM CLOUD" in view.reconcile_button.text()
-    assert "Повторная запись" in view.subtitle.text()
+    assert view.reconcile_button.text() == "Проверить Steam Cloud"
+    assert view.subtitle.text() == (
+        "Неясно, записались ли изменения. Мы не будем повторять запись автоматически."
+    )
 
 
 def test_recent_activity_is_updated_from_session_operation(qtbot) -> None:

@@ -29,7 +29,9 @@ def test_character_surface_is_explicitly_read_only_without_verified_xray_catalog
     assert view.objectName() == "characterView"
     assert view.faction_table.objectName() == "characterFactionTable"
     assert view.faction_table.rowCount() == 1
-    assert "каталог" in view.faction_table.item(0, 0).text().casefold()
+    assert view.faction_table.item(0, 0).text() == (
+        "Данные о группировках недоступны для этого сохранения."
+    )
     assert not view.player_faction_combo.isEnabled()
 
 

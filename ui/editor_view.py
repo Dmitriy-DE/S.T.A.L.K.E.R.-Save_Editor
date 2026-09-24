@@ -39,6 +39,7 @@ from .formatting import human_money
 from .inventory_model import InventoryTableModel
 from .item_detail_view import ItemDetailView
 from .style_components import action_button, panel, section_header, status_chip
+from .ux_copy import technical_details
 from .xray_assets import XRayIconResolver, donor_resolver_for, fit_icon
 
 _EQUIPMENT_DISPLAY_NAMES = {
@@ -187,7 +188,7 @@ class EditorView(QWidget):
         self.breadcrumb = QLabel("Сохранение не открыто", self)
         self.breadcrumb.setObjectName("editorBreadcrumb")
         header.addWidget(self.breadcrumb, 1)
-        self.header_status = status_chip("НЕТ SNAPSHOT", self, tone="neutral")
+        self.header_status = status_chip("НЕТ ОТКРЫТОГО СОХРАНЕНИЯ", self, tone="neutral")
         self.header_status.setFixedHeight(28)
         header.addWidget(self.header_status)
         root.addLayout(header)
@@ -294,7 +295,7 @@ class EditorView(QWidget):
         self.search_edit = QLineEdit(self.inventory_column)
         self.search_edit.setObjectName("referenceSearch")
         self.search_edit.setMinimumHeight(39)
-        self.search_edit.setPlaceholderText("Поиск по названию, типу, категории…")
+        self.search_edit.setPlaceholderText("Поиск предметов…")
         self.search_edit.textChanged.connect(self.model.set_search)
         inventory_controls.addWidget(self.search_edit)
         categories = QHBoxLayout()
@@ -447,7 +448,7 @@ class EditorView(QWidget):
         self.model.sort(InventoryTableModel.POSITION_COLUMN)
         self.item_count_label.setText(f"Элементов: {len(self._items)}")
         self.breadcrumb.setText(f"{snapshot.format_title}  ›  {snapshot.path.name}")
-        self.header_status.setText("РЕДАКТИРУЕМЫЙ" if any(snapshot.capabilities.support(name).writable for name in ("edit_money", "edit_stacks", "edit_durability")) else "READ-ONLY")
+        self.header_status.setText("РЕДАКТИРУЕМЫЙ" if any(snapshot.capabilities.support(name).writable for name in ("edit_money", "edit_stacks", "edit_durability")) else "ТОЛЬКО ПРОСМОТР")
         self.header_status.setProperty("tone", "success" if self.header_status.text() == "РЕДАКТИРУЕМЫЙ" else "neutral")
         self.header_status.style().unpolish(self.header_status)
         self.header_status.style().polish(self.header_status)
@@ -466,7 +467,12 @@ class EditorView(QWidget):
         weight = sum(item.total_weight or 0.0 for item in self._items) if all(item.total_weight is not None for item in self._items) else None
         self.weight_label.setText(f"{weight:.1f} кг" if weight is not None else "— кг")
         self.source_label.setText("Steam Cloud" if snapshot.source_kind == "cloud" else "Локальный")
-        self.integrity_label.setText("CRC PASS" if snapshot.info.crc_ok else "ПРОВЕРЬТЕ ДАННЫЕ")
+        self.integrity_label.setText(
+            "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён"
+        )
+        self.integrity_label.setToolTip(
+            f"Технические детали: CRC {'PASS' if snapshot.info.crc_ok else 'FAIL'}"
+        )
         self.integrity_label.setProperty(
             "integrityState", "passed" if snapshot.info.crc_ok else "warning"
         )
@@ -475,7 +481,7 @@ class EditorView(QWidget):
         self.capability_label.setText(
             "Редактируемый"
             if self.header_status.text() == "РЕДАКТИРУЕМЫЙ"
-            else "Только чтение"
+            else "Только просмотр"
         )
         self._render_equipment_summary()
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
@@ -513,7 +519,10 @@ class EditorView(QWidget):
             row_layout.setSpacing(5)
             current_rows = rows[offset:offset + 2]
             for equipment in current_rows:
-                name = _EQUIPMENT_DISPLAY_NAMES.get(equipment.type_key, equipment.name or equipment.type_key)
+                name = _EQUIPMENT_DISPLAY_NAMES.get(
+                    equipment.type_key,
+                    equipment.name or "Неизвестный предмет",
+                )
                 button = QToolButton(row_host)
                 button.setText("")
                 button.setObjectName("equipmentSlot")
@@ -610,7 +619,9 @@ class EditorView(QWidget):
             )
             artifact_button.setIconSize(QSize(48, 48))
             artifact_button.setFixedSize(64, 64)
-            artifact_button.setToolTip(artifact.name or artifact.type_key)
+            artifact_button.setToolTip(
+                artifact.name or technical_details(f"Идентификатор предмета: {artifact.type_key}")
+            )
             self.artifact_list.addWidget(artifact_button)
         empty_slot = QPushButton("+", self.equipment_content)
         empty_slot.setObjectName("artifactSlotEmpty")
@@ -715,6 +726,7 @@ class EditorView(QWidget):
 
     def show_capability_message(self, message: str) -> None:
         self.detail_view.module_status.setText(message)
+        self.detail_view.module_status.setToolTip("")
 
 
 __all__ = ["EditorView"]

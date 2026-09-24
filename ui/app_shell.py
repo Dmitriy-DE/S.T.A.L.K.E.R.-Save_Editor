@@ -250,7 +250,10 @@ class AppShell(QWidget):
         self.footer_hints.setObjectName("footerHints")
         self.footer_hints.hide()
         footer_layout.addStretch(1)
-        self.footer_status = QLabel("CORE: READY  |  CRC / SHA / BACKUP ВКЛЮЧЕНЫ", footer)
+        self.footer_status = QLabel(
+            "ПРИЛОЖЕНИЕ ГОТОВО  |  ПРОВЕРКА И РЕЗЕРВНОЕ КОПИРОВАНИЕ ВКЛЮЧЕНЫ",
+            footer,
+        )
         self.footer_status.setObjectName("footerStatus")
         footer_layout.addWidget(self.footer_status)
         root.addWidget(footer)

@@ -14,6 +14,9 @@ from PySide6.QtWidgets import (
 
 from editor.diagnostics import collect_log_bundle, export_log_bundle, submit_logs
 
+from .formatting import human_size
+from .ux_copy import technical_details
+
 
 class DiagnosticsWorker(QThread):
     previewed = Signal(int)
@@ -55,24 +58,31 @@ class DiagnosticsDialog(QDialog):
 
         layout = QVBoxLayout(self)
         description = QLabel(
-            "Отправятся только технические логи с ограниченным размером. "
-            "Сейвы и их содержимое не отправляются; локальные пути обезличиваются."
+            "Отправятся только обезличенные технические журналы ограниченного размера. "
+            "Сохранения и их содержимое не отправляются."
         )
         description.setWordWrap(True)
         layout.addWidget(description)
         self.preview_label = QLabel(
-            "Проверка: будет отправлен только обезличенный gzip-архив "
-            "ограниченного размера."
+            "Перед отправкой будет подготовлен архив обезличенных журналов."
         )
         self.preview_label.setWordWrap(True)
         layout.addWidget(self.preview_label)
         self.status_label = QLabel("Готово к отправке")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
-        self.send_button = QPushButton("Отправить логи")
+        self.details_label = QLabel()
+        self.details_label.setWordWrap(True)
+        self.details_label.setVisible(False)
+        layout.addWidget(self.details_label)
+        self.details_button = QPushButton("Технические детали")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._toggle_details)
+        layout.addWidget(self.details_button)
+        self.send_button = QPushButton("Отправить журналы")
         self.send_button.clicked.connect(self._send)
         layout.addWidget(self.send_button)
-        self.export_button = QPushButton("Экспортировать обезличенные логи")
+        self.export_button = QPushButton("Экспортировать обезличенные журналы")
         self.export_button.clicked.connect(self._export)
         layout.addWidget(self.export_button)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
@@ -83,7 +93,7 @@ class DiagnosticsDialog(QDialog):
         if self._worker is not None and self._worker.isRunning():
             return
         self.send_button.setEnabled(False)
-        self.status_label.setText("Собираю и отправляю логи…")
+        self.status_label.setText("Собираю и отправляю журналы…")
         worker = DiagnosticsWorker(self)
         worker.completed.connect(self._on_completed)
         worker.failed.connect(self._on_failed)
@@ -98,14 +108,14 @@ class DiagnosticsDialog(QDialog):
             return
         filename, _filter = QFileDialog.getSaveFileName(
             self,
-            "Экспорт обезличенных логов",
+            "Экспорт обезличенных журналов",
             "save-editor-diagnostics.log.gz",
-            "Gzip logs (*.log.gz)",
+            "Архив журналов (*.log.gz)",
         )
         if not filename:
             return
         self.export_button.setEnabled(False)
-        self.status_label.setText("Сохраняю локальный экспорт логов…")
+        self.status_label.setText("Сохраняю локальный экспорт журналов…")
         worker = DiagnosticsExportWorker(filename, self)
         worker.completed.connect(self._on_export_completed)
         worker.failed.connect(self._on_export_failed)
@@ -123,25 +133,42 @@ class DiagnosticsDialog(QDialog):
             self._export_worker = None
 
     def _on_previewed(self, size: int) -> None:
-        self.preview_label.setText(
-            f"Проверка: обезличенный архив подготовлен ({size:,} байт)."
-        )
+        self.preview_label.setText(f"Обезличенный архив подготовлен ({human_size(size)}).")
 
     def _on_completed(self, report_id: str) -> None:
-        self.status_label.setText(f"Логи отправлены. Номер отчёта: {report_id}")
+        self.status_label.setText(f"Журналы отправлены. Номер отчёта: {report_id}")
+        self._set_details("")
         self.send_button.setEnabled(True)
 
     def _on_failed(self, message: str) -> None:
-        self.status_label.setText(f"Логи не отправлены: {message}")
+        self.status_label.setText("Не удалось отправить журналы. Попробуй позже.")
+        self._set_details(message)
         self.send_button.setEnabled(True)
 
     def _on_export_completed(self, path: str) -> None:
-        self.status_label.setText(f"Экспорт сохранён: {path}")
+        self.status_label.setText("Обезличенные журналы экспортированы.")
+        self._set_details(f"Путь к файлу: {path}")
         self.export_button.setEnabled(True)
 
     def _on_export_failed(self, message: str) -> None:
-        self.status_label.setText(f"Экспорт не сохранён: {message}")
+        self.status_label.setText("Не удалось экспортировать журналы.")
+        self._set_details(message)
         self.export_button.setEnabled(True)
+
+    def _set_details(self, value: str) -> None:
+        self.details_label.setText(technical_details(value))
+        visible = bool(value)
+        self.details_button.setVisible(visible)
+        self.details_label.setVisible(visible and not self.details_label.isHidden())
+        if not visible:
+            self.details_button.setText("Технические детали")
+
+    def _toggle_details(self) -> None:
+        visible = self.details_label.isHidden()
+        self.details_label.setVisible(visible)
+        self.details_button.setText(
+            "Скрыть технические детали" if visible else "Технические детали"
+        )
 
 
 __all__ = ["DiagnosticsDialog", "DiagnosticsExportWorker", "DiagnosticsWorker"]

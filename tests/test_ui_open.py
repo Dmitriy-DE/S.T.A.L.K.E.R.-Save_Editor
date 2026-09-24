@@ -24,7 +24,7 @@ def test_local_open_is_async_and_populates_summary(qtbot, synthetic_save: bytes,
     assert window.snapshot is not None
     assert window.snapshot.path == source
     assert source.name in window.editor_view.breadcrumb.text()
-    assert "CRC PASS" in window.editor_view.integrity_label.text()
+    assert window.editor_view.integrity_label.text() == "Файл проверен"
     assert "100" in window.editor_view.money_label.text()
     assert window.snapshot.format_id == "stalker2"
     assert window.snapshot.format_title == "S.T.A.L.K.E.R. 2: Heart of Chornobyl"
@@ -49,7 +49,11 @@ def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tm
 
     assert window.snapshot is previous_snapshot
     assert window.editor_view.breadcrumb.text() == previous_breadcrumb
-    assert "broken.sav" in window.error_label.text()
+    assert window.error_label.text() == (
+        "Файл повреждён, не поддерживается или изменён другой программой."
+    )
+    assert "broken.sav" in window.error_label.toolTip()
+    assert "Технические детали:" in window.error_label.toolTip()
     assert window.edit_actions_enabled
 
 
@@ -70,5 +74,9 @@ def test_unknown_format_uses_the_core_error_message(
     with qtbot.waitSignal(window.analysis_failed, timeout=5_000):
         window._start_inspect(path)
 
-    assert window.error_label.text() == expected
+    assert window.error_label.text() == (
+        "Файл повреждён, не поддерживается или изменён другой программой."
+    )
+    assert "Технические детали:" in window.error_label.toolTip()
+    assert expected in window.error_label.toolTip()
     assert path.read_bytes() == data

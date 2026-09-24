@@ -27,7 +27,7 @@ def test_canonical_item_detail_keeps_unconfirmed_upgrades_as_evidence(
     editor = window.editor_view
     editor.table.selectRow(0)
     qtbot.waitUntil(lambda: editor.selected_handle is not None)
-    assert "read-only" in editor.detail_view.module_status.text().casefold()
+    assert editor.detail_view.module_status.text() == "Данные о модификациях недоступны."
 
 
 def test_item_detail_presents_unresolved_upgrade_keys_as_readable_evidence(
@@ -47,7 +47,9 @@ def test_item_detail_presents_unresolved_upgrade_keys_as_readable_evidence(
     labels = [view.upgrade_list.item(row).text() for row in range(view.upgrade_list.count())]
     assert labels == ["Улучшение 1", "Улучшение 2"]
     assert all("up_" not in label for label in labels)
-    assert view.upgrade_list.item(0).toolTip() == "Ключ из сохранения: up_firsta_ak74"
+    assert view.upgrade_list.item(0).toolTip() == (
+        "Технические детали:\nИдентификатор модификации: up_firsta_ak74"
+    )
     assert view.upgrade_list.item(0).sizeHint().height() == 26
     assert view.upgrade_list.maximumHeight() >= 110
-    assert "read-only" in view.module_status.text().casefold()
+    assert view.module_status.text() == "Модули и улучшения доступны только для просмотра."

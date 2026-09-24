@@ -74,7 +74,8 @@ def test_history_view_renders_statuses_and_requires_preview_before_restore(
 
     assert view.restore_button.isEnabled()
     assert not view.restore_in_place_button.isEnabled()
-    assert "SHA256" in view.detail_status.text()
+    assert view.detail_status.text() == "Резервная копия проверена. Её можно восстановить."
+    assert "SHA" not in view.detail_status.text()
 
 
 def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
@@ -99,7 +100,9 @@ def test_main_window_runs_restore_off_ui_thread_and_reports_receipt(
 
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
     assert destination.read_bytes() == synthetic_save
-    assert "Копия восстановлена" in window.history_reference_view.detail_status.text()
+    assert window.history_reference_view.detail_status.text() == (
+        "Резервная копия восстановлена и проверена."
+    )
 
 
 def test_main_window_can_restore_verified_backup_to_original_slot(
@@ -133,4 +136,6 @@ def test_main_window_can_restore_verified_backup_to_original_slot(
 
     qtbot.waitUntil(lambda: window._operation_thread is None, timeout=5_000)
     assert source.read_bytes() == synthetic_save
-    assert "Исходный слот восстановлен" in window.history_reference_view.detail_status.text()
+    assert window.history_reference_view.detail_status.text() == (
+        "Исходное сохранение восстановлено и проверено."
+    )

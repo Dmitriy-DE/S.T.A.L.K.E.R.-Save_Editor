@@ -21,8 +21,8 @@ def test_support_dialog_copies_each_payment_value_and_shows_feedback(qtbot) -> N
     dialog = SupportDialog()
     qtbot.addWidget(dialog)
 
-    assert dialog.windowTitle() == "Support project"
-    assert "Address:" in "\n".join(
+    assert dialog.windowTitle() == "Поддержать проект"
+    assert "Адрес:" in "\n".join(
         label.text() for label in dialog.findChildren(QLabel, "supportDetail")
     )
     assert [field.text() for field in dialog.findChildren(QLineEdit, "supportValue")] == [
@@ -44,7 +44,7 @@ def test_support_dialog_copies_each_payment_value_and_shows_feedback(qtbot) -> N
     ):
         qtbot.mouseClick(button, Qt.MouseButton.LeftButton)
         assert QApplication.clipboard().text() == expected
-        assert button.text() == "Copied"
+        assert button.text() == "Скопировано"
 
 
 def test_main_window_opens_support_dialog_from_title_bar(qtbot) -> None:
@@ -75,8 +75,8 @@ def test_web_support_shell_keeps_copyable_values_and_local_modal() -> None:
     assert "breygel.dima@gmail.com" in html
     assert "434350727" in html
     assert "TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds" in html
-    assert "Binance ID: 434350727" in html
-    assert "Address:" in html
+    assert "Идентификатор Binance: 434350727" in html
+    assert "Адрес:" in html
     assert "navigator.clipboard.writeText" in script
-    assert 'button.textContent = "Copied"' in script
+    assert 'button.textContent = "Скопировано"' in script
     assert ".support-modal" in styles

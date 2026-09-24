@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from editor.releases import is_xray_original_release
 
 from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+from .ux_copy import technical_details
 
 
 class CharacterView(QWidget):
@@ -66,8 +67,8 @@ class CharacterView(QWidget):
         profile = panel(self, object_name="characterProfilePanel")
         profile_layout = QVBoxLayout(profile)
         profile_layout.setContentsMargins(12, 12, 12, 12)
-        profile_layout.addWidget(section_header("ПЕРСОНАЖ", "АКТЁР SAVE", profile))
-        self.profile_label = QLabel("Сейв не проанализирован", profile)
+        profile_layout.addWidget(section_header("ПЕРСОНАЖ", "ДАННЫЕ ИГРОКА", profile))
+        self.profile_label = QLabel("Сохранение не проанализировано", profile)
         self.profile_label.setObjectName("characterProfileLabel")
         self.profile_label.setWordWrap(True)
         profile_layout.addWidget(self.profile_label)
@@ -85,7 +86,7 @@ class CharacterView(QWidget):
         facts_layout.setContentsMargins(8, 8, 8, 8)
         facts_layout.setHorizontalSpacing(18)
         facts_layout.setVerticalSpacing(5)
-        facts_layout.addWidget(section_header("ПАРАМЕТРЫ", "READ-ONLY", facts_panel), 0, 0, 1, 2)
+        facts_layout.addWidget(section_header("ПАРАМЕТРЫ", "ТОЛЬКО ПРОСМОТР", facts_panel), 0, 0, 1, 2)
         for row, label in enumerate(
             ("Здоровье", "Выносливость", "Радиация", "Ранг", "Репутация", "Карма"),
             start=1,
@@ -96,7 +97,7 @@ class CharacterView(QWidget):
             facts_layout.addWidget(value, row, 1)
         profile_layout.addWidget(facts_panel)
         facts_note = QLabel(
-            "Эти поля не извлечены текущим X-Ray snapshot и оставлены read-only.",
+            "Эти данные недоступны для этого сохранения.",
             profile,
         )
         facts_note.setObjectName("characterFactsNote")
@@ -108,7 +109,7 @@ class CharacterView(QWidget):
         relations = panel(self, object_name="characterRelationsPanel")
         relations_layout = QVBoxLayout(relations)
         relations_layout.setContentsMargins(12, 12, 12, 12)
-        relations_layout.addWidget(section_header("ОТНОШЕНИЕ К ГРУППИРОВКАМ", "GOODWILL", relations))
+        relations_layout.addWidget(section_header("ОТНОШЕНИЕ К ГРУППИРОВКАМ", "ОТНОШЕНИЯ", relations))
         self.faction_table = QTableWidget(0, 4, relations)
         self.faction_table.setObjectName("characterFactionTable")
         self.faction_table.setHorizontalHeaderLabels(("ГРУППИРОВКА", "ТЕКУЩЕЕ", "НОВОЕ", "СТАТУС"))
@@ -120,7 +121,11 @@ class CharacterView(QWidget):
         for column in (1, 2, 3):
             self.faction_table.horizontalHeader().setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         relations_layout.addWidget(self.faction_table, 1)
-        self.warning_label = QLabel("Изменения отношений экспериментальны; backup обязателен.", relations)
+        self.warning_label = QLabel(
+            "Изменение отношений — экспериментальная функция. "
+            "Перед сохранением будет создана резервная копия.",
+            relations,
+        )
         self.warning_label.setObjectName("characterWarning")
         self.warning_label.setWordWrap(True)
         relations_layout.addWidget(self.warning_label)
@@ -153,11 +158,14 @@ class CharacterView(QWidget):
         )
         info = snapshot.info
         self.profile_label.setText(
-            f"Релиз: {getattr(snapshot, 'format_title', release)}\n"
+            f"Версия: {getattr(snapshot, 'format_title', None) or 'Неизвестная версия'}\n"
             f"Файл: {snapshot.path.name}\n"
-            f"Целостность: {'CRC PASS' if info.crc_ok else 'проверить'}"
+            f"Целостность: {'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён'}"
         )
-        self.status_chip.setText("РЕДАКТИРУЕМЫЙ" if self.editable else "READ-ONLY")
+        self.profile_label.setToolTip(
+            technical_details(f"Идентификатор версии: {release}\nПуть к файлу: {snapshot.path}")
+        )
+        self.status_chip.setText("РЕДАКТИРУЕМЫЙ" if self.editable else "ТОЛЬКО ПРОСМОТР")
         self._render_factions()
 
     def set_state(self, staged_relations: Mapping[str, int] | None = None, player_faction: str | None = None) -> None:
@@ -177,7 +185,11 @@ class CharacterView(QWidget):
             self.player_faction_combo.setEnabled(False)
             self.player_faction_button.setEnabled(False)
             self.faction_table.insertRow(0)
-            self.faction_table.setItem(0, 0, QTableWidgetItem("Официальный каталог не найден"))
+            self.faction_table.setItem(
+                0,
+                0,
+                QTableWidgetItem("Данные о группировках недоступны для этого сохранения."),
+            )
             return
         catalog = snapshot.game_catalog.factions
         info = snapshot.info
@@ -188,7 +200,7 @@ class CharacterView(QWidget):
         for faction in definitions:
             row = self.faction_table.rowCount()
             self.faction_table.insertRow(row)
-            name = faction.display_name or faction.key
+            name = faction.display_name or f"Группировка {faction.numeric_id}"
             self.faction_table.setItem(row, 0, QTableWidgetItem(name))
             has_current_value = faction.numeric_id in current
             current_value = current.get(faction.numeric_id, 0)
@@ -215,9 +227,17 @@ class CharacterView(QWidget):
                 self.faction_table.setCellWidget(row, 3, stage_button)
             else:
                 self.faction_table.setItem(row, 2, QTableWidgetItem(str(staged)))
-                self.faction_table.setItem(row, 3, QTableWidgetItem("Только чтение"))
+                self.faction_table.setItem(row, 3, QTableWidgetItem("Только просмотр"))
         for faction in definitions:
-            self.player_faction_combo.addItem(faction.display_name or faction.key, faction.key)
+            label = faction.display_name or f"Группировка {faction.numeric_id}"
+            index = self.player_faction_combo.count()
+            self.player_faction_combo.addItem(label, faction.key)
+            if not faction.display_name:
+                self.player_faction_combo.setItemData(
+                    index,
+                    technical_details(f"Идентификатор группировки: {faction.key}"),
+                    Qt.ItemDataRole.ToolTipRole,
+                )
         self.player_faction_combo.setEnabled(self.editable and bool(definitions))
         self.player_faction_button.setEnabled(self.editable and bool(definitions))
 

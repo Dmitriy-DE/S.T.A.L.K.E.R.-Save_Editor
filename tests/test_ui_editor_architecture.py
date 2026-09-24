@@ -57,4 +57,4 @@ def test_editor_capability_gates_item_controls_and_save_counter(
     )
     editor.table.selectRow(row)
     qtbot.waitUntil(lambda: editor.selected_handle == 0x30000001)
-    assert editor.detail_view.status_chip.text() in {"READ-ONLY", "ЭКСПЕРИМЕНТАЛЬНО"}
+    assert editor.detail_view.status_chip.text() in {"ТОЛЬКО ПРОСМОТР", "ЭКСПЕРИМЕНТАЛЬНО"}

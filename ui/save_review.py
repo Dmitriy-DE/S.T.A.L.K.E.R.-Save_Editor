@@ -38,7 +38,7 @@ class SaveReviewView(QWidget):
         heading = QHBoxLayout()
         heading.addWidget(QLabel("ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ", self))
         heading.addStretch(1)
-        self.status_chip = status_chip("ПРОВЕРЬ ПЕРЕД ЗАПИСЬЮ", self, tone="warning")
+        self.status_chip = status_chip("ПРОВЕРКА ПЕРЕД СОХРАНЕНИЕМ", self, tone="warning")
         heading.addWidget(self.status_chip)
         root.addLayout(heading)
         self.source_label = QLabel("Изменения ожидают подтверждения.", self)
@@ -65,13 +65,21 @@ class SaveReviewView(QWidget):
         pipeline_panel = panel(self, object_name="reviewPipelinePanel")
         pipeline_layout = QVBoxLayout(pipeline_panel)
         pipeline_layout.setContentsMargins(12, 12, 12, 12)
-        pipeline_layout.addWidget(section_header("ЭТАПЫ СОХРАНЕНИЯ", "SAFETY GATE", pipeline_panel))
+        pipeline_layout.addWidget(section_header("ПОРЯДОК СОХРАНЕНИЯ", parent=pipeline_panel))
         self.pipeline_steps = QListWidget(pipeline_panel)
         self.pipeline_steps.setObjectName("reviewPipelineSteps")
-        for text in ("1  Проверить изменения и источник", "2  Создать проверенную копию", "3  Подготовить выходной файл", "4  Записать атомарно и проверить SHA"):
+        for text in (
+            "1  Проверить изменения и открытый файл",
+            "2  Создать резервную копию",
+            "3  Подготовить сохранение",
+            "4  Записать и проверить результат",
+        ):
             self.pipeline_steps.addItem(QListWidgetItem(text))
         pipeline_layout.addWidget(self.pipeline_steps, 1)
-        self.warning_label = QLabel("При uncertain write автоматический повтор запрещён.", pipeline_panel)
+        self.warning_label = QLabel(
+            "Если Steam не подтвердил запись, редактор сначала проверит состояние облака.",
+            pipeline_panel,
+        )
         self.warning_label.setObjectName("reviewWarningLabel")
         self.warning_label.setWordWrap(True)
         pipeline_layout.addWidget(self.warning_label)

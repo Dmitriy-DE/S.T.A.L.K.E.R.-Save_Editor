@@ -42,7 +42,7 @@ def test_reference_shell_metadata_tracks_real_snapshot(qtbot, synthetic_save: by
 
     assert source.name in window.editor_view.breadcrumb.text()
     assert "Локальный" in window.editor_view.source_label.text()
-    assert "CRC PASS" in window.editor_view.integrity_label.text()
+    assert window.editor_view.integrity_label.text() == "Файл проверен"
     assert "100" in window.editor_view.money_label.text()
 
 

@@ -33,6 +33,7 @@ from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
 
 from .style_components import TextureFrame, action_button, panel, section_header
+from .ux_copy import technical_details
 
 _SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
@@ -478,8 +479,11 @@ class SettingsView(QWidget):
     def _build_backups_panel(self) -> None:
         layout = QVBoxLayout(self.backups_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "ПРОВЕРЕННЫЙ BACKUP ПЕРЕД ЗАПИСЬЮ", self.backups_panel, icon_name="history"))
-        label = QLabel("Каждая запись создаёт backup и journal с SHA-256. Восстановление доступно только после проверки записи.", self.backups_panel)
+        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "КОПИЯ ПЕРЕД КАЖДОЙ ЗАПИСЬЮ", self.backups_panel, icon_name="history"))
+        label = QLabel(
+            "Резервная копия создаётся автоматически перед каждым сохранением.",
+            self.backups_panel,
+        )
         label.setWordWrap(True)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -495,7 +499,10 @@ class SettingsView(QWidget):
         for label_text, value_text in (
             ("Подключение", "Только по явному действию пользователя"),
             ("Режим", "Только после подтверждения"),
-            ("Поведение при uncertain write", "Никогда не повторять автоматически"),
+            (
+                "Если Steam не подтвердил запись,",
+                "редактор сначала проверит состояние облака.",
+            ),
         ):
             row = QFrame(self.cloud_panel)
             row.setObjectName("settingsCloudRow")
@@ -526,7 +533,7 @@ class SettingsView(QWidget):
         ))
         self.backup_folder_button = QToolButton(self.diagnostics_panel)
         self.backup_folder_button.setObjectName("settingsBackupFolderButton")
-        self.backup_folder_button.setText("ОТКРЫТЬ ПАПКУ BACKUP")
+        self.backup_folder_button.setText("ОТКРЫТЬ ПАПКУ РЕЗЕРВНЫХ КОПИЙ")
         self.backup_folder_button.setIcon(QIcon(str(_SHELL_ICONS / "backups.svg")))
         self.backup_folder_button.setIconSize(QSize(18, 18))
         self.backup_folder_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
@@ -543,7 +550,7 @@ class SettingsView(QWidget):
         update_action.triggered.connect(self.update_requested.emit)
         self.backup_folder_button.setMenu(update_menu)
         self.backup_folder_button.clicked.connect(self.backup_folder_requested.emit)
-        self.diagnostics_action_button = action_button("ПОКАЗАТЬ ЖУРНАЛ", self.diagnostics_panel)
+        self.diagnostics_action_button = action_button("ОТКРЫТЬ ЖУРНАЛ ОШИБОК", self.diagnostics_panel)
         self.copy_diagnostics_button = action_button("СКОПИРОВАТЬ ДИАГНОСТИКУ", self.diagnostics_panel)
         self.diagnostics_action_button.clicked.connect(self.journal_requested)
         self.copy_diagnostics_button.clicked.connect(self.copy_diagnostics_requested)
@@ -809,7 +816,7 @@ class SettingsView(QWidget):
                 continue
             parts = [release.title]
             if save is not None:
-                parts.append(f"сейвы: {save}")
+                parts.append(f"сохранения: {save}")
             if game is not None:
                 parts.append(f"игра: {game}")
             if catalog is not None:
@@ -818,7 +825,7 @@ class SettingsView(QWidget):
         if len(lines) == 1:
             lines.append("Установленных игр не найдено.")
         details = "\n".join(lines)
-        self.found_all_label.setToolTip(details)
+        self.found_all_label.setToolTip(technical_details(details))
         found_count = max(0, len(lines) - 1)
         self.found_all_label.setText(
             f"Автопоиск: Steam {'найден' if steam else 'не найден'} · "

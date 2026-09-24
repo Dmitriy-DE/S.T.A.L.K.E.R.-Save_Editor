@@ -131,7 +131,9 @@ def test_save_result_does_not_invent_verified_or_crc_for_local_receipt(qtbot, tm
         for row in range(view.receipt_table.rowCount())
     ]
     assert "CRC" not in " ".join(labels).upper()
-    assert "SHA" in " ".join(labels).upper()
+    assert "SHA" not in " ".join(labels).upper()
+    assert "Технические детали:" in view.receipt_table.toolTip()
+    assert receipt.output_sha256 in view.receipt_table.toolTip()
 
 
 def test_s2_item_detail_hides_unsupported_remove_control(
