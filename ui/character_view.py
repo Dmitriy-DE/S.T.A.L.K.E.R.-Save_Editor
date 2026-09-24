@@ -170,7 +170,7 @@ class CharacterView(QWidget):
         self.profile_label.setText(
             f"Версия: {getattr(snapshot, 'format_title', None) or 'Неизвестная версия'}\n"
             f"Файл: {snapshot.path.name}\n"
-            f"Целостность: {'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён'}"
+            f"Проверка: {'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён'}"
         )
         self.profile_label.setToolTip("")
         self._technical_detail_text = technical_details(

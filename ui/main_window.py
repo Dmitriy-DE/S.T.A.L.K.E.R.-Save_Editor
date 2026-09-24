@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import gzip
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -1556,7 +1557,7 @@ class MainWindow(QMainWindow):
             "cloud_uncertain": self.cloud_controller.reconcile_remote,
         }
         self.status_label.setText(ERROR_COPY[kind].title)
-        self._show_copy_error(kind, message, actions.get(kind, self._show_reference_editor))
+        self._show_copy_error(kind, message, actions.get(kind))
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.set_error(message)
         if (self.snapshot is not None and self.snapshot.source_kind == "cloud") or kind.startswith("cloud_"):
@@ -1567,7 +1568,7 @@ class MainWindow(QMainWindow):
         self,
         kind: ErrorKind,
         details: str,
-        action,
+        action: Callable[[], None] | None,
     ) -> None:
         """Show short copy with a working primary action and opt-in diagnostics."""
 
@@ -1599,7 +1600,7 @@ class MainWindow(QMainWindow):
             )
 
         def clicked(button) -> None:
-            if button is primary:
+            if button is primary and kind != "generic" and action is not None:
                 action()
             elif button is details_button:
                 self._show_technical_details(detail_text)

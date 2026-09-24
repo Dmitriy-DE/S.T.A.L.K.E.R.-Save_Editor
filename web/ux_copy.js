@@ -20,9 +20,16 @@ const COPY = Object.freeze({
     title: "Не удалось выполнить действие",
     message: "Попробуй ещё раз. Если проблема повторится, открой технические детали.",
     severity: "error",
-    primaryAction: "Повторить",
+    primaryAction: "Закрыть",
     secondaryAction: "Подробнее",
   }),
+});
+
+export const BROWSER_UI_COPY = Object.freeze({
+  startupLoading: "Загрузка редактора…",
+  startupPreparing: "Подготовка редактора…",
+  integrity: "Проверка",
+  integritySummary: "ПРОВЕРКА",
 });
 
 export function integrityLabel(info) {
@@ -55,5 +62,5 @@ export function errorPresentation(kind = "generic", details = null) {
 export function technicalDetails(value, errorCode = null) {
   if (!value) return "";
   const code = errorCode ? `Код ошибки: ${errorCode}\n` : "";
-  return `Технические детали: ${code}${value}`;
+  return `${code}${value}`;
 }

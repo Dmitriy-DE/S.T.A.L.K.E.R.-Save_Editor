@@ -86,6 +86,16 @@ def test_library_and_editor_use_plain_language_for_search_and_integrity(
     assert window.library_view.preview_status.text() == "НЕ ПРОВЕРЕНО"
     assert window.editor_view.header_status.text() == "РЕДАКТИРУЕМЫЙ"
     assert window.editor_view.integrity_label.text() == "Файл проверен"
+    assert "Проверка:" in {
+        label.text() for label in window.library_view.findChildren(QLabel)
+    }
+    assert "Проверка" in {
+        label.text() for label in window.editor_view.findChildren(QLabel)
+    }
+    assert "ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ" in {
+        label.text()
+        for label in window.library_view.findChildren(QLabel)
+    }
 
 
 def test_open_failure_uses_short_copy_and_keeps_diagnostic_details(
@@ -197,7 +207,7 @@ def test_analysis_crc_failure_uses_corrupt_save_copy_and_error_code(
     )
     details_button.click()
     assert window._details_dialog.text.toPlainText().startswith(
-        "Технические детали:\nКод ошибки: SAVE_CORRUPT"
+        "Код ошибки: SAVE_CORRUPT"
     )
     assert classify_analysis_error("CRC mismatch: stored=1234 actual=5678") == "corrupt"
     assert ERROR_COPY["corrupt"].error_code == "SAVE_CORRUPT"
@@ -212,8 +222,35 @@ def test_error_presentation_keeps_stable_code_severity_and_secondary_action() ->
     assert copy.technical_details is None
     detailed = present_error("source_changed", "source SHA changed")
     assert format_error_details(detailed) == (
-        "Технические детали:\nКод ошибки: SOURCE_CHANGED\nsource SHA changed"
+        "Код ошибки: SOURCE_CHANGED\nsource SHA changed"
     )
+
+
+def test_generic_error_from_settings_closes_without_navigating(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
+    window = MainWindow(EditorService(), auto_update_check=False)
+    qtbot.addWidget(window)
+    window._render_snapshot(_snapshot(synthetic_save, tmp_path), show_editor=False)
+    window._show_settings()
+    settings_screen = window.reference_stack.currentWidget()
+
+    window._show_operation_error("clipboard operation failed unexpectedly")
+
+    assert window._error_dialog is not None
+    assert window._error_dialog.text() == "Не удалось выполнить действие"
+    assert window._error_dialog.informativeText() == (
+        "Попробуй ещё раз. Если проблема повторится, открой технические детали."
+    )
+    primary = next(
+        button
+        for button in window._error_dialog.buttons()
+        if button.text() == "Закрыть"
+    )
+    primary.click()
+    qtbot.waitUntil(lambda: window._error_dialog is None)
+    assert settings_screen is window.settings_reference_view
+    assert window.reference_stack.currentWidget() is settings_screen
 
 
 @pytest.mark.parametrize(
@@ -713,7 +750,8 @@ def test_normal_desktop_widget_copy_avoids_internal_terminology(
         r"\bhandle\b|type[- ]key|\banchor\b|persisted|reconciliation|"
         r"read[- ]back|\bwriter\b|\bparser\b|\btransport\b|\blocator\b|"
         r"\bpayload\b|serializer|immutable|\bbackend\b|\bbytes\b|"
-        r"бэкап|байт|снимок|предпросмотр|застейдж|сейв\w*|thumbnail",
+        r"бэкап|байт|снимок|предпросмотр|застейдж|сейв\w*|thumbnail|"
+        r"python-ядро|декодер|анализ по запросу|целостность",
         re.IGNORECASE,
     )
     matches = forbidden.findall(text)

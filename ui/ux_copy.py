@@ -142,7 +142,7 @@ ERROR_COPY: dict[ErrorKind, ErrorCopy] = {
         title="Не удалось выполнить действие",
         message="Попробуй ещё раз. Если проблема повторится, открой технические детали.",
         severity="error",
-        primary_action="Вернуться в редактор",
+        primary_action="Закрыть",
     ),
 }
 
@@ -163,9 +163,9 @@ def present_error(kind: ErrorKind, details: str | None = None) -> ErrorCopy:
 
 
 def technical_details(value: object) -> str:
-    """Label explicitly requested diagnostic text without putting it in normal copy."""
+    """Return diagnostic text for the dialog body, whose title labels the section."""
 
-    return f"Технические детали:\n{value}" if value else ""
+    return str(value) if value else ""
 
 
 def format_error_details(presentation: ErrorCopy) -> str:
@@ -174,7 +174,7 @@ def format_error_details(presentation: ErrorCopy) -> str:
     details = [f"Код ошибки: {presentation.error_code}"]
     if presentation.technical_details:
         details.append(presentation.technical_details)
-    return technical_details("\n".join(details))
+    return "\n".join(details)
 
 
 def classify_operation_error(message: str) -> ErrorKind:

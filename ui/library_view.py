@@ -305,7 +305,7 @@ class LibraryView(QWidget):
             ("Источник", self.preview_source_value),
             ("Дата", self.preview_date_value),
             ("Размер", self.preview_size_value),
-            ("Целостность", self.preview_integrity_value),
+            ("Проверка", self.preview_integrity_value),
         )
         for row, (caption, value) in enumerate(metadata_rows):
             label = QLabel(f"{caption}:", self.preview_metadata)
@@ -332,7 +332,9 @@ class LibraryView(QWidget):
         self.capability_row = QGridLayout()
         self.capability_row.setHorizontalSpacing(5)
         self.capability_row.setVerticalSpacing(8)
-        self.preview_editable_chip = status_chip("АНАЛИЗ ПО ЗАПРОСУ", self.preview_body, tone="neutral")
+        self.preview_editable_chip = status_chip(
+            "ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ", self.preview_body, tone="neutral"
+        )
         self.preview_local_chip = status_chip("ЛОКАЛЬНЫЙ", self.preview_body, tone="neutral")
         self.preview_integrity_chip = status_chip("НЕ ПРОВЕРЕНО", self.preview_body, tone="neutral")
         self.preview_inventory_chip = status_chip("ИНВЕНТАРЬ —", self.preview_body, tone="neutral")
@@ -818,7 +820,7 @@ class LibraryView(QWidget):
             self.items_summary.setText("—")
             self.equipment_summary.setText("—")
             self.condition_summary.setText("—")
-            self.preview_editable_chip.setText("АНАЛИЗ ПО ЗАПРОСУ")
+            self.preview_editable_chip.setText("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ")
             self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
             self.preview_inventory_chip.setText("ИНВЕНТАРЬ —")
             return
@@ -865,7 +867,7 @@ class LibraryView(QWidget):
             )
             self.preview_inventory_chip.setText(f"ИНВЕНТАРЬ · {len(info.inventory)}")
         else:
-            self.preview_editable_chip.setText("АНАЛИЗ ПО ЗАПРОСУ")
+            self.preview_editable_chip.setText("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ")
             self.preview_editable_chip.setProperty("tone", "neutral")
             self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
             self.preview_inventory_chip.setText("ИНВЕНТАРЬ —")

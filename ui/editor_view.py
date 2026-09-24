@@ -242,7 +242,7 @@ class EditorView(QWidget):
         weight_controls.addWidget(self.weight_label, 1)
         status_layout.addLayout(weight_controls)
         self.source_label = self._add_info_row(status_layout, "Источник", "library")
-        self.integrity_label = self._add_info_row(status_layout, "Целостность", "verified")
+        self.integrity_label = self._add_info_row(status_layout, "Проверка", "verified")
         self.capability_label = self._add_info_row(status_layout, "Статус", "equipment")
         status_layout.addSpacing(12)
         self.equipment_scroll = QScrollArea(self.status_column)

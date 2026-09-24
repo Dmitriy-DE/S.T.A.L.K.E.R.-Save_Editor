@@ -4,6 +4,7 @@
 
 import { installCatalogs, loadCoreResources } from "./bootstrap.js";
 import {
+  BROWSER_UI_COPY,
   capabilityLabel,
   errorPresentation,
   integrityLabel,
@@ -112,6 +113,10 @@ function fail(error, kind = "generic") {
   } else if (kind === "verify") {
     errorAction.textContent = presentation.primaryAction;
     errorAction.onclick = () => showReferenceScreen("editor");
+    errorAction.hidden = false;
+  } else {
+    errorAction.textContent = presentation.primaryAction;
+    errorAction.onclick = () => setStatus("");
     errorAction.hidden = false;
   }
 }
@@ -582,7 +587,7 @@ function renderReferenceSnapshot(s) {
     `Игра: ${s.format_title}`,
     "Источник: локальное сохранение",
     `Размер: ${s.size_text}`,
-    `Целостность: ${integrityLabel(s)}`,
+    `${BROWSER_UI_COPY.integrity}: ${integrityLabel(s)}`,
   ].entries()) {
     if (index) previewMeta.append(document.createElement("br"));
     previewMeta.append(document.createTextNode(line));
@@ -597,7 +602,7 @@ function renderReferenceSnapshot(s) {
   el("reference-summary-money").innerHTML = `ДЕНЬГИ<br>${s.money ?? "—"} ₽`;
   el("reference-summary-items").innerHTML = `ПРЕДМЕТЫ<br>${s.inventory_count ?? "—"}`;
   el("reference-summary-equipment").innerHTML = `ЭКИПИРОВКА<br>${s.equipment_count ?? "—"}`;
-  el("reference-summary-condition").innerHTML = `ЦЕЛОСТНОСТЬ<br>${integrityLabel(s)}`;
+  el("reference-summary-condition").innerHTML = `${BROWSER_UI_COPY.integritySummary}<br>${integrityLabel(s)}`;
   el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
   el("reference-editor-state").textContent = capabilityLabel(editable);
   el("reference-editor-state").className = `reference-chip ${editable ? "success" : "warning"}`;
@@ -607,7 +612,7 @@ function renderReferenceSnapshot(s) {
   el("reference-money-clear").disabled = state.money === null;
   el("reference-weight").textContent = "ВЕС  — кг";
   el("reference-source").innerHTML = "Источник<br>Локальный файл";
-  el("reference-integrity").innerHTML = `Целостность<br>${integrityLabel(s)}`;
+  el("reference-integrity").innerHTML = `${BROWSER_UI_COPY.integrity}<br>${integrityLabel(s)}`;
   el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только просмотр"}`;
   el("reference-equipment-summary").textContent = `${s.equipment_count ?? 0} объектов оборудования · неподтверждённые данные нельзя изменить`;
   renderReferenceEditor(s);
@@ -620,12 +625,12 @@ function renderSnapshot(s) {
 }
 
 async function boot() {
-  setStatus("Параллельная загрузка декодера и Python-ядра…", "busy");
+  setStatus(BROWSER_UI_COPY.startupLoading, "busy");
   const { bridgeSource, bundle, ooz, py } = await loadCoreResources({
     oozUrl: OOZ_URL,
     pyodideUrl: PYODIDE_URL,
   });
-  setStatus("Установка ядра редактора…", "busy");
+  setStatus(BROWSER_UI_COPY.startupPreparing, "busy");
   py.FS.mkdirTree("/core/editor");
   for (const [name, source] of Object.entries(bundle.files)) py.FS.writeFile(`/core/${name}`, source, { encoding: "utf8" });
   py.FS.writeFile("/core/web_bridge.py", bridgeSource, { encoding: "utf8" });
