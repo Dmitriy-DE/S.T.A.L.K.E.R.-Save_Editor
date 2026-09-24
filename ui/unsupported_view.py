@@ -10,6 +10,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .style_components import action_button, panel, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import ERROR_COPY, technical_details
 
 
@@ -21,6 +22,8 @@ class UnsupportedView(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("unsupportedView")
+        self._technical_detail_text = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -67,6 +70,11 @@ class UnsupportedView(QWidget):
         self.diagnostics_button = action_button("СКОПИРОВАТЬ ДИАГНОСТИКУ", self)
         self.diagnostics_button.clicked.connect(self.diagnostics_requested)
         actions.addWidget(self.diagnostics_button)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button.setObjectName("unsupportedTechnicalDetailsButton")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        actions.addWidget(self.details_button)
         actions.addStretch(1)
         self.back_button = action_button(
             ERROR_COPY["unsupported"].primary_action.upper(), self, kind="primary"
@@ -82,14 +90,24 @@ class UnsupportedView(QWidget):
             f"{snapshot.path.name}\n"
             f"Формат: {getattr(snapshot, 'format_title', None) or 'Неизвестный формат'}"
         )
-        self.file_label.setToolTip(
-            technical_details(
-                f"Идентификатор формата: {getattr(snapshot, 'format_id', None)}\n"
-                f"SHA-256: {snapshot.info.sha256}\nФайл: {snapshot.path}"
-            )
-        )
+        self.file_label.setToolTip("")
         self.reason_label.setText(ERROR_COPY["unsupported"].message)
-        self.reason_label.setToolTip(technical_details(reason))
+        self.reason_label.setToolTip("")
+        self._technical_detail_text = technical_details(
+            f"Идентификатор формата: {getattr(snapshot, 'format_id', None)}\n"
+            f"SHA-256: {snapshot.info.sha256}\n"
+            f"Файл: {snapshot.path}\n"
+            f"Причина: {reason or 'Редактирование для этой версии ещё не поддерживается.'}"
+        )
+        self.details_button.setVisible(bool(self._technical_detail_text))
+
+    def _show_technical_details(self) -> None:
+        if not self._technical_detail_text:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_detail_text, self)
+        self._details_dialog.open()
 
 
 __all__ = ["UnsupportedView"]

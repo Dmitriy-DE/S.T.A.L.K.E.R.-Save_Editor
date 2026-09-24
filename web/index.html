@@ -47,7 +47,7 @@
       <div class="reference-library-grid">
         <section class="reference-panel reference-library-list">
           <div class="reference-toolbar">
-            <input id="reference-library-search" type="search" placeholder="Поиск предметов…">
+            <input id="reference-library-search" type="search" placeholder="Поиск сохранений…">
             <select id="reference-library-sort"><option value="newest">Сначала новые</option><option value="oldest">Сначала старые</option></select>
           </div>
           <table class="reference-table" id="reference-save-table">
@@ -61,7 +61,7 @@
           <div class="reference-preview-image">ЗОНА<br>ПОМНИ<br>ВСЁ</div>
           <h2 id="reference-preview-name">Сохранение не выбрано</h2>
           <div id="reference-preview-meta" class="muted">Источник: локальная копия<br>Целостность: —</div>
-          <div id="reference-preview-status" class="reference-chip">ОЖИДАЕТ АНАЛИЗА</div>
+          <div id="reference-preview-status" class="reference-chip">НЕ ПРОВЕРЕНО</div>
           <div class="reference-capability-row"><span id="reference-preview-capability" class="reference-chip">АНАЛИЗ ПО ЗАПРОСУ</span><span class="reference-chip">ЛОКАЛЬНЫЙ</span></div>
           <div class="reference-quick-summary"><span id="reference-summary-money">ДЕНЬГИ<br>—</span><span id="reference-summary-items">ПРЕДМЕТЫ<br>—</span><span id="reference-summary-equipment">ЭКИПИРОВКА<br>—</span><span id="reference-summary-condition">ЦЕЛОСТНОСТЬ<br>—</span></div>
           <button class="reference-primary" id="reference-open" type="button">ОТКРЫТЬ СОХРАНЕНИЕ  →</button>
@@ -73,7 +73,7 @@
     </section>
 
     <section class="reference-screen" id="reference-screen-editor" hidden>
-      <div class="reference-editor-heading"><button class="reference-back" id="reference-editor-back" type="button">←  К СПИСКУ СОХРАНЕНИЙ</button><span id="reference-editor-breadcrumb">Сохранение не открыто</span><span id="reference-editor-state" class="reference-chip success">РЕДАКТИРУЕМЫЙ</span></div>
+      <div class="reference-editor-heading"><button class="reference-back" id="reference-editor-back" type="button">←  К СПИСКУ СОХРАНЕНИЙ</button><span id="reference-editor-breadcrumb">СОХРАНЕНИЕ НЕ ОТКРЫТО</span><span id="reference-editor-state" class="reference-chip">СОХРАНЕНИЕ НЕ ОТКРЫТО</span></div>
       <div class="reference-editor-grid">
         <aside class="reference-panel reference-status-panel">
           <div class="reference-subheading">СТАТУС СОХРАНЕНИЯ</div>
@@ -110,7 +110,7 @@
 
     <section class="reference-screen" id="reference-screen-review" hidden>
       <div class="reference-screen-heading"><h1>ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ</h1><span>Проверь список изменений перед записью</span></div>
-      <div class="reference-review-grid"><section class="reference-panel"><div class="reference-subheading">ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ</div><table class="reference-table" id="reference-review-table"><thead><tr><th>ОБЪЕКТ</th><th>БЫЛО</th><th>СТАНЕТ</th></tr></thead><tbody><tr><td colspan="3" class="reference-empty">Изменений ещё нет.</td></tr></tbody></table></section><aside class="reference-panel"><div class="reference-subheading">ЭТАПЫ СОХРАНЕНИЯ</div><ol class="reference-pipeline"><li>Проверить изменения и источник</li><li>Создать резервную копию</li><li>Проверить подготовленную копию</li><li>Записать и проверить результат</li></ol><p id="reference-review-status" class="reference-warning">Веб-версия сохраняет только новую копию. Исходный файл не изменяется.</p><button class="reference-primary" id="reference-review-save" type="button" disabled>СОХРАНИТЬ С ИЗМЕНЕНИЯМИ</button></aside></div>
+      <div class="reference-review-grid"><section class="reference-panel"><div class="reference-subheading">ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ</div><table class="reference-table" id="reference-review-table"><thead><tr><th>ОБЪЕКТ</th><th>БЫЛО</th><th>СТАНЕТ</th></tr></thead><tbody><tr><td colspan="3" class="reference-empty">Изменений ещё нет.</td></tr></tbody></table></section><aside class="reference-panel"><div class="reference-subheading">ЭТАПЫ СОХРАНЕНИЯ</div><ol class="reference-pipeline"><li>Проверить изменения</li><li>Подготовить копию</li><li>Проверить копию</li><li>Скачать копию</li></ol><p id="reference-review-status" class="reference-warning">Веб-версия сохраняет только новую копию. Исходный файл не изменяется.</p><button class="reference-primary" id="reference-review-save" type="button" disabled>СКАЧАТЬ ПРОВЕРЕННУЮ КОПИЮ</button></aside></div>
     </section>
 
     <section class="reference-screen" id="reference-screen-cloud" hidden><div class="reference-screen-heading"><h1>STEAM CLOUD</h1><span>Облачные сохранения доступны только в настольной версии</span></div><section class="reference-panel reference-desktop-only"><div class="reference-chip warning">ТОЛЬКО ДЛЯ НАСТОЛЬНОЙ ВЕРСИИ</div><h2>Steam Cloud подключается по запросу</h2><p>Браузер не подключается к Steam и не открывает папки на компьютере. Для списка облачных сохранений, проверки и записи используй настольную версию.</p></section></section>
@@ -121,6 +121,8 @@
 
 <footer class="reference-footer">
   <span id="reference-footer-actions"></span>
+  <button id="reference-error-action" class="reference-footer-action" type="button" hidden></button>
+  <button id="reference-technical-details" class="reference-footer-action" type="button" hidden>Технические детали</button>
   <span class="reference-footer-status" id="status" role="status" aria-live="polite">Загрузка ядра…</span>
 </footer>
 
@@ -134,6 +136,17 @@
 
 <dialog class="support-modal" id="support-modal" aria-labelledby="support-title">
   <div class="support-modal-card"><button class="support-close" id="support-close" type="button" aria-label="Закрыть">×</button><h2 id="support-title">Поддержать проект</h2><p class="muted">Если проект оказался полезен, поддержи его развитие.</p><section class="support-entry"><h3>PayPal</h3><div class="support-value-row"><code>breygel.dima@gmail.com</code><button class="button support-copy" type="button" data-copy="breygel.dima@gmail.com">Копировать</button></div></section><section class="support-entry"><h3>Binance Pay</h3><div class="support-label">Идентификатор Binance: 434350727</div><div class="support-value-row"><code>434350727</code><button class="button support-copy" type="button" data-copy="434350727">Копировать</button></div></section><section class="support-entry"><h3>USDT</h3><div class="support-label">Сеть: TRON (TRC20)</div><div class="support-label">Адрес:</div><div class="support-value-row"><code>TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds</code><button class="button support-copy" type="button" data-copy="TF5hpkAmF9vjbpaRpJ5ewpbCC122jED1ds">Копировать</button></div></section></div>
+</dialog>
+
+<dialog class="technical-details-modal" id="technical-details-dialog" aria-labelledby="technical-details-title">
+  <div class="technical-details-card">
+    <h2 id="technical-details-title">Технические детали</h2>
+    <pre id="technical-details-text" tabindex="0"></pre>
+    <div class="technical-details-actions">
+      <button id="technical-details-copy" class="reference-secondary" type="button">Копировать</button>
+      <button id="technical-details-close" class="reference-primary" type="button">Закрыть</button>
+    </div>
+  </div>
 </dialog>
 
 <script type="module" src="app.js"></script>

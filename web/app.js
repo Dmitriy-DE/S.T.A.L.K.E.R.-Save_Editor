@@ -16,6 +16,10 @@ const OOZ_URL = "https://cdn.jsdelivr.net/npm/ooz-wasm@2.0.0/index.js";
 
 const el = (id) => document.getElementById(id);
 const status = el("status");
+const errorAction = el("reference-error-action");
+const detailsAction = el("reference-technical-details");
+const detailsDialog = el("technical-details-dialog");
+let technicalDetailText = "";
 
 const state = {
   py: null,
@@ -89,6 +93,10 @@ function setStatus(text, kind = "") {
   status.textContent = text;
   status.className = `reference-footer-status${kind ? ` ${kind}` : ""}`;
   status.title = "";
+  errorAction.hidden = true;
+  errorAction.onclick = null;
+  detailsAction.hidden = true;
+  technicalDetailText = "";
 }
 
 function fail(error, kind = "generic") {
@@ -96,7 +104,28 @@ function fail(error, kind = "generic") {
   const details = String(error && error.message ? error.message : error);
   const presentation = errorPresentation(kind, details);
   setStatus(presentation.message, "error");
-  status.title = technicalDetails(presentation.technicalDetails, presentation.errorCode);
+  setTechnicalDetails(technicalDetails(presentation.technicalDetails, presentation.errorCode));
+  if (kind === "open") {
+    errorAction.textContent = presentation.primaryAction;
+    errorAction.onclick = () => el("file-input").click();
+    errorAction.hidden = false;
+  } else if (kind === "verify") {
+    errorAction.textContent = presentation.primaryAction;
+    errorAction.onclick = () => showReferenceScreen("editor");
+    errorAction.hidden = false;
+  }
+}
+
+function setTechnicalDetails(value) {
+  technicalDetailText = String(value ?? "");
+  detailsAction.hidden = !technicalDetailText;
+}
+
+function showTechnicalDetails() {
+  if (!technicalDetailText) return;
+  el("technical-details-text").textContent = technicalDetailText;
+  el("technical-details-copy").textContent = "Копировать";
+  detailsDialog.showModal();
 }
 
 function showReferenceScreen(name) {
@@ -126,6 +155,17 @@ function referenceItemStaged(item) {
 
 function snapshotItem(handle) {
   return state.snapshot?.inventory?.find((item) => item.handle === handle) ?? null;
+}
+
+function setItemTechnicalDetails(item) {
+  const lines = [];
+  if (state.snapshot?.sha256) lines.push(`SHA-256 сохранения: ${state.snapshot.sha256}`);
+  if (item) {
+    lines.push(`Идентификатор предмета: ${item.handle_hex ?? item.handle}`);
+    lines.push(`Ключ типа: ${item.type_key ?? "не определён"}`);
+    if (item.remove_reason) lines.push(`Причина недоступности удаления: ${item.remove_reason}`);
+  }
+  setTechnicalDetails(technicalDetails(lines.join("\n")));
 }
 
 function formatCondition(value) {
@@ -158,7 +198,7 @@ function itemGlyph(item) {
   const setSource = () => {
     const candidate = candidates[candidateIndex];
     img.alt = `Иконка предмета: ${item.name ?? item.category ?? "предмет"}`;
-    img.title = technicalDetails(candidate);
+    img.title = "";
     img.src = `icons/${encodeURIComponent(candidate)}.png`;
   };
   img.addEventListener("error", () => {
@@ -252,6 +292,7 @@ function factionName(key) {
 function renderReferenceItemDetail(item) {
   const fields = el("reference-item-fields");
   fields.replaceChildren();
+  setItemTechnicalDetails(item);
   const reset = el("reference-item-reset");
   if (!item) {
     el("reference-item-name").textContent = "Предмет не выбран";
@@ -268,9 +309,7 @@ function renderReferenceItemDetail(item) {
   el("reference-item-name").textContent = item.name ?? "Неизвестный объект";
   el("reference-item-type").textContent = item.category ?? "Предмет";
   el("reference-item-detail").textContent = `Позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Это значение нельзя изменить.`;
-  el("reference-item-detail").title = technicalDetails(
-    `Идентификатор: ${item.type_key ?? "—"}; handle: ${item.handle_hex ?? "—"}`,
-  );
+  el("reference-item-detail").title = "";
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
   el("reference-item-gate").textContent = writable ? "ПРОВЕРЕНО" : "ТОЛЬКО ПРОСМОТР";
   el("reference-item-gate").className = `reference-chip ${writable ? "success" : "warning"}`;
@@ -328,7 +367,7 @@ function renderReferenceItemDetail(item) {
         const definition = definitions.find((entry) => entry.key === key);
         option.value = key;
         option.textContent = definition ? definition.name : "Неизвестное улучшение";
-        option.title = technicalDetails(key);
+        option.title = "";
         option.selected = effective.includes(key);
         select.append(option);
       }
@@ -345,7 +384,7 @@ function renderReferenceItemDetail(item) {
       const evidence = document.createElement("div");
       evidence.className = "reference-readonly-detail";
       evidence.textContent = "Улучшения доступны только для просмотра.";
-      evidence.title = technicalDetails(item.upgrades.join(", ") || "Нет данных");
+      evidence.removeAttribute("title");
       fields.append(evidence);
     }
   }
@@ -355,9 +394,7 @@ function renderReferenceItemDetail(item) {
     remove.type = "button";
     remove.textContent = state.detach.has(item.handle) ? "ОТМЕНИТЬ УДАЛЕНИЕ" : "УДАЛИТЬ ПРЕДМЕТ";
     remove.disabled = !item.remove_editable;
-    remove.title = item.remove_reason
-      ? technicalDetails(item.remove_reason)
-      : "Удалить предмет";
+    remove.title = "Удалить предмет";
     remove.addEventListener("click", () => {
       if (state.detach.has(item.handle)) state.detach.delete(item.handle);
       else {
@@ -471,7 +508,7 @@ function renderReferenceAdd(s) {
     const option = document.createElement("option");
     option.value = item.key;
     option.textContent = item.name === item.key ? "Предмет из каталога" : item.name;
-    option.title = item.name === item.key ? technicalDetails(item.key) : "";
+    option.title = "";
     return option;
   }));
   const enabled = Boolean(s.capabilities?.add_items && s.catalog_available && select.options.length);
@@ -497,7 +534,7 @@ function renderReferenceCharacter(s) {
       const option = document.createElement("option");
       option.value = faction.key;
       option.textContent = faction.name === faction.key ? `Группировка ${faction.numeric_id}` : faction.name;
-      option.title = faction.name === faction.key ? technicalDetails(faction.key) : "";
+      option.title = "";
       option.selected = faction.numeric_id === s.player_faction_index || faction.key === state.playerFaction;
       select.append(option);
     }
@@ -550,7 +587,7 @@ function renderReferenceSnapshot(s) {
     if (index) previewMeta.append(document.createElement("br"));
     previewMeta.append(document.createTextNode(line));
   }
-  previewMeta.title = technicalDetails(`SHA-256: ${s.sha256}`);
+  previewMeta.title = "";
   el("reference-preview-status").textContent = integrityLabel(s).toUpperCase();
   el("reference-activity").textContent = `Проанализирован ${s.name}; исходный файл не изменён.`;
   const caps = s.capabilities ?? {};
@@ -602,7 +639,6 @@ async function boot() {
   state.catalogsReady.catch(fail);
   el("file-input").disabled = false;
   setStatus("Редактор готов. Выбери локальное сохранение.");
-  status.title = technicalDetails(`SHA-256 исходного кода: ${bundle.source_sha256}`);
   state.catalogsReady.then(
     () => { if (!state.snapshot) setStatus("Приложение готово. Открой локальный файл сохранения."); },
     () => {},
@@ -616,7 +652,6 @@ async function openFile(file) {
     const bytesReady = file.arrayBuffer();
     await state.catalogsReady;
     const bytes = new Uint8Array(await bytesReady);
-    const t0 = performance.now();
     const snapshot = JSON.parse(state.bridge.analyze(bytes, file.name));
     state.snapshot = snapshot;
     state.money = null;
@@ -631,7 +666,8 @@ async function openFile(file) {
     state.referenceSelectedHandle = null;
     state.prepared = null;
     renderSnapshot(snapshot);
-    setStatus(`Анализ завершён за ${Math.round(performance.now() - t0)} мс; исходный файл не изменён`);
+    setStatus("Сохранение проверено; исходный файл не изменён");
+    setItemTechnicalDetails(snapshotItem(state.referenceSelectedHandle));
   } catch (error) {
     fail(error, "open");
   }
@@ -662,8 +698,8 @@ function preview() {
     ));
     state.prepared = result;
     el("reference-review-status").textContent = `Копия проверена (${result.size_text}). Оригинальный файл пока не изменён.`;
-    el("reference-review-status").title = technicalDetails(`SHA-256 копии: ${result.output_sha256}`);
     setStatus("Проверка выполнена; можно скачать копию");
+    setTechnicalDetails(technicalDetails(`SHA-256 копии: ${result.output_sha256}`));
     return result;
   } catch (error) {
     fail(error, "verify");
@@ -683,6 +719,7 @@ function download() {
     link.click();
     URL.revokeObjectURL(url);
     setStatus(`Сохранена проверенная копия ${name}; исходный файл не изменён.`);
+    setTechnicalDetails(technicalDetails(`SHA-256 копии: ${state.prepared.output_sha256}`));
   } catch (error) {
     fail(error, "verify");
   }
@@ -706,6 +743,27 @@ el("reference-save").addEventListener("click", () => {
   if (referenceChangeCount() > 0) showReferenceScreen("review");
 });
 el("reference-review-save").addEventListener("click", () => download());
+detailsAction.addEventListener("click", showTechnicalDetails);
+el("technical-details-close").addEventListener("click", () => detailsDialog.close());
+el("technical-details-copy").addEventListener("click", async () => {
+  const text = el("technical-details-text").textContent ?? "";
+  try {
+    await navigator.clipboard.writeText(text);
+    el("technical-details-copy").textContent = "Скопировано";
+  } catch {
+    const fallback = document.createElement("textarea");
+    fallback.value = text;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.append(fallback);
+    fallback.select();
+    if (document.execCommand("copy")) {
+      el("technical-details-copy").textContent = "Скопировано";
+    }
+    fallback.remove();
+  }
+});
 el("reference-library-search").addEventListener("input", () => {
   const query = el("reference-library-search").value.trim().toLowerCase();
   const row = el("reference-save-table").tBodies[0].firstElementChild;

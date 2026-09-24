@@ -64,6 +64,7 @@ from .save_result_view import SaveResultView
 from .save_review import SaveReviewView
 from .settings_view import SettingsView
 from .support_dialog import SupportDialog
+from .technical_details_dialog import TechnicalDetailsDialog
 from .theme import apply_theme
 from .unsupported_view import UnsupportedView
 from .update_dialog import UpdateCheckWorker, UpdateDialog
@@ -74,7 +75,6 @@ from .ux_copy import (
     classify_operation_error,
     format_error_details,
     present_error,
-    technical_details,
 )
 
 
@@ -221,7 +221,7 @@ class MainWindow(QMainWindow):
         self._support_dialog: SupportDialog | None = None
         self._diagnostics_dialog: DiagnosticsDialog | None = None
         self._error_dialog: QMessageBox | None = None
-        self._details_dialog: QMessageBox | None = None
+        self._details_dialog: TechnicalDetailsDialog | None = None
         self._update_client = update_client
         self._auto_update_check = auto_update_check
         self._update_thread: UpdateCheckWorker | None = None
@@ -598,7 +598,8 @@ class MainWindow(QMainWindow):
         rows = self._reference_change_rows()
         self.save_review_view.set_source(
             f"Источник: {self.snapshot.path.name} · "
-            f"Подготовлено {len(rows)} изменений. Оригинальный файл пока не изменён."
+            f"Подготовлено {len(rows)} изменений. Оригинальный файл пока не изменён.",
+            cloud=self.snapshot.source_kind == "cloud",
         )
         self.save_review_view.set_changes(rows)
         self._show_reference_modal(self.save_review_view, base_widget=self.editor_view)
@@ -916,7 +917,7 @@ class MainWindow(QMainWindow):
 
     def _on_slot_discovery_failed(self, message: str) -> None:
         self.status_label.setText("Не удалось обновить список сохранений.")
-        self.status_label.setToolTip(technical_details(message))
+        self.status_label.setToolTip("")
 
     def open_local(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
@@ -978,7 +979,7 @@ class MainWindow(QMainWindow):
         self.status_label.setText(copy.title)
         self.library_view.set_analysis_error(copy.message, details=message)
         self.error_label.setText(copy.message)
-        self.error_label.setToolTip(format_error_details(present_error(kind, message)))
+        self.error_label.setToolTip("")
         self.error_label.setVisible(True)
         self._show_library()
         self._show_copy_error(kind, message, self.open_local)
@@ -1010,6 +1011,7 @@ class MainWindow(QMainWindow):
         self._pending_replace = False
         self.cloud_controller.set_prepared(None)
         self.editor_view.set_snapshot(snapshot)
+        self.editor_view.detail_view.set_operation_details("")
         self.equipment_rows = self.editor_view.equipment_rows
         self.editor_view.set_draft(
             counts=self.staged_counts,
@@ -1029,9 +1031,7 @@ class MainWindow(QMainWindow):
         self.library_view.status_label.setText(
             f"{snapshot.path.name} · {human_size(len(snapshot.data))} · файл проверен"
         )
-        self.library_view.status_label.setToolTip(
-            technical_details(f"SHA-256: {info.sha256}\nCRC: {'PASS' if info.crc_ok else 'FAIL'}")
-        )
+        self.library_view.status_label.setToolTip("")
         self.status_label.setText("Редактор готов")
         self.error_label.clear()
         self.error_label.setVisible(False)
@@ -1267,12 +1267,14 @@ class MainWindow(QMainWindow):
         parts = [f"{action}: подготовлено {len(result.changes)}"]
         if result.skipped:
             parts.append(f"пропущено {len(result.skipped)}")
-        details = "; ".join(
-            f"0x{item.handle:04X}: {item.reason}" for item in result.skipped[:3]
+        self.editor_view.detail_view.set_operation_details(
+            "\n".join(
+                f"0x{item.handle:04X}: {item.reason}"
+                for item in result.skipped
+            )
         )
         self.editor_view.show_capability_message(". ".join(parts))
-        if details:
-            self.editor_view.detail_view.module_status.setToolTip(technical_details(details))
+        self.editor_view.detail_view.module_status.setToolTip("")
         self.status_label.setText("Изменения снаряжения подготовлены. Оригинальный файл пока не изменён.")
 
     def _stage_equipment_repair(self, handle: int, percentage: float) -> None:
@@ -1396,7 +1398,8 @@ class MainWindow(QMainWindow):
             faction = game_catalog.factions.resolve(key)
         except CatalogLookupError as exc:
             self.character_view.status_label.setText("Не удалось найти эту группировку.")
-            self.character_view.status_label.setToolTip(technical_details(exc))
+            self.character_view.status_label.setToolTip("")
+            self.character_view.set_diagnostic_details(exc)
             return
         if faction.numeric_id is None:
             self.character_view.status_label.setText("Изменение недоступно для этой группировки.")
@@ -1436,7 +1439,8 @@ class MainWindow(QMainWindow):
             faction = game_catalog.factions.resolve(key)
         except CatalogLookupError as exc:
             self.character_view.status_label.setText("Не удалось найти эту группировку.")
-            self.character_view.status_label.setToolTip(technical_details(exc))
+            self.character_view.status_label.setToolTip("")
+            self.character_view.set_diagnostic_details(exc)
             return
         if faction.numeric_id is None:
             self.character_view.status_label.setText("Изменение недоступно для этой группировки.")
@@ -1570,7 +1574,7 @@ class MainWindow(QMainWindow):
         copy = present_error(kind, details)
         self.error_label.setText(copy.message)
         detail_text = format_error_details(copy)
-        self.error_label.setToolTip(detail_text)
+        self.error_label.setToolTip("")
         self.error_label.setVisible(True)
         previous = self._error_dialog
         if previous is not None:
@@ -1612,14 +1616,7 @@ class MainWindow(QMainWindow):
     def _show_technical_details(self, details: str) -> None:
         if self._details_dialog is not None:
             self._details_dialog.close()
-        dialog = QMessageBox(self)
-        dialog.setObjectName("technicalDetailsDialog")
-        dialog.setIcon(QMessageBox.Icon.Information)
-        dialog.setWindowTitle("Технические детали")
-        dialog.setText("Технические детали")
-        dialog.setInformativeText(details)
-        dialog.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        dialog.setStandardButtons(QMessageBox.StandardButton.Close)
+        dialog = TechnicalDetailsDialog(details, self)
         dialog.finished.connect(
             lambda _result, current=dialog: setattr(self, "_details_dialog", None)
             if self._details_dialog is current
@@ -1633,7 +1630,7 @@ class MainWindow(QMainWindow):
         self.editor_view.show_capability_message(
             "Проверка перед сохранением сброшена. Проверь изменения ещё раз."
         )
-        self.editor_view.detail_view.module_status.setToolTip(technical_details(reason))
+        self.editor_view.detail_view.module_status.setToolTip("")
         self.cloud_controller.set_prepared(None)
         if hasattr(self, "cloud_reference_view"):
             self.cloud_reference_view.set_prepared(None)
@@ -1727,9 +1724,7 @@ class MainWindow(QMainWindow):
             return
         self.prepared_edit = prepared
         self.editor_view.show_capability_message("Проверка готова. Можно сохранить изменения.")
-        self.editor_view.detail_view.module_status.setToolTip(
-            technical_details(f"SHA-256 результата: {prepared.output_sha256}")
-        )
+        self.editor_view.detail_view.module_status.setToolTip("")
         self.cloud_controller.set_prepared(prepared)
         if hasattr(self, "cloud_reference_view"):
             self.cloud_reference_view.set_prepared(prepared)
@@ -1756,7 +1751,7 @@ class MainWindow(QMainWindow):
         else:
             display = "Сохраняем изменения…"
         self.status_label.setText(display)
-        self.status_label.setToolTip(technical_details(message))
+        self.status_label.setToolTip("")
         if hasattr(self, "history_reference_view"):
             self.history_reference_view.set_progress(message)
 
@@ -1768,7 +1763,7 @@ class MainWindow(QMainWindow):
         if "SHA256" in message or "Источник изменился" in message:
             self.prepared_edit = None
             self.editor_view.show_capability_message("Файл изменился после открытия.")
-            self.editor_view.detail_view.module_status.setToolTip(technical_details(message))
+            self.editor_view.detail_view.module_status.setToolTip("")
             self.cloud_controller.set_prepared(None)
         self._show_operation_error(message)
 
@@ -2084,7 +2079,7 @@ class MainWindow(QMainWindow):
         )
         self.app_shell.set_footer_actions((("Esc", "К библиотеке", self._show_library),))
         self.error_label.setText(display)
-        self.error_label.setToolTip(technical_details(message))
+        self.error_label.setToolTip("")
         self.error_label.setVisible(True)
         self.library_view.set_analysis_error(display, details=message)
         path = (
@@ -2267,7 +2262,7 @@ class MainWindow(QMainWindow):
             else "Выполняется действие в Steam Cloud…"
         )
         self.status_label.setText(display)
-        self.status_label.setToolTip(technical_details(message))
+        self.status_label.setToolTip("")
 
     def _on_cloud_busy(self, busy: bool) -> None:
         self._cloud_busy = busy

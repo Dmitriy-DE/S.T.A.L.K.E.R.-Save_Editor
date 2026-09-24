@@ -47,9 +47,10 @@ def test_item_detail_presents_unresolved_upgrade_keys_as_readable_evidence(
     labels = [view.upgrade_list.item(row).text() for row in range(view.upgrade_list.count())]
     assert labels == ["Улучшение 1", "Улучшение 2"]
     assert all("up_" not in label for label in labels)
-    assert view.upgrade_list.item(0).toolTip() == (
-        "Технические детали:\nИдентификатор модификации: up_firsta_ak74"
-    )
+    assert view.upgrade_list.item(0).toolTip() == ""
+    view.details_button.click()
+    assert view._details_dialog is not None
+    assert "up_firsta_ak74" in view._details_dialog.text.toPlainText()
     assert view.upgrade_list.item(0).sizeHint().height() == 26
     assert view.upgrade_list.maximumHeight() >= 110
     assert view.module_status.text() == "Модули и улучшения доступны только для просмотра."

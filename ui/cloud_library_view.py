@@ -25,7 +25,9 @@ from PySide6.QtWidgets import (
 from .cloud_controller import CloudController
 from .formatting import human_size
 from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import (
+    CLOUD_COPY,
     ERROR_COPY,
     ErrorKind,
     classify_operation_error,
@@ -50,6 +52,8 @@ class CloudLibraryView(QWidget):
         self.setObjectName("cloudLibraryView")
         self.backend = backend
         self._auto_started = False
+        self._details_dialog: TechnicalDetailsDialog | None = None
+        self._technical_detail_text = ""
         self._build_ui()
         backend.files_ready.connect(self._on_files_ready)
         backend.snapshot_ready.connect(self._on_snapshot_ready)
@@ -165,7 +169,7 @@ class CloudLibraryView(QWidget):
         self.detail_meta.setWordWrap(True)
         detail_content_layout.addWidget(self.detail_meta)
         self.read_only_banner = QLabel(
-            "Запись доступна только после проверки и твоего подтверждения.",
+            CLOUD_COPY["write_intro"],
             self.detail_content,
         )
         self.read_only_banner.setObjectName("cloudReadOnlyBanner")
@@ -186,6 +190,11 @@ class CloudLibraryView(QWidget):
         self.result_label.setObjectName("cloudResultLabel")
         self.result_label.setWordWrap(True)
         detail.addWidget(self.result_label)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.detail_panel)
+        self.details_button.setObjectName("cloudTechnicalDetailsButton")
+        self.details_button.setEnabled(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        detail.addWidget(self.details_button)
         workspace.addWidget(self.detail_panel, 34)
         workspace_host = QWidget(self)
         workspace_host.setObjectName("cloudWorkspace")
@@ -229,13 +238,18 @@ class CloudLibraryView(QWidget):
         if selected:
             name = PurePosixPath(selected_file.name.replace("\\", "/")).name if selected_file is not None else selected[0].text()
             self.detail_name.setText(name)
-            self.detail_name.setToolTip(
-                technical_details(f"Путь в Steam Cloud: {selected_file.name}")
+            self.detail_name.setToolTip("")
+            self.detail_meta.setText(
+                CLOUD_COPY["selected"]
+            )
+            self._set_technical_details(
+                technical_details(
+                    f"Путь в Steam Cloud: {selected_file.name}\n"
+                    f"Источник: {selected_file.source}\n"
+                    f"Сохранено в облаке: {selected_file.is_persisted}"
+                )
                 if selected_file is not None
                 else ""
-            )
-            self.detail_meta.setText(
-                "Сохранение будет получено из Steam Cloud и проверено до редактирования."
             )
 
     def _analyze_selected(self) -> None:
@@ -268,14 +282,6 @@ class CloudLibraryView(QWidget):
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
-                if column == 0:
-                    item.setToolTip(
-                        technical_details(f"Путь в Steam Cloud: {cloud_file.name}")
-                    )
-                elif column == 3:
-                    item.setToolTip(technical_details(f"persisted={cloud_file.is_persisted}"))
-                elif column == 4:
-                    item.setToolTip(technical_details(str(cloud_file.source)))
                 self.save_table.setItem(row, column, item)
         self._on_backend_status(self.backend.status_text)
         selected_row = next(
@@ -294,40 +300,38 @@ class CloudLibraryView(QWidget):
                 if files
                 else "В выбранном профиле нет доступных сохранений."
             )
+            self._set_technical_details("")
             self._selection_changed()
         self.save_table.blockSignals(False)
         if selected_row >= 0:
             self._selection_changed()
 
     def _on_snapshot_ready(self, snapshot) -> None:
-        self.result_label.setText(
-            "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён"
-        )
-        self.result_label.setToolTip(technical_details(
+        self._set_result(
+            CLOUD_COPY["checked"] if snapshot.info.crc_ok else "Файл не прошёл проверку",
             f"CRC: {'PASS' if snapshot.info.crc_ok else 'FAIL'}\n"
-            f"SHA-256: {snapshot.info.sha256}"
-        ))
+            f"SHA-256: {snapshot.info.sha256}",
+        )
         self.detail_meta.setText(f"{snapshot.name}\nСохранение получено из Steam Cloud.")
-        self.status_chip.setText("ФАЙЛ ПРОВЕРЕН" if snapshot.info.crc_ok else "ПРОВЕРКА НЕ ПРОЙДЕНА")
+        self.status_chip.setText("СОХРАНЕНИЕ ПРОВЕРЕНО" if snapshot.info.crc_ok else "ПРОВЕРКА НЕ ПРОЙДЕНА")
 
     def _on_upload_ready(self, receipt) -> None:
         self.upload_button.setEnabled(False)
         uncertain = receipt.status != "verified"
         self.result_label.setText(
-            "Запись успешно проверена."
-            if not uncertain
-            else ERROR_COPY["cloud_uncertain"].message
+            CLOUD_COPY["uploaded"] if not uncertain else CLOUD_COPY["uncertain"]
         )
         detail_lines = (
             f"Статус: {receipt.status}\n"
             f"persisted={getattr(receipt, 'persisted', None)}\n"
             f"SHA-256: {getattr(receipt, 'output_sha256', '')}"
         )
-        self.result_label.setToolTip(
+        detail_text = (
             format_error_details(present_error("cloud_uncertain", detail_lines))
             if uncertain
             else technical_details(detail_lines)
         )
+        self._set_technical_details(detail_text)
         self.status_chip.setText(
             "ЗАПИСЬ ПРОВЕРЕНА" if receipt.status == "verified" else "STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ"
         )
@@ -339,6 +343,9 @@ class CloudLibraryView(QWidget):
         if kind == "cloud_write_unavailable":
             copy = ERROR_COPY[kind]
             self.status_chip.setText("ЗАПИСЬ В CLOUD НЕДОСТУПНА")
+        elif kind == "cloud_uncertain":
+            copy = ERROR_COPY[kind]
+            self.status_chip.setText("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ")
         elif kind == "cloud_unavailable":
             copy = ERROR_COPY[kind]
             self.status_chip.setText("STEAM CLOUD НЕДОСТУПЕН")
@@ -346,8 +353,8 @@ class CloudLibraryView(QWidget):
             kind = "generic"
             copy = ERROR_COPY[kind]
             self.status_chip.setText("НЕ УДАЛОСЬ ВЫПОЛНИТЬ ДЕЙСТВИЕ")
-        self.result_label.setText(copy.message)
-        self.result_label.setToolTip(
+        self._set_result(
+            CLOUD_COPY["uncertain"] if kind == "cloud_uncertain" else copy.message,
             format_error_details(present_error(kind, message))
         )
 
@@ -365,8 +372,7 @@ class CloudLibraryView(QWidget):
             text = "Запись сохранения в Steam Cloud…"
         else:
             text = "Выполняется операция Steam Cloud…"
-        self.result_label.setText(text)
-        self.result_label.setToolTip(technical_details(message))
+        self._set_result(text, message)
 
     def _on_backend_status(self, message: str) -> None:
         normalized = message.casefold()
@@ -387,18 +393,18 @@ class CloudLibraryView(QWidget):
         else:
             label = "НЕ ПОДКЛЮЧЕНО"
         self.status_chip.setText(label)
-        self.status_chip.setToolTip(technical_details(message))
+        self._set_technical_details(technical_details(message))
 
     def _on_backend_result(self, message: str) -> None:
         if not message:
             self.result_label.clear()
-            self.result_label.setToolTip("")
+            self._set_technical_details("")
             return
         normalized = message.casefold()
         error_kind: ErrorKind | None = None
         if "uncertain" in normalized or "не подтвержд" in normalized:
             error_kind = "cloud_uncertain"
-            text = ERROR_COPY[error_kind].message
+            text = CLOUD_COPY["uncertain"]
         elif any(token in normalized for token in (
             "upload недоступ", "upload отключ", "writer unavailable", "writer недоступ",
         )):
@@ -411,20 +417,39 @@ class CloudLibraryView(QWidget):
         elif "сначала выбери" in normalized:
             text = "Сначала выбери сохранение и проверь его."
         elif "verified" in normalized or "read-back" in normalized or "persisted=true" in normalized:
-            text = "Запись успешно проверена."
+            text = CLOUD_COPY["uploaded"]
         elif "sha" in normalized or "crc" in normalized:
-            text = "Файл проверен."
+            text = CLOUD_COPY["checked"]
         elif "не подключ" in normalized or "не доступ" in normalized:
             error_kind = "cloud_unavailable"
             text = ERROR_COPY[error_kind].message
         else:
             text = "Состояние Steam Cloud обновлено."
-        self.result_label.setText(text)
-        self.result_label.setToolTip(
+        details = (
             format_error_details(present_error(error_kind, message))
             if error_kind is not None
             else technical_details(message)
         )
+        self._set_result(text, details)
+
+    def _set_result(self, text: str, details: str = "") -> None:
+        self.result_label.setText(text)
+        if details.startswith("Технические детали:"):
+            self._set_technical_details(details)
+        else:
+            self._set_technical_details(technical_details(details))
+
+    def _set_technical_details(self, details: str) -> None:
+        self._technical_detail_text = details
+        self.details_button.setEnabled(bool(details))
+
+    def _show_technical_details(self) -> None:
+        if not self._technical_detail_text:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_detail_text, self)
+        self._details_dialog.open()
 
     @staticmethod
     def _source_label(value: object) -> str:

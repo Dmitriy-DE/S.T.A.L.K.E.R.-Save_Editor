@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from editor.diagnostics import collect_log_bundle, export_log_bundle, submit_logs
 
 from .formatting import human_size
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 
@@ -55,6 +56,8 @@ class DiagnosticsDialog(QDialog):
         self.setModal(True)
         self._worker: DiagnosticsWorker | None = None
         self._export_worker: DiagnosticsExportWorker | None = None
+        self._technical_detail_text = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
 
         layout = QVBoxLayout(self)
         description = QLabel(
@@ -156,7 +159,8 @@ class DiagnosticsDialog(QDialog):
         self.export_button.setEnabled(True)
 
     def _set_details(self, value: str) -> None:
-        self.details_label.setText(technical_details(value))
+        self._technical_detail_text = technical_details(value)
+        self.details_label.setText(self._technical_detail_text)
         visible = bool(value)
         self.details_button.setVisible(visible)
         self.details_label.setVisible(visible and not self.details_label.isHidden())
@@ -164,11 +168,12 @@ class DiagnosticsDialog(QDialog):
             self.details_button.setText("Технические детали")
 
     def _toggle_details(self) -> None:
-        visible = self.details_label.isHidden()
-        self.details_label.setVisible(visible)
-        self.details_button.setText(
-            "Скрыть технические детали" if visible else "Технические детали"
-        )
+        if not self._technical_detail_text:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_detail_text, self)
+        self._details_dialog.open()
 
 
 __all__ = ["DiagnosticsDialog", "DiagnosticsExportWorker", "DiagnosticsWorker"]

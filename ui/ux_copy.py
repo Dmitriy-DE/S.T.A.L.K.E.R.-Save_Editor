@@ -34,6 +34,21 @@ class ErrorCopy:
     technical_details: str | None = None
 
 
+CLOUD_COPY = {
+    "write_intro": "Запись станет доступна только после безопасного подключения к Steam Cloud.",
+    "selected": "Выбрано облачное сохранение. Открой его, чтобы начать редактирование.",
+    "checked": "Сохранение проверено",
+    "uploaded": "Изменения успешно сохранены в Steam Cloud.",
+    "uncertain": "Steam не подтвердил запись. Сначала проверь состояние облачного сохранения.",
+}
+
+BACKUP_STATUS_COPY = {
+    "verified": "Готово к восстановлению",
+    "missing": "Файл не найден",
+    "corrupt": "Копия повреждена",
+}
+
+
 ERROR_COPY: dict[ErrorKind, ErrorCopy] = {
     "open": ErrorCopy(
         error_code="ANALYSIS_FAILED",
@@ -69,13 +84,13 @@ ERROR_COPY: dict[ErrorKind, ErrorCopy] = {
     "verify": ErrorCopy(
         error_code="VERIFY_FAILED",
         title="Не удалось проверить сохранение",
-        message="Мы не стали записывать изменения, потому что файл не прошёл проверку.",
+        message="Изменения не были записаны, потому что файл не прошёл проверку.",
         severity="error",
         primary_action="Вернуться в редактор",
     ),
     "unsupported": ErrorCopy(
         error_code="FORMAT_UNSUPPORTED",
-        title="Эта версия пока не поддерживается",
+        title="ЭТА ВЕРСИЯ ПОКА НЕ ПОДДЕРЖИВАЕТСЯ",
         message=(
             "Сохранение распознано, но безопасное редактирование для этой версии "
             "ещё не готово."
@@ -133,7 +148,7 @@ ERROR_COPY: dict[ErrorKind, ErrorCopy] = {
 
 SAVE_SUCCESS = ErrorCopy(
     error_code="SAVE_SUCCESS",
-    title="Изменения сохранены",
+    title="ИЗМЕНЕНИЯ СОХРАНЕНЫ",
     message="Сохранение записано и проверено. Резервная копия создана.",
     severity="success",
     primary_action="Вернуться к редактору",

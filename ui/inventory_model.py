@@ -14,8 +14,6 @@ from PySide6.QtGui import QBrush, QColor, QIcon
 
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
-from .ux_copy import technical_details
-
 # Qt calls these overrides with either index type; narrowing the signature to
 # QModelIndex alone is a Liskov violation the type checker rejects once the Qt
 # stubs are installed.
@@ -390,12 +388,9 @@ class InventoryTableModel(QAbstractTableModel):
                 if item.display_name is not None
                 else "Название предмета не определено."
             )
-            return (
-                f"{label}\n"
-                f"{technical_details(f'Идентификатор: {item.handle_hex}; ключ типа: {item.type_key}')}"
-            )
+            return label
         if column == self.HANDLE_COLUMN:
-            return technical_details(f"Идентификатор: {item.handle_hex}")
+            return ""
         if column == self.SUPPORT_COLUMN:
             return self._support_text(item)
         if column == self.CONDITION_COLUMN:

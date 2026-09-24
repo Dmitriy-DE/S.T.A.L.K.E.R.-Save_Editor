@@ -69,10 +69,10 @@ class SaveReviewView(QWidget):
         self.pipeline_steps = QListWidget(pipeline_panel)
         self.pipeline_steps.setObjectName("reviewPipelineSteps")
         for text in (
-            "1  Проверить изменения и открытый файл",
+            "1  Проверить изменения",
             "2  Создать резервную копию",
-            "3  Подготовить сохранение",
-            "4  Записать и проверить результат",
+            "3  Сохранить файл",
+            "4  Проверить результат",
         ):
             self.pipeline_steps.addItem(QListWidgetItem(text))
         pipeline_layout.addWidget(self.pipeline_steps, 1)
@@ -82,6 +82,7 @@ class SaveReviewView(QWidget):
         )
         self.warning_label.setObjectName("reviewWarningLabel")
         self.warning_label.setWordWrap(True)
+        self.warning_label.setVisible(False)
         pipeline_layout.addWidget(self.warning_label)
         body.addWidget(pipeline_panel, 34)
         body_host = QWidget(self)
@@ -103,8 +104,9 @@ class SaveReviewView(QWidget):
         root.addStretch(1)
         root.insertStretch(0, 1)
 
-    def set_source(self, text: str) -> None:
+    def set_source(self, text: str, *, cloud: bool = False) -> None:
         self.source_label.setText(text)
+        self.warning_label.setVisible(cloud)
 
     def set_changes(self, rows: Iterable[tuple[str, str, str]]) -> None:
         rows = tuple(rows)

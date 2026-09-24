@@ -32,6 +32,7 @@ from editor.releases import release_by_id
 from .formatting import human_money, human_size
 from .save_discovery import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot, _slot_family
 from .style_components import TextureFrame, action_button, panel, section_header, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 
@@ -88,6 +89,8 @@ class LibraryView(QWidget):
         self._snapshot: Any | None = None
         self._activity_entries: list[tuple[str, str, str, str]] = []
         self._row_thumbnail_cache: dict[Path, QPixmap] = {}
+        self._technical_details = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
         self._build_ui()
         self._render_game_list()
 
@@ -106,7 +109,14 @@ class LibraryView(QWidget):
         self.error_label.setObjectName("libraryAnalysisError")
         self.error_label.setWordWrap(True)
         self.error_label.setVisible(False)
-        root.addWidget(self.error_label)
+        error_row = QHBoxLayout()
+        error_row.addWidget(self.error_label, 1)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button.setObjectName("libraryTechnicalDetailsButton")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        error_row.addWidget(self.details_button)
+        root.addLayout(error_row)
 
         body = QHBoxLayout()
         # Keep the shell rail on the 30 px rhythm while giving the inspector
@@ -174,7 +184,7 @@ class LibraryView(QWidget):
         self.search_edit = QLineEdit(centre)
         self.search_edit.setObjectName("referenceSearch")
         self.search_edit.setMinimumHeight(39)
-        self.search_edit.setPlaceholderText("Поиск предметов…")
+        self.search_edit.setPlaceholderText("Поиск сохранений…")
         self.search_edit.textChanged.connect(lambda _value: self._render_saves(self.game_list.currentRow()))
         controls.addWidget(self.search_edit, 1)
         self.sort_combo = QComboBox(centre)
@@ -306,12 +316,12 @@ class LibraryView(QWidget):
             metadata_layout.addWidget(value, row, 1)
             metadata_layout.setRowMinimumHeight(row, 27)
         preview_body_layout.addWidget(self.preview_metadata)
-        self.preview_meta = QLabel("Выбери строку, чтобы увидеть источник и целостность.", self.preview_body)
+        self.preview_meta = QLabel("Выбери сохранение, чтобы увидеть подробности.", self.preview_body)
         self.preview_meta.setObjectName("libraryPreviewMeta")
         self.preview_meta.setWordWrap(True)
         self.preview_meta.setVisible(False)
         preview_body_layout.addWidget(self.preview_meta)
-        self.preview_status = status_chip("ОЖИДАЕТ АНАЛИЗА", self.preview_body, tone="neutral")
+        self.preview_status = status_chip("НЕ ПРОВЕРЕНО", self.preview_body, tone="neutral")
         self.preview_status.setVisible(False)
         preview_body_layout.addWidget(self.preview_status, 0, Qt.AlignmentFlag.AlignLeft)
         self.capability_heading = section_header("ВОЗМОЖНОСТИ", parent=self.preview_body)
@@ -324,7 +334,7 @@ class LibraryView(QWidget):
         self.capability_row.setVerticalSpacing(8)
         self.preview_editable_chip = status_chip("АНАЛИЗ ПО ЗАПРОСУ", self.preview_body, tone="neutral")
         self.preview_local_chip = status_chip("ЛОКАЛЬНЫЙ", self.preview_body, tone="neutral")
-        self.preview_integrity_chip = status_chip("ФАЙЛ НЕ ПРОВЕРЕН", self.preview_body, tone="neutral")
+        self.preview_integrity_chip = status_chip("НЕ ПРОВЕРЕНО", self.preview_body, tone="neutral")
         self.preview_inventory_chip = status_chip("ИНВЕНТАРЬ —", self.preview_body, tone="neutral")
         self.capability_row.addWidget(self.preview_editable_chip, 0, 0)
         self.capability_row.addWidget(self.preview_local_chip, 0, 1)
@@ -424,10 +434,10 @@ class LibraryView(QWidget):
         self._render_game_list()
 
     def set_error(self, message: str) -> None:
-        details = technical_details(message)
+        self._technical_details = technical_details(message)
         message = "Не удалось обновить список сохранений. Проверь выбранные папки."
         self.status_label.setText("Не удалось обновить список сохранений")
-        self.status_label.setToolTip(details)
+        self.status_label.setToolTip("")
         self.preview_status.setText("ОШИБКА ПОИСКА")
         self.preview_status.setProperty("tone", "danger")
         self.preview_status.style().unpolish(self.preview_status)
@@ -436,15 +446,17 @@ class LibraryView(QWidget):
         self.preview_meta.setVisible(bool(message))
         self.preview_status.setVisible(bool(message))
         self.preview_meta.setText(message)
-        self.preview_meta.setToolTip(details)
+        self.preview_meta.setToolTip("")
         self.error_label.setText(message)
-        self.error_label.setToolTip(details)
         self.error_label.setVisible(bool(message))
+        self.details_button.setVisible(bool(self._technical_details))
 
     def set_analysis_state(self, message: str) -> None:
         self.status_label.setText(message)
         self.error_label.clear()
         self.error_label.setVisible(False)
+        self.details_button.setVisible(False)
+        self._technical_details = ""
         self.preview_name.setText("Открытие сохранения…")
         self.preview_meta.setText("Проверяем файл. Редактор откроется после успешной проверки.")
         self.preview_metadata.setVisible(False)
@@ -459,12 +471,14 @@ class LibraryView(QWidget):
         self.preview_inventory_chip.setText("ИНВЕНТАРЬ ПРОВЕРЯЕТСЯ")
 
     def set_analysis_error(self, message: str, *, details: str | None = None) -> None:
+        self._technical_details = technical_details(details or "")
         self.error_label.setText(message)
-        self.error_label.setToolTip(technical_details(details))
+        self.error_label.setToolTip("")
         self.error_label.setVisible(True)
+        self.details_button.setVisible(bool(self._technical_details))
         self.preview_name.setText("Сохранение не открыто")
         self.preview_meta.setText("Предыдущий файл остался открыт. Новое сохранение не загружено.")
-        self.preview_meta.setToolTip(technical_details(details))
+        self.preview_meta.setToolTip("")
         self.preview_metadata.setVisible(False)
         self.preview_meta.setVisible(True)
         self.preview_status.setVisible(True)
@@ -476,6 +490,14 @@ class LibraryView(QWidget):
         self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
         self.preview_inventory_chip.setText("ИНВЕНТАРЬ НЕ ПРОЧИТАН")
         self.open_button.setText("ВЫБРАТЬ ДРУГОЙ ФАЙЛ")
+
+    def _show_technical_details(self) -> None:
+        if not self._technical_details:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_details, self)
+        self._details_dialog.open()
 
     def set_snapshot(self, snapshot: Any | None) -> None:
         """Refresh the selected-save detail from an already verified snapshot."""
@@ -708,7 +730,7 @@ class LibraryView(QWidget):
             self._set_save_title_cell(table_row, slot)
             status_cell = QWidget(self.save_table)
             status_cell.setObjectName("librarySaveStatusCell")
-            status_cell.setToolTip(slot.status_text)
+            status_cell.setToolTip("")
             status_icon = QLabel("●", status_cell)
             status_icon.setObjectName(
                 "libraryReadyDot" if slot.format_id is not None else "libraryCandidateDot"
@@ -788,7 +810,7 @@ class LibraryView(QWidget):
         self.restore_button.setEnabled(slot is not None)
         if slot is None:
             self.preview_name.setText("Сохранение не выбрано")
-            self.preview_meta.setText("Выбери строку, чтобы увидеть источник и целостность.")
+            self.preview_meta.setText("Выбери сохранение, чтобы увидеть подробности.")
             self.preview_metadata.setVisible(False)
             self.preview_meta.setVisible(True)
             self.preview_status.setVisible(False)
@@ -839,7 +861,7 @@ class LibraryView(QWidget):
             self.equipment_summary.setText(f"{equipment_count} комплектов")
             self.condition_summary.setText(average_condition)
             self.preview_integrity_chip.setText(
-                "Файл проверен" if info.crc_ok else "Файл повреждён или изменён"
+            "Сохранение проверено" if info.crc_ok else "Файл не прошёл проверку"
             )
             self.preview_inventory_chip.setText(f"ИНВЕНТАРЬ · {len(info.inventory)}")
         else:
@@ -867,7 +889,7 @@ class LibraryView(QWidget):
         self.preview_size_value.setText(human_size(slot.size))
         if snapshot is not None and snapshot_matches:
             self.preview_integrity_value.setText(
-                "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён"
+                "Сохранение проверено" if snapshot.info.crc_ok else "Файл не прошёл проверку"
             )
             self.preview_integrity_value.setProperty(
                 "integrityState", "verified" if snapshot.info.crc_ok else "warning"

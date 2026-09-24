@@ -33,6 +33,7 @@ from editor.releases import official_releases
 from editor.settings import PathSettings, missing_manual_paths, save_settings
 
 from .style_components import TextureFrame, action_button, panel, section_header
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 _SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
@@ -132,6 +133,8 @@ class SettingsView(QWidget):
         self.settings_path = Path(settings_path).expanduser()
         self.load_error = load_error
         self._advanced_paths_dialog: QDialog | None = None
+        self._discovery_details_dialog: TechnicalDetailsDialog | None = None
+        self._discovery_detail_text = ""
         # Safety switches are policy, not preferences.  Their visual state is
         # represented by disabled semantic controls so users can inspect the
         # enforced value without being able to weaken it here.
@@ -464,7 +467,16 @@ class SettingsView(QWidget):
         self.found_all_label.setWordWrap(True)
         self.found_all_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.found_all_label.setVisible(False)
-        layout.addWidget(self.found_all_label)
+        found_row = QHBoxLayout()
+        found_row.addWidget(self.found_all_label, 1)
+        self.discovery_details_button = action_button(
+            "ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.paths_panel
+        )
+        self.discovery_details_button.setObjectName("settingsDiscoveryDetailsButton")
+        self.discovery_details_button.setVisible(False)
+        self.discovery_details_button.clicked.connect(self._show_discovery_details)
+        found_row.addWidget(self.discovery_details_button)
+        layout.addLayout(found_row)
         self.status_label = QLabel("")
         self.status_label.setWordWrap(True)
         self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -479,7 +491,7 @@ class SettingsView(QWidget):
     def _build_backups_panel(self) -> None:
         layout = QVBoxLayout(self.backups_panel)
         layout.setContentsMargins(12, 12, 12, 12)
-        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "КОПИЯ ПЕРЕД КАЖДОЙ ЗАПИСЬЮ", self.backups_panel, icon_name="history"))
+        layout.addWidget(section_header("РЕЗЕРВНЫЕ КОПИИ", "АВТОМАТИЧЕСКАЯ ЗАЩИТА", self.backups_panel, icon_name="history"))
         label = QLabel(
             "Резервная копия создаётся автоматически перед каждым сохранением.",
             self.backups_panel,
@@ -825,12 +837,23 @@ class SettingsView(QWidget):
         if len(lines) == 1:
             lines.append("Установленных игр не найдено.")
         details = "\n".join(lines)
-        self.found_all_label.setToolTip(technical_details(details))
+        self._discovery_detail_text = technical_details(details)
+        self.discovery_details_button.setVisible(True)
         found_count = max(0, len(lines) - 1)
         self.found_all_label.setText(
             f"Автопоиск: Steam {'найден' if steam else 'не найден'} · "
-            f"игр найдено: {found_count} (подробности — во всплывающей подсказке)"
+            f"игр найдено: {found_count}"
         )
+
+    def _show_discovery_details(self) -> None:
+        if not self._discovery_detail_text:
+            return
+        if self._discovery_details_dialog is not None:
+            self._discovery_details_dialog.close()
+        self._discovery_details_dialog = TechnicalDetailsDialog(
+            self._discovery_detail_text, self
+        )
+        self._discovery_details_dialog.open()
 
     def _choose_directory(self, edit: QLineEdit) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Выбрать каталог")

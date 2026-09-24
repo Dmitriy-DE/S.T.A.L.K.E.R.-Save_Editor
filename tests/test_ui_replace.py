@@ -73,7 +73,7 @@ def test_main_window_replaces_the_selected_local_slot_after_preview(
     assert calls == [(source, backup_dir)]
     assert window.reference_stack.currentWidget() is window.editor_view
     assert window._reference_modal_view is window.save_result_view
-    assert window.save_result_view.heading_label.text() == "Изменения сохранены"
+    assert window.save_result_view.heading_label.text() == "ИЗМЕНЕНИЯ СОХРАНЕНЫ"
     assert "Изменено" in {
         window.save_result_view.receipt_table.item(row, 0).text()
         for row in range(window.save_result_view.receipt_table.rowCount())

@@ -62,12 +62,12 @@ def test_history_view_renders_statuses_and_requires_preview_before_restore(
         status_chip = view.table.cellWidget(row, 4)
         assert isinstance(status_chip, QLabel)
         statuses.append(status_chip.text())
-    assert "Проверено" in statuses
-    assert "Отсутствует" in statuses
+    assert "Готово к восстановлению" in statuses
+    assert "Файл не найден" in statuses
     assert not view.restore_button.isEnabled()
     assert not view.restore_in_place_button.isEnabled()
 
-    valid_row = statuses.index("Проверено")
+    valid_row = statuses.index("Готово к восстановлению")
     view.table.selectRow(valid_row)
     view.destination_edit.setText(str(tmp_path / "restored.sav"))
     qtbot.mouseClick(view.preview_button, Qt.MouseButton.LeftButton)

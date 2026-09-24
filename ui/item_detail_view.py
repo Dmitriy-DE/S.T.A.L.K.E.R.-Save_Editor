@@ -27,6 +27,7 @@ from editor.catalog import UpgradeCatalog
 from save_format import InventoryItem
 
 from .style_components import action_button, panel, section_header, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 _DETAIL_TYPE_LABELS = {
@@ -87,6 +88,8 @@ class ItemDetailView(QWidget):
         self._staged_durability: Mapping[int, float] = {}
         self._removed_handles: Mapping[int, bool] = {}
         self._item_icon: QIcon | None = None
+        self._operation_detail_text = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -182,6 +185,11 @@ class ItemDetailView(QWidget):
         self.module_status.setObjectName("detailModuleStatus")
         self.module_status.setWordWrap(True)
         body.addWidget(self.module_status)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.detail_content)
+        self.details_button.setObjectName("itemTechnicalDetailsButton")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        body.addWidget(self.details_button)
         feature_row = QHBoxLayout()
         feature_row.setSpacing(6)
         self.verified_feature_chip = status_chip("ПРОВЕРЕНО", self.detail_content, tone="success")
@@ -256,6 +264,10 @@ class ItemDetailView(QWidget):
         self._item_icon = icon
         self._render()
 
+    def set_operation_details(self, value: str) -> None:
+        self._operation_detail_text = str(value or "")
+        self.details_button.setVisible(bool(self._item or self._operation_detail_text))
+
     def set_change_count(self, count: int) -> None:
         self.save_button.setText(f"СОХРАНИТЬ {count} ИЗМЕНЕНИЙ")
         self.save_button.setEnabled(count > 0)
@@ -276,12 +288,14 @@ class ItemDetailView(QWidget):
             self.remove_button.setEnabled(False)
             self.upgrade_list.clear()
             self.module_status.setText("—")
+            self.details_button.setVisible(bool(self._operation_detail_text))
             self.image_label.clear()
             self.image_label.setText("—")
             return
 
         label = item.display_name or "Неизвестный объект"
         self.name_label.setText(label)
+        self.details_button.setVisible(True)
         type_label = _DETAIL_TYPE_LABELS.get(item.type_key, item.category)
         self.type_label.setText(type_label)
         weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
@@ -361,7 +375,7 @@ class ItemDetailView(QWidget):
             catalog_name = definition.display_name if definition is not None else None
             # Generated catalogs can contain localization tokens rather than
             # translated labels. Keep those identifiers out of the normal
-            # screen; retain the exact key as a hoverable evidence detail.
+            # screen; retain the exact key in the explicit detail dialog.
             label = (
                 catalog_name
                 if catalog_name and not catalog_name.casefold().startswith("st_")
@@ -369,7 +383,6 @@ class ItemDetailView(QWidget):
             )
             row = QListWidgetItem(label)
             row.setSizeHint(QSize(0, 26))
-            row.setToolTip(technical_details(f"Идентификатор модификации: {raw_key}"))
             row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
             self.upgrade_list.addItem(row)
         self.module_status.setText(
@@ -389,6 +402,32 @@ class ItemDetailView(QWidget):
         # S2 add/remove surface is omitted entirely.
         self.remove_button.setVisible(can_remove)
         self.remove_button.setEnabled(can_remove)
+
+    def _show_technical_details(self) -> None:
+        item = self._item
+        if item is None and not self._operation_detail_text:
+            return
+        lines: list[str] = []
+        if item is not None:
+            lines.extend(
+                (
+                    f"Идентификатор предмета: {item.handle_hex}",
+                    f"Ключ типа: {item.type_key}",
+                    f"Источник данных: {item.observation_source or 'не определено'}",
+                )
+            )
+            if item.modules:
+                lines.append(f"Идентификаторы модулей: {', '.join(item.modules)}")
+            if item.upgrades:
+                lines.append(f"Идентификаторы модификаций: {', '.join(item.upgrades)}")
+        if self._operation_detail_text:
+            lines.append(self._operation_detail_text)
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(
+            technical_details("\n".join(lines)), self
+        )
+        self._details_dialog.open()
 
     def _emit_count(self) -> None:
         if self._item is not None:

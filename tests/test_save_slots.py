@@ -145,5 +145,10 @@ def test_main_window_reports_missing_slot_as_open_error(qtbot, tmp_path: Path) -
     assert window.error_label.text() == (
         "Файл повреждён, не поддерживается или изменён другой программой."
     )
-    assert "Технические детали:" in window.error_label.toolTip()
-    assert "vanished.sav" in window.error_label.toolTip()
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert "vanished.sav" in window._details_dialog.text.toPlainText()

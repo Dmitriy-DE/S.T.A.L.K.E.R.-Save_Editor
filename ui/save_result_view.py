@@ -16,7 +16,9 @@ from PySide6.QtWidgets import (
 )
 
 from .style_components import action_button, panel, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import (
+    CLOUD_COPY,
     ERROR_COPY,
     SAVE_SUCCESS,
     format_error_details,
@@ -34,6 +36,8 @@ class SaveResultView(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("saveResultView")
+        self._technical_details = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -81,6 +85,11 @@ class SaveResultView(QWidget):
         self.reconcile_button.clicked.connect(self.reconcile_requested)
         root.addWidget(self.reconcile_button)
         actions = QHBoxLayout()
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button.setObjectName("technicalDetailsButton")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        actions.addWidget(self.details_button)
         self.editor_button = action_button(SAVE_SUCCESS.primary_action.upper(), self)
         self.editor_button.clicked.connect(self.back_to_editor_requested)
         actions.addWidget(self.editor_button)
@@ -123,9 +132,9 @@ class SaveResultView(QWidget):
                 else SAVE_SUCCESS.title
             )
             subtitle = (
-                ERROR_COPY["cloud_uncertain"].message
+                CLOUD_COPY["uncertain"]
                 if is_uncertain
-                else SAVE_SUCCESS.message
+                else CLOUD_COPY["uploaded"]
             )
         elif hasattr(receipt, "safety_backup_path"):
             chip_text = "ВОССТАНОВЛЕНО"
@@ -166,6 +175,11 @@ class SaveResultView(QWidget):
         digest = getattr(receipt, "output_sha256", None)
         if digest:
             detail_lines.append(f"SHA-256 результата: {digest}")
+        if is_cloud:
+            detail_lines.append(f"Статус Steam Cloud: {receipt_status}")
+            detail_lines.append(
+                f"Steam подтвердил запись: {getattr(receipt, 'persisted', None)}"
+            )
         if is_uncertain:
             rows.append(("Состояние", "Steam не подтвердил запись"))
         elif hasattr(receipt, "safety_backup_path"):
@@ -194,12 +208,21 @@ class SaveResultView(QWidget):
                 detail_presentation = present_error(
                     "cloud_uncertain", "\n".join(detail_lines)
                 )
-                self.receipt_table.setToolTip(
-                    format_error_details(detail_presentation)
-                )
+                self._technical_details = format_error_details(detail_presentation)
             else:
-                self.receipt_table.setToolTip(technical_details("\n".join(detail_lines)))
+                self._technical_details = technical_details("\n".join(detail_lines))
+        else:
+            self._technical_details = ""
+        self.details_button.setVisible(bool(self._technical_details))
         self.subtitle.setText(subtitle)
+
+    def _show_technical_details(self) -> None:
+        if not self._technical_details:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_details, self)
+        self._details_dialog.open()
 
     def set_editor_ready(self, ready: bool, message: str | None = None) -> None:
         """Gate the return-to-editor action on verified post-write state."""

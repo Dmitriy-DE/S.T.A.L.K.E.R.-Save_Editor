@@ -28,6 +28,7 @@ from editor.updater import (
     launch_update,
 )
 
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 LOGGER = logging.getLogger("stalker2_save_editor.updater")
@@ -97,6 +98,8 @@ class UpdateDialog(QDialog):
         self.check_result = result
         self._download_thread: UpdateDownloadWorker | None = None
         self._downloaded_archive: Path | None = None
+        self._technical_detail_text = ""
+        self._details_dialog: TechnicalDetailsDialog | None = None
 
         layout = QVBoxLayout(self)
         self.status_label = QLabel()
@@ -241,7 +244,8 @@ class UpdateDialog(QDialog):
             application.quit()
 
     def _set_technical_details(self, value: object) -> None:
-        self.details_label.setText(technical_details(value))
+        self._technical_detail_text = technical_details(value)
+        self.details_label.setText(self._technical_detail_text)
         visible = bool(value)
         self.details_button.setVisible(visible)
         if not visible:
@@ -249,11 +253,12 @@ class UpdateDialog(QDialog):
             self.details_button.setText("Технические детали")
 
     def _toggle_details(self) -> None:
-        visible = self.details_label.isHidden()
-        self.details_label.setVisible(visible)
-        self.details_button.setText(
-            "Скрыть технические детали" if visible else "Технические детали"
-        )
+        if not self._technical_detail_text:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(self._technical_detail_text, self)
+        self._details_dialog.open()
 
 
 __all__ = ["UpdateCheckWorker", "UpdateDialog"]

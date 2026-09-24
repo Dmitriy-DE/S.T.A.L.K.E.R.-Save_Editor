@@ -240,6 +240,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px s
 .support-value-row code { flex: 1; min-width: 0; overflow-wrap: anywhere; color: #d8ba8c; font-family: "Liberation Sans Narrow"; font-size: 12px; }
 .support-copy { flex: none; padding: 4px 8px; }
 .support-copy:hover { color: #ffd23f; border-color: #ffd23f; }
+.technical-details-modal { width: min(760px, calc(100vw - 32px)); max-width: none; max-height: min(82vh, 720px); margin: auto; padding: 0; color: var(--text); background: transparent; border: 1px solid var(--rust); }
+.technical-details-modal::backdrop { background: rgb(0 0 0 / 74%); }
+.technical-details-card { display: flex; flex-direction: column; gap: 12px; max-height: min(82vh, 720px); padding: 18px; background: linear-gradient(145deg, var(--bg-panel), var(--bg-base)); border: 2px solid #5f4a3d; box-shadow: 0 14px 45px rgb(0 0 0 / 55%); }
+.technical-details-card h2 { margin: 0; color: var(--olive); font-family: "Oswald", "Liberation Sans Narrow", sans-serif; font-size: 18px; letter-spacing: .7px; }
+.technical-details-card pre { min-height: 100px; max-height: 58vh; margin: 0; padding: 12px; overflow: auto; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; background: #090b0a; border: 1px solid var(--border-subtle); font: 13px/1.5 "Liberation Sans Narrow", sans-serif; }
+.technical-details-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.technical-details-actions button { width: auto; min-width: 110px; margin: 0; }
 .muted { color: var(--text-secondary); }
 .zone-item-icon { display: inline-block; width: 30px; height: 30px; object-fit: contain; vertical-align: middle; background: linear-gradient(145deg, #30342f, #151918); border: 1px solid #4a4536; }
 .zone-item-glyph { display: inline-grid; place-items: center; width: 28px; height: 28px; color: #d4a64b; vertical-align: middle; background: linear-gradient(145deg, #30342f, #151918); border: 1px solid #806c4c; }

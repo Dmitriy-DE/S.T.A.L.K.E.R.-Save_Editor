@@ -39,7 +39,6 @@ from .formatting import human_money
 from .inventory_model import InventoryTableModel
 from .item_detail_view import ItemDetailView
 from .style_components import action_button, panel, section_header, status_chip
-from .ux_copy import technical_details
 from .xray_assets import XRayIconResolver, donor_resolver_for, fit_icon
 
 _EQUIPMENT_DISPLAY_NAMES = {
@@ -470,9 +469,7 @@ class EditorView(QWidget):
         self.integrity_label.setText(
             "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён"
         )
-        self.integrity_label.setToolTip(
-            f"Технические детали: CRC {'PASS' if snapshot.info.crc_ok else 'FAIL'}"
-        )
+        self.integrity_label.setToolTip("")
         self.integrity_label.setProperty(
             "integrityState", "passed" if snapshot.info.crc_ok else "warning"
         )
@@ -620,7 +617,7 @@ class EditorView(QWidget):
             artifact_button.setIconSize(QSize(48, 48))
             artifact_button.setFixedSize(64, 64)
             artifact_button.setToolTip(
-                artifact.name or technical_details(f"Идентификатор предмета: {artifact.type_key}")
+                artifact.name or "Артефакт"
             )
             self.artifact_list.addWidget(artifact_button)
         empty_slot = QPushButton("+", self.equipment_content)

@@ -10,8 +10,6 @@ from PySide6.QtGui import QBrush, QColor, QIcon
 
 from editor.equipment import EquipmentItem
 
-from .ux_copy import technical_details
-
 ModelIndex: TypeAlias = QModelIndex | QPersistentModelIndex
 IconProvider: TypeAlias = Callable[[EquipmentItem], QIcon | None]
 _EMPTY_INDEX = QModelIndex()
@@ -271,20 +269,11 @@ class EquipmentTableModel(QAbstractTableModel):
                 return "Это значение нельзя изменить."
             return _MATURITY_LABELS[item.durability.maturity]
         if column == self.NAME_COLUMN:
-            family = item.serializer_family or "не определено"
             source = _OBSERVATION_SOURCE_LABELS.get(
                 item.observation_source,
                 "открытое сохранение",
             )
-            device = (
-                f"\nУстройство: {item.device_subtype}"
-                if item.device_subtype is not None
-                else ""
-            )
-            return (
-                f"Источник: {source}{device}\n"
-                f"{technical_details(f'Ключ типа: {item.type_key}; семейство формата: {family}; идентификатор: {item.handle_hex}')}"
-            )
+            return f"Источник: {source}"
         if column == self.UPGRADES_COLUMN:
             if item.modules is None and item.upgrades is None:
                 return "Данные о модификациях недоступны."

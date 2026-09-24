@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from editor.releases import is_xray_original_release
 
 from .style_components import action_button, panel, reference_game_rail, section_header, status_chip
+from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 
@@ -39,6 +40,9 @@ class CharacterView(QWidget):
         self.snapshot: Any | None = None
         self.editable = False
         self._staged: Mapping[str, int] = {}
+        self._details_dialog: TechnicalDetailsDialog | None = None
+        self._technical_detail_text = ""
+        self._diagnostic_detail_text = ""
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -143,11 +147,17 @@ class CharacterView(QWidget):
         self.back_button = action_button("НАЗАД К РЕДАКТОРУ", self)
         self.back_button.clicked.connect(self.back_requested)
         footer.addWidget(self.back_button)
+        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button.setObjectName("characterTechnicalDetailsButton")
+        self.details_button.setVisible(False)
+        self.details_button.clicked.connect(self._show_technical_details)
+        footer.addWidget(self.details_button)
         footer.addStretch(1)
         root.addLayout(footer)
 
     def set_snapshot(self, snapshot: Any) -> None:
         self.snapshot = snapshot
+        self._diagnostic_detail_text = ""
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
         capabilities = getattr(snapshot, "capabilities", None)
         self.editable = bool(
@@ -162,11 +172,22 @@ class CharacterView(QWidget):
             f"Файл: {snapshot.path.name}\n"
             f"Целостность: {'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён'}"
         )
-        self.profile_label.setToolTip(
-            technical_details(f"Идентификатор версии: {release}\nПуть к файлу: {snapshot.path}")
+        self.profile_label.setToolTip("")
+        self._technical_detail_text = technical_details(
+            f"Идентификатор версии: {release}\n"
+            f"Путь к файлу: {snapshot.path}\n"
+            f"SHA-256: {info.sha256}\n"
+            f"CRC: {'PASS' if info.crc_ok else 'FAIL'}"
         )
+        self.details_button.setVisible(True)
         self.status_chip.setText("РЕДАКТИРУЕМЫЙ" if self.editable else "ТОЛЬКО ПРОСМОТР")
         self._render_factions()
+
+    def set_diagnostic_details(self, value: object) -> None:
+        self._diagnostic_detail_text = technical_details(value)
+        self.details_button.setVisible(
+            bool(self._technical_detail_text or self._diagnostic_detail_text)
+        )
 
     def set_state(self, staged_relations: Mapping[str, int] | None = None, player_faction: str | None = None) -> None:
         self._staged = staged_relations or {}
@@ -233,13 +254,22 @@ class CharacterView(QWidget):
             index = self.player_faction_combo.count()
             self.player_faction_combo.addItem(label, faction.key)
             if not faction.display_name:
-                self.player_faction_combo.setItemData(
-                    index,
-                    technical_details(f"Идентификатор группировки: {faction.key}"),
-                    Qt.ItemDataRole.ToolTipRole,
-                )
+                self.player_faction_combo.setItemData(index, "", Qt.ItemDataRole.ToolTipRole)
         self.player_faction_combo.setEnabled(self.editable and bool(definitions))
         self.player_faction_button.setEnabled(self.editable and bool(definitions))
+
+    def _show_technical_details(self) -> None:
+        details = "\n".join(
+            value
+            for value in (self._technical_detail_text, self._diagnostic_detail_text)
+            if value
+        )
+        if not details:
+            return
+        if self._details_dialog is not None:
+            self._details_dialog.close()
+        self._details_dialog = TechnicalDetailsDialog(details, self)
+        self._details_dialog.open()
 
     def _stage_player_faction(self) -> None:
         index = self.player_faction_combo.currentIndex()

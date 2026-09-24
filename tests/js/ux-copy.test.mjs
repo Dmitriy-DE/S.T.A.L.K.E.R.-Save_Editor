@@ -22,7 +22,7 @@ test("browser capabilities and errors use plain language", () => {
   assert.equal(errorCopy("open"), "Файл повреждён, не поддерживается или изменён другой программой.");
   assert.equal(
     errorCopy("verify"),
-    "Мы не стали записывать изменения, потому что файл не прошёл проверку.",
+    "Изменения не были записаны, потому что файл не прошёл проверку.",
   );
   assert.deepEqual(errorPresentation("open"), {
     errorCode: "ANALYSIS_FAILED",
@@ -55,11 +55,22 @@ test("browser screens hide implementation jargon from ordinary copy", async () =
   const html = await readFile(new URL("../../web/index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../../web/app.js", import.meta.url), "utf8");
 
-  assert.match(html, /placeholder="Поиск предметов…"/);
+  assert.match(html, /id="reference-library-search"[^>]+placeholder="Поиск сохранений…"/);
+  assert.match(html, /id="reference-inventory-search"[^>]+placeholder="Поиск предметов…"/);
+  assert.match(html, /id="reference-preview-status"[^>]*>НЕ ПРОВЕРЕНО<\/div>/);
+  assert.match(html, /id="reference-editor-state"[^>]*>СОХРАНЕНИЕ НЕ ОТКРЫТО<\/span>/);
   assert.match(
     html,
     /Веб-версия сохраняет только новую копию\. Исходный файл не изменяется\./,
   );
+  assert.match(html, /id="reference-technical-details"[^>]*>Технические детали/);
+  assert.match(html, /<dialog[^>]+id="technical-details-dialog"/);
+  assert.match(html, /id="technical-details-text" tabindex="0"/);
+  assert.match(html, /id="technical-details-copy"[^>]*>Копировать/);
+  assert.match(html, /id="technical-details-close"[^>]*>Закрыть/);
+  assert.match(app, /detailsDialog\.showModal\(\)/);
+  assert.doesNotMatch(app, /status\.title\s*=\s*technicalDetails/);
+  assert.doesNotMatch(app, /\.title\s*=\s*technicalDetails/);
   assert.doesNotMatch(html, /автоматического повтора не будет/);
   for (const term of ["type-key", "handle…", "READ-ONLY", "immutable output", "uncertain write", "native paths", "DESKTOP ONLY"]) {
     assert.equal(html.toLowerCase().includes(term.toLowerCase()), false, `visible HTML contains ${term}`);

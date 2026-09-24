@@ -270,12 +270,15 @@ def test_cloud_review_rows_show_names_and_formatted_times_without_writing(qtbot)
     window.cloud_controller.set_review_files((file,))
 
     view = window.cloud_reference_view
+    view.save_table.selectRow(0)
     assert view.save_table.item(0, 0).text() == "auto_save_12.sav"
-    assert view.save_table.item(0, 0).toolTip() == (
-        f"Технические детали:\nПуть в Steam Cloud: {file.name}"
-    )
+    assert view.save_table.item(0, 0).toolTip() == ""
     assert view.save_table.item(0, 2).text() != str(file.timestamp)
     assert view.detail_name.text() == "auto_save_12.sav"
+    assert view.details_button.isEnabled()
+    view.details_button.click()
+    assert view._details_dialog is not None
+    assert f"Путь в Steam Cloud: {file.name}" in view._details_dialog.text.toPlainText()
     assert not view.upload_button.isEnabled()
 
 
@@ -406,7 +409,7 @@ def test_library_refreshes_snapshot_summary_when_discovery_arrives_later(
     )
 
     assert view.money_summary.text() == "321 ₽"
-    assert view.preview_integrity_value.text() == "Файл проверен"
+    assert view.preview_integrity_value.text() == "Сохранение проверено"
 
 
 def test_analysis_failure_is_attached_and_does_not_route_to_editor(
@@ -423,7 +426,13 @@ def test_analysis_failure_is_attached_and_does_not_route_to_editor(
     assert window.error_label.text() == (
         "Файл повреждён, не поддерживается или изменён другой программой."
     )
-    assert "missing.sav" in window.error_label.toolTip()
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert "missing.sav" in window._details_dialog.text.toPlainText()
 
 
 def test_completed_analysis_leaves_a_friendly_ready_status(
@@ -562,7 +571,7 @@ def test_uncertain_cloud_result_exposes_reconcile_without_retry(qtbot, tmp_path:
     assert not view.editor_button.isEnabled()
     assert view.reconcile_button.text() == "Проверить Steam Cloud"
     assert view.subtitle.text() == (
-        "Неясно, записались ли изменения. Мы не будем повторять запись автоматически."
+        "Steam не подтвердил запись. Сначала проверь состояние облачного сохранения."
     )
 
 
@@ -632,7 +641,7 @@ def test_history_rows_are_dense_and_verified_state_is_a_chip(qtbot, tmp_path: Pa
     chip = table.cellWidget(0, 4)
     assert table.rowHeight(0) == 58
     assert chip is not None
-    assert chip.text() == "Проверено"
+    assert chip.text() == "Готово к восстановлению"
     assert chip.property("tone") == "success"
 
 

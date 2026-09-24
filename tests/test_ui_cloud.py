@@ -256,8 +256,10 @@ def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
     )
     qtbot.addWidget(view)
 
-    assert "только после проверки" in view.intro_label.text().casefold()
-    assert "твоего подтверждения" in view.intro_label.text().casefold()
+    assert view.intro_label.text() == (
+        "Запись станет доступна только после безопасного подключения к Steam Cloud."
+    )
+    assert "безопасного подключения" in view.intro_label.text().casefold()
     assert "Загрузить в облако" not in view.intro_label.text()
 
 
@@ -370,8 +372,7 @@ def test_cloud_view_hides_editor_artifacts_and_explains_why(
     assert [cloud_file.name for cloud_file in view.files] == [data_name]
     assert view._hidden_editor_artifacts == 1
     assert view.status_label.text() == "ПОДКЛЮЧЕНО"
-    assert "Технические детали:" in view.status_label.toolTip()
-    assert "скрыто 1" in view.status_label.toolTip()
+    assert view.status_label.toolTip() == ""
 
 
 def test_cloud_view_profile_switch_filters_the_selected_game_path(
@@ -512,10 +513,10 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     assert len(transport.write_calls) == 1
     assert view.upload_button.isEnabled() is False
     if persisted:
-        assert view.result_label.text() == "Запись успешно проверена."
+        assert view.result_label.text() == "Изменения успешно сохранены в Steam Cloud."
     else:
         assert view.result_label.text() == (
-            "Неясно, записались ли изменения. Мы не будем повторять запись автоматически."
+            "Steam не подтвердил запись. Сначала проверь состояние облачного сохранения."
         )
 
 

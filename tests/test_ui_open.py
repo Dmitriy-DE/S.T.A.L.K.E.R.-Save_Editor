@@ -52,8 +52,13 @@ def test_malformed_open_keeps_previous_snapshot(qtbot, synthetic_save: bytes, tm
     assert window.error_label.text() == (
         "Файл повреждён, не поддерживается или изменён другой программой."
     )
-    assert "broken.sav" in window.error_label.toolTip()
-    assert "Технические детали:" in window.error_label.toolTip()
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert "broken.sav" in window._details_dialog.text.toPlainText()
     assert window.edit_actions_enabled
 
 
@@ -77,6 +82,11 @@ def test_unknown_format_uses_the_core_error_message(
     assert window.error_label.text() == (
         "Файл повреждён, не поддерживается или изменён другой программой."
     )
-    assert "Технические детали:" in window.error_label.toolTip()
-    assert expected in window.error_label.toolTip()
+    assert window.error_label.toolTip() == ""
+    details_button = next(
+        button for button in window._error_dialog.buttons() if button.text() == "Подробнее"
+    )
+    details_button.click()
+    assert window._details_dialog is not None
+    assert expected in window._details_dialog.text.toPlainText()
     assert path.read_bytes() == data

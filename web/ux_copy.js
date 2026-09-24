@@ -10,7 +10,7 @@ const COPY = Object.freeze({
   verify: Object.freeze({
     errorCode: "VERIFY_FAILED",
     title: "Не удалось проверить сохранение",
-    message: "Мы не стали записывать изменения, потому что файл не прошёл проверку.",
+    message: "Изменения не были записаны, потому что файл не прошёл проверку.",
     severity: "error",
     primaryAction: "Вернуться в редактор",
     secondaryAction: "Подробнее",
