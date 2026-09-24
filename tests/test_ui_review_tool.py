@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QLabel
 from editor.formats import detect
 from editor.releases import release_by_id
 from editor.service import EditorService
-from tools import build_ui_review_decorations
+from tools import build_ui_review_decorations, render_ui_review
 from tools.render_ui_review import (
     ROOT,
     _parse_args,
@@ -19,6 +19,33 @@ from tools.render_ui_review import (
 from ui.library_view import LibraryView
 from ui.main_window import MainWindow
 from ui.save_discovery import SaveDiscovery
+
+
+@pytest.fixture(scope="module")
+def review_output(tmp_path_factory: pytest.TempPathFactory, qapp) -> Path:
+    """Render the review screens from the current code into a temp dir.
+
+    The tests used to read metrics.json files committed next to the code,
+    so they kept passing whatever the UI actually rendered.
+    """
+
+    del qapp
+    output = tmp_path_factory.mktemp("ui-review")
+    with pytest.MonkeyPatch.context() as patch:
+        from PySide6.QtWidgets import QMessageBox
+
+        patch.setattr(render_ui_review, "OUTPUT", output)
+        patch.setattr(
+            QMessageBox,
+            "question",
+            staticmethod(lambda *_a, **_k: QMessageBox.StandardButton.No),
+        )
+        render_ui_review.main()
+    return output
+
+
+def _metrics(output: Path, screen: str) -> dict:
+    return json.loads((output / screen / "metrics.json").read_text(encoding="utf-8"))
 
 
 def test_review_renderer_uses_repo_local_reference_assets_by_default() -> None:
@@ -156,9 +183,9 @@ def test_cloud_review_table_uses_populated_canonical_height_rows(qtbot) -> None:
 def test_primary_review_metrics_report_canvas_and_layout_evidence(
     screen: str,
     required_rects: set[str],
+    review_output: Path,
 ) -> None:
-    metrics_path = ROOT / "artifacts" / "ui-review" / screen / "metrics.json"
-    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    metrics = _metrics(review_output, screen)
 
     assert metrics["comparison"]["mode"] == "full-canvas-pixel-diff"
     assert 0.0 <= metrics["diff"]["changed_pixel_ratio"] <= 1.0
@@ -168,17 +195,14 @@ def test_primary_review_metrics_report_canvas_and_layout_evidence(
     assert required_rects <= metrics["screen_rects"].keys()
 
 
-def test_editor_review_metrics_track_visible_equipment_rows_and_breadcrumb() -> None:
-    metrics = json.loads(
-        (ROOT / "artifacts" / "ui-review" / "02-editor" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
+def test_editor_review_metrics_track_visible_equipment_rows_and_breadcrumb(review_output: Path) -> None:
+    metrics = _metrics(review_output, "02-editor")
     rects = metrics["screen_rects"]
     cards = rects["equipment_cards"]
 
-    assert len(cards) == 6
-    assert len({(card["x"], card["y"]) for card in cards}) == 6
+    # The fixture's loadout: two weapons, a helmet and a detector.
+    assert len(cards) == 4
+    assert len({(card["x"], card["y"]) for card in cards}) == 4
     assert {"back_button", "breadcrumb_separator", "breadcrumb"} <= rects.keys()
     assert rects["back_button"]["y"] == 130
     assert rects["status_equipment_column"] == {
@@ -189,12 +213,8 @@ def test_editor_review_metrics_track_visible_equipment_rows_and_breadcrumb() -> 
     }
 
 
-def test_editor_review_metrics_keep_detail_stack_on_the_canonical_anchors() -> None:
-    metrics = json.loads(
-        (ROOT / "artifacts" / "ui-review" / "02-editor" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
+def test_editor_review_metrics_keep_detail_stack_on_the_canonical_anchors(review_output: Path) -> None:
+    metrics = _metrics(review_output, "02-editor")
     rects = metrics["screen_rects"]
 
     assert rects["detail_header"]["y"] == 174
@@ -202,18 +222,14 @@ def test_editor_review_metrics_keep_detail_stack_on_the_canonical_anchors() -> N
     assert rects["detail_name"]["y"] == 218
     assert rects["detail_type"]["y"] == 262
     assert rects["detail_image"]["y"] == 281
-    assert rects["detail_description"]["y"] == 371
-    assert rects["detail_tabs"][0]["y"] == 421
-    assert rects["detail_fields"]["y"] == 471
+    # Description moved into the "ХАРАКТЕРИСТИКИ" tab; tabs follow the art.
+    assert rects["detail_tabs"][0]["y"] == 379
+    assert rects["detail_fields"]["y"] == 429
     assert rects["save_cta"]["y"] == 829
 
 
-def test_editor_review_metrics_place_equipment_title_above_canonical_cards() -> None:
-    metrics = json.loads(
-        (ROOT / "artifacts" / "ui-review" / "02-editor" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
+def test_editor_review_metrics_place_equipment_title_above_canonical_cards(review_output: Path) -> None:
+    metrics = _metrics(review_output, "02-editor")
     rects = metrics["screen_rects"]
 
     assert rects["equipment_header"]["y"] == 414
@@ -221,12 +237,8 @@ def test_editor_review_metrics_place_equipment_title_above_canonical_cards() -> 
     assert rects["equipment_cards"][0]["y"] == 451
 
 
-def test_library_search_and_sort_controls_match_canonical_proportions() -> None:
-    metrics = json.loads(
-        (ROOT / "artifacts" / "ui-review" / "01-library" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
+def test_library_search_and_sort_controls_match_canonical_proportions(review_output: Path) -> None:
+    metrics = _metrics(review_output, "01-library")
     rects = metrics["screen_rects"]
 
     assert rects["sort_control"]["width"] == 204
@@ -235,12 +247,8 @@ def test_library_search_and_sort_controls_match_canonical_proportions() -> None:
     assert rects["search_control"]["width"] == 635
 
 
-def test_editor_inventory_table_starts_at_the_canonical_vertical_anchor() -> None:
-    metrics = json.loads(
-        (ROOT / "artifacts" / "ui-review" / "02-editor" / "metrics.json").read_text(
-            encoding="utf-8"
-        )
-    )
+def test_editor_inventory_table_starts_at_the_canonical_vertical_anchor(review_output: Path) -> None:
+    metrics = _metrics(review_output, "02-editor")
 
     rects = metrics["screen_rects"]
     assert rects["inventory_table"]["y"] == 319

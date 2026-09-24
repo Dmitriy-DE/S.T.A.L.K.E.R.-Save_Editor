@@ -27,3 +27,5 @@ release-output/
 .wrangler
 .dev.vars*
 !.dev.vars.example
+# Generated review screenshots (tools/render_ui_review.py) and CI build output
+artifacts/

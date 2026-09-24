@@ -1017,6 +1017,9 @@ def main(reference_dir: Path | None = None) -> None:
             }
             _write_json(target / "metrics.json", metrics)
         window.discovery_controller.wait_for_worker()
+        # The review states stage a draft; drop it so closing the window does
+        # not stop on the "unsaved changes" confirmation.
+        window._discard_all_changes()
         window.close()
         app.processEvents()
 
