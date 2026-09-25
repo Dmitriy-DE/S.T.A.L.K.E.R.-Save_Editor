@@ -1,5 +1,20 @@
 # Проверка и выпуск
 
+## v0.7.1 — правильные имена S2, названия и апгрейды трилогии — 2026-09-25
+
+Тег `v0.7.1` на commit `80f2ee6` (PR #133). Tagged workflow собрал Linux и Windows
+(source gate, portable/Debian, Windows portable/installer — success); job
+публикации остановился, как и раньше, на отсутствии Cloudflare-секретов.
+CI-байты опубликованы вручную (`publish_release.py --publish-r2 --verify-r2`,
+`gh release create`). Все четыре ссылки `releases/latest/download/…` скачаны
+заново и совпали с `SHA256SUMS`; `latest.json` = `0.7.1`. Веб задеплоен и
+стартует без ошибок.
+
+- `SaveEditor-windows-x86_64.zip` — `b23f313631b43841f99048695a2f0d27f70324ea724f4cdfbbd42115d772cd46`
+- `SaveEditor-windows-x86_64-setup.exe` — `522c5a8b96b95d25b1859cce3ef9d07aa46061c23365e7021b20d76dc614f7eb`
+- `SaveEditor-linux-x86_64.tar.gz` — `a329b7295e82129ce9ef5bd0dfa34af13b19f27c66b665523ac3e3f92760905f`
+- `stalker2-save-editor_amd64.deb` — `cf04be9e646f071b0310bdf4899bfb16f0cbf8636a5215cbae37726d9d34223b`
+
 ## v0.7.0 — языки, карточки сейвов, звук и анимации — 2026-09-25
 
 Тег `v0.7.0` на commit `210c744` (PR #131). Tagged workflow
