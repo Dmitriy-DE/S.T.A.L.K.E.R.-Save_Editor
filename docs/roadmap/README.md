@@ -181,7 +181,7 @@ Write-возможность получает `experimental` только с L5-
 | CL-1 | Локальная чистка папок | Claude | S | — | — | 1 | todo |
 | CL-2 | Чистка веток Git | Claude | S | — | — | 1 | todo |
 | CL-3 | Документация: STATUS, архив, ссылки | Claude + Codex | M | ST-9 | — | 2 | todo |
-| CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | todo |
+| CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | review |
 | CL-5 | Профилирование и оптимизация | Claude | M | RL-5 | L3 | 2 | todo |
 | RS-1 | Что ещё можно вытащить из сейвов (по играм) | Claude (+Gemini черновик) | M | — | — | 2 | todo |
 | RS-2 | Официальные гайды и SDK по моддингу всех игр | Gemini → Claude | S | — | — | 1 | todo |
