@@ -1,5 +1,25 @@
 # Проверка и выпуск
 
+## v0.7.2 — официальные названия, звуки из игры, слоты по играм — 2026-09-25
+
+Тег `v0.7.2` на commit `860ebe3` (PR #139, изменения — #136, #137, #138).
+Tagged workflow собрал Linux и Windows (source gate, portable/Debian,
+Windows portable/installer — success); job публикации остановился на
+отсутствии Cloudflare-секретов, байты CI опубликованы вручную
+(`publish_release.py --publish-r2 --verify-r2`, `gh release create`). Все
+четыре ссылки `releases/latest/download/…` скачаны заново и совпали с
+`SHA256SUMS`; `latest.json` = `0.7.2`.
+
+Веб: первый деплой v0.7.2 не стартовал (`editor/xray_slots.py` не попал в
+`tools/build_web_bundle.py`); исправлено в #140 вместе с тестом на полноту
+бандла, передеплоено, страница стартует и грузит `catalog_names.json`.
+Десктопные пакеты это не затрагивало.
+
+- `SaveEditor-windows-x86_64.zip` — `76a259656367acee0641e315dc147ff3f11c9170a5d6fba574ab846e93306a15`
+- `SaveEditor-windows-x86_64-setup.exe` — `c1a9d30c71dc51c555509005e9e7d09139058a2f83ddd374ea520fe3b3fbb33e`
+- `SaveEditor-linux-x86_64.tar.gz` — `0b03f4df189f33cb88cb731e8cc6e5159d931657866be23e05bd9e5d690b12f3`
+- `stalker2-save-editor_amd64.deb` — `c633eba35f871f173bc7d4f690289ea7ad7e69f07057809d69af9bb9cb94f665`
+
 ## v0.7.1 — правильные имена S2, названия и апгрейды трилогии — 2026-09-25
 
 Тег `v0.7.1` на commit `80f2ee6` (PR #133). Tagged workflow собрал Linux и Windows
