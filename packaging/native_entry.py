@@ -9,6 +9,15 @@ from editor.steam_native import run_cli_op
 
 def main(argv: list[str] | None = None) -> int:
     arguments = sys.argv[1:] if argv is None else argv
+    # Read-only background jobs of the desktop UI (ui/worker_process.py).
+    if "--peek" in arguments:
+        from ui.save_peek import peek_main
+
+        return peek_main(arguments[arguments.index("--peek") + 1 :])
+    if "--extract-game-audio" in arguments:
+        from ui.game_audio import extract_main
+
+        return extract_main(arguments[arguments.index("--extract-game-audio") + 1 :])
     try:
         index = arguments.index("--steam-native-op")
     except ValueError:
