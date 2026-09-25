@@ -15,7 +15,7 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
-from editor import official_names
+from editor import official_names, s2_items
 from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.equipment import category_label, equipment_items, helmet_category_supported
@@ -194,6 +194,12 @@ def _item_name(
     """The same official/catalog name the desktop table shows."""
 
     return item_label(item, catalog, release_id=release_id) or tr("Неизвестный объект")
+
+
+def install_s2_items(payload: str) -> int:
+    """Install the S.T.A.L.K.E.R. 2 names/icons snapshot fetched by the page."""
+
+    return s2_items.install(payload)
 
 
 def install_official_names(payload: str) -> int:
@@ -413,6 +419,7 @@ def analyze(data: bytes, name: str) -> str:
                     ),
                     "remove_reason": item.remove_reason,
                     **_catalog_icon_fields(catalog, item.type_key),
+                    "icon": (s2_items.s2_icon_name(item.display_name) or "").removesuffix(".png") or None,
                     "modules": None if item.modules is None else list(item.modules),
                     "upgrades": None if item.upgrades is None else list(item.upgrades),
                     "upgrade_editable": bool(

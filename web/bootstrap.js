@@ -41,6 +41,7 @@ export async function installCatalogs({
   fetchResource = globalThis.fetch.bind(globalThis),
   catalogUrl = "catalogs.json",
   namesUrl = "catalog_names.json",
+  s2ItemsUrl = "s2_items.json",
 }) {
   const catalogs = await responseBody(fetchResource(catalogUrl), catalogUrl, "text");
   bridge.install_catalogs(catalogs);
@@ -49,4 +50,9 @@ export async function installCatalogs({
     const names = await responseBody(fetchResource(namesUrl), namesUrl, "text");
     bridge.install_official_names(names);
   } catch { /* catalog names stay in use */ }
+  // S.T.A.L.K.E.R. 2 official names and icons; optional as well.
+  try {
+    const s2Items = await responseBody(fetchResource(s2ItemsUrl), s2ItemsUrl, "text");
+    bridge.install_s2_items(s2Items);
+  } catch { /* composed S2 names stay in use */ }
 }
