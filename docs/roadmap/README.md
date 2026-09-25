@@ -130,7 +130,7 @@ Write-возможность получает `experimental` только с L5-
 | ST-6 | S2 stacks: правда в capabilities и docs | Claude | S | — | L2 | 1 | done (#147) |
 | ST-7 | Переводы новых строк на 14 языков | Gemini → Claude | S | ST-1 | L2 | 1 | done (одна строка, #144) |
 | ST-8 | Починить автопубликацию релиза | Claude + владелец | M | D9 | L4 | 1 | review: код готов (#148), ждёт секретов владельца |
-| ST-9 | Релиз v0.7.3 + web + evidence | Claude | S | ST-1..8, KB-1..3 | L4 | 1 | in_progress (тег v0.7.3) |
+| ST-9 | Релиз v0.7.3 + web + evidence | Claude | S | ST-1..8, KB-1..3 | L4 | 1 | done (v0.7.3 опубликован, R2 и сайт проверены) |
 | KB-1 | Сборщик базы S2: запуск и проверка | Claude | S | — | L2 | 1 | done (#145) |
 | KB-2 | S2 названия и иконки в desktop и web | Claude | M | KB-1 | L3 | 1 | done (#145) |
 | KB-3 | Отчёт покрытия S2 + CI-порог | Claude | S | KB-1 | L2 | 1 | done (#145) |
