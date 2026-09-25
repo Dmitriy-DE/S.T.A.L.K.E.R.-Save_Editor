@@ -156,14 +156,27 @@ must pass the declared glibc 2.35 floor; the Debian package is checked by
 `W:` findings block the job, while `I:` and `P:` findings are reported as
 non-fatal informational output.
 
-The release job requires Cloudflare credentials and an APT signing key before
-it deploys the Worker or writes R2. It prepares the stable root assets once,
-builds `release-output/apt/` with `dists/stable`, `pool/`, `Packages.gz`,
-`InRelease`, `Release.gpg` and `repository-key.asc`, then uploads package bytes
-before indexes and the signed `InRelease` before `latest.json`. Every root and
-APT object is read back through the public Worker. A disposable source then
-runs `apt update`, discovers the tagged package and downloads that exact
-version. Only after those checks does the workflow create/update GitHub Release.
+The release job checks which credentials exist instead of failing without
+them. With Cloudflare secrets it deploys the Worker, writes R2 (package bytes
+before indexes, the signed `InRelease` before `latest.json`), reads every
+object back, deploys the web edition and checks that the live site serves this
+tag's `pysrc.json`; with APT secrets it also builds and verifies the signed APT
+repository. Only after those checks does it publish the GitHub Release.
+
+Without Cloudflare secrets the GitHub Release is created as a **draft** with
+all assets, so no public asset runs ahead of the R2 OTA channel. To finish such
+a release locally:
+
+```bash
+gh release download vX.Y.Z --dir release-output
+python tools/publish_release.py --output release-output --prepared --publish-r2 --verify-r2
+make web-deploy PYTHON=.venv/bin/python
+gh release edit vX.Y.Z --draft=false
+```
+
+Secrets are added by the owner (`gh secret set CLOUDFLARE_API_TOKEN`,
+`CLOUDFLARE_ACCOUNT_ID`, `APT_SIGNING_KEY`, `APT_SIGNING_KEY_ID`); the APT key
+is the existing one, never a newly generated key.
 
 Direct Windows installer/portable, Linux portable and `.deb` assets remain
 available; APT is an additional Linux installation/update channel. The exact
