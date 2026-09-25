@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMenu,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -30,7 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.i18n import LANGUAGES, tr
+from editor.i18n import LANGUAGES, current_language, resolve_language, tr, tr_in
 from editor.platforms import backup_dirs, installed_games, save_directories, steam_roots
 from editor.preferences import load_preferences
 from editor.releases import official_releases
@@ -111,6 +112,7 @@ class SettingsView(QWidget):
         self.settings = settings
         self.settings_path = Path(settings_path).expanduser()
         self.load_error = load_error
+        self._language_prompt: QMessageBox | None = None
         self._advanced_paths_dialog: QDialog | None = None
         self._discovery_details_dialog: TechnicalDetailsDialog | None = None
         self._discovery_detail_text = ""
@@ -700,7 +702,35 @@ class SettingsView(QWidget):
         code = self.language_combo.currentData()
         effects = Effects.instance()
         effects._store(effects.preferences.with_(language=code))
-        self.restart_button.setVisible(True)
+        target = resolve_language(code)
+        pending = target != current_language()
+        self.restart_button.setVisible(pending)
+        if pending:
+            self._prompt_language_restart(target)
+
+    def _prompt_language_restart(self, target: str) -> None:
+        """Offer an immediate restart, worded in the language just chosen."""
+
+        if self._language_prompt is not None:
+            self._language_prompt.close()
+        box = QMessageBox(self)
+        box.setObjectName("languageRestartPrompt")
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle(tr_in(target, "Язык интерфейса"))
+        box.setText(tr_in(target, "Язык сменится после перезапуска. Перезапустить сейчас?"))
+        box.setInformativeText(tr_in(target, "Несохранённые изменения останутся: перед перезапуском редактор спросит о них."))
+        restart = box.addButton(tr_in(target, "ПЕРЕЗАПУСТИТЬ СЕЙЧАС"), QMessageBox.ButtonRole.AcceptRole)
+        box.addButton(tr_in(target, "Позже"), QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(restart)
+
+        def _finished(_result: int) -> None:
+            self._language_prompt = None
+            if box.clickedButton() is restart:
+                self.restart_requested.emit()
+
+        box.finished.connect(_finished)
+        self._language_prompt = box
+        box.open()  # window-modal but non-blocking
 
     def _sound_changed(self, enabled: bool) -> None:
         Effects.instance().set_sound_enabled(enabled)

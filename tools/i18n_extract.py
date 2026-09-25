@@ -76,6 +76,10 @@ def python_messages(path: Path) -> tuple[set[str], set[str]]:
                 text = _literal(node.args[0])
                 if text:
                     singles.add(text)
+            elif name == "tr_in" and len(node.args) >= 2:  # tr_in(code, text)
+                text = _literal(node.args[1])
+                if text:
+                    singles.add(text)
             elif name in PLURAL_CALLS and len(node.args) >= 4:
                 forms = [_literal(arg) for arg in node.args[1:4]]
                 if all(forms):

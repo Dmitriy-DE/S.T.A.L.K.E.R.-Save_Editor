@@ -120,3 +120,32 @@ def test_backup_path_row_has_truthful_open_action_and_status(qtbot, tmp_path: Pa
     assert view.backup_path_status.text() == "● ГОТОВО"
     view.backup_path_button.click()
     assert opened == [True]
+
+
+def test_language_change_offers_restart_in_the_chosen_language(qtbot, tmp_path: Path, monkeypatch) -> None:
+    from PySide6.QtWidgets import QMessageBox
+
+    from editor import i18n
+
+    monkeypatch.delenv("STALKER_EDITOR_LANG", raising=False)
+    monkeypatch.setenv("STALKER_EDITOR_PREFERENCES", str(tmp_path / "preferences.json"))
+    i18n.set_language("ru")
+    view = SettingsView(PathSettings(), settings_path=tmp_path / "settings.json")
+    qtbot.addWidget(view)
+    restarts: list[bool] = []
+    view.restart_requested.connect(lambda: restarts.append(True))
+
+    view.language_combo.setCurrentIndex(view.language_combo.findData("uk"))
+
+    prompt = view.findChild(QMessageBox, "languageRestartPrompt")
+    assert prompt is not None and prompt.isVisible()
+    assert prompt.text() == "Мова зміниться після перезапуску. Перезапустити зараз?"
+    assert not view.restart_button.isHidden()
+    restart = next(b for b in prompt.buttons() if prompt.buttonRole(b) == QMessageBox.ButtonRole.AcceptRole)
+    restart.click()
+    assert restarts == [True]
+
+    # Picking the language already in use needs no restart and no prompt.
+    view.language_combo.setCurrentIndex(view.language_combo.findData("ru"))
+    assert view.restart_button.isHidden()
+    i18n.set_language("ru")
