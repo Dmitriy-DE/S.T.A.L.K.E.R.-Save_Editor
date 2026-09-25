@@ -1,5 +1,24 @@
 # Проверка и выпуск
 
+## v0.7.0 — языки, карточки сейвов, звук и анимации — 2026-09-25
+
+Тег `v0.7.0` на commit `210c744` (PR #131). Tagged workflow
+[#36089886149](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/36089886149)
+прошёл source gate, Linux portable/`.deb` и Windows portable/installer.
+Release job, как и раньше, остановился на отсутствующих secrets; те же
+CI-байты опубликованы вручную (`publish_release.py --publish-r2 --verify-r2`,
+`gh release create`). Все четыре ссылки `releases/latest/download/…` скачаны
+заново и совпали с `SHA256SUMS`; `latest.json` = `0.7.0`. Веб задеплоен и
+проверен в английской локали. Сборки выросли на ~10–15 МБ из-за Qt Multimedia
+(звуки интерфейса).
+
+| Файл | Размер | SHA-256 |
+|---|---:|---|
+| `SaveEditor-windows-x86_64.zip` | 74,048,955 | `c6c7c75e685ee0a03e356b3a2d5678664494dad5d7cead1fc5fd72db48ce5be0` |
+| `SaveEditor-windows-x86_64-setup.exe` | 46,464,769 | `67318920beb334d66d59f382b66e9dff452f482bf2d9d7e7fc51cfedab29a164` |
+| `SaveEditor-linux-x86_64.tar.gz` | 91,997,550 | `124ebcfb3882f494ffdab47577827650e635bc13f2afcda7d361a3a3b16ea6b5` |
+| `stalker2-save-editor_amd64.deb` | 102,880,618 | `aad803bc0223c9613a1e70a9ab4c7332e91c69a1aef3560ff00cf7d7615d9741` |
+
 ## v0.6.0 — канонический редизайн — 2026-09-25
 
 Тег `v0.6.0` на commit `4256879` (main после PR #127, #128, #129). Tagged
