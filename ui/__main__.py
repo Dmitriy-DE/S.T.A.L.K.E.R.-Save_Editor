@@ -98,6 +98,15 @@ def main(argv: list[str] | None = None) -> int:
 
         index = arguments.index("--steam-native-op")
         return run_cli_op(arguments[index + 1 :])
+    if "--peek" in arguments:
+        # Read-only job for the library quick summary (ui/save_peek.py).
+        from .save_peek import peek_main
+
+        return peek_main(arguments[arguments.index("--peek") + 1 :])
+    if "--extract-game-audio" in arguments:
+        from .game_audio import extract_main
+
+        return extract_main(arguments[arguments.index("--extract-game-audio") + 1 :])
     if "--help" in arguments or "-h" in arguments:
         print(tr("Использование: SaveEditor [--help]\nОткрывает окно редактора сохранений."))
         return 0
