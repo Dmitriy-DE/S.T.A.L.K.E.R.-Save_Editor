@@ -61,6 +61,8 @@
 3. Удалять по одному логическому блоку на коммит. Тесты зелёные после каждого.
 4. **Не удалять:** всё, что упоминается в `docs/evidence/*`, `tools/prepare_ingame_verification.py`, `tools/verify_*`.
 
+**Результат аудита 2026-09-25:** `vulture --min-confidence 80` по Python-файлам репозитория не нашёл неиспользуемых функций или модулей; два предупреждения относятся к параметрам pytest hook/callback. `editor/s2_presentation.py` не имел desktop/web runtime callers и удалён отдельным логическим коммитом; проверка имён теперь вызывает `s2_readable_name` напрямую, а web bundle пересобран без wrapper. `editor/equipment_research.py` покрыт тестами на 90% и упоминается в `docs/evidence/`, поэтому сохранён. Единственный `tools/*.py` без прямой ссылки в Makefile, документации или тестах — `tools/build_chrome_pack.py`; текущий UI его текстуры не загружает, однако дизайн-спецификация [Zone launcher](../superpowers/specs/2026-09-18-zone-launcher-and-save-library-design.md) планирует использовать этот pack для game-skinned shell, поэтому генератор и ассеты сохранены как запланированный ресурс. Другие подтверждённые блоки для удаления не найдены.
+
 ## CL-5 — Профилирование и оптимизация
 
 **Кто:** Claude · **Размер:** M · **Зависит:** RL-5 · **Уровень:** L3

@@ -62,7 +62,6 @@ MODULES = (
     "editor/s2_catalog.py",
     "editor/s2_item_state.py",
     "editor/s2_names.py",
-    "editor/s2_presentation.py",
     "editor/xray_container.py",
     "editor/xray_factions.py",
     "editor/xray_catalog.py",
