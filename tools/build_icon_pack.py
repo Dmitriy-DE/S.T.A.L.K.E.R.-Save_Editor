@@ -41,7 +41,7 @@ _EDITIONS = frozenset({"original", "enhanced"})
 
 
 def _catalogs(sources: list[Path]):
-    """Yield trilogy catalogs, Enhanced Editions first for their HD atlases."""
+    """Yield trilogy catalogs, Enhanced Editions first."""
 
     from editor.platforms import installed_releases
     from editor.releases import official_releases, release_by_id
@@ -69,7 +69,9 @@ def _catalogs(sources: list[Path]):
                 catalogs.append(catalog)
                 break
 
-    # Enhanced Editions redraw every icon in HD, so let them win each key.
+    # The 2025 Enhanced Editions keep the original 50 px atlas (checked:
+    # ui_icon_equipment.dds is 1024x2048 DXT5 in all three), so this order
+    # only decides which of two identical-resolution crops is kept.
     catalogs.sort(key=lambda cat: 0 if cat.release_id.endswith("-ee") else 1)
     yield from catalogs
 

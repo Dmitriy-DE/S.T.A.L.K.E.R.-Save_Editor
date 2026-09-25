@@ -15,6 +15,7 @@ from typing import Any
 
 import editor.codec as codec
 import save_format as sf
+from editor import official_names
 from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCatalog
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.equipment import category_label, equipment_items, helmet_category_supported
@@ -186,10 +187,18 @@ def install_catalogs(payload: str) -> None:
         }
     )
 
-def _item_name(catalog: ItemCatalog | None, item: sf.InventoryItem) -> str:
-    """Prefer the catalogue name, like the desktop table does."""
+def _item_name(
+    catalog: ItemCatalog | None, item: sf.InventoryItem, release_id: str | None = None
+) -> str:
+    """The same official/catalog name the desktop table shows."""
 
-    return item_label(item, catalog) or tr("Неизвестный объект")
+    return item_label(item, catalog, release_id=release_id) or tr("Неизвестный объект")
+
+
+def install_official_names(payload: str) -> int:
+    """Install the Enhanced Edition name snapshot fetched by the page."""
+
+    return official_names.install(payload)
 
 
 def analyze(data: bytes, name: str) -> str:
@@ -247,7 +256,9 @@ def analyze(data: bytes, name: str) -> str:
             "catalog_items": [
                 {
                     "key": item.key,
-                    "name": item.display_name or item.key,
+                    "name": official_names.official_name(format_.release_id, "items", item.key)
+                    or item.display_name
+                    or item.key,
                     "category": item.category,
                     "max_stack": item.max_stack,
                     "serialization_family": item.serialization_family,
@@ -262,7 +273,9 @@ def analyze(data: bytes, name: str) -> str:
             "catalog_factions": [
                 {
                     "key": faction.key,
-                    "name": faction.display_name or faction.key,
+                    "name": official_names.official_name(format_.release_id, "factions", faction.key)
+                    or faction.display_name
+                    or faction.key,
                     "numeric_id": faction.numeric_id,
                 }
                 for faction in (
@@ -277,7 +290,9 @@ def analyze(data: bytes, name: str) -> str:
             "catalog_upgrades": [
                 {
                     "key": upgrade.key,
-                    "name": upgrade.display_name or upgrade.key,
+                    "name": official_names.official_name(format_.release_id, "upgrades", upgrade.key)
+                    or upgrade.display_name
+                    or upgrade.key,
                     "category": upgrade.category,
                     "item_key": upgrade.item_key,
                     "applicable_item_keys": list(upgrade.applicable_item_keys),
@@ -363,7 +378,7 @@ def analyze(data: bytes, name: str) -> str:
                     "count": item.count,
                     "total_weight": None if item.total_weight is None else round(item.total_weight, 3),
                     "weight_known": item.total_weight is not None,
-                    "name": _item_name(catalog, item),
+                    "name": _item_name(catalog, item, format_.release_id),
                     "condition": item.condition,
                     "condition_editable": bool(item.condition_editable),
                     "storage": item.storage,

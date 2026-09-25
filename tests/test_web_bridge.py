@@ -143,7 +143,7 @@ def test_web_bridge_reads_and_edits_an_original_xray_save() -> None:
     assert snapshot["catalog_source"] == "save-observed"
     assert snapshot["crc_present"] is False
     assert snapshot["money"] == 1234
-    assert snapshot["inventory"][0]["name"] == "ammo_9x39_pab9"
+    assert snapshot["inventory"][0]["name"] == "9х39 мм СП-5"  # official CoP name
     assert snapshot["inventory"][0]["total_weight"] is None
     assert {
         "icon_x",

@@ -40,7 +40,13 @@ export async function installCatalogs({
   bridge,
   fetchResource = globalThis.fetch.bind(globalThis),
   catalogUrl = "catalogs.json",
+  namesUrl = "catalog_names.json",
 }) {
   const catalogs = await responseBody(fetchResource(catalogUrl), catalogUrl, "text");
   bridge.install_catalogs(catalogs);
+  // Official names in every language; the page still works without them.
+  try {
+    const names = await responseBody(fetchResource(namesUrl), namesUrl, "text");
+    bridge.install_official_names(names);
+  } catch { /* catalog names stay in use */ }
 }

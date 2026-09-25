@@ -1,7 +1,9 @@
 """Quiet interface sounds and short transitions, both switchable at runtime.
 
-Sounds are synthesised on first use (no game audio is redistributed), each
-game with its own menu character: a heavy metal switch for Shadow of
+When the game is installed, its own main-menu sounds and menu theme are used
+(:mod:`ui.game_audio`, read from the player's install — nothing is
+redistributed).  Otherwise cues are synthesised on first use, each game with
+its own menu character: a heavy metal switch for Shadow of
 Chernobyl, crackling static for Clear Sky, soft PDA clicks for Call of
 Pripyat and airy blips for S.T.A.L.K.E.R. 2.  Qt Multimedia is imported lazily; any failure
 leaves the editor silent instead of breaking it.
@@ -201,11 +203,15 @@ class Effects(QObject):
         super().__init__()
         self.preferences = preferences or load_preferences()
         self.theme = "soc"
-        self._players: dict[tuple[str, str], Any] = {}
+        self._players: dict[tuple[str, str, str], Any] = {}
         self._audio_failed = bool(os.environ.get("PYTEST_CURRENT_TEST")) or (
             os.environ.get("QT_QPA_PLATFORM") == "offscreen"
         )
         self._cache = user_data_dir() / "sounds"
+        self._game: Any = None
+        self._music: Any = None
+        self._music_output: Any = None
+        self._music_source: Path | None = None
 
     @classmethod
     def instance(cls) -> Effects:
@@ -229,27 +235,119 @@ class Effects(QObject):
         except OSError:
             pass  # the switch still applies for this session
 
+    @property
+    def music_enabled(self) -> bool:
+        return self.preferences.music
+
     def set_sound_enabled(self, enabled: bool) -> None:
         self._store(self.preferences.with_(sound=bool(enabled)))
+        self._update_music()
+
+    def set_music_enabled(self, enabled: bool) -> None:
+        self._store(self.preferences.with_(music=bool(enabled)))
+        if enabled:
+            self._prepare_game_audio()
+        self._update_music()
 
     def set_motion_enabled(self, enabled: bool) -> None:
         self._store(self.preferences.with_(motion=bool(enabled)))
 
     def set_volume(self, percent: int) -> None:
         self._store(self.preferences.with_(sound_volume=max(0, min(100, int(percent)))))
-        for player in self._players.values():
-            player.setVolume(self._volume())
+        for (_theme, event, _source), player in self._players.items():
+            player.setVolume(self._event_volume(event, _source))
+        if self._music_output is not None:
+            self._music_output.setVolume(self._music_volume())
 
     def set_theme(self, release_or_family: str | None) -> None:
-        self.theme = sound_theme(release_or_family)
+        theme = sound_theme(release_or_family)
+        if theme == self.theme and self._game is not None:
+            return
+        self.theme = theme
+        self._prepare_game_audio()
+        self._update_music()
+
+    # --- the installed game's own audio -------------------------------
+    def _game_audio(self):
+        if self._audio_failed:
+            return None
+        if self._game is None:
+            try:
+                from .game_audio import GameAudio
+            except Exception:
+                return None
+            self._game = GameAudio(self._cache, self)
+            self._game.ready.connect(self._game_audio_ready)
+            app = QApplication.instance()
+            if app is not None:
+                app.aboutToQuit.connect(self.shutdown)
+        return self._game
+
+    def _prepare_game_audio(self) -> None:
+        game = self._game_audio()
+        if game is not None and (self.sound_enabled or self.music_enabled):
+            game.prepare(self.theme)
+
+    def _game_audio_ready(self, family: str) -> None:
+        # Drop synthesized players of that game; the next cue uses the game's.
+        for key in [key for key in self._players if key[0] == family]:
+            self._players.pop(key).deleteLater()
+        self._update_music()
+
+    def shutdown(self) -> None:
+        if self._music is not None:
+            self._music.stop()
+        if self._game is not None:
+            self._game.shutdown()
+
+    def _music_volume(self) -> float:
+        # Under the cues: a menu theme should sit far in the background.
+        return self.preferences.sound_volume / 100 * 0.3
+
+    def _update_music(self) -> None:
+        if self._audio_failed:
+            return
+        game = self._game
+        source = (
+            game.music_path(self.theme)
+            if game is not None and self.sound_enabled and self.music_enabled and game.has_music(self.theme)
+            else None
+        )
+        if source == self._music_source:
+            return
+        self._music_source = source
+        if source is None:
+            if self._music is not None:
+                self._music.stop()
+            return
+        try:
+            from PySide6.QtCore import QUrl
+            from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+        except Exception:
+            return
+        if self._music is None:
+            self._music_output = QAudioOutput(self)
+            self._music = QMediaPlayer(self)
+            self._music.setAudioOutput(self._music_output)
+            self._music.setLoops(QMediaPlayer.Loops.Infinite)
+        self._music_output.setVolume(self._music_volume())
+        self._music.setSource(QUrl.fromLocalFile(str(source)))
+        self._music.play()
 
     # --- sound --------------------------------------------------------
     def _volume(self) -> float:
         # Half-scale on top of the preference: cues must stay in the background.
         return self.preferences.sound_volume / 100 * 0.5
 
+    def _event_volume(self, event: str, source: str) -> float:
+        # Synthesized cues carry their gain in the samples; game files are
+        # full-scale, so the same per-event gain is applied here.
+        return self._volume() * (_EVENT_GAIN.get(event, 0.8) if source == "game" else 1.0)
+
     def _player(self, event: str):
-        key = (self.theme, event)
+        game = self._game
+        source = "game" if game is not None and game.has_event(self.theme, event) else "synth"
+        key = (self.theme, event, source)
         if key in self._players:
             return self._players[key]
         try:
@@ -258,16 +356,19 @@ class Effects(QObject):
         except Exception:
             self._audio_failed = True
             return None
-        path = self._cache / f"v{SOUND_VERSION}-{self.theme}-{event}.wav"
-        if not path.is_file():
-            try:
-                write_wav(path, _render(event, self.theme))
-            except OSError:
-                self._audio_failed = True
-                return None
+        if source == "game":
+            path = game.event_path(self.theme, event)
+        else:
+            path = self._cache / f"v{SOUND_VERSION}-{self.theme}-{event}.wav"
+            if not path.is_file():
+                try:
+                    write_wav(path, _render(event, self.theme))
+                except OSError:
+                    self._audio_failed = True
+                    return None
         player = QSoundEffect(self)
         player.setSource(QUrl.fromLocalFile(str(path)))
-        player.setVolume(self._volume())
+        player.setVolume(self._event_volume(event, source))
         self._players[key] = player
         return player
 

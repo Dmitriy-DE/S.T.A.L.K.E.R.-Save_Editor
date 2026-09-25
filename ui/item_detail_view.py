@@ -27,7 +27,8 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import UpgradeCatalog
 from editor.equipment import category_label
-from editor.i18n import tr, tr_item
+from editor.i18n import tr
+from editor.official_names import official_name
 from editor.s2_names import s2_readable_name
 from save_format import InventoryItem
 
@@ -515,18 +516,22 @@ class ItemDetailView(QWidget):
         return lines
 
     def set_release(self, release_id: str) -> None:
-        self._stalker2 = str(release_id or "").startswith("stalker2")
+        self._release_id = str(release_id or "")
+        self._stalker2 = self._release_id.startswith("stalker2")
 
     def _upgrade_label(self, key: str, index: int) -> str:
         """Readable name, or a neutral placeholder: raw IDs live in details."""
 
+        official = official_name(getattr(self, "_release_id", None), "upgrades", key)
+        if official:
+            return official
         catalog = self._upgrade_catalog
         definition = catalog.resolve(key) if catalog is not None else None
         name = definition.display_name if definition is not None else None
         # Generated catalogs can contain localization tokens rather than
         # translated labels; those are not readable names either.
         if name and not name.casefold().startswith("st_"):
-            return tr_item(name) or name
+            return name
         if getattr(self, "_stalker2", False):
             return s2_readable_name(key) or key
         return tr("Улучшение {0}", index)

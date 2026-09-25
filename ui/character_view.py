@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.i18n import tr
+from editor.official_names import official_name
 from editor.releases import is_xray_original_release, release_by_id
 
 from .style_components import (
@@ -153,6 +154,7 @@ class CharacterView(QWidget):
         self.snapshot = snapshot
         self._diagnostic_detail_text = ""
         release = str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")).casefold()
+        self._release_id = release
         try:
             select_rail_family(self.game_rail, release_by_id(release).family)
         except KeyError:
@@ -189,9 +191,12 @@ class CharacterView(QWidget):
         self._staged_player_faction = player_faction
         self._render_factions()
 
-    @staticmethod
-    def _faction_label(faction) -> str:
-        name = faction.display_name or tr("Группировка {0}", faction.numeric_id)
+    def _faction_label(self, faction) -> str:
+        name = (
+            official_name(getattr(self, "_release_id", None), "factions", faction.key)
+            or faction.display_name
+            or tr("Группировка {0}", faction.numeric_id)
+        )
         # Clear Sky and SoC keep separate "actor_*" communities for the player;
         # without a marker they read as duplicates ("Бандит", "Бандит").
         if faction.key == "actor" or faction.key.startswith("actor_"):

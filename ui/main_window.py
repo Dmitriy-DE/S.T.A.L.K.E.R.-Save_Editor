@@ -40,6 +40,7 @@ from editor.equipment_edits import RepairStageResult, stage_bulk_repair
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
 from editor.i18n import tr
 from editor.models import EditPlan, PreparedEdit, SourceRef
+from editor.official_names import official_name
 from editor.platforms import backup_dirs
 from editor.releases import is_xray_original_release
 from editor.service import EditorService
@@ -583,7 +584,7 @@ class MainWindow(QMainWindow):
             rows.append((name, tr("в сохранении"), tr("удалить")))
         for item_key, quantity in sorted(self.staged_adds.items()):
             definition = self.snapshot.catalog.resolve(item_key) if self.snapshot.catalog else None
-            rows.append((definition.display_name if definition and definition.display_name else tr("Предмет"), tr("нет"), tr("добавить × {0}", quantity)))
+            rows.append((self._definition_name(definition) or tr("Предмет"), tr("нет"), tr("добавить × {0}", quantity)))
         for key, value in sorted(self.staged_faction_relations.items()):
             faction = (
                 self.snapshot.game_catalog.factions.resolve(key)
@@ -618,6 +619,14 @@ class MainWindow(QMainWindow):
             faction_name = faction.display_name if faction and faction.display_name else tr("Группировка")
             rows.append((tr("Группировка игрока"), tr("текущая"), faction_name))
         return tuple(rows)
+
+    def _definition_name(self, definition) -> str | None:
+        """Official name for a catalogue entry in the interface language."""
+
+        if definition is None:
+            return None
+        release = self.snapshot.release_id if self.snapshot is not None else None
+        return official_name(release, "items", definition.key) or definition.display_name
 
     def _item_name(self, item) -> str:
         """The same catalogue-aware name the inventory table shows."""
@@ -1233,20 +1242,20 @@ class MainWindow(QMainWindow):
             and value > definition.max_stack
         ):
             self.editor_view.show_capability_message(
-                tr("Для {0} допустимо не больше {1} за одну группу.", definition.display_name or tr("этого предмета"), definition.max_stack)
+                tr("Для {0} допустимо не больше {1} за одну группу.", self._definition_name(definition) or tr("этого предмета"), definition.max_stack)
             )
             return
         self.staged_adds[item_key] = value
         self._render_changes()
         self._invalidate_preview(tr("изменилось добавление предмета"))
         self.status_label.setText(
-            tr("Подготовлено добавление предмета: {0} × {1}. Оригинальный файл пока не изменён.", definition.display_name or tr("предмет"), value)
+            tr("Подготовлено добавление предмета: {0} × {1}. Оригинальный файл пока не изменён.", self._definition_name(definition) or tr("предмет"), value)
         )
 
     def _catalog_name(self, item_key: str) -> str:
         catalog = self.snapshot.catalog if self.snapshot is not None else None
         definition = catalog.resolve(item_key) if catalog is not None else None
-        return (definition.display_name if definition is not None else None) or item_key
+        return self._definition_name(definition) or item_key
 
     def _report_draft(self) -> None:
         count = self._draft_change_count()
@@ -1266,6 +1275,7 @@ class MainWindow(QMainWindow):
             self.snapshot.catalog,
             self,
             icon_for=self.editor_view.icon_for_definition,
+            name_for=self._definition_name,
         )
         dialog.setObjectName("addItemDialog")
         dialog.accepted.connect(lambda: self._accept_add_item_dialog(dialog))
@@ -1298,7 +1308,7 @@ class MainWindow(QMainWindow):
         handle = int(handle)
         if handle in self.staged_detach:
             self.staged_detach.pop(handle, None)
-            message = tr("Удаление отменено для {0}", item.display_name or tr("предмета"))
+            message = tr("Удаление отменено для {0}", self._item_name(item))
         else:
             self.staged_detach[handle] = True
             # A removed item cannot also be edited; drop its other drafts.
@@ -1309,7 +1319,7 @@ class MainWindow(QMainWindow):
                 self.staged_placements,
             ):
                 mapping.pop(handle, None)
-            message = tr("Подготовлено удаление: {0}", item.display_name or tr("предмет"))
+            message = tr("Подготовлено удаление: {0}", self._item_name(item))
         self._render_changes()
         self._invalidate_preview(tr("изменился список удалений"))
         self.status_label.setText(tr("{0}. Оригинальный файл пока не изменён.", message))
@@ -1339,7 +1349,7 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview(tr("изменилось значение прочности"))
         self.status_label.setText(
-            tr("Подготовлено изменение состояния: {0}. Оригинальный файл пока не изменён.", item.display_name or tr("предмет"))
+            tr("Подготовлено изменение состояния: {0}. Оригинальный файл пока не изменён.", self._item_name(item))
         )
 
     def _finish_equipment_repair(self, result: RepairStageResult, *, action: str) -> None:
@@ -1394,7 +1404,7 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview(tr("изменился список улучшений"))
         self.status_label.setText(
-            tr("Подготовлены изменения модификаций: {0}. Оригинальный файл пока не изменён.", item.display_name or tr("предмет"))
+            tr("Подготовлены изменения модификаций: {0}. Оригинальный файл пока не изменён.", self._item_name(item))
         )
 
     def _stage_item_placement(self, handle: int, placement_type: str, slot_id: object) -> None:
@@ -1423,10 +1433,10 @@ class MainWindow(QMainWindow):
         desired = (normalized_type, normalized_slot)
         if desired == current:
             self.staged_placements.pop(item.handle, None)
-            message = tr("Размещение сброшено для {0}", item.display_name or tr("предмета"))
+            message = tr("Размещение сброшено для {0}", self._item_name(item))
         else:
             self.staged_placements[item.handle] = desired
-            message = tr("Подготовлено изменение размещения: {0}", item.display_name or tr("предмет"))
+            message = tr("Подготовлено изменение размещения: {0}", self._item_name(item))
         self._render_changes()
         self._invalidate_preview(tr("изменилось размещение предмета"))
         self.status_label.setText(tr("{0}. Оригинальный файл пока не изменён.", message))
@@ -1468,7 +1478,7 @@ class MainWindow(QMainWindow):
         self._render_changes()
         self._invalidate_preview(tr("изменилось отношение группировки"))
         self.status_label.setText(
-            tr("Подготовлено изменение отношения: {0}. Оригинальный файл пока не изменён.", faction.display_name or tr("группировка"))
+            tr("Подготовлено изменение отношения: {0}. Оригинальный файл пока не изменён.", official_name(self.snapshot.release_id if self.snapshot is not None else None, "factions", faction.key) or faction.display_name or tr("группировка"))
         )
 
     def _stage_player_faction(self, key: str) -> None:

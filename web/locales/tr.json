@@ -492,6 +492,7 @@
  "Модуль": "Modül",
  "Можно изменять": "Düzenlenebilir",
  "Монолит": "Monolit",
+ "Музыка из главного меню игры": "Oyunun ana menü müziği",
  "НА ПОЯСЕ НЕТ АРТЕФАКТОВ": "KEMERDE ARTEFAKT YOK",
  "НАЗАД К РЕДАКТОРУ": "DÜZENLEYİCİYE DÖN",
  "НАЗВАНИЕ": "AD",
@@ -985,6 +986,7 @@
  "Техническая причина": "Teknik neden",
  "Технические детали": "Teknik ayrıntılar",
  "Тип: {0}": "Tür: {0}",
+ "Тихо играет тему главного меню той игры, чьё сохранение открыто. Берётся из установленной игры.": "Kaydı açık olan oyunun ana menü temasını kısık sesle çalar. Yüklü oyundan alınır.",
  "Только для форматов и предметов, которые поддерживают это действие.": "Yalnızca bu işlemi destekleyen biçimler ve eşyalar için.",
  "Только по явному действию пользователя": "Yalnızca kullanıcının açık eylemiyle",
  "Только после подтверждения": "Yalnızca onaydan sonra",
@@ -1067,7 +1069,7 @@
  "ЯЗЫК, ЗВУК И АНИМАЦИИ": "DİL, SES VE ANİMASYONLAR",
  "Язык интерфейса": "Arayüz dili",
  "Язык сменится после перезагрузки страницы.": "Dil, sayfa yeniden yüklendikten sonra değişir.",
- "Язык сменится после перезапуска. Названия предметов берутся из файлов игры, если в них есть этот язык.": "Dil yeniden başlatmadan sonra değişir. Eşya adları, bu dili içeriyorsa oyun dosyalarından alınır.",
+ "Язык сменится после перезапуска. Названия предметов — официальные, из самих игр; звуки и музыка меню берутся из установленной игры.": "Dil yeniden başlatmadan sonra değişir. Eşya adları oyunların resmî adlarıdır; menü sesleri ve müziği yüklü oyundan alınır.",
  "Язык сменится после перезапуска. Перезапустить сейчас?": "Dil yeniden başlatmadan sonra değişecek. Şimdi yeniden başlatılsın mı?",
  "Янов": "Yaniv",
  "Янтарь": "Yantar",
@@ -1135,7 +1137,6 @@
  "предмет|предмета|предметов": [
   "eşya"
  ],
- "предмета": "eşya",
  "проверен контейнер и LZO payload": "kapsayıcı ve LZO yükü doğrulandı",
  "пропущено {0}": "{0} atlandı",
  "прочитано": "okundu",

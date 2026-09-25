@@ -668,13 +668,22 @@ class SettingsView(QWidget):
         self.volume_slider.setEnabled(effects.sound_enabled)
         self.volume_slider.sliderReleased.connect(self._volume_changed)
         form.addRow(tr("Громкость"), self.volume_slider)
+        self.music_check = QCheckBox(tr("Музыка из главного меню игры"), page)
+        self.music_check.setObjectName("menuMusicCheck")
+        self.music_check.setToolTip(
+            tr("Тихо играет тему главного меню той игры, чьё сохранение открыто. Берётся из установленной игры.")
+        )
+        self.music_check.setChecked(effects.music_enabled)
+        self.music_check.setEnabled(effects.sound_enabled)
+        self.music_check.toggled.connect(self._music_changed)
+        form.addRow("", self.music_check)
         self.motion_check = QCheckBox(tr("Анимации переходов"), page)
         self.motion_check.setChecked(effects.motion_enabled)
         self.motion_check.toggled.connect(self._motion_changed)
         form.addRow("", self.motion_check)
         layout.addLayout(form)
         self.language_note = QLabel(
-            tr("Язык сменится после перезапуска. Названия предметов берутся из файлов игры, если в них есть этот язык."),
+            tr("Язык сменится после перезапуска. Названия предметов — официальные, из самих игр; звуки и музыка меню берутся из установленной игры."),
             page,
         )
         self.language_note.setWordWrap(True)
@@ -732,9 +741,13 @@ class SettingsView(QWidget):
         self._language_prompt = box
         box.open()  # window-modal but non-blocking
 
+    def _music_changed(self, enabled: bool) -> None:
+        Effects.instance().set_music_enabled(enabled)
+
     def _sound_changed(self, enabled: bool) -> None:
         Effects.instance().set_sound_enabled(enabled)
         self.volume_slider.setEnabled(enabled)
+        self.music_check.setEnabled(enabled)
         self.effects_changed.emit()
 
     def _volume_changed(self) -> None:
@@ -753,6 +766,7 @@ class SettingsView(QWidget):
             check.setChecked(value)
             check.blockSignals(False)
         self.volume_slider.setEnabled(effects.sound_enabled)
+        self.music_check.setEnabled(effects.sound_enabled)
 
     @staticmethod
     def _build_simple_panel(page: QWidget, title: str, text: str) -> None:

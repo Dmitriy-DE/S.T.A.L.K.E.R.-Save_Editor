@@ -335,15 +335,17 @@ def test_editor_status_facts_use_single_line_label_value_rows(
         assert value_label.height() == 30
 
 
-def test_original_xray_inventory_keeps_serialized_name_and_unknown_weight(qtbot, tmp_path: Path) -> None:
+def test_original_xray_inventory_uses_official_name_and_unknown_weight(qtbot, tmp_path: Path) -> None:
     data = _fixture()
     info = inspect_xray(data, COP_FORMAT)
     window = MainWindow(EditorService(), auto_update_check=False)
     qtbot.addWidget(window)
     window._render_snapshot(LocalSnapshot(path=tmp_path / "slot.scop", data=data, info=info, format_id=COP_FORMAT.id, format_title=COP_FORMAT.title))
     model = window.editor_view.model
-    item = info.inventory[0]
-    assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == item.display_name
+    # No catalogue next to the save: the name still comes from the official
+    # Enhanced Edition snapshot (in Call of Pripyat this section is SP-5).
+    assert info.inventory[0].display_name == "ammo_9x39_pab9"
+    assert model.data(model.index(0, model.NAME_COLUMN), Qt.ItemDataRole.DisplayRole) == "9х39 мм СП-5"
     assert model.data(model.index(0, model.WEIGHT_COLUMN), Qt.ItemDataRole.DisplayRole) == "—"
     assert COP_FORMAT.title in window.editor_view.breadcrumb.text()
     assert window.editor_view.detail_view.count_spin.maximum() == 65535
