@@ -133,12 +133,12 @@ def test_s2_grid_weapon_exposes_condition_modules_and_upgrades(
     )
 
 
-def test_s2_presentation_labels_cover_observed_devices_without_changing_unknowns() -> None:
-    from editor.s2_presentation import s2_presentation_name
+def test_s2_name_labels_cover_observed_devices_without_changing_unknowns() -> None:
+    from editor.s2_names import s2_readable_name
 
-    assert s2_presentation_name("NVG_NPC_Gen3") == "ПНВ (3-е поколение)"
-    assert s2_presentation_name("Binoculars_03") == "Бинокль"
-    assert s2_presentation_name("unmapped_save_name") == "unmapped save name"
+    assert s2_readable_name("NVG_NPC_Gen3") == "ПНВ (3-е поколение)"
+    assert s2_readable_name("Binoculars_03") == "Бинокль"
+    assert s2_readable_name("unmapped_save_name") == "unmapped save name"
 
 
 def test_s2_shape_guard_does_not_reclassify_existing_synthetic_orphan(
