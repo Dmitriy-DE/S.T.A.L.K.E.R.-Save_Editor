@@ -122,19 +122,19 @@ Write-возможность получает `experimental` только с L5-
 
 | ID | Задача | Кто | Размер | Зависит | Уровень | Волна | Статус |
 |---|---|---|---|---|---|---|---|
-| ST-1 | Разложить ветку round-3 на PR | Claude | M | D1 | L3 | 1 | in_progress |
+| ST-1 | Разложить ветку round-3 на PR | Claude | M | D1 | L3 | 1 | done (#142–#146) |
 | ST-2 | OTA на Linux end-to-end | Claude + владелец | M | ST-1 | L4 | 2 | todo |
 | ST-3 | Лаги после смены языка: замер в сборке | Claude | S | ST-1 | L4 | 2 | todo |
 | ST-4 | Музыка меню: проверка в сборках | Claude | S | ST-1, RL-3 | L4 | 2 | todo |
 | ST-5 | Аудит обрезанного UI: 15 языков × все экраны | Claude + Gemini | M | ST-1 | L3 | 2 | todo |
-| ST-6 | S2 stacks: правда в capabilities и docs | Claude | S | — | L2 | 1 | todo |
-| ST-7 | Переводы новых строк на 14 языков | Gemini → Claude | S | ST-1 | L2 | 1 | todo |
-| ST-8 | Починить автопубликацию релиза | Claude + владелец | M | D9 | L4 | 1 | todo |
-| ST-9 | Релиз v0.7.3 + web + evidence | Claude | S | ST-1..8, KB-1..3 | L4 | 1 | todo |
-| KB-1 | Сборщик базы S2: запуск и проверка | Claude | S | — | L2 | 1 | in_progress |
-| KB-2 | S2 названия и иконки в desktop и web | Claude | M | KB-1 | L3 | 1 | todo |
-| KB-3 | Отчёт покрытия S2 + CI-порог | Claude | S | KB-1 | L2 | 1 | todo |
-| KB-4 | Закрыть дыры: английские имена и иконки | Gemini → Claude | M | KB-3 | L2 | 1 | todo |
+| ST-6 | S2 stacks: правда в capabilities и docs | Claude | S | — | L2 | 1 | done (#147) |
+| ST-7 | Переводы новых строк на 14 языков | Gemini → Claude | S | ST-1 | L2 | 1 | done (одна строка, #144) |
+| ST-8 | Починить автопубликацию релиза | Claude + владелец | M | D9 | L4 | 1 | review: код готов (#148), ждёт секретов владельца |
+| ST-9 | Релиз v0.7.3 + web + evidence | Claude | S | ST-1..8, KB-1..3 | L4 | 1 | in_progress (тег v0.7.3) |
+| KB-1 | Сборщик базы S2: запуск и проверка | Claude | S | — | L2 | 1 | done (#145) |
+| KB-2 | S2 названия и иконки в desktop и web | Claude | M | KB-1 | L3 | 1 | done (#145) |
+| KB-3 | Отчёт покрытия S2 + CI-порог | Claude | S | KB-1 | L2 | 1 | done (#145) |
+| KB-4 | Закрыть дыры: английские имена и иконки | Gemini → Claude | M | KB-3 | L2 | 1 | in_progress (бриф у Gemini) |
 | KB-5 | «Уникальный вариант AR416» и категории в UI | Claude | S | KB-2 | L3 | 2 | todo |
 | KB-6 | Имена S2 на других языках: ресерч | Gemini | S | KB-2 | — | 2 | todo |
 | KB-7 | Официальные имена апгрейдов брони S2 | Claude | S | KB-6, CP-4 | L2 | 4 | todo |
@@ -142,13 +142,13 @@ Write-возможность получает `experimental` только с L5-
 | ED-2 | S2: настоящее добавление предметов | Claude | L | D2, RL-5 | L5 | 3 | blocked (нет S2) |
 | ED-3 | S2: подтвердить правку стаков в игре | Claude + владелец | S | D2, ST-6 | L5 | 3 | blocked (нет S2) |
 | ED-4 | Инструменты L5-проверки для S2 | Codex | S | — | L2 | 2 | todo |
-| CP-1 | Манифест происхождения ассетов | Codex | S | — | L2 | 1 | todo |
+| CP-1 | Манифест происхождения ассетов | Codex | S | — | L2 | 1 | done (#149, Codex) |
 | CP-3 | Локальные content packs с отпечатком сборки игры | Claude → Codex | M | D4, RL-6 | L3 | 3 | todo |
 | CP-4 | Контент S2 из файлов игры/Zone Kit | Claude | M | D2 | L2 | 4 | todo |
 | RL-1 | Уровни L1–L5 в процессе и шаблоне PR | Claude | S | — | — | 2 | todo |
 | RL-2 | Runtime-гейт в CI: собранное приложение и web | Codex | M | RL-1 | L3 | 2 | todo |
 | RL-3 | «Проверить окружение» (Environment Doctor) | Claude → Codex | M | — | L4 | 2 | todo |
-| RL-4 | Capability truth: docs генерируются из реестра | Codex | S | ST-6 | L2 | 1 | todo |
+| RL-4 | Capability truth: docs генерируются из реестра | Codex | S | ST-6 | L2 | 1 | todo → Codex |
 | RL-5 | Локальная лаборатория корпуса сейвов | Claude → Codex | M | — | L2 | 2 | todo |
 | RL-6 | Отпечаток сборки игры → capability | Claude | M | RL-5 | L2 | 3 | todo |
 | RL-7 | Черновик правок и undo/redo | Codex | M | — | L3 | 3 | todo |
@@ -160,7 +160,7 @@ Write-возможность получает `experimental` только с L5-
 | MAC-2 | CI macos-14 + smoke | Codex | S | MAC-1 | L3 | 2 | todo |
 | MAC-3 | Подпись и обновления на macOS | Codex | M | MAC-2, D7 | L4 | 3 | todo |
 | MAC-4 | Проверка на реальном Mac | владелец | S | MAC-2 | L4 | 3 | owner |
-| MOD-1 | Ресерч: Lua API, EE Workshop, Zone Kit | Gemini → Claude | M | — | — | 1 | todo |
+| MOD-1 | Ресерч: Lua API, EE Workshop, Zone Kit | Gemini → Claude | M | — | — | 1 | done: ресерч (#150, Gemini) |
 | MOD-2 | Мод-компаньон для ЗП: POC | Claude + Codex | L | MOD-1, D11 | L5 | 3 | todo |
 | MOD-3 | Компаньон для ТЧ/ЧН и EE (Workshop) | Codex + владелец | L | MOD-2 | L5 | 4 | todo |
 | MOD-4 | Компаньон S2 через Zone Kit | Claude | L | MOD-2, D2 | L5 | 4 | todo |
@@ -178,13 +178,13 @@ Write-возможность получает `experimental` только с L5-
 | CS-6 | Avalonia UI | Codex | L | CS-4 | L3 | 4 | todo |
 | CS-7 | Steam, updater, пакеты 3 ОС | Codex | L | CS-6 | L4 | 4 | todo |
 | CS-8 | Переключение на C# | Claude + владелец | S | CS-5..7 | L4 | 4 | todo |
-| CL-1 | Локальная чистка папок | Claude | S | — | — | 1 | todo |
-| CL-2 | Чистка веток Git | Claude | S | — | — | 1 | todo |
+| CL-1 | Локальная чистка папок | Claude | S | — | — | 1 | done |
+| CL-2 | Чистка веток Git | Claude | S | — | — | 1 | done |
 | CL-3 | Документация: STATUS, архив, ссылки | Claude + Codex | M | ST-9 | — | 2 | todo |
-| CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | todo |
+| CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | todo → Codex |
 | CL-5 | Профилирование и оптимизация | Claude | M | RL-5 | L3 | 2 | todo |
 | RS-1 | Что ещё можно вытащить из сейвов (по играм) | Claude (+Gemini черновик) | M | — | — | 2 | todo |
-| RS-2 | Официальные гайды и SDK по моддингу всех игр | Gemini → Claude | S | — | — | 1 | todo |
+| RS-2 | Официальные гайды и SDK по моддингу всех игр | Gemini → Claude | S | — | — | 1 | done (#150, Gemini) |
 
 ## Шаблон передачи задачи Codex или Gemini
 
