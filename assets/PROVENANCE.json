@@ -47,6 +47,1566 @@
     "origin_url": "https://github.com/google/fonts/tree/main/ofl/oswald",
     "source": "Oswald license text from Google Fonts"
   },
+  "assets/icons/s2/AArtifactWeirdBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdBolt.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdFlower.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdFlower_.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdKettle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdNut.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AArtifactWeirdWater.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AlteredScarsToast.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Altered_Toast.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Anomaly_Scientific_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/AntiRad.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a0/Stalker-2-anti-radiation-drugs.png",
+    "source": "Fextralife item image: Anti-Radiation Drugs"
+  },
+  "assets/icons/s2/ArmyMedkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/69/Stalker-2-army-medkit.png",
+    "source": "Fextralife item image: Army Medkit"
+  },
+  "assets/icons/s2/Bandage.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/6e/Stalker-2-bandage.png",
+    "source": "Fextralife item image: Bandage"
+  },
+  "assets/icons/s2/BattleExoskeleton_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Dolg_End_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Battle_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Beer.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d4/Stalker-2-beer.png",
+    "source": "Fextralife item image: Beer"
+  },
+  "assets/icons/s2/Blueprint_Gvintar_Upgrade_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_2.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Bolota.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Bread.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/25/Stalker-2-bread.png",
+    "source": "Fextralife item image: Bread"
+  },
+  "assets/icons/s2/CArtifactBouncyBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactBubble.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactBun.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactBung.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactChunkMeat.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactCottonWool.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactCrystalThorn.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactDevilsMushroom.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactEchinus.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactKryptonite.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactLiquidStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactMica.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactPellicle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactPlasticine.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactRosin.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactSlime.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactSlug.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CArtifactThorn.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/CannedFood.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/2c/Stalker-2-canned-food.png",
+    "source": "Fextralife item image: Canned Food"
+  },
+  "assets/icons/s2/Cinnamon.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a5/Stalker-2-vinca.png",
+    "source": "Fextralife item image: Vinca"
+  },
+  "assets/icons/s2/ClickerAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Corpus.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/DLC00_JournalistPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Deafult_Military_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/E02_MQ02_BS_PDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/E08_MQ03_Audiolog_MutantsHowl_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/E08_SQ01_Audiolog_KardanAndDvupalovAboutDevice.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/E08_SQ01_Audiolog_KardanCreatedDevice.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/E11_MQ02_Dialog_ScarAndOzersky.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactAtom.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactBattery.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactChocolate.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactCloud.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactCrystalGlass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactDope.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactDummy.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactFlash.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactJellyFish.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactMoonlight.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactRazor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactSnowflake.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactSoul.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactSparkler.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactThunderHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactTow.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EArtifactWorm.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EQ16_FaraPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EQ52_PuzirPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EcoMedkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/fa/Stalker-2-scientific-medkit.png",
+    "source": "Fextralife item image: Scientific Medkit"
+  },
+  "assets/icons/s2/Energetic.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/3/31/Stalker-2-non-stop-energy-drink.png",
+    "source": "Fextralife item image: Non Stop Energy Drink"
+  },
+  "assets/icons/s2/Exoskeleton_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Exoskeleton_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Exoskeleton_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Exoskeleton_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Exoskeleton_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactBakedBolts.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactBurntHunk.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactCandle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactCore.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactCrystal.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactDeadSponge.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactDrops.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactEye.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactFireBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactFireworks.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactGlass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactHellishHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactMomsBeads.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactPlasma.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactResin.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactRingOmnipotence.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FArtifactSteak.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FireBallAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/FlycatcherAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactBloodStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactBud.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactCompass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactGoldFish.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactGraphiteBlock.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactGravy.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactLandSlug.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactNightStar.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactPlane.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactRubiksCube.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactSplitStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactSponge.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactSpring.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactStoneDrop.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactTrunk.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GArtifactWrenched.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GrenadeF1.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/84/Stalker-2-f-1-grenade1.png",
+    "source": "Fextralife item image: F-1 Grenade"
+  },
+  "assets/icons/s2/GrenadeRGD5.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/83/Stalker-2-rgd-5-grenade1.png",
+    "source": "Fextralife item image: RGD-5 Grenade"
+  },
+  "assets/icons/s2/GunAK74_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/ec/Akm-74s-stalker2.png",
+    "source": "Fextralife item image: AKM-74S"
+  },
+  "assets/icons/s2/GunAKU_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/60/Akm-74u-stalker2.png",
+    "source": "Fextralife item image: AKM-74U"
+  },
+  "assets/icons/s2/GunAPB_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/dc/Aspb-stalker2.png",
+    "source": "Fextralife item image: APSB"
+  },
+  "assets/icons/s2/GunArevPrecise_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunArev_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/eb/Ar416-stalker2.png",
+    "source": "Fextralife item image: AR416"
+  },
+  "assets/icons/s2/GunBucket_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/ba/Buket_s-2-stalker2.png",
+    "source": "Fextralife item image: Buket S-2"
+  },
+  "assets/icons/s2/GunD12_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/3/32/Saiga_d-12-stalker2.png",
+    "source": "Fextralife item image: Saiga D-12"
+  },
+  "assets/icons/s2/GunDnipro_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunFora230_PP.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunFora_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunG37_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunGP3A_DMR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunGauss_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/0c/Gauss_gun-stalker2.png",
+    "source": "Fextralife item image: Gauss Rifle"
+  },
+  "assets/icons/s2/GunGrim_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunGvintar_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/bc/Vs_vintar-stalker2.png",
+    "source": "Fextralife item image: VS Vintar"
+  },
+  "assets/icons/s2/GunIntegral_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/0f/Integral-a-stalker2.png",
+    "source": "Fextralife item image: Integral-A"
+  },
+  "assets/icons/s2/GunKharod_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunKora_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunLavina_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c9/As_lavina-stalker2.png",
+    "source": "Fextralife item image: AS Lavina"
+  },
+  "assets/icons/s2/GunM10_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/22/M10_gordon-stalker2.png",
+    "source": "Fextralife item image: M10 Gordon"
+  },
+  "assets/icons/s2/GunM16_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunM701_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d1/M701_super-stalker2.png",
+    "source": "Fextralife item image: M701 Super"
+  },
+  "assets/icons/s2/GunM860_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1d/M860_cracker-stalker2.png",
+    "source": "Fextralife item image: M860 Cracker"
+  },
+  "assets/icons/s2/GunNightStalker_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunObrez_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f7/Boomstick-stalker2.png",
+    "source": "Fextralife item image: Boomstick"
+  },
+  "assets/icons/s2/GunPKP_MG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/b4/Rpm-74-stalker2.png",
+    "source": "Fextralife item image: RPM-74"
+  },
+  "assets/icons/s2/GunPM_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/18/Ptm-stalker2.png",
+    "source": "Fextralife item image: PTM"
+  },
+  "assets/icons/s2/GunRam2_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1b/Ram-2-stalker2.png",
+    "source": "Fextralife item image: Ram-2"
+  },
+  "assets/icons/s2/GunRhino_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1e/Rhino-stalker2.png",
+    "source": "Fextralife item image: Rhino"
+  },
+  "assets/icons/s2/GunRpg7_GL.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/13/Stalker-2-rpg-7u.png",
+    "source": "Fextralife item image: RPG-7U"
+  },
+  "assets/icons/s2/GunSKP_DMR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunSPSA_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/ac/Spsa-14-stalker2.png",
+    "source": "Fextralife item image: SPSA-14"
+  },
+  "assets/icons/s2/GunSVDM_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/27/Svdm-2-stalker2.png",
+    "source": "Fextralife item image: SVDM-2"
+  },
+  "assets/icons/s2/GunSVU_SP.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunTOZ_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/05/Toz-34-stalker2.png",
+    "source": "Fextralife item image: Toz-34"
+  },
+  "assets/icons/s2/GunUDP_Deadeye_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/GunUDP_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/67/Udp_compact-stalker2.png",
+    "source": "Fextralife item image: UDP Compact"
+  },
+  "assets/icons/s2/GunViper_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c7/Viper-5-stalker2.png",
+    "source": "Fextralife item image: Viper-5"
+  },
+  "assets/icons/s2/GunZubr_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d5/Zubr-19-stalker2.png",
+    "source": "Fextralife item image: Zubr-19"
+  },
+  "assets/icons/s2/Gun_Cavalier_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/89/Cavalier-stalker2.png",
+    "source": "Fextralife item image: Cavalier"
+  },
+  "assets/icons/s2/Gun_Combatant_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Deadeye_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f0/Deadeye-stalker2.png",
+    "source": "Fextralife item image: Deadeye"
+  },
+  "assets/icons/s2/Gun_Decider_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Dragunka_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Drowned_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_GStreet_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c0/Gangster-stalker2.png",
+    "source": "Fextralife item image: Gangster"
+  },
+  "assets/icons/s2/Gun_Logarithm_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Lummox_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Lynx_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/dc/Lynx-stalker2.png",
+    "source": "Fextralife item image: Lynx"
+  },
+  "assets/icons/s2/Gun_Margach_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/02/Margach_d-12_mt-stalker2.png",
+    "source": "Fextralife item image: Margach D-12MT"
+  },
+  "assets/icons/s2/Gun_ModelSpecial_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/7/74/Model_competitor-stalker2.png",
+    "source": "Fextralife item image: Model Competitor"
+  },
+  "assets/icons/s2/Gun_Novator_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Partner_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_PistolMonolith_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/aa/Ptm_monolith-stalker2.png",
+    "source": "Fextralife item image: PTM Monolith"
+  },
+  "assets/icons/s2/Gun_Predator_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/26/Predator-stalker2.png",
+    "source": "Fextralife item image: Predator"
+  },
+  "assets/icons/s2/Gun_RatKiller_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/9/97/Rat_killer-stalker2.png",
+    "source": "Fextralife item image: Rat Killer"
+  },
+  "assets/icons/s2/Gun_RifleMonolith_AR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/ed/Ar416_monolith-stalker2.png",
+    "source": "Fextralife item image: AR416 Monolith"
+  },
+  "assets/icons/s2/Gun_SMGMonolith_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/7/79/Viper_monolith-stalker2.png",
+    "source": "Fextralife item image: Viper-5 Monolith"
+  },
+  "assets/icons/s2/Gun_SOFMOD_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Shakh_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/66/Shah%27s_mate-stalker2.png",
+    "source": "Fextralife item image: Shah's Mate"
+  },
+  "assets/icons/s2/Gun_Sharpshooter_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_ShotgunMonolith_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f8/M860_monolith-stalker2.png",
+    "source": "Fextralife item image: M860 Monolith"
+  },
+  "assets/icons/s2/Gun_Silence_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_SkifGun_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/83/Skif%27s_pistol-stalker2.png",
+    "source": "Fextralife item image: Skif's Pistol"
+  },
+  "assets/icons/s2/Gun_Sledgehammer_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/e7/Sledgehammer-stalker2.png",
+    "source": "Fextralife item image: Sledgehammer"
+  },
+  "assets/icons/s2/Gun_Sotnyk_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Spitfire_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Spitter_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/03/Spitter-stalker2.png",
+    "source": "Fextralife item image: Spitter"
+  },
+  "assets/icons/s2/Gun_Tank_MG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Texas_SG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Trophy_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Unknown_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Veteran_AR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/20/Veteran-stalker2.png",
+    "source": "Fextralife item image: Veteran"
+  },
+  "assets/icons/s2/Gun_Whip_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Gun_Zvirolov_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/15/Hunter-stalker2.png",
+    "source": "Fextralife item image: Hunter"
+  },
+  "assets/icons/s2/Heavy2_Military_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyAnomaly_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyAnomaly_SIRCA_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyAnomaly_Scientific_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyAnomaly_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyBattle_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyExoskeleton_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyExoskeleton_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyExoskeleton_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/HeavyExoskeleton_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Duty_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Svoboda_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Heavy_Varta_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Hercules.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-hercules.png",
+    "source": "Fextralife item image: Hercules"
+  },
+  "assets/icons/s2/Jacket_Bandit_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Jemmy_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/LavaLampAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Bandit_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Duty_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Mercenaries_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Light_Neutral_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Malahit.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Medkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/4/42/Stalker-2-medkit.png",
+    "source": "Fextralife item image: Medkit"
+  },
+  "assets/icons/s2/Middle_Bandit_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Milk.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/4/40/Stalker-2-condensed-milk.png",
+    "source": "Fextralife item image: Condensed Milk"
+  },
+  "assets/icons/s2/MonolithDryRation.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/NVG_Gen1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/NVG_Gen2.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/NVG_Gen3A.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Nasos_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Newbee_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/PDA_Skif_Background.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/PSYBlocker.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/e6/Stalker-2-psi-block.png",
+    "source": "Fextralife item image: Psi-Block"
+  },
+  "assets/icons/s2/PillowAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/PsyAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/QuestArtifactHeartofChornobyl.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/RazorAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/RichtersPlayer.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Rook_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Rook_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SEVA_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SEVA_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SEVA_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SEVA_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SEVA_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SQ103_PersonalCorrespondance_Text.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Sausage.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/6b/Stalker-2-sausage.png",
+    "source": "Fextralife item image: Sausage"
+  },
+  "assets/icons/s2/SkinJacket_Bandit_Armor_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SoapBubbleAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/SpoiledCannedFood.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c8/Stalker-2-spoiled-canned-food.png",
+    "source": "Fextralife item image: Spoiled Canned Food"
+  },
+  "assets/icons/s2/SteamAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/UltraLight_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Vodka.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/68/Stalker-2-cossacks-vodka.png",
+    "source": "Fextralife item image: Cossacks Vodka"
+  },
+  "assets/icons/s2/Water.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/5/5a/Stalker-2-water.png",
+    "source": "Fextralife item image: Water"
+  },
+  "assets/icons/s2/YanovDeggyToNor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Yanov_Hub_Audiolog_Nor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/ZheleznyLes.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Zorya_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/Zorya_Tourist_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
   "assets/icons/xray/*.png": {
     "basis": "game-derived",
     "generator": "tools/build_icon_pack.py",
@@ -124,5 +1684,1565 @@
     "generator": "tools/build_icon_pack.py",
     "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
     "source": "Keys generated for the mirrored S.T.A.L.K.E.R. trilogy icon pack"
+  },
+  "web/icons/s2/AArtifactWeirdBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdBolt.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdFlower.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdFlower_.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdKettle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdNut.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AArtifactWeirdWater.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AlteredScarsToast.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Altered_Toast.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Anomaly_Scientific_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/AntiRad.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a0/Stalker-2-anti-radiation-drugs.png",
+    "source": "Fextralife item image: Anti-Radiation Drugs"
+  },
+  "web/icons/s2/ArmyMedkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/69/Stalker-2-army-medkit.png",
+    "source": "Fextralife item image: Army Medkit"
+  },
+  "web/icons/s2/Bandage.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/6e/Stalker-2-bandage.png",
+    "source": "Fextralife item image: Bandage"
+  },
+  "web/icons/s2/BattleExoskeleton_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Dolg_End_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Battle_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Beer.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d4/Stalker-2-beer.png",
+    "source": "Fextralife item image: Beer"
+  },
+  "web/icons/s2/Blueprint_Gvintar_Upgrade_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_2.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Bolota.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Bread.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/25/Stalker-2-bread.png",
+    "source": "Fextralife item image: Bread"
+  },
+  "web/icons/s2/CArtifactBouncyBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactBubble.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactBun.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactBung.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactChunkMeat.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactCottonWool.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactCrystalThorn.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactDevilsMushroom.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactEchinus.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactKryptonite.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactLiquidStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactMica.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactPellicle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactPlasticine.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactRosin.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactSlime.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactSlug.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CArtifactThorn.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/CannedFood.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/2c/Stalker-2-canned-food.png",
+    "source": "Fextralife item image: Canned Food"
+  },
+  "web/icons/s2/Cinnamon.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a5/Stalker-2-vinca.png",
+    "source": "Fextralife item image: Vinca"
+  },
+  "web/icons/s2/ClickerAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Corpus.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/DLC00_JournalistPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Deafult_Military_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/E02_MQ02_BS_PDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/E08_MQ03_Audiolog_MutantsHowl_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/E08_SQ01_Audiolog_KardanAndDvupalovAboutDevice.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/E08_SQ01_Audiolog_KardanCreatedDevice.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/E11_MQ02_Dialog_ScarAndOzersky.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactAtom.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactBattery.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactChocolate.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactCloud.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactCrystalGlass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactDope.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactDummy.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactFlash.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactJellyFish.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactMoonlight.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactRazor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactSnowflake.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactSoul.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactSparkler.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactThunderHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactTow.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EArtifactWorm.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EQ16_FaraPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EQ52_PuzirPDA.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EcoMedkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/fa/Stalker-2-scientific-medkit.png",
+    "source": "Fextralife item image: Scientific Medkit"
+  },
+  "web/icons/s2/Energetic.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/3/31/Stalker-2-non-stop-energy-drink.png",
+    "source": "Fextralife item image: Non Stop Energy Drink"
+  },
+  "web/icons/s2/Exoskeleton_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Exoskeleton_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Exoskeleton_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Exoskeleton_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Exoskeleton_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactBakedBolts.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactBurntHunk.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactCandle.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactCore.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactCrystal.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactDeadSponge.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactDrops.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactEye.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactFireBall.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactFireworks.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactGlass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactHellishHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactMomsBeads.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactPlasma.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactResin.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactRingOmnipotence.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FArtifactSteak.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FireBallAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/FlycatcherAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactBloodStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactBud.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactCompass.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactGoldFish.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactGraphiteBlock.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactGravy.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactHedgehog.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactLandSlug.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactNightStar.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactPlane.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactRubiksCube.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactSplitStone.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactSponge.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactSpring.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactStoneDrop.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactTrunk.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GArtifactWrenched.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GrenadeF1.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/84/Stalker-2-f-1-grenade1.png",
+    "source": "Fextralife item image: F-1 Grenade"
+  },
+  "web/icons/s2/GrenadeRGD5.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/83/Stalker-2-rgd-5-grenade1.png",
+    "source": "Fextralife item image: RGD-5 Grenade"
+  },
+  "web/icons/s2/GunAK74_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/ec/Akm-74s-stalker2.png",
+    "source": "Fextralife item image: AKM-74S"
+  },
+  "web/icons/s2/GunAKU_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/60/Akm-74u-stalker2.png",
+    "source": "Fextralife item image: AKM-74U"
+  },
+  "web/icons/s2/GunAPB_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/dc/Aspb-stalker2.png",
+    "source": "Fextralife item image: APSB"
+  },
+  "web/icons/s2/GunArevPrecise_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunArev_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/eb/Ar416-stalker2.png",
+    "source": "Fextralife item image: AR416"
+  },
+  "web/icons/s2/GunBucket_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/ba/Buket_s-2-stalker2.png",
+    "source": "Fextralife item image: Buket S-2"
+  },
+  "web/icons/s2/GunD12_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/3/32/Saiga_d-12-stalker2.png",
+    "source": "Fextralife item image: Saiga D-12"
+  },
+  "web/icons/s2/GunDnipro_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunFora230_PP.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunFora_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunG37_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunGP3A_DMR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunGauss_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/0c/Gauss_gun-stalker2.png",
+    "source": "Fextralife item image: Gauss Rifle"
+  },
+  "web/icons/s2/GunGrim_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunGvintar_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/bc/Vs_vintar-stalker2.png",
+    "source": "Fextralife item image: VS Vintar"
+  },
+  "web/icons/s2/GunIntegral_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/0f/Integral-a-stalker2.png",
+    "source": "Fextralife item image: Integral-A"
+  },
+  "web/icons/s2/GunKharod_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunKora_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunLavina_ST.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c9/As_lavina-stalker2.png",
+    "source": "Fextralife item image: AS Lavina"
+  },
+  "web/icons/s2/GunM10_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/22/M10_gordon-stalker2.png",
+    "source": "Fextralife item image: M10 Gordon"
+  },
+  "web/icons/s2/GunM16_ST.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunM701_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d1/M701_super-stalker2.png",
+    "source": "Fextralife item image: M701 Super"
+  },
+  "web/icons/s2/GunM860_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1d/M860_cracker-stalker2.png",
+    "source": "Fextralife item image: M860 Cracker"
+  },
+  "web/icons/s2/GunNightStalker_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunObrez_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f7/Boomstick-stalker2.png",
+    "source": "Fextralife item image: Boomstick"
+  },
+  "web/icons/s2/GunPKP_MG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/b/b4/Rpm-74-stalker2.png",
+    "source": "Fextralife item image: RPM-74"
+  },
+  "web/icons/s2/GunPM_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/18/Ptm-stalker2.png",
+    "source": "Fextralife item image: PTM"
+  },
+  "web/icons/s2/GunRam2_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1b/Ram-2-stalker2.png",
+    "source": "Fextralife item image: Ram-2"
+  },
+  "web/icons/s2/GunRhino_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/1e/Rhino-stalker2.png",
+    "source": "Fextralife item image: Rhino"
+  },
+  "web/icons/s2/GunRpg7_GL.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/13/Stalker-2-rpg-7u.png",
+    "source": "Fextralife item image: RPG-7U"
+  },
+  "web/icons/s2/GunSKP_DMR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunSPSA_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/ac/Spsa-14-stalker2.png",
+    "source": "Fextralife item image: SPSA-14"
+  },
+  "web/icons/s2/GunSVDM_SP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/27/Svdm-2-stalker2.png",
+    "source": "Fextralife item image: SVDM-2"
+  },
+  "web/icons/s2/GunSVU_SP.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunTOZ_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/05/Toz-34-stalker2.png",
+    "source": "Fextralife item image: Toz-34"
+  },
+  "web/icons/s2/GunUDP_Deadeye_HG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/GunUDP_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/67/Udp_compact-stalker2.png",
+    "source": "Fextralife item image: UDP Compact"
+  },
+  "web/icons/s2/GunViper_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c7/Viper-5-stalker2.png",
+    "source": "Fextralife item image: Viper-5"
+  },
+  "web/icons/s2/GunZubr_PP.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/d5/Zubr-19-stalker2.png",
+    "source": "Fextralife item image: Zubr-19"
+  },
+  "web/icons/s2/Gun_Cavalier_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/89/Cavalier-stalker2.png",
+    "source": "Fextralife item image: Cavalier"
+  },
+  "web/icons/s2/Gun_Combatant_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Deadeye_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f0/Deadeye-stalker2.png",
+    "source": "Fextralife item image: Deadeye"
+  },
+  "web/icons/s2/Gun_Decider_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Dragunka_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Drowned_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_GStreet_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c0/Gangster-stalker2.png",
+    "source": "Fextralife item image: Gangster"
+  },
+  "web/icons/s2/Gun_Logarithm_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Lummox_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Lynx_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/d/dc/Lynx-stalker2.png",
+    "source": "Fextralife item image: Lynx"
+  },
+  "web/icons/s2/Gun_Margach_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/02/Margach_d-12_mt-stalker2.png",
+    "source": "Fextralife item image: Margach D-12MT"
+  },
+  "web/icons/s2/Gun_ModelSpecial_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/7/74/Model_competitor-stalker2.png",
+    "source": "Fextralife item image: Model Competitor"
+  },
+  "web/icons/s2/Gun_Novator_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Partner_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_PistolMonolith_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/aa/Ptm_monolith-stalker2.png",
+    "source": "Fextralife item image: PTM Monolith"
+  },
+  "web/icons/s2/Gun_Predator_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/26/Predator-stalker2.png",
+    "source": "Fextralife item image: Predator"
+  },
+  "web/icons/s2/Gun_RatKiller_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/9/97/Rat_killer-stalker2.png",
+    "source": "Fextralife item image: Rat Killer"
+  },
+  "web/icons/s2/Gun_RifleMonolith_AR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/ed/Ar416_monolith-stalker2.png",
+    "source": "Fextralife item image: AR416 Monolith"
+  },
+  "web/icons/s2/Gun_SMGMonolith_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/7/79/Viper_monolith-stalker2.png",
+    "source": "Fextralife item image: Viper-5 Monolith"
+  },
+  "web/icons/s2/Gun_SOFMOD_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Shakh_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/66/Shah%27s_mate-stalker2.png",
+    "source": "Fextralife item image: Shah's Mate"
+  },
+  "web/icons/s2/Gun_Sharpshooter_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_ShotgunMonolith_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/f/f8/M860_monolith-stalker2.png",
+    "source": "Fextralife item image: M860 Monolith"
+  },
+  "web/icons/s2/Gun_Silence_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_SkifGun_HG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/8/83/Skif%27s_pistol-stalker2.png",
+    "source": "Fextralife item image: Skif's Pistol"
+  },
+  "web/icons/s2/Gun_Sledgehammer_SG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/e7/Sledgehammer-stalker2.png",
+    "source": "Fextralife item image: Sledgehammer"
+  },
+  "web/icons/s2/Gun_Sotnyk_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Spitfire_SMG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Spitter_SMG.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/0/03/Spitter-stalker2.png",
+    "source": "Fextralife item image: Spitter"
+  },
+  "web/icons/s2/Gun_Tank_MG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Texas_SG.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Trophy_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Unknown_AR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Veteran_AR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/20/Veteran-stalker2.png",
+    "source": "Fextralife item image: Veteran"
+  },
+  "web/icons/s2/Gun_Whip_SR.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Gun_Zvirolov_SR.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/1/15/Hunter-stalker2.png",
+    "source": "Fextralife item image: Hunter"
+  },
+  "web/icons/s2/Heavy2_Military_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyAnomaly_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyAnomaly_SIRCA_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyAnomaly_Scientific_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyAnomaly_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyBattle_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyExoskeleton_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyExoskeleton_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyExoskeleton_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/HeavyExoskeleton_Varta_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Duty_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Svoboda_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Heavy_Varta_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Hercules.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-hercules.png",
+    "source": "Fextralife item image: Hercules"
+  },
+  "web/icons/s2/Jacket_Bandit_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Jemmy_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/LavaLampAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Bandit_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Duty_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Mercenaries_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Military_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Light_Neutral_Helmet.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Malahit.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Medkit.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/4/42/Stalker-2-medkit.png",
+    "source": "Fextralife item image: Medkit"
+  },
+  "web/icons/s2/Middle_Bandit_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Milk.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/4/40/Stalker-2-condensed-milk.png",
+    "source": "Fextralife item image: Condensed Milk"
+  },
+  "web/icons/s2/MonolithDryRation.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/NVG_Gen1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/NVG_Gen2.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/NVG_Gen3A.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Nasos_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Newbee_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/PDA_Skif_Background.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/PSYBlocker.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/e/e6/Stalker-2-psi-block.png",
+    "source": "Fextralife item image: Psi-Block"
+  },
+  "web/icons/s2/PillowAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/PsyAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/QuestArtifactHeartofChornobyl.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/RazorAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/RichtersPlayer.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Rook_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Rook_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SEVA_Dolg_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SEVA_Monolith_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SEVA_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SEVA_Spark_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SEVA_Svoboda_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SQ103_PersonalCorrespondance_Text.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Sausage.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/6b/Stalker-2-sausage.png",
+    "source": "Fextralife item image: Sausage"
+  },
+  "web/icons/s2/SkinJacket_Bandit_Armor_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SoapBubbleAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/SpoiledCannedFood.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/c/c8/Stalker-2-spoiled-canned-food.png",
+    "source": "Fextralife item image: Spoiled Canned Food"
+  },
+  "web/icons/s2/SteamAnomaly.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/UltraLight_Mercenaries_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Vodka.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/6/68/Stalker-2-cossacks-vodka.png",
+    "source": "Fextralife item image: Cossacks Vodka"
+  },
+  "web/icons/s2/Water.png": {
+    "basis": "fextralife",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://static0.fextralifeimages.com/file/stalker2/5/5a/Stalker-2-water.png",
+    "source": "Fextralife item image: Water"
+  },
+  "web/icons/s2/YanovDeggyToNor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Yanov_Hub_Audiolog_Nor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/ZheleznyLes.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Zorya_Neutral_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/Zorya_Tourist_Armor.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
   }
 }
