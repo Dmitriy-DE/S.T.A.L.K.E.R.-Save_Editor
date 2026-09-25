@@ -381,6 +381,7 @@
  "Игра не определена": "Juego no identificado",
  "Игра распознана, но безопасное редактирование инвентаря для этой версии ещё не подтверждено. Диагностика доступна, запись отключена.": "El juego se reconoce, pero la edición segura del inventario para esta versión aún no está confirmada. El diagnóstico está disponible; la escritura está desactivada.",
  "Игра: {0}": "Juego: {0}",
+ "Играет тему меню ТЧ, ЧН или ЗП, когда открыто или выбрано сохранение этой игры и сама игра установлена. Для S.T.A.L.K.E.R. 2 музыки пока нет.": "Reproduce el tema del menú de SoC, CS o CoP cuando hay una partida guardada de ese juego abierta o seleccionada y el juego está instalado. Aún no hay música para S.T.A.L.K.E.R. 2.",
  "Игрок": "Jugador",
  "Идентификатор": "Identificador",
  "Идентификатор Binance: 434350727": "ID de Binance: 434350727",
