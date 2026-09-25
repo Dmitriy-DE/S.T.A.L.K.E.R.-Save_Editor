@@ -177,7 +177,10 @@ def source_text(text: str) -> str:
         values: dict[str, str] = {}
         for name, value in match.groupdict().items():
             values.setdefault(name[1:].split("_")[0], value)
-        return _PLACEHOLDER.sub(lambda m, found=values: found.get(m.group(1), m.group(0)), source)
+        def fill(match: re.Match[str], found: dict[str, str] = values) -> str:
+            return found.get(match.group(1), match.group(0))
+
+        return _PLACEHOLDER.sub(fill, source)
     return text
 
 

@@ -14,8 +14,10 @@ import random
 import struct
 import wave
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QAbstractButton, QApplication, QGraphicsOpacityEffect, QWidget
 
 from editor.platforms import user_data_dir
@@ -112,7 +114,7 @@ class Effects(QObject):
         super().__init__()
         self.preferences = preferences or load_preferences()
         self.theme = "soc"
-        self._players: dict[tuple[str, str], object] = {}
+        self._players: dict[tuple[str, str], Any] = {}
         self._audio_failed = bool(os.environ.get("PYTEST_CURRENT_TEST")) or (
             os.environ.get("QT_QPA_PLATFORM") == "offscreen"
         )
@@ -193,7 +195,7 @@ class Effects(QObject):
             self._audio_failed = True
 
     # --- motion -------------------------------------------------------
-    def fade_in(self, widget: QWidget, duration: int = 160) -> None:
+    def fade_in(self, widget: QWidget | None, duration: int = 160) -> None:
         if not self.motion_enabled or widget is None:
             return
         effect = QGraphicsOpacityEffect(widget)
@@ -208,7 +210,7 @@ class Effects(QObject):
         def _done() -> None:
             # Graphics effects slow painting and clip native children; drop it.
             if widget.graphicsEffect() is effect:
-                widget.setGraphicsEffect(None)
+                widget.setGraphicsEffect(None)  # type: ignore[arg-type]
 
         animation.finished.connect(_done)
         animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
@@ -219,7 +221,8 @@ class ClickSounds(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         if (
-            event.type() == QEvent.Type.MouseButtonRelease
+            isinstance(event, QMouseEvent)
+            and event.type() == QEvent.Type.MouseButtonRelease
             and isinstance(watched, QAbstractButton)
             and watched.isEnabled()
             and event.button() == Qt.MouseButton.LeftButton
