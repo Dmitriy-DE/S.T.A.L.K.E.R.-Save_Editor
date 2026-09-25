@@ -148,3 +148,31 @@ def test_s2_shape_guard_does_not_reclassify_existing_synthetic_orphan(
 
     assert ORPHAN_HANDLE in {item.handle for item in info.orphans}
     assert ORPHAN_HANDLE not in {item.handle for item in info.inventory}
+
+
+def test_s2_carried_detector_outside_the_grid_is_listed_read_only(synthetic_save: bytes) -> None:
+    from editor.equipment import equipment_items
+
+    raw = sf.decompress_save(synthetic_save)
+    layout = sf.locate_inventory_layout(raw)
+    raw = sf._rebuild_inventory_arrays(
+        raw,
+        owned_handles=(*layout.owned_handles, EQUIPPED_HANDLE),
+        grid_cells=layout.grid_cells,
+    )
+    record = bytearray(_equipped_record())
+    record[sf.STACK_KIND_OFFSET] = 6  # S2 detector
+    names = [""] * 289
+    names[0] = "GunAK74_ST"
+    names[0x120] = "Veles"
+    table = struct.pack("<H", len(names)) + b"".join(
+        struct.pack("<H", len(value.encode())) + value.encode() for value in names
+    )
+    info = sf.inspect_save(sf.rebuild_uncompressed(raw + bytes(record) + table), with_inventory=True)
+
+    item = next(item for item in info.inventory if item.handle == EQUIPPED_HANDLE)
+    assert item.display_name == "Veles"
+    assert item.observation_source == "carried"
+    assert not (item.editable_count or item.condition_editable or item.remove_editable)
+    row = next(row for row in equipment_items(info.inventory, release_id="stalker2") if row.handle == EQUIPPED_HANDLE)
+    assert (row.category, row.device_subtype) == ("device", "detector")

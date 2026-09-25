@@ -46,6 +46,7 @@ from editor.releases import is_xray_original_release
 from editor.service import EditorService
 from editor.settings import PathSettings, load_settings, search_paths_for_settings
 from editor.updater import InstallationInfo, UpdateCheckResult, UpdateClient, detect_installation
+from editor.xray_slots import placement_label
 from save_format import SaveError, SaveInfo
 
 from .add_item_dialog import AddItemDialog
@@ -608,7 +609,8 @@ class MainWindow(QMainWindow):
             ))
         for handle, (placement, slot) in sorted(self.staged_placements.items()):
             item = self._find_inventory_item(handle)
-            target = {"ruck": tr("Рюкзак"), "belt": tr("Пояс"), "slot": tr("Слот {0}", slot)}.get(placement, tr("Инвентарь"))
+            release = self.snapshot.release_id if self.snapshot is not None else None
+            target = placement_label(placement, slot, release) if placement in {"ruck", "belt", "slot"} else tr("Инвентарь")
             rows.append((self._item_name(item), tr("размещение"), target))
         if self.staged_player_faction is not None:
             faction = (

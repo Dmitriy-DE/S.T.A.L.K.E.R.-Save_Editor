@@ -244,7 +244,8 @@ function renderReferenceReview() {
   }
   for (const [handle, placement] of state.placements) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? t("Предмет"), placementLabel(item?.placement_type, item?.placement_slot), placementLabel(placement[0], placement[1])]);
+    const target = (item?.placement_targets ?? []).find(([type, slot]) => type === placement[0] && slot === placement[1]);
+    rows.push([item?.name ?? t("Предмет"), item?.placement_label ?? placementLabel(item?.placement_type, item?.placement_slot), target?.[2] ?? placementLabel(placement[0], placement[1])]);
   }
   for (const [handle, values] of state.upgrades) {
     const item = snapshotItem(handle);
@@ -317,7 +318,7 @@ function renderReferenceItemDetail(item) {
   selectedImage.replaceChildren(itemGlyph(item));
   el("reference-item-name").textContent = item.name ?? t("Неизвестный объект");
   el("reference-item-type").textContent = item.category_label ?? item.category ?? t("Предмет");
-  el("reference-item-detail").textContent = t("Позиция: {0}. Это значение нельзя изменить.", placementLabel(item.placement_type, item.placement_slot));
+  el("reference-item-detail").textContent = t("Позиция: {0}. Это значение нельзя изменить.", item.placement_label ?? placementLabel(item.placement_type, item.placement_slot));
   el("reference-item-detail").title = "";
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
   el("reference-item-gate").textContent = writable ? t("МОЖНО ИЗМЕНИТЬ") : t("ТОЛЬКО ЧТЕНИЕ");
@@ -346,10 +347,16 @@ function renderReferenceItemDetail(item) {
   if (item.placement_editable && caps.edit_placement) {
     const select = document.createElement("select");
     const current = state.placements.get(item.handle) ?? [item.placement_type, item.placement_slot];
-    for (const [placementType, slotId] of [["ruck", null], ["belt", null], ...Array.from({ length: 13 }, (_, index) => ["slot", index + 1])]) {
+    // Only where the game itself puts this item (backpack, belt for
+    // artefacts, its own base slot); the bridge computes the list.
+    const targets = (item.placement_targets ?? []).map(([type, slot, label]) => [type, slot, label]);
+    if (item.placement_type && !targets.some(([type, slot]) => type === item.placement_type && slot === (item.placement_type === "slot" ? item.placement_slot : null))) {
+      targets.push([item.placement_type, item.placement_type === "slot" ? item.placement_slot : null, item.placement_label]);
+    }
+    for (const [placementType, slotId, label] of targets) {
       const option = document.createElement("option");
       option.value = slotId === null ? placementType : `${placementType}:${slotId}`;
-      option.textContent = placementLabel(placementType, slotId);
+      option.textContent = label ?? placementLabel(placementType, slotId);
       option.selected = placementType === current[0] && slotId === current[1];
       select.append(option);
     }

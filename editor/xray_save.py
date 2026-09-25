@@ -47,6 +47,7 @@ from .xray_relations import (
     parse_relation_registry,
     patch_relation_registry,
 )
+from .xray_slots import placement_allowed
 
 _M_SPAWN = 1
 _M_UPDATE = 0
@@ -1528,6 +1529,18 @@ def _apply_xray_placement_edits(
             raise _fail(
                 f"object 0x{handle:04X} не имеет подтверждённого client-data place; "
                 "позиция остаётся read-only"
+            )
+        if not placement_allowed(
+            placement_type,
+            slot_id,
+            section=obj.name,
+            base_slot=obj.placement_base_slot,
+            release_id=spec.id,
+        ):
+            raise _fail(
+                f"object 0x{handle:04X} ({obj.name}): игра не кладёт этот предмет в "
+                f"{placement_type}{'' if slot_id is None else f' {slot_id}'}; "
+                "разрешены рюкзак, пояс для артефактов и собственный слот предмета"
             )
         raw = bytearray(current.container.raw)
         try:

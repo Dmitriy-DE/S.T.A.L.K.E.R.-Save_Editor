@@ -47,11 +47,11 @@ def test_qt_placement_editor_stages_slot_without_mutating_snapshot(qtbot, tmp_pa
     target = next(
         index
         for index in range(view.detail_view.placement_combo.count())
-        if view.detail_view.placement_combo.itemData(index) == ("slot", 4)
+        if view.detail_view.placement_combo.itemData(index) == ("slot", 3)
     )
     view.detail_view.placement_combo.setCurrentIndex(target)
 
-    assert window.staged_placements == {0x3456: ("slot", 4)}
+    assert window.staged_placements == {0x3456: ("slot", 3)}
     assert window.snapshot is not None
     assert window.snapshot.data == data
-    assert window._build_edit_plan().placements == ((0x3456, "slot", 4),)
+    assert window._build_edit_plan().placements == ((0x3456, "slot", 3),)

@@ -69,18 +69,31 @@ def test_xray_prepare_moves_item_to_equipment_slot(
     )
     handle = parse_xray(data, spec).inventory[0].handle
 
+    # The item goes back to its own base slot (3), the one the game stored.
     prepared = prepare_xray(
         data,
-        EditPlan(source=_source(data), placements=((handle, "slot", 4),)),
+        EditPlan(source=_source(data), placements=((handle, "slot", 3),)),
         spec,
     )
     item = parse_xray(prepared.data, spec).inventory[0]
 
     assert prepared.data != data
     assert item.placement_type == "slot"
-    assert item.placement_slot == 4
+    assert item.placement_slot == 3
     assert item.placement_base_slot == 3
     assert item.storage == "equipped"
+
+
+def test_xray_placement_refuses_slots_and_belt_the_game_would_not_use() -> None:
+    data = _condition_fixture(version=128, outer=6, client_place=3 | (2 << 4) | (3 << 10))
+    handle = parse_xray(data, COP_FORMAT).inventory[0].handle
+    for target in (("slot", 12), ("slot", 4), ("belt", None)):  # helmet, grenade, belt
+        with pytest.raises(XRaySaveError, match="не кладёт"):
+            prepare_xray(
+                data,
+                EditPlan(source=_source(data), placements=((handle, *target),)),
+                COP_FORMAT,
+            )
 
 
 def test_xray_prepare_moves_item_to_belt_without_overwriting_slot_metadata() -> None:
@@ -88,6 +101,7 @@ def test_xray_prepare_moves_item_to_belt_without_overwriting_slot_metadata() -> 
         version=128,
         outer=6,
         client_place=1 | (2 << 4) | (3 << 10),
+        name="af_medusa",  # only artefacts go on the belt
     )
     handle = parse_xray(data, COP_FORMAT).inventory[0].handle
 
@@ -132,7 +146,7 @@ def test_xray_placement_writer_changes_only_place_u16() -> None:
     data = _condition_fixture(
         version=128,
         outer=6,
-        client_place=1 | (2 << 4) | (3 << 10),
+        client_place=3 | (2 << 4) | (3 << 10),
     )
     parsed = parse_xray(data, COP_FORMAT)
     obj = parsed.object_by_id(parsed.inventory[0].handle)
@@ -143,7 +157,7 @@ def test_xray_placement_writer_changes_only_place_u16() -> None:
         data,
         EditPlan(
             source=_source(data),
-            placements=((obj.object_id, "slot", 4),),
+            placements=((obj.object_id, "slot", 3),),
         ),
         COP_FORMAT,
     )
@@ -153,5 +167,5 @@ def test_xray_placement_writer_changes_only_place_u16() -> None:
     assert before[obj.placement_offset + 2 :] == after[obj.placement_offset + 2 :]
     assert (
         struct.unpack_from("<H", after, obj.placement_offset)[0]
-        == 1 | (4 << 4) | (3 << 10)
+        == 1 | (3 << 4) | (3 << 10)
     )
