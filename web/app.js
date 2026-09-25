@@ -664,16 +664,6 @@ async function boot() {
   // The shared core translates its messages from the same locale file.
   py.FS.mkdirTree("/core/locales");
   py.FS.writeFile(`/core/locales/${currentLanguage()}.json`, catalogSource(), { encoding: "utf8" });
-  // Item names: the chosen language (uk, en) or the English fallback.
-  if (currentLanguage() !== "ru") {
-    py.FS.mkdirTree("/core/locales/items");
-    for (const code of new Set([currentLanguage(), "en"])) {
-      try {
-        const response = await fetch(`locales/items/${code}.json`);
-        if (response.ok) py.FS.writeFile(`/core/locales/items/${code}.json`, await response.text(), { encoding: "utf8" });
-      } catch { /* names fall back to the Russian catalog */ }
-    }
-  }
   py.runPython(`import os, sys; os.environ["STALKER_EDITOR_LANG"] = ${JSON.stringify(currentLanguage())}; sys.path.insert(0, "/core")`);
   globalThis.__oozDecompress = (stream, size) => ooz.decompress(stream, size);
   const bridge = py.pyimport("web_bridge");

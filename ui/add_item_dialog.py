@@ -34,14 +34,20 @@ class AddItemDialog(QDialog):
         parent: QWidget | None = None,
         *,
         icon_for: IconFor | None = None,
+        name_for: Callable[[ItemDefinition], str | None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("addItemDialog")
         self.setWindowTitle(tr("Добавить предмет"))
         self.resize(520, 560)
+        label_of = name_for or (lambda definition: definition.display_name)
+        self._labels = {definition.key: label_of(definition) for definition in catalog.items}
         self._definitions = sorted(
             catalog.items,
-            key=lambda item: (item.display_name is None, (item.display_name or item.key).casefold()),
+            key=lambda item: (
+                self._labels[item.key] is None,
+                (self._labels[item.key] or item.key).casefold(),
+            ),
         )
         layout = QVBoxLayout(self)
         intro = QLabel(
@@ -76,7 +82,7 @@ class AddItemDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
         for definition in self._definitions:
-            label = definition.display_name or definition.key
+            label = self._labels[definition.key] or definition.key
             entry = QListWidgetItem(label)
             entry.setData(Qt.ItemDataRole.UserRole, definition.key)
             entry.setToolTip(definition.key)

@@ -521,7 +521,16 @@ def _items_from_sections(
         category = _category(name, values)
         if category is None or name.startswith("$"):
             continue
-        name_key = values.get("inv_name_short") or values.get("inv_name")
+        # A section's own name wins over one inherited from its parent: Call
+        # of Pripyat's tech materials inherit ``inv_name_short`` from
+        # ``device_pda`` but define their own ``inv_name``.
+        own = section.values
+        name_key = (
+            own.get("inv_name_short")
+            or own.get("inv_name")
+            or values.get("inv_name_short")
+            or values.get("inv_name")
+        )
         display_name = localization.get(name_key) if name_key else None
         max_stack = _parse_int(values.get("box_size"))
         if max_stack is None:
@@ -791,27 +800,46 @@ def _candidate_asset_archives(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(candidates, key=lambda path: path.as_posix().casefold()))
 
 
-def read_xray_asset(root: Path, relative: str) -> bytes | None:
-    """Read one exact official asset from a packed installation, if present."""
-
+def _asset_name(relative: str) -> str:
     normalized = relative.replace("\\", "/").lstrip("/").casefold()
-    if not normalized.endswith(".dds"):
+    # Texture references in configs omit the extension.
+    if "." not in normalized.rsplit("/", 1)[-1]:
         normalized = f"{normalized}.dds"
-    candidates = frozenset({normalized, f"gamedata/{normalized}"})
+    return normalized
+
+
+def read_xray_assets(root: Path, relatives: Iterable[str]) -> dict[str, bytes]:
+    """Read several exact official assets in one pass over the volumes.
+
+    Keys of the result are the requested ``relatives``; missing assets are
+    simply absent.  Used for icon atlases and interface sounds.
+    """
+
+    wanted = {_asset_name(relative): relative for relative in relatives}
+    if not wanted:
+        return {}
+    names = frozenset({*wanted, *(f"gamedata/{name}" for name in wanted)})
+    suffixes = tuple(sorted({"." + name.rsplit(".", 1)[-1] for name in wanted}))
+    found: dict[str, bytes] = {}
     for archive in _candidate_asset_archives(Path(root)):
+        if len(found) == len(wanted):
+            break
         try:
-            files = _read_xray_archive(
-                archive,
-                suffixes=(".dds",),
-                names=candidates,
-            )
+            files = _read_xray_archive(archive, suffixes=suffixes, names=names)
         except (_ArchiveUnavailableError, OSError, ValueError):
             continue
         for name, data in files.items():
             lowered = name.replace("\\", "/").lstrip("/").casefold()
-            if lowered == normalized or lowered.endswith(f"/{normalized}"):
-                return data
-    return None
+            for normalized, relative in wanted.items():
+                if relative not in found and (lowered == normalized or lowered.endswith(f"/{normalized}")):
+                    found[relative] = data
+    return found
+
+
+def read_xray_asset(root: Path, relative: str) -> bytes | None:
+    """Read one exact official asset from a packed installation, if present."""
+
+    return read_xray_assets(root, (relative,)).get(relative)
 
 
 def _candidate_archives(root: Path) -> tuple[Path, ...]:
@@ -876,7 +904,8 @@ class XRayCatalogProvider:
         self._game_catalog = None
         # ``allowed_editions`` stays original-only for every runtime caller, so
         # save editing is unaffected.  The icon-pack builder opts Enhanced
-        # Editions in to harvest their HD atlases; EE ships the same item keys
+        # Editions in as another atlas source (the 2025 EE atlas is the same
+        # 1024x2048 / 50 px grid as the original); EE ships the same item keys
         # and inventory grid, so the crops line up with the classic layout.
         if (
             release.family not in {"soc", "clear_sky", "cop"}
@@ -999,4 +1028,4 @@ def has_mod_overlay(root: Path) -> bool:
     return data_root.is_dir() and _has_obvious_mod_overlay(data_root)
 
 
-__all__ = ["XRayCatalogProvider", "has_mod_overlay", "read_xray_asset"]
+__all__ = ["XRayCatalogProvider", "has_mod_overlay", "read_xray_asset", "read_xray_assets"]

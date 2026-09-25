@@ -62,12 +62,12 @@ if font_pack.is_dir():
 # (XRayCatalogProvider.load_generated_bundle reads <bundle>/web/catalogs.json)
 # when no original installation is found next to the save.
 datas.append((str(ROOT / "web" / "catalogs.json"), "web"))
+# Official names in 13 languages (editor/official_names.py).
+datas.append((str(ROOT / "web" / "catalog_names.json"), "web"))
 # Interface translations (editor/i18n.py reads <bundle>/locales/<code>.json).
 for locale_file in sorted((ROOT / "locales").glob("*.json")):
     if not locale_file.name.startswith("_"):
         datas.append((str(locale_file), "locales"))
-for locale_file in sorted((ROOT / "locales" / "items").glob("*.json")):
-    datas.append((str(locale_file), "locales/items"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))

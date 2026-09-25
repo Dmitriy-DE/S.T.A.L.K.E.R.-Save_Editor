@@ -160,3 +160,89 @@ def test_ui_sounds_are_short_quiet_mono_wavs(tmp_path: Path) -> None:
 def test_packaged_app_bundles_the_trilogy_catalog() -> None:
     spec = (Path(__file__).resolve().parents[1] / "packaging" / "editor.spec").read_text(encoding="utf-8")
     assert '"web" / "catalogs.json"' in spec
+
+
+def test_official_names_cover_the_catalog_in_every_shipped_language() -> None:
+    import json
+
+    from editor.official_names import NAMES_PATH, release_family
+
+    names = json.loads(NAMES_PATH.read_text(encoding="utf-8"))
+    catalogs = json.loads((NAMES_PATH.parent / "catalogs.json").read_text(encoding="utf-8"))["releases"]
+    assert len(names["languages"]) == 13
+    for release_id, bundle in catalogs.items():
+        table = names["releases"][release_family(release_id)]
+        for item in bundle["items"]:
+            if item.get("display_name"):
+                assert set(table["items"][item["key"]]) == set(names["languages"]), item["key"]
+        for upgrade in bundle["upgrades"]:
+            assert upgrade["key"] in table["upgrades"]
+
+
+def test_official_name_follows_the_interface_language(language) -> None:
+    from editor.official_names import official_name
+
+    language("de")
+    assert official_name("stalker-cop", "items", "bandage") == "Verband"
+    language("pt_BR")  # the games were not released in Portuguese
+    assert official_name("stalker-cop-ee", "items", "bandage") == "Bandage"
+    language("uk")
+    assert official_name("stalker-cop", "items", "jup_b200_tech_materials_wire").startswith("Моток")
+    assert official_name("stalker-cs", "items", "wpn_binoc") == "Бінокль"
+    assert official_name("stalker2", "items", "bandage") is None
+
+
+def test_item_label_prefers_official_names_but_keeps_mod_names_in_russian(language) -> None:
+    from editor.catalog import ItemDefinition, catalog_from_items
+    from editor.item_names import item_label
+    from save_format import InventoryItem
+
+    row = InventoryItem(
+        handle=1, x=None, y=None, width=None, height=None, cells=(), count=None,
+        total_weight=None, unit_weight=None, kind_code=0, category="", record_offset=0,
+        record_end_guess=0, fingerprint="", type_key="wpn_val", editable_count=False,
+        display_name="wpn_val",
+    )
+    mod = catalog_from_items(
+        "stalker-cs",
+        (
+            ItemDefinition(
+                key="wpn_val", display_name="АС «Вал»", category="weapon", unit_weight=None,
+                width=None, height=None, max_stack=None, slots=(), prototype=None, source="mod",
+            ),
+        ),
+    )
+    language("en")
+    assert item_label(row, mod, release_id="stalker-cs", modded=True) == 'SA "Avalanche"'
+    language("ru")
+    assert item_label(row, mod, release_id="stalker-cs", modded=True) == "АС «Вал»"
+    assert item_label(row, None, release_id="stalker-cs") == "СА «ЛАВИНА»"
+
+
+def test_game_audio_joins_mono_halves_and_prefers_the_original_install(tmp_path: Path, monkeypatch) -> None:
+    pytest.importorskip("PySide6")
+    from types import SimpleNamespace
+
+    import ui.game_audio as game_audio
+
+    left, right = struct.pack("<3h", 1, 2, 3), struct.pack("<2h", -1, -2)
+    assert struct.unpack("<6h", game_audio.interleave(left, right)) == (1, -1, 2, -2, 3, 0)
+
+    audio = game_audio.GameAudio(tmp_path)
+    assert audio.music_path("soc").suffix == ".wav"  # two mono halves → stereo WAV
+    assert audio.music_path("cop").suffix == ".ogg"  # one file stays compressed
+    assert not audio.has_event("stalker2", "click")
+
+    ee, original = tmp_path / "ee", tmp_path / "original"
+    ee.mkdir()
+    original.mkdir()
+    monkeypatch.setattr(
+        game_audio,
+        "installed_releases",
+        lambda: (
+            SimpleNamespace(release_id="stalker-cop-ee", install_dir=str(ee)),
+            SimpleNamespace(release_id="stalker-cop", install_dir=str(original)),
+        ),
+    )
+    assert game_audio.install_root("cop") == original
+    assert game_audio.install_root("soc") is None

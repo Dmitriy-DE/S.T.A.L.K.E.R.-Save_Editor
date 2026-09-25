@@ -25,6 +25,7 @@ class Preferences:
     sound: bool = True
     sound_volume: int = 25  # percent; UI cues are meant to stay quiet
     motion: bool = True
+    music: bool = False  # the game's own main-menu theme, off unless asked
 
     def with_(self, **changes: Any) -> Preferences:
         return replace(self, **changes)
@@ -48,11 +49,13 @@ def load_preferences(path: Path | None = None) -> Preferences:
     volume = payload.get("sound_volume", defaults.sound_volume)
     sound = payload.get("sound")
     motion = payload.get("motion")
+    music = payload.get("music")
     return Preferences(
         language=language if isinstance(language, str) and language else None,
         sound=sound if isinstance(sound, bool) else defaults.sound,
         sound_volume=max(0, min(100, volume)) if isinstance(volume, int) else defaults.sound_volume,
         motion=motion if isinstance(motion, bool) else defaults.motion,
+        music=music if isinstance(music, bool) else defaults.music,
     )
 
 

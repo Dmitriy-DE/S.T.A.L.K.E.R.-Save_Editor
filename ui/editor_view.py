@@ -782,8 +782,15 @@ class EditorView(QWidget):
         )
 
     def _name_for_item(self, item: InventoryItem) -> str | None:
-        catalog = getattr(self, "_display_catalog", None) or self._catalog
-        return item_label(item, catalog, stalker2=self._is_stalker2())
+        display = getattr(self, "_display_catalog", None)
+        catalog = display or self._catalog
+        return item_label(
+            item,
+            catalog,
+            stalker2=self._is_stalker2(),
+            release_id=getattr(self, "_release_id", None),
+            modded=display is not None and display is not self._catalog,
+        )
 
     def _is_stalker2(self) -> bool:
         return str(getattr(self, "_release_id", "") or "").startswith("stalker2")
