@@ -298,10 +298,8 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
     QPushButton#globalNav[destination="history"] {{ min-width: 92px; }}
     QPushButton#globalNav[destination="settings"] {{ min-width: 145px; }}
     QPushButton#globalNav[compactNav="true"] {{
-        min-width: 0;
-        padding: 0 5px;
-        font-size: 12px;
-        letter-spacing: .35px;
+        min-width: 52px;
+        padding: 0 8px;
     }}
     QPushButton#globalNav:checked {{
         color: {c['text']};

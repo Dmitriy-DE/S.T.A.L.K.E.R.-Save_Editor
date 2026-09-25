@@ -208,6 +208,7 @@ class AppShell(QWidget):
             button.setIconSize(QSize(19, 19))
             button.setMinimumWidth(minimum_width)
             button.setMaximumWidth(width)
+            button.setProperty("fullMinimumWidth", minimum_width)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, dest=key: self.set_active_destination(dest))
@@ -310,14 +311,29 @@ class AppShell(QWidget):
 
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
-        compact = self.width() < 1490
+        self._set_compact_navigation(self.width() < 1490)
+
+    def _set_compact_navigation(self, compact: bool) -> None:
+        """Below 1490 px the tabs show their icon only, caption in the tooltip.
+
+        Shrinking the caption instead let Qt squeeze the tabs to unreadable
+        stubs ("С", "ТЕАМ") at the minimum window width.
+        """
+
+        self.global_navigation.setSpacing(8 if compact else 19)
         for button in self.navigation_buttons:
-            if button.property("compactNav") == compact:
-                continue
-            button.setProperty("compactNav", compact)
-            button.style().unpolish(button)
-            button.style().polish(button)
-            button.updateGeometry()
+            caption = button.property("caption")
+            if caption is None:
+                caption = button.text()
+                button.setProperty("caption", caption)
+            if button.property("compactNav") != compact:
+                button.setProperty("compactNav", compact)
+                button.setText("" if compact else caption)
+                button.setToolTip(caption if compact else "")
+                button.setMinimumWidth(56 if compact else int(button.property("fullMinimumWidth") or 56))
+                button.style().unpolish(button)
+                button.style().polish(button)
+                button.updateGeometry()
 
     @staticmethod
     def _effect_icon(kind: str, enabled: bool) -> QIcon:
