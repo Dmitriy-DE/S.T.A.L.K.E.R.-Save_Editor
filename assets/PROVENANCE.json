@@ -1,0 +1,128 @@
+{
+  "assets/PROVENANCE.json": {
+    "basis": "own",
+    "generator": "tools/build_provenance.py",
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/blob/main/assets/PROVENANCE.json",
+    "source": "Project asset provenance manifest"
+  },
+  "assets/app_icon.svg": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/blob/main/assets/app_icon.svg",
+    "source": "S.T.A.L.K.E.R. Save Editor application icon"
+  },
+  "assets/app_icon_*.png": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/blob/main/assets/app_icon.svg",
+    "source": "Raster exports of the S.T.A.L.K.E.R. Save Editor application icon"
+  },
+  "assets/chrome/xray/*.png": {
+    "basis": "game-derived",
+    "generator": "tools/build_chrome_pack.py",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "S.T.A.L.K.E.R. trilogy Enhanced Edition ui_common atlas"
+  },
+  "assets/fonts/LIBERATION-SANS-LICENSE.txt": {
+    "basis": "ofl",
+    "generator": null,
+    "origin_url": "https://github.com/liberationfonts",
+    "source": "Liberation Fonts project; SIL Open Font License 1.1"
+  },
+  "assets/fonts/LiberationSansNarrow-*.ttf": {
+    "basis": "ofl",
+    "generator": null,
+    "origin_url": "https://github.com/liberationfonts",
+    "source": "Liberation Sans Narrow; SIL Open Font License 1.1"
+  },
+  "assets/fonts/Oswald*.ttf": {
+    "basis": "ofl",
+    "generator": null,
+    "origin_url": "https://github.com/google/fonts/tree/main/ofl/oswald",
+    "source": "Oswald from Google Fonts; SIL Open Font License 1.1"
+  },
+  "assets/fonts/Oswald-OFL.txt": {
+    "basis": "ofl",
+    "generator": null,
+    "origin_url": "https://github.com/google/fonts/tree/main/ofl/oswald",
+    "source": "Oswald license text from Google Fonts"
+  },
+  "assets/icons/xray/*.png": {
+    "basis": "game-derived",
+    "generator": "tools/build_icon_pack.py",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "S.T.A.L.K.E.R. trilogy Enhanced Edition ui_icon_equipment atlases"
+  },
+  "assets/icons/xray/index.json": {
+    "basis": "game-derived",
+    "generator": "tools/build_icon_pack.py",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "Keys generated for the S.T.A.L.K.E.R. trilogy icon pack"
+  },
+  "assets/readme/*": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/tree/main/assets/readme",
+    "source": "S.T.A.L.K.E.R. Save Editor README artwork and screenshots"
+  },
+  "assets/ui/item_glyphs/*.svg": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/tree/main/assets/ui/item_glyphs",
+    "source": "S.T.A.L.K.E.R. Save Editor item glyphs"
+  },
+  "assets/ui/s2_shell/amber_paper.png": {
+    "basis": "own",
+    "generator": "tools/build_ui_review_decorations.py",
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/blob/main/tools/build_ui_review_decorations.py",
+    "source": "Procedural amber paper UI texture"
+  },
+  "assets/ui/s2_shell/header_panorama.png": {
+    "basis": "game-derived",
+    "generator": "tools/build_ui_review_decorations.py",
+    "origin_url": "https://store.steampowered.com/app/1643320/S.T.A.L.K.E.R._2_Heart_of_Chornobyl/",
+    "source": "S.T.A.L.K.E.R. 2 game imagery cropped into the editor header"
+  },
+  "assets/ui/s2_shell/preview_zone.png": {
+    "basis": "game-derived",
+    "generator": null,
+    "origin_url": "https://store.steampowered.com/app/1643320/S.T.A.L.K.E.R._2_Heart_of_Chornobyl/",
+    "source": "S.T.A.L.K.E.R. 2 game imagery used by the editor library"
+  },
+  "assets/ui/s2_shell/rail_zone.png": {
+    "basis": "game-derived",
+    "generator": null,
+    "origin_url": "https://store.steampowered.com/app/1643320/S.T.A.L.K.E.R._2_Heart_of_Chornobyl/",
+    "source": "S.T.A.L.K.E.R. 2 game imagery used by the editor library"
+  },
+  "assets/ui/s2_shell/selection_paper.png": {
+    "basis": "own",
+    "generator": "tools/build_ui_review_decorations.py",
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/blob/main/tools/build_ui_review_decorations.py",
+    "source": "Procedural selection paper UI texture"
+  },
+  "assets/ui/s2_shell/surface_tile.png": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/tree/main/assets/ui/s2_shell",
+    "source": "S.T.A.L.K.E.R. Save Editor shell surface texture"
+  },
+  "assets/ui/shell_icons/*.svg": {
+    "basis": "own",
+    "generator": null,
+    "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/tree/main/assets/ui/shell_icons",
+    "source": "S.T.A.L.K.E.R. Save Editor shell icons"
+  },
+  "web/icons/*.png": {
+    "basis": "game-derived",
+    "generator": "tools/build_icon_pack.py",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "Mirrored S.T.A.L.K.E.R. trilogy Enhanced Edition inventory icons"
+  },
+  "web/icons/index.json": {
+    "basis": "game-derived",
+    "generator": "tools/build_icon_pack.py",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "Keys generated for the mirrored S.T.A.L.K.E.R. trilogy icon pack"
+  }
+}

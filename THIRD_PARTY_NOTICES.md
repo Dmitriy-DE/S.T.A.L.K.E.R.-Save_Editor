@@ -76,3 +76,16 @@ Kraken-потока. В десктопные пакеты не вкладыва�
 
 Веб-сборка загружает Pyodide 0.28.3 с CDN (Mozilla Public License 2.0) — это
 CPython, собранный в WebAssembly. В десктопные пакеты не вкладывается.
+
+## Asset provenance and wiki attribution
+
+The [asset provenance manifest](assets/PROVENANCE.json) records the source,
+origin URL, basis, and generator for every file under `assets/` and
+`web/icons/`. Records marked `wiki-cc-by-sa` link to the source used for
+attribution. Fandom's default [licensing terms](https://www.fandom.com/licensing)
+license wiki text under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+unless a wiki says otherwise. Fandom notes that non-text media can have a
+separate license, so image licenses must be checked on their individual source
+pages; the wiki text license does not automatically cover them. Records marked
+`fextralife` identify the source URL and do not by themselves grant a reuse
+license.
