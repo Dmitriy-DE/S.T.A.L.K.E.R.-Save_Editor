@@ -1,30 +1,35 @@
 {
  "items": {
   "A012A": {
+   "icon": "s2/A012A.png",
    "names": {
     "en": "12x76mm Slug",
     "ru": "12/76 мм жекан"
    }
   },
   "A012D": {
+   "icon": "s2/A012D.png",
    "names": {
     "en": "12x70mm Buckshot",
     "ru": "12/70 мм картечь"
    }
   },
   "A012E": {
+   "icon": "s2/A012E.png",
    "names": {
     "en": "12x76mm Expanding Dart",
     "ru": "12/76 мм экспансивный дротик"
    }
   },
   "A045A": {
+   "icon": "s2/A045A.png",
    "names": {
     "en": ".45 ACP AP",
     "ru": ".45 ACP AP"
    }
   },
   "A045D": {
+   "icon": "s2/A045D.png",
    "names": {
     "en": ".45 ACP FMJ",
     "pl": "Naboje .45 ACP",
@@ -32,48 +37,56 @@
    }
   },
   "A045E": {
+   "icon": "s2/A045E.png",
    "names": {
     "en": ".45 ACP HP",
     "ru": ".45 ACP HP"
    }
   },
   "A545A": {
+   "icon": "s2/A545A.png",
    "names": {
     "en": "5.45x39mm PP",
     "ru": "5.45х39 мм ПП"
    }
   },
   "A545D": {
+   "icon": "s2/A545D.png",
    "names": {
     "en": "5.45x39mm PS",
     "ru": "5.45x39 мм ПС"
    }
   },
   "A545E": {
+   "icon": "s2/A545E.png",
    "names": {
     "en": "5.45x39mm MZHV-13",
     "ru": "5.45x39 мм МЖВ-13"
    }
   },
   "A556A": {
+   "icon": "s2/A556A.png",
    "names": {
     "en": "5.56x45mm M995",
     "ru": "5.56х45 мм М995"
    }
   },
   "A556D": {
+   "icon": "s2/A556D.png",
    "names": {
     "en": "5.56x45mm M885",
     "ru": "5.56x45 мм M885"
    }
   },
   "A556E": {
+   "icon": "s2/A556E.png",
    "names": {
     "en": "5.56x45mm HP",
     "ru": "5.56x45 мм HP"
    }
   },
   "A556S": {
+   "icon": "s2/A556S.png",
    "names": {
     "en": "5.56x45mm MK 262",
     "ru": "5.56x45 мм Mk 262"
@@ -86,72 +99,84 @@
    }
   },
   "A762D": {
+   "icon": "s2/A762D.png",
    "names": {
     "en": "7.62x39mm PS",
     "ru": "7.62x39 мм ПС"
    }
   },
   "A762E": {
+   "icon": "s2/A762E.png",
    "names": {
     "en": "7.62x39mm LAN",
     "ru": "7.62х39 мм «Лань»"
    }
   },
   "A762NATOA": {
+   "icon": "s2/A762NATOA.png",
    "names": {
     "en": ".308 AP",
     "ru": ".308 AP"
    }
   },
   "A762NATOD": {
+   "icon": "s2/A762NATOD.png",
    "names": {
     "en": ".308 W",
     "ru": ".308 W"
    }
   },
   "A762NATOS": {
+   "icon": "s2/A762NATOS.png",
    "names": {
     "en": ".308 Match",
     "ru": ".308 Match"
    }
   },
   "A762SniperA": {
+   "icon": "s2/A762SniperA.png",
    "names": {
     "en": "7.62x54mm B-32",
     "ru": "7.62х54 мм Б-32"
    }
   },
   "A762SniperD": {
+   "icon": "s2/A762SniperD.png",
    "names": {
     "en": "7.62x54mm LPS",
     "ru": "7.62x54 мм ЛПС"
    }
   },
   "A762SniperS": {
+   "icon": "s2/A762SniperS.png",
    "names": {
     "en": "7.62x54mm 7N1",
     "ru": "7.62х54 мм 7Н1"
    }
   },
   "A918A": {
+   "icon": "s2/A918A.png",
    "names": {
     "en": "9x18mm RG028",
     "ru": "9x18 мм РГ028"
    }
   },
   "A918D": {
+   "icon": "s2/A918D.png",
    "names": {
     "en": "9x18mm PST",
     "ru": "9x18 мм ПСТ"
    }
   },
   "A919A": {
+   "icon": "s2/A919A.png",
    "names": {
     "en": "9x19mm P",
     "ru": "9x19 мм +P"
    }
   },
   "A919D": {
+   "icon": "s2/A919D.png",
    "names": {
     "en": "9x19mm FMJ",
     "pl": "Naboje 9×19mm FMJ",
@@ -160,6 +185,7 @@
    }
   },
   "A939A": {
+   "icon": "s2/A939A.png",
    "names": {
     "en": "9x39mm SP-6",
     "pl": "Naboje 9×39 mm SP-6",
@@ -168,18 +194,21 @@
    }
   },
   "A939D": {
+   "icon": "s2/A939D.png",
    "names": {
     "en": "9x39mm PA",
     "ru": "9x39 мм ПА"
    }
   },
   "A939E": {
+   "icon": "s2/A939E.png",
    "names": {
     "en": "9x39mm PPE",
     "ru": "9x39 мм ППЭ"
    }
   },
   "A939S": {
+   "icon": "s2/A939S.png",
    "names": {
     "en": "9x39mm SP-5",
     "pl": "Naboje 9×39 mm SP-5",
@@ -248,7 +277,9 @@
    }
   },
   "AGA": {
+   "icon": "s2/AGA.png",
    "names": {
+    "en": "Gauss Cartridge",
     "ru": "Гаусс-кассета"
    }
   },
@@ -258,7 +289,9 @@
    }
   },
   "AHEDP": {
+   "icon": "s2/AHEDP.png",
    "names": {
+    "en": "HEDP",
     "ru": "HEDP"
    }
   },
@@ -359,6 +392,7 @@
    }
   },
   "AVOG": {
+   "icon": "s2/AVOG.png",
    "names": {
     "en": "VOG-25",
     "ru": "ВОГ-25"
@@ -983,6 +1017,7 @@
    }
   },
   "Bear": {
+   "icon": "s2/Bear.png",
    "names": {
     "en": "Bear",
     "ru": "Детектор «Медведь»"
@@ -1022,7 +1057,9 @@
    }
   },
   "BordulinPDA": {
+   "icon": "s2/BordulinPDA.png",
    "names": {
+    "en": "Borodulin's PDA",
     "ru": "КПК Бородулина"
    }
   },
@@ -2684,6 +2721,7 @@
    }
   },
   "Echo": {
+   "icon": "s2/Echo.png",
    "names": {
     "en": "Echo",
     "ru": "Детектор «Отклик»"
@@ -2702,7 +2740,9 @@
    }
   },
   "Electrocollar": {
+   "icon": "s2/Electrocollar.png",
    "names": {
+    "en": "Electronic Collar",
     "ru": "Электронный ошейник"
    }
   },
@@ -3063,6 +3103,7 @@
    }
   },
   "Gilka": {
+   "icon": "s2/Gilka.png",
    "names": {
     "en": "Hilka",
     "ru": "Детектор «Лоза»"
@@ -3084,7 +3125,9 @@
   },
   "Guitar": {
    "names": {
-    "ru": "Гитара"
+    "en": "Guitar",
+    "ru": "Гитара",
+    "uk": "Гітара"
    }
   },
   "GunAK74_Korshunov_ST": {
@@ -4673,6 +4716,7 @@
    }
   },
   "GunMark_SP": {
+   "icon": "s2/GunMark_SP.png",
    "names": {
     "en": "Mark I EMR",
     "ru": "Mark I EMR"
@@ -5461,6 +5505,7 @@
    }
   },
   "GunThreeLine_SP": {
+   "icon": "s2/GunThreeLine_SP.png",
    "names": {
     "en": "Three-Line Rifle",
     "uk": "Трилінійка"
@@ -5764,12 +5809,14 @@
    }
   },
   "Gun_Gabion_AR": {
+   "icon": "s2/Gun_Gabion_AR.png",
    "names": {
     "en": "SA-U Gabion",
     "ru": "СА-У «Габион»"
    }
   },
   "Gun_Krivenko_HG": {
+   "icon": "s2/Gun_Krivenko_HG.png",
    "names": {
     "en": "Gambit",
     "ru": "«Гамбит»"
@@ -5860,6 +5907,7 @@
    "variant_of": "Chaser 13"
   },
   "Gun_ProjectY_HG": {
+   "icon": "s2/Gun_ProjectY_HG.png",
    "names": {
     "en": "Labyrinth IV",
     "ru": "«Лабиринт IV»"
@@ -5895,6 +5943,7 @@
    "variant_of": "AR416"
   },
   "Gun_S15_AR": {
+   "icon": "s2/Gun_S15_AR.png",
    "names": {
     "en": "Grom S-15",
     "ru": "«Гром-С15»"
@@ -5999,6 +6048,7 @@
    }
   },
   "Gun_Star_HG": {
+   "icon": "s2/Gun_Star_HG.png",
    "names": {
     "en": "PTM (Silenced)",
     "ru": "ПТМ"
@@ -6259,7 +6309,9 @@
    }
   },
   "KozimkovPDA": {
+   "icon": "s2/KozimkovPDA.png",
    "names": {
+    "en": "Lt. Kozymkov's PDA",
     "ru": "КПК лейтенанта Козимкова"
    }
   },
@@ -6382,7 +6434,9 @@
    }
   },
   "MuhaPDA": {
+   "icon": "s2/MuhaPDA.png",
    "names": {
+    "en": "Myshko Mosquito's PDA",
     "ru": "КПК Миши Мухи"
    }
   },
@@ -6413,12 +6467,16 @@
    }
   },
   "NegodaPDA": {
+   "icon": "s2/NegodaPDA.png",
    "names": {
+    "en": "Dr. Nehoda's PDA",
     "ru": "КПК доктора Негоды"
    }
   },
   "NestorUSB": {
+   "icon": "s2/NestorUSB.png",
    "names": {
+    "en": "Nestor's Flash Drive",
     "ru": "Флешка Нестора"
    }
   },
@@ -6919,7 +6977,9 @@
    }
   },
   "RooseveltPDA": {
+   "icon": "s2/RooseveltPDA.png",
    "names": {
+    "en": "Roosevelt's PDA",
     "ru": "КПК Рузвельта"
    }
   },
@@ -7291,7 +7351,9 @@
    }
   },
   "ShahPDA": {
+   "icon": "s2/ShahPDA.png",
    "names": {
+    "en": "The Shah's PDA",
     "ru": "КПК Шаха"
    }
   },
@@ -7346,7 +7408,9 @@
    }
   },
   "StrangePDA": {
+   "icon": "s2/StrangePDA.png",
    "names": {
+    "en": "Unusual PDA",
     "ru": "Необычный КПК"
    }
   },
@@ -7740,16 +7804,20 @@
    }
   },
   "VaranPDA": {
+   "icon": "s2/VaranPDA.png",
    "names": {
+    "en": "Varan's PDA",
     "ru": "КПК Варана"
    }
   },
   "VartaDogtag": {
    "names": {
+    "en": "Ward Badge",
     "ru": "Жетон бойца «Варты»"
    }
   },
   "Veles": {
+   "icon": "s2/Veles.png",
    "names": {
     "en": "Veles",
     "ru": "Детектор «Велес»"
@@ -7879,7 +7947,9 @@
    }
   },
   "ZhukovskyPDA": {
+   "icon": "s2/ZhukovskyPDA.png",
    "names": {
+    "en": "Pvt. Pavlyuk's PDA",
     "ru": "КПК рядового Павлюка"
    }
   },

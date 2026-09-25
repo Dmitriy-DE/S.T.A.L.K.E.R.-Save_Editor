@@ -1,5 +1,5 @@
 {
- "_source": "English names: weapon and consumable SIDs matched by hand to stalker2.wiki.fextralife.com (with its inventory images); remaining SID → English name pairs from the gamepressure.com STALKER 2 item-ID list, cross-checked against the game's Russian string table; artifact/armour images matched by English name.",
+ "_source": "English names: weapon and consumable SIDs matched by hand to stalker2.wiki.fextralife.com (with its inventory images); remaining SID → English name pairs from the gamepressure.com STALKER 2 item-ID list, cross-checked against the game's Russian string table; artifact/armour images matched by English name. gap_fills: Gemini research (KB-4) of stalker2.wiki.fextralife.com and stalker.fandom.com, every image URL checked to decode; names only fill gaps and never override the lists above.",
  "consumables": {
   "AntiRad": [
    "Anti-Radiation Drugs",
@@ -331,6 +331,232 @@
   "Veles": "Veles",
   "Vodka": "Vodka",
   "Water": "Water"
+ },
+ "gap_fills": {
+  "A012A": [
+   "12x76mm Slug",
+   "https://static0.fextralifeimages.com/file/stalker2/5/59/Stalker-2-12x76mm-slug.png"
+  ],
+  "A012D": [
+   "12x70mm Buckshot",
+   "https://static0.fextralifeimages.com/file/stalker2/f/ff/Stalker-2-12x70mm-buckshot.png"
+  ],
+  "A012E": [
+   "12x76mm Expanding Dart",
+   "https://static0.fextralifeimages.com/file/stalker2/8/82/Stalker-2-12x76mm-expanding-dart.png"
+  ],
+  "A045A": [
+   ".45 ACP AP",
+   "https://static0.fextralifeimages.com/file/stalker2/3/34/Stalker-2-45-acp-ap.png"
+  ],
+  "A045D": [
+   ".45 ACP FMJ",
+   "https://static0.fextralifeimages.com/file/stalker2/e/e7/Stalker-2-45-acp-fmj.png"
+  ],
+  "A045E": [
+   ".45 ACP HP",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c7/Stalker-2-45-acp-hp.png"
+  ],
+  "A545A": [
+   "5.45x39mm PP",
+   "https://static0.fextralifeimages.com/file/stalker2/9/92/Stalker-2-545x39mm-pp.png"
+  ],
+  "A545D": [
+   "5.45x39mm PS",
+   "https://static0.fextralifeimages.com/file/stalker2/7/7d/Stalker-2-545x39mm-ps.png"
+  ],
+  "A545E": [
+   "5.45x39mm MZHV-13",
+   "https://static0.fextralifeimages.com/file/stalker2/9/90/Stalker-2-545x39mm-mzhv-13.png"
+  ],
+  "A556A": [
+   "5.56x45mm M995",
+   "https://static0.fextralifeimages.com/file/stalker2/9/98/Stalker-2-556x45mm-m995.png"
+  ],
+  "A556D": [
+   "5.56x45mm M885",
+   "https://static0.fextralifeimages.com/file/stalker2/f/f4/Stalker-2-556x45mm-m885.png"
+  ],
+  "A556E": [
+   "5.56x45mm HP",
+   "https://static0.fextralifeimages.com/file/stalker2/1/1a/Stalker-2-556x45mm-hp.png"
+  ],
+  "A556S": [
+   "5.56x45mm MK 262",
+   "https://static0.fextralifeimages.com/file/stalker2/1/1d/Stalker-2-556x45mm-mk-262.png"
+  ],
+  "A762D": [
+   "7.62x39mm PS",
+   "https://static0.fextralifeimages.com/file/stalker2/f/fd/Stalker-2-762x39mm-ps.png"
+  ],
+  "A762E": [
+   "7.62x39mm LAN",
+   "https://static0.fextralifeimages.com/file/stalker2/3/3c/Stalker-2-762x39mm-lan.png"
+  ],
+  "A762NATOA": [
+   ".308 AP",
+   "https://static0.fextralifeimages.com/file/stalker2/2/25/Stalker-2-308-ap.png"
+  ],
+  "A762NATOD": [
+   ".308 W",
+   "https://static0.fextralifeimages.com/file/stalker2/b/b7/Stalker-2-308-w.png"
+  ],
+  "A762NATOS": [
+   ".308 Match",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c3/Stalker-2-308-match.png"
+  ],
+  "A762SniperA": [
+   "7.62x54mm B-32",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d7/Stalker-2-762x54mm-b-32.png"
+  ],
+  "A762SniperD": [
+   "7.62x54mm LPS",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a9/Stalker-2-762x54mm-lps.png"
+  ],
+  "A762SniperS": [
+   "7.62x54mm 7N1",
+   "https://static0.fextralifeimages.com/file/stalker2/7/79/Stalker-2-762x54mm-7n1.png"
+  ],
+  "A918A": [
+   "9x18mm RG028",
+   "https://static0.fextralifeimages.com/file/stalker2/2/28/Stalker-2-9x18mm-rg028.png"
+  ],
+  "A918D": [
+   "9x18mm PST",
+   "https://static0.fextralifeimages.com/file/stalker2/7/70/Stalker-2-9x18mm-pst.png"
+  ],
+  "A919A": [
+   "9x19mm +P",
+   "https://static0.fextralifeimages.com/file/stalker2/9/9a/Stalker-2-9x19mm-p.png"
+  ],
+  "A919D": [
+   "9x19mm FMJ",
+   "https://static0.fextralifeimages.com/file/stalker2/6/6a/Stalker-2-9x19mm-fmj.png"
+  ],
+  "A939A": [
+   "9x39mm SP-6",
+   "https://static0.fextralifeimages.com/file/stalker2/7/76/Stalker-2-9x39mm-sp-6.png"
+  ],
+  "A939D": [
+   "9x39mm PA",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d8/Stalker-2-9x39mm-pa.png"
+  ],
+  "A939E": [
+   "9x39mm PPE",
+   "https://static0.fextralifeimages.com/file/stalker2/b/bf/Stalker-2-9x39mm-ppe.png"
+  ],
+  "A939S": [
+   "9x39mm SP-5",
+   "https://static0.fextralifeimages.com/file/stalker2/8/83/Stalker-2-9x39mm-sp-5.png"
+  ],
+  "AGA": [
+   "Gauss Cartridge",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a0/Stalker-2-gauss-cartridge.png"
+  ],
+  "AHEDP": [
+   "HEDP",
+   "https://static0.fextralifeimages.com/file/stalker2/5/5a/Stalker-2-hedp.png"
+  ],
+  "AVOG": [
+   "VOG-25",
+   "https://static0.fextralifeimages.com/file/stalker2/2/28/Stalker-2-vog-25.png"
+  ],
+  "Bear": [
+   "Bear Detector",
+   "https://static0.fextralifeimages.com/file/stalker2/e/e9/Stalker-2-bear-detector.png"
+  ],
+  "BordulinPDA": [
+   "Borodulin's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "Echo": [
+   "Echo Detector",
+   "https://static0.fextralifeimages.com/file/stalker2/8/86/Stalker-2-echo-detector.png"
+  ],
+  "Electrocollar": [
+   "Electronic Collar",
+   "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-electronic-collar.png"
+  ],
+  "Gilka": [
+   "Hilka Detector",
+   "https://static0.fextralifeimages.com/file/stalker2/2/26/Stalker-2-hilka-detector.png"
+  ],
+  "Guitar": [
+   "Guitar",
+   null
+  ],
+  "GunMark_SP": [
+   "Mark I EMR",
+   "https://static.wikia.nocookie.net/stalker/images/f/f4/S2_Mark_EBR_Default.png/revision/latest"
+  ],
+  "GunThreeLine_SP": [
+   "Three-Line Rifle",
+   "https://static.wikia.nocookie.net/stalker/images/d/de/T_inv_w_threeline_body_upgrade_w_scope.png/revision/latest"
+  ],
+  "Gun_Gabion_AR": [
+   "SA-U Gabion",
+   "https://static0.fextralifeimages.com/file/stalker2/7/77/Sa-u_gabion-stalker2.png"
+  ],
+  "Gun_Krivenko_HG": [
+   "Gambit",
+   "https://static0.fextralifeimages.com/file/stalker2/b/bf/Gambit-stalker2.png"
+  ],
+  "Gun_ProjectY_HG": [
+   "Labyrinth IV",
+   "https://static0.fextralifeimages.com/file/stalker2/6/68/Labyrinth_iv-stalker2.png"
+  ],
+  "Gun_S15_AR": [
+   "Grom S-15",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d3/Grom_s-15-stalker2.png"
+  ],
+  "Gun_Star_HG": [
+   "PTM",
+   "https://static0.fextralifeimages.com/file/stalker2/1/18/Ptm-stalker2.png"
+  ],
+  "KozimkovPDA": [
+   "Lt. Kozymkov's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "MuhaPDA": [
+   "Myshko Mosquito's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "NegodaPDA": [
+   "Dr. Nehoda's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "NestorUSB": [
+   "Nestor's Flash Drive",
+   "https://static0.fextralifeimages.com/file/stalker2/f/f1/Stalker-2-nestors-flash-drive.png"
+  ],
+  "RooseveltPDA": [
+   "Roosevelt's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "ShahPDA": [
+   "The Shah's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "StrangePDA": [
+   "Unusual PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "VaranPDA": [
+   "Varan's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "VartaDogtag": [
+   "Ward Badge",
+   null
+  ],
+  "Veles": [
+   "Veles Detector",
+   "https://static0.fextralifeimages.com/file/stalker2/9/93/Stalker-2-veles-detector.png"
+  ],
+  "ZhukovskyPDA": [
+   "Pvt. Pavlyuk's PDA",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ]
  },
  "images_by_name": {
   "Aeroprotection Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/4/4e/Stalker-2-aeroprotection-gas-mask.png",
