@@ -343,6 +343,7 @@ def test_linux_package_handoff_prefers_pkexec_apt(monkeypatch: pytest.MonkeyPatc
     ]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="runs the POSIX sh handoff for real")
 def test_linux_package_handoff_shell_runs_pkexec_then_relaunches(tmp_path: Path) -> None:
     import subprocess
 
