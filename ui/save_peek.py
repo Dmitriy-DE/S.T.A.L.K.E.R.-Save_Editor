@@ -8,12 +8,14 @@ cached by path, size and modification time.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtCore import QCoreApplication, QObject, Signal
 
 from editor.equipment import equipment_items
+
+from .worker_process import JsonJob
 
 _EQUIPMENT = frozenset({"weapon", "armor", "helmet", "device"})
 
@@ -45,64 +47,70 @@ def summarize(info, *, release_id: str, editable: bool, path: Path) -> SavePeek:
     )
 
 
-class _Signals(QObject):
-    done = Signal(object, object)  # key, SavePeek | None
+def peek_path(path: Path) -> SavePeek | None:
+    """Read one save and summarize it (runs in the ``--peek`` child)."""
+
+    from editor.service import EditorService
+
+    data = Path(path).read_bytes()
+    inspection = EditorService().inspect_result(data, source_name=str(path))
+    capabilities = inspection.capabilities
+    editable = any(
+        capabilities.support(name).writable
+        for name in ("edit_money", "edit_stacks", "edit_durability")
+    )
+    return summarize(
+        inspection.info,
+        release_id=str(inspection.release_id or inspection.format_id or ""),
+        editable=editable,
+        path=Path(path),
+    )
 
 
-class _PeekTask(QRunnable):
-    def __init__(self, key: tuple, path: Path, signals: _Signals) -> None:
-        super().__init__()
-        self._key = key
-        self._path = path
-        self._signals = signals
+def peek_main(arguments: list[str]) -> int:
+    """``--peek <path>``: print the summary as one JSON line."""
 
-    def run(self) -> None:  # pragma: no cover - exercised through SavePeeker
-        result = None
-        try:
-            from editor.service import EditorService
+    from .worker_process import emit_result
 
-            data = self._path.read_bytes()
-            inspection = EditorService().inspect_result(data, source_name=str(self._path))
-            capabilities = inspection.capabilities
-            editable = any(
-                capabilities.support(name).writable
-                for name in ("edit_money", "edit_stacks", "edit_durability")
-            )
-            result = summarize(
-                inspection.info,
-                release_id=str(inspection.release_id or inspection.format_id or ""),
-                editable=editable,
-                path=self._path,
-            )
-        except Exception:
-            result = None
-        try:
-            self._signals.done.emit(self._key, result)
-        except RuntimeError:
-            pass  # the library closed while this file was being read
+    try:
+        peek = peek_path(Path(arguments[0]))
+    except Exception:
+        peek = None
+    if peek is None:
+        return emit_result(None)
+    payload = asdict(peek)
+    payload["path"] = str(peek.path)
+    return emit_result(payload)
+
+
+def _from_payload(payload: object) -> SavePeek | None:
+    if not isinstance(payload, dict):
+        return None
+    try:
+        return SavePeek(**{**payload, "path": Path(str(payload["path"]))})
+    except (TypeError, KeyError):
+        return None
 
 
 class SavePeeker(QObject):
-    """Queue at most one peek per file; emit ``ready`` when it finishes."""
+    """Peek one file at a time in a child process; the newest request wins."""
 
-    ready = Signal(object)  # SavePeek
+    ready = Signal(object)  # SavePeek | None
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._cache: dict[tuple, SavePeek | None] = {}
-        self._pending: set[tuple] = set()
-        self._signals = _Signals()
-        self._signals.done.connect(self._finished)
-        # Not a child: Qt must not delete the pool while a read is running.
-        self._pool = QThreadPool()
-        self._pool.setMaxThreadCount(1)
+        self._running: tuple | None = None
+        self._job: JsonJob | None = None
+        self._queued: tuple[tuple, Path] | None = None
         app = QCoreApplication.instance()
         if app is not None:
             app.aboutToQuit.connect(self.shutdown)
 
     def shutdown(self) -> None:
-        self._pool.clear()
-        self._pool.waitForDone(5000)
+        self._queued = None
+        if self._job is not None:
+            self._job.kill()
 
     @staticmethod
     def _key(path: Path) -> tuple | None:
@@ -122,15 +130,28 @@ class SavePeeker(QObject):
 
     def request(self, path: Path) -> None:
         key = self._key(path)
-        if key is None or key in self._cache or key in self._pending:
+        if key is None or key in self._cache or key == self._running:
             return
-        self._pending.add(key)
-        self._pool.start(_PeekTask(key, Path(path), self._signals))
+        if self._running is not None:
+            self._queued = (key, Path(path))  # only the latest selection matters
+            return
+        self._start(key, Path(path))
 
-    def _finished(self, key: tuple, result: SavePeek | None) -> None:
-        self._pending.discard(key)
+    def _start(self, key: tuple, path: Path) -> None:
+        self._running = key
+        self._job = JsonJob(["--peek", str(path)], lambda payload: self._finished(key, payload), self)
+
+    def _finished(self, key: tuple, payload: object) -> None:
+        self._running = None
+        self._job = None
+        result = _from_payload(payload)
         self._cache[key] = result
         self.ready.emit(result)
+        if self._queued is not None:
+            queued_key, queued_path = self._queued
+            self._queued = None
+            if queued_key not in self._cache:
+                self._start(queued_key, queued_path)
 
 
-__all__ = ["SavePeek", "SavePeeker", "summarize"]
+__all__ = ["SavePeek", "SavePeeker", "peek_main", "peek_path", "summarize"]
