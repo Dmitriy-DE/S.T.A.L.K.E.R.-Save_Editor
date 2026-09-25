@@ -553,6 +553,7 @@ class SettingsView(QWidget):
         self.diagnostics_action_button.clicked.connect(self.journal_requested)
         self.copy_diagnostics_button.clicked.connect(self.copy_diagnostics_requested)
         self.report_button.clicked.connect(self.report_requested)
+        self.report_button.setMinimumHeight(40)
         actions = QHBoxLayout()
         actions.setSpacing(8)
         actions.addWidget(self.backup_folder_button, 1)
@@ -677,6 +678,13 @@ class SettingsView(QWidget):
         self.music_check.setEnabled(effects.sound_enabled)
         self.music_check.toggled.connect(self._music_changed)
         form.addRow("", self.music_check)
+        self.music_note = QLabel(
+            tr("Играет тему меню ТЧ, ЧН или ЗП, когда открыто или выбрано сохранение этой игры и сама игра установлена. Для S.T.A.L.K.E.R. 2 музыки пока нет."),
+            page,
+        )
+        self.music_note.setWordWrap(True)
+        self.music_note.setObjectName("settingsHint")
+        form.addRow("", self.music_note)
         self.motion_check = QCheckBox(tr("Анимации переходов"), page)
         self.motion_check.setChecked(effects.motion_enabled)
         self.motion_check.toggled.connect(self._motion_changed)

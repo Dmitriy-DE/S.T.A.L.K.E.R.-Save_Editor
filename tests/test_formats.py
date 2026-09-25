@@ -181,3 +181,17 @@ def test_s2_prepare_refuses_fields_the_capability_matrix_keeps_read_only(synthet
         STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, detach=((0x30000001, False),)))
     prepared = STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, money=123))
     assert prepared.output_sha256
+
+
+def test_stalker2_stack_edits_stay_closed_until_game_verified(synthetic_save: bytes) -> None:
+    """Docs, UI and writer must agree: no S2 count edits before an L5 check."""
+
+    from dataclasses import replace
+
+    from editor.formats import require_plan_capabilities
+
+    format_ = by_id("stalker2")
+    assert format_.capabilities.support("edit_stacks").writable is False
+    plan = replace(_plan(synthetic_save), money=None, stacks=((1, 2),))
+    with pytest.raises(sf.SaveError, match="edit_stacks"):
+        require_plan_capabilities(format_.capabilities, plan)

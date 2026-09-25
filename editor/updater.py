@@ -383,6 +383,10 @@ def launch_update(command: list[str]) -> subprocess.Popen[bytes]:
     return subprocess.Popen(command, start_new_session=True)
 
 
+# $0 pkexec, $1 apt-get, $2 package, $3 editor to start afterwards.
+PKEXEC_HANDOFF_SCRIPT = '"$0" "$1" install -y "$2" && { [ -z "$3" ] || "$3" >/dev/null 2>&1 & }'
+
+
 def build_installer_command(
     archive: Path,
     installation: InstallationInfo,
@@ -406,7 +410,13 @@ def build_installer_command(
     pkexec = shutil.which("pkexec")
     apt_get = shutil.which("apt-get")
     if pkexec and apt_get:
-        return [pkexec, apt_get, "install", "-y", str(archive)]
+        # pkexec refuses to run once its parent is gone ("Refusing to render
+        # service to dead parents"), and the editor quits right after the
+        # handoff.  A small shell stays alive as that parent, then starts the
+        # updated editor again.
+        shell = shutil.which("sh") or "/bin/sh"
+        relaunch = shutil.which("stalker2-save-editor") or ""
+        return [shell, "-c", PKEXEC_HANDOFF_SCRIPT, pkexec, apt_get, str(archive), relaunch]
     xdg_open = shutil.which("xdg-open")
     if xdg_open:
         return [xdg_open, str(archive)]

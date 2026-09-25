@@ -219,7 +219,8 @@ def test_release_workflow_collects_native_builds_and_publishes_manifest() -> Non
 
 
 def test_release_publication_is_atomic_across_r2_and_github() -> None:
-    """A tag must never publish GitHub assets when the R2 channel is skipped."""
+    """No public GitHub asset without the R2 channel: without secrets the
+    release is a draft, and each external step is gated on its credentials."""
 
     import yaml
 
@@ -227,7 +228,7 @@ def test_release_publication_is_atomic_across_r2_and_github() -> None:
     steps = workflow["jobs"]["release"]["steps"]
     names = [step.get("name") for step in steps]
 
-    credentials_index = names.index("Validate release credentials before external mutations")
+    credentials_index = names.index("Detect which release credentials exist")
     worker_index = names.index("Deploy download Worker")
     prepare_index = names.index("Prepare stable release files")
     apt_index = names.index("Build signed APT repository")
@@ -236,20 +237,19 @@ def test_release_publication_is_atomic_across_r2_and_github() -> None:
     github_index = names.index("Create or update GitHub Release")
     assert credentials_index < prepare_index < apt_index < worker_index < r2_index < apt_verify_index < github_index
     assert names.count("Prepare stable release files") == 1
-    assert "Warn when R2 credentials are unavailable" not in names
 
     credential_body = steps[credentials_index]["run"]
-    assert "CLOUDFLARE_API_TOKEN" in credential_body
-    assert "CLOUDFLARE_ACCOUNT_ID" in credential_body
-    assert "APT_SIGNING_KEY" in credential_body
-    assert "APT_SIGNING_KEY_ID" in credential_body
-    assert ":?" in credential_body
-    assert "if" not in steps[worker_index]
-    assert "if" not in steps[r2_index]
+    for secret in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "APT_SIGNING_KEY", "APT_SIGNING_KEY_ID"):
+        assert secret in credential_body
+    assert steps[worker_index]["if"] == "steps.creds.outputs.cloud == 'true'"
+    assert steps[r2_index]["if"] == "steps.creds.outputs.cloud == 'true'"
+    assert "apt == 'true'" in steps[apt_index]["if"]
+    assert "--draft" in steps[github_index]["run"]
+    assert "steps.creds.outputs.cloud" in steps[github_index]["run"]
 
     r2_body = steps[r2_index]["run"]
     assert "--prepared" in r2_body
-    assert "--require-apt" in r2_body
+    assert "--require-apt" in r2_body  # when APT credentials exist
     assert "--artifacts" not in r2_body
     assert "--version" not in r2_body
     assert "--commit" not in r2_body
