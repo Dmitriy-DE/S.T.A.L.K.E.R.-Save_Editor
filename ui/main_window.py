@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.compare import compare_saves
-from editor.diagnostics import LOG_FILENAME, collect_log_bundle, log_directory
+from editor.diagnostics import LOG_FILENAME, collect_log_bundle, log_directory, pending_crash_report
 from editor.equipment import EquipmentItem
 from editor.equipment_edits import RepairStageResult, stage_bulk_repair
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
@@ -105,6 +105,7 @@ class LocalSnapshot:
     capabilities: FormatCapabilities = field(default_factory=_default_s2_capabilities)
     catalog: ItemCatalog | None = None
     game_catalog: GameCatalog | None = None
+    display_catalog: ItemCatalog | None = None
 
 
 class InspectWorker(QThread):
@@ -156,6 +157,7 @@ class InspectWorker(QThread):
                     capabilities=result.capabilities,
                     catalog=result.catalog,
                     game_catalog=result.game_catalog,
+                    display_catalog=result.display_catalog,
                 )
             )
         except FormatDetectionError as exc:
@@ -233,6 +235,7 @@ class MainWindow(QMainWindow):
         self._build_ui()
         if self._auto_update_check:
             QTimer.singleShot(0, lambda: self.check_for_updates(manual=False))
+            QTimer.singleShot(1200, self._offer_crash_report)
 
     @staticmethod
     def _initial_size() -> QSize:
@@ -308,6 +311,7 @@ class MainWindow(QMainWindow):
             self._open_settings_backup_folder
         )
         self.settings_reference_view.journal_requested.connect(self._open_diagnostics_log)
+        self.settings_reference_view.report_requested.connect(lambda: self._show_diagnostics_dialog())
         self.settings_reference_view.copy_diagnostics_requested.connect(
             self._copy_diagnostics_to_clipboard
         )
@@ -795,12 +799,18 @@ class MainWindow(QMainWindow):
         dialog.finished.connect(lambda _result: self._clear_support_dialog(dialog))
         dialog.open()
 
-    def _show_diagnostics_dialog(self) -> None:
+    def _offer_crash_report(self) -> None:
+        """After a crash, offer the report once (non-blocking dialog)."""
+
+        if pending_crash_report() is not None:
+            self._show_diagnostics_dialog(after_crash=True)
+
+    def _show_diagnostics_dialog(self, after_crash: bool = False) -> None:
         if self._diagnostics_dialog is not None and self._diagnostics_dialog.isVisible():
             self._diagnostics_dialog.raise_()
             self._diagnostics_dialog.activateWindow()
             return
-        dialog = DiagnosticsDialog(self)
+        dialog = DiagnosticsDialog(self, after_crash=after_crash)
         self._diagnostics_dialog = dialog
         dialog.finished.connect(lambda _result: self._clear_diagnostics_dialog(dialog))
         dialog.open()
@@ -2157,6 +2167,7 @@ class MainWindow(QMainWindow):
             capabilities=snapshot.capabilities,
             catalog=snapshot.catalog,
             game_catalog=snapshot.game_catalog,
+            display_catalog=getattr(snapshot, "display_catalog", None),
         )
         self._render_snapshot(local_snapshot)
         self.analysis_ready.emit(local_snapshot)
@@ -2208,6 +2219,7 @@ class MainWindow(QMainWindow):
             capabilities=snapshot.capabilities,
             catalog=snapshot.catalog,
             game_catalog=snapshot.game_catalog,
+            display_catalog=getattr(snapshot, "display_catalog", None),
         )
         self._render_snapshot(local_snapshot, show_editor=False)
         self.status_label.setText(tr("Запись успешно проверена. Подготовлено 0 изменений."))

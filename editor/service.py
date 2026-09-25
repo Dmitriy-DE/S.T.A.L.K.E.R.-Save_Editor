@@ -93,6 +93,11 @@ class EditorService:
                     str(selected_source) if selected_source is not None else None,
                     catalog_roots=tuple(catalog_roots),
                 )
+        display_catalog = None
+        display_loader = getattr(format_, "display_catalog_for_source", None)
+        if callable(display_loader):
+            selected_source = catalog_source if catalog_source is not None else source_name
+            display_catalog = display_loader(str(selected_source) if selected_source is not None else None)
         return FormatInspection(
             format_id=format_.id,
             format_title=format_.title,
@@ -102,6 +107,7 @@ class EditorService:
             capabilities=format_.capabilities,
             catalog=catalog,
             game_catalog=game_catalog,
+            display_catalog=display_catalog,
         )
 
     def inspect(

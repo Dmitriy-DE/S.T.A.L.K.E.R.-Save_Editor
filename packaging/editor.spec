@@ -48,6 +48,9 @@ if chrome_pack.is_dir():
 shell_pack = ROOT / "assets" / "ui" / "s2_shell"
 if shell_pack.is_dir():
     datas.append((str(shell_pack), "assets/ui/s2_shell"))
+glyph_pack = ROOT / "assets" / "ui" / "item_glyphs"
+if glyph_pack.is_dir():
+    datas.append((str(glyph_pack), "assets/ui/item_glyphs"))
 shell_icon_pack = ROOT / "assets" / "ui" / "shell_icons"
 if shell_icon_pack.is_dir():
     datas.append((str(shell_icon_pack), "assets/ui/shell_icons"))
@@ -55,10 +58,16 @@ if shell_icon_pack.is_dir():
 font_pack = ROOT / "assets" / "fonts"
 if font_pack.is_dir():
     datas.append((str(font_pack), "assets/fonts"))
+# Official item names, icons coordinates and upgrades for the trilogy
+# (XRayCatalogProvider.load_generated_bundle reads <bundle>/web/catalogs.json)
+# when no original installation is found next to the save.
+datas.append((str(ROOT / "web" / "catalogs.json"), "web"))
 # Interface translations (editor/i18n.py reads <bundle>/locales/<code>.json).
 for locale_file in sorted((ROOT / "locales").glob("*.json")):
     if not locale_file.name.startswith("_"):
         datas.append((str(locale_file), "locales"))
+for locale_file in sorted((ROOT / "locales" / "items").glob("*.json")):
+    datas.append((str(locale_file), "locales/items"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))

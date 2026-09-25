@@ -155,3 +155,8 @@ def test_ui_sounds_are_short_quiet_mono_wavs(tmp_path: Path) -> None:
             with wave.open(str(path)) as handle:
                 assert handle.getnchannels() == 1
                 assert handle.getnframes() / handle.getframerate() < 0.4
+
+
+def test_packaged_app_bundles_the_trilogy_catalog() -> None:
+    spec = (Path(__file__).resolve().parents[1] / "packaging" / "editor.spec").read_text(encoding="utf-8")
+    assert '"web" / "catalogs.json"' in spec

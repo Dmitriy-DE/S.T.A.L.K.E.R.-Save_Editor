@@ -100,15 +100,16 @@ def test_canonical_save_and_inventory_tables_use_horizontal_rules_not_grid_cells
     assert all(not table.showGrid() for table in tables)
 
 
-def test_count_one_is_read_only_and_invalid_count_never_stages(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
+def test_single_round_count_is_editable_and_invalid_count_never_stages(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     window = _window(qtbot, synthetic_save, tmp_path)
     editor = window.editor_view
-    single_handle = 0x30000002
+    single_handle = 0x30000002  # one round (kind 5): same stack record as a pile
     editor.table.selectRow(next(index for index, item in enumerate(editor.model.visible_items()) if item.handle == single_handle))
     qtbot.waitUntil(lambda: editor.selected_handle == single_handle)
-    assert not editor.detail_view.count_spin.isEnabled()
+    assert editor.detail_view.count_spin.isEnabled()
     window._stage_stack_change(single_handle, 99)
-    assert window.staged_counts == {}
+    assert window.staged_counts == {single_handle: 99}
+    window.staged_counts.clear()
     window._stage_stack_change(0x30000001, 0)
     assert window.staged_counts == {}
     assert "1..1000000" in editor.detail_view.module_status.text()

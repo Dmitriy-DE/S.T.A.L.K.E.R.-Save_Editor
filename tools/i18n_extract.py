@@ -31,7 +31,16 @@ WEB_SOURCES = tuple(
     ROOT / "web" / name
     for name in ("app.js", "ux_copy.js", "bootstrap.js", "effects.js", "index.html")
 )
+# editor/s2_names.py: S2 names are composed from these translated fragments.
+PAIR_TABLES = {"_MODULE_PARTS", "_UPGRADE_PARTS", "_ARMOR_EFFECTS", "_QUEST_KINDS"}
 LABEL_TABLES = {
+    "_EXACT",
+    "_CALIBERS",
+    "_ROUND_KIND",
+    "_WEAPON_CLASS",
+    "_ARMOR_CLASSES",
+    "_FACTIONS",
+    *PAIR_TABLES,
     "EQUIPMENT_CATEGORY_LABELS",
     "_OBSERVED_LABELS",
     "S2_REGION_NAMES",
@@ -87,6 +96,11 @@ def python_messages(path: Path) -> tuple[set[str], set[str]]:
                 continue
             for item in items:
                 if isinstance(item, ast.Tuple):  # implicit concatenation stays one Constant
+                    if names & PAIR_TABLES:
+                        for element in item.elts:
+                            text = _literal(element)
+                            if text and _CYRILLIC.search(text):
+                                singles.add(text)
                     continue
                 text = _literal(item)
                 if text and _CYRILLIC.search(text):

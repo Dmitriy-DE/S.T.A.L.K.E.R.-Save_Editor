@@ -11,6 +11,7 @@ from PySide6.QtCore import QLocale, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QFrame,
     QHBoxLayout,
     QHeaderView,
@@ -33,6 +34,7 @@ from editor.capabilities import FormatCapabilities
 from editor.catalog import ItemCatalog, UpgradeCatalog
 from editor.equipment import EquipmentItem, equipment_items
 from editor.i18n import tr
+from editor.item_names import item_label
 from editor.releases import is_xray_original_release
 from save_format import InventoryItem
 
@@ -343,7 +345,18 @@ class EditorView(QWidget):
         self.search_edit.setMinimumHeight(39)
         self.search_edit.setPlaceholderText(tr("Поиск предметов…"))
         self.search_edit.textChanged.connect(self.model.set_search)
-        inventory_controls.addWidget(self.search_edit)
+        search_row = QHBoxLayout()
+        search_row.setSpacing(8)
+        search_row.addWidget(self.search_edit, 1)
+        self.group_check = QCheckBox(tr("Объединять одинаковые"), self.inventory_column)
+        self.group_check.setObjectName("inventoryGroupToggle")
+        self.group_check.setToolTip(
+            tr("Одинаковые предметы показываются одной строкой. Выключи, чтобы изменить или удалить один из них.")
+        )
+        self.group_check.setChecked(True)
+        self.group_check.toggled.connect(self._set_grouped)
+        search_row.addWidget(self.group_check)
+        inventory_controls.addLayout(search_row)
         categories = QHBoxLayout()
         categories.setSpacing(4)
         self.category_buttons: list[QPushButton] = []
@@ -502,6 +515,8 @@ class EditorView(QWidget):
             getattr(snapshot, "release_id", "")
             or getattr(snapshot, "format_id", "")
         )
+        self._release_id = release_id
+        self.detail_view.set_release(release_id)
         game_catalog = getattr(snapshot, "game_catalog", None)
         self._upgrade_catalog = (
             game_catalog.upgrades
@@ -509,8 +524,10 @@ class EditorView(QWidget):
             and game_catalog.release_id == release_id
             else None
         )
+        # Names and icons may come from the modded game the save belongs to.
+        self._display_catalog = getattr(snapshot, "display_catalog", None) or self._catalog
         self._icon_resolver = XRayIconResolver(
-            self._catalog,
+            self._display_catalog,
             donor=donor_resolver_for(self._catalog),
         )
         self._items = tuple(snapshot.info.inventory)
@@ -529,8 +546,12 @@ class EditorView(QWidget):
         self.model.sort(InventoryTableModel.POSITION_COLUMN)
         self.item_count_label.setText(tr("Предметов: {0}", len(self._items)))
         self.breadcrumb.setText(f"{snapshot.format_title}  ›  {snapshot.path.name}")
-        self.header_status.setText(tr("МОЖНО ИЗМЕНЯТЬ") if any(snapshot.capabilities.support(name).writable for name in ("edit_money", "edit_stacks", "edit_durability")) else tr("ТОЛЬКО ЧТЕНИЕ"))
-        self.header_status.setProperty("tone", "success" if self.header_status.text() == "МОЖНО ИЗМЕНЯТЬ" else "neutral")
+        writable = any(
+            snapshot.capabilities.support(name).writable
+            for name in ("edit_money", "edit_stacks", "edit_durability")
+        )
+        self.header_status.setText(tr("МОЖНО ИЗМЕНЯТЬ") if writable else tr("ТОЛЬКО ЧТЕНИЕ"))
+        self.header_status.setProperty("tone", "success" if writable else "neutral")
         self.header_status.style().unpolish(self.header_status)
         self.header_status.style().polish(self.header_status)
         self._currency = currency_suffix(release_id)
@@ -753,7 +774,7 @@ class EditorView(QWidget):
             self._icon_resolver.icon_for_item(
                 item.type_key,
                 item.display_name,
-                item.category,
+                self._product_categories.get(item.handle) or item.category,
                 size=52,
             ),
             52,
@@ -761,19 +782,23 @@ class EditorView(QWidget):
         )
 
     def _name_for_item(self, item: InventoryItem) -> str | None:
-        if self._catalog is None:
-            return item.display_name
-        definition = self._catalog.resolve_key_or_display_name(item.display_name or item.type_key)
-        if definition is None:
-            definition = self._catalog.resolve(item.type_key)
-        name = definition.display_name if definition is not None else None
-        return name or item.display_name
+        catalog = getattr(self, "_display_catalog", None) or self._catalog
+        return item_label(item, catalog, stalker2=self._is_stalker2())
+
+    def _is_stalker2(self) -> bool:
+        return str(getattr(self, "_release_id", "") or "").startswith("stalker2")
 
     def select_handle(self, handle: int) -> None:
         visible = self.model.visible_items()
         row = next((index for index, item in enumerate(visible) if item.handle == handle), None)
         if row is not None:
             self.table.selectRow(row)
+
+    def _set_grouped(self, enabled: bool) -> None:
+        current = self.detail_view._item
+        self.model.set_grouped(enabled)
+        if current is not None:
+            self.select_handle(current.handle)
 
     def _show_detail(self, item: InventoryItem | None) -> None:
         self.detail_view.set_item(
@@ -787,6 +812,7 @@ class EditorView(QWidget):
             staged_upgrades=self._staged_upgrades,
             display_name=self._name_for_item(item) if item is not None else None,
             category_key=self._product_categories.get(item.handle) if item is not None else None,
+            group_size=len(self.model.group_members(item)),
         )
         self.detail_view.set_item_icon(self._detail_icon(item) if item is not None else None)
 
@@ -843,7 +869,7 @@ class EditorView(QWidget):
             self._icon_resolver.icon_for_item(
                 item.type_key,
                 item.display_name,
-                item.category,
+                self._product_categories.get(item.handle) or item.category,
                 size=420,
             ),
             380,

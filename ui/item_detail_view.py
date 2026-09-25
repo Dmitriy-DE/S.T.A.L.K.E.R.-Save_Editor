@@ -27,7 +27,8 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import UpgradeCatalog
 from editor.equipment import category_label
-from editor.i18n import tr
+from editor.i18n import tr, tr_item
+from editor.s2_names import s2_readable_name
 from save_format import InventoryItem
 
 from .formatting import count_ru
@@ -273,7 +274,9 @@ class ItemDetailView(QWidget):
         staged_upgrades: Mapping[int, tuple[str, ...]] | None = None,
         display_name: str | None = None,
         category_key: str | None = None,
+        group_size: int = 1,
     ) -> None:
+        self._group_size = max(1, int(group_size))
         self._item = item
         self._capabilities = capabilities
         self._upgrade_catalog = upgrade_catalog
@@ -357,6 +360,10 @@ class ItemDetailView(QWidget):
             and self._upgrade_catalog is not None
         )
         can_remove = bool(caps and caps.remove_items and item.remove_editable)
+        grouped = getattr(self, "_group_size", 1) > 1
+        if grouped:
+            # A folded row stands for several objects; a change must name one.
+            writable_stack = placement_writable = can_remove = False
         if item.handle in self._removed_handles:
             # Editing an item that is staged for removal would make the plan
             # contradict itself; only "ВЕРНУТЬ ПРЕДМЕТ" stays available.
@@ -419,7 +426,11 @@ class ItemDetailView(QWidget):
         self.placement_combo.setEnabled(placement_writable)
         self.detail_form.setRowVisible(self.placement_combo, has_placement)
 
-        if item.handle in self._removed_handles:
+        if grouped:
+            self.fields_note.setText(
+                tr("Здесь {0} одинаковых предметов. Чтобы изменить или удалить один, выключи «Объединять одинаковые».", self._group_size)
+            )
+        elif item.handle in self._removed_handles:
             self.fields_note.setText(tr("Предмет будет удалён при сохранении."))
         elif not (has_count or has_condition or has_placement):
             self.fields_note.setText(tr("Для этого предмета в сохранении нет изменяемых полей."))
@@ -431,13 +442,31 @@ class ItemDetailView(QWidget):
         self._render_upgrades(item)
         weight = "—" if item.total_weight is None else tr("{0:.1f} кг", item.total_weight)
         source = _SOURCE_LABELS.get(str(item.observation_source or ""), tr("открытое сохранение"))
-        facts = [tr("Вес: {0}", weight), tr("Источник: {0}", source)]
+        facts = [
+            tr("Тип: {0}", self.type_label.text()),
+            tr("Вес: {0}", weight),
+        ]
+        if item.unit_weight is not None and (item.count or 1) > 1:
+            facts.append(tr("Вес одного: {0:.2f} кг", item.unit_weight))
+        if item.condition is not None:
+            facts.append(tr("Состояние: {0:.0f}%", item.condition * 100.0))
+        if item.modules:
+            facts.append(
+                tr("Установлено: {0}", ", ".join(self._module_name(value) for value in item.modules))
+            )
+        effects = self._upgrade_effects(item.upgrades or ())
+        if effects:
+            facts.append(tr("Улучшения:"))
+            facts.extend(f"  • {line}" for line in effects)
+        facts.append(tr("Источник: {0}", source))
         if has_placement:
             facts.append(
                 tr("Размещение: ")
                 + _placement_text(item.placement_type, item.placement_slot)
             )
-        if item.count is not None:
+        if grouped:
+            facts.append(tr("Одинаковых предметов: {0}", self._group_size))
+        elif item.count is not None:
             facts.append(tr("Количество в сохранении: {0}", item.count))
         self.description_label.setText("\n".join(facts))
         self.reset_button.setEnabled(
@@ -461,6 +490,33 @@ class ItemDetailView(QWidget):
         )
         self._render_icon()
 
+    def _module_name(self, sid: str) -> str:
+        if getattr(self, "_stalker2", False):
+            return s2_readable_name(sid) or sid
+        return self._upgrade_label(sid, 0)
+
+    def _upgrade_effects(self, upgrades: tuple[str, ...]) -> list[str]:
+        """Group installed upgrades by effect: «Пси-защита · ур. 2, ур. 3»."""
+
+        grouped: dict[str, list[str]] = {}
+        for index, key in enumerate(upgrades, start=1):
+            label = self._upgrade_label(str(key), index)
+            name, _sep, level = label.partition(" · ")
+            grouped.setdefault(name, [])
+            if level:
+                grouped[name].append(level)
+        lines = []
+        for name, levels in grouped.items():
+            unique = list(dict.fromkeys(levels))
+            text = f"{name} · {', '.join(unique)}" if unique else name
+            if len(levels) > len(unique):
+                text += f" ×{len(levels)}"
+            lines.append(text)
+        return lines
+
+    def set_release(self, release_id: str) -> None:
+        self._stalker2 = str(release_id or "").startswith("stalker2")
+
     def _upgrade_label(self, key: str, index: int) -> str:
         """Readable name, or a neutral placeholder: raw IDs live in details."""
 
@@ -470,7 +526,9 @@ class ItemDetailView(QWidget):
         # Generated catalogs can contain localization tokens rather than
         # translated labels; those are not readable names either.
         if name and not name.casefold().startswith("st_"):
-            return name
+            return tr_item(name) or name
+        if getattr(self, "_stalker2", False):
+            return s2_readable_name(key) or key
         return tr("Улучшение {0}", index)
 
     def _render_upgrades(self, item: InventoryItem) -> None:

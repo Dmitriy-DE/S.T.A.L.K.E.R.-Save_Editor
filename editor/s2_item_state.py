@@ -168,14 +168,44 @@ def patch_s2_armor_condition(
     )
 
 
-def _name_for_key(key: bytes, name_table: Sequence[str]) -> str | None:
-    if len(key) != 3:
-        return None
-    index = key[1] | (key[2] << 8)
-    if not 0 <= index < len(name_table):
-        return None
-    name = str(name_table[index]).strip()
+S2_NAME_TABLE_BASE_SELECTOR = 4
+
+
+class S2NameTables(tuple):
+    """The first S2 name table plus the tables chained after it.
+
+    A compact S2 key is three bytes: the first selects one of the consecutive
+    counted string tables (the ``GunAK74_ST`` table is selector 4, the next
+    one 5, …) and the low two bytes index into it.  The instance behaves as
+    the first table so older callers keep working.
+    """
+
+    tables: tuple[tuple[str, ...], ...]
+
+    def __new__(cls, tables: Sequence[Sequence[str]]) -> S2NameTables:
+        frozen = tuple(tuple(table) for table in tables)
+        self = super().__new__(cls, frozen[0] if frozen else ())
+        self.tables = frozen
+        return self
+
+    def resolve(self, key: bytes) -> str | None:
+        if len(key) != 3:
+            return None
+        selector = key[0] - S2_NAME_TABLE_BASE_SELECTOR
+        index = key[1] | (key[2] << 8)
+        if not 0 <= selector < len(self.tables) or not 0 <= index < len(self.tables[selector]):
+            return None
+        return self.tables[selector][index]
+
+
+def s2_name_for_key(key: bytes, name_table: Sequence[str]) -> str | None:
+    tables = name_table if isinstance(name_table, S2NameTables) else S2NameTables((name_table,))
+    name = tables.resolve(bytes(key))
+    name = str(name).strip() if name is not None else ""
     return name or None
+
+
+_name_for_key = s2_name_for_key
 
 
 def _upgrade_vector(
@@ -188,6 +218,8 @@ def _upgrade_vector(
     if offset < 0 or offset + 2 > limit:
         return None
     count = struct.unpack_from("<H", raw, offset)[0]
+    if count == 0:
+        return 0, (), offset + 2
     if not 1 <= count <= S2_WEAPON_MAX_UPGRADES:
         return None
     values_start = offset + 2
@@ -210,7 +242,7 @@ def _is_direct_module_name(name: str) -> bool:
     lowered = name.casefold()
     if "_upgrade_" in lowered:
         return False
-    return lowered.startswith(("en_", "hp_", "ru_", "toprail")) or "_mag" in lowered
+    return lowered.startswith(("en_", "hp_", "ru_", "toprail")) or "_mag" in lowered or lowered.endswith("_screw")
 
 
 def _direct_modules(
@@ -232,6 +264,48 @@ def _direct_modules(
         values.append(name)
         offset -= 3
     values.reverse()
+    return tuple(values)
+
+
+def _counted_run(raw: bytes | bytearray, value_offset: int, length: int, record_start: int) -> bool:
+    """Whether ``length`` module keys before the scalar carry their u16 count."""
+
+    start = value_offset - length * 3 - 2
+    if length < 1 or start < record_start + 0x30:
+        return False
+    return struct.unpack_from("<H", raw, start)[0] == length
+
+
+def read_s2_armor_upgrades(
+    raw: bytes | bytearray,
+    *,
+    anchor: S2ConditionAnchor,
+    name_table: Sequence[str],
+) -> tuple[str, ...] | None:
+    """Read the counted installed-upgrade vector right after armor condition.
+
+    Every key must resolve to a name that starts with the outfit's own SID
+    family (``Exoskeleton_Monolith_Armor_...``); anything else is ignored.
+    """
+
+    offset = anchor.value_offset + 4
+    if offset + 2 > len(raw):
+        return None
+    count = struct.unpack_from("<H", raw, offset)[0]
+    if count == 0:
+        return ()
+    if count > 64 or offset + 2 + count * 3 > len(raw):
+        return None
+    values: list[str] = []
+    for index in range(count):
+        start = offset + 2 + index * 3
+        name = _name_for_key(bytes(raw[start : start + 3]), name_table)
+        if name is None:
+            return None
+        values.append(name)
+    own = _name_for_key(bytes(raw[anchor.record_offset + 8 : anchor.record_offset + 11]), name_table)
+    if own is None or not all(value.casefold().startswith(own.casefold() + "_") for value in values):
+        return None
     return tuple(values)
 
 
@@ -280,14 +354,33 @@ def read_s2_weapon_condition(
         if vector is None:
             continue
         count, upgrades, upgrades_end = vector
-        if count < S2_WEAPON_MIN_UPGRADES:
-            continue
         modules = _direct_modules(
             raw,
             value_offset=value_offset,
             record_start=record_offset,
             name_table=name_table,
         )
+        counted = _counted_run(raw, value_offset, len(modules), record_offset)
+        if count == 0:
+            # A weapon without upgrades still serializes its counted module
+            # vector right before the condition; the magazine anchors it.
+            if counted and any("_mag" in module.casefold() for module in modules):
+                candidates.append(
+                    S2WeaponConditionAnchor(
+                        handle=handle,
+                        record_offset=record_offset,
+                        value_offset=value_offset,
+                        value=value,
+                        upgrades_offset=value_offset + 4,
+                        upgrades_count=0,
+                        upgrades_end=upgrades_end,
+                        modules=modules,
+                        upgrades=(),
+                    )
+                )
+            continue
+        if count < S2_WEAPON_MIN_UPGRADES and not counted:
+            continue
         if not modules:
             # The same weapon record contains a second, available-upgrades
             # vector after the installed vector.  It has the same shape but
@@ -383,10 +476,13 @@ __all__ = [
     "S2_WEAPON_SCAN_LIMIT",
     "S2ConditionAnchor",
     "S2ItemStateError",
+    "S2NameTables",
     "S2WeaponConditionAnchor",
     "has_s2_equipment_shape",
     "patch_s2_armor_condition",
     "patch_s2_weapon_condition",
     "read_s2_armor_condition",
+    "read_s2_armor_upgrades",
     "read_s2_weapon_condition",
+    "s2_name_for_key",
 ]

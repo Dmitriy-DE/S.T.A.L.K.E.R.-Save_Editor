@@ -12,7 +12,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from editor.diagnostics import collect_log_bundle, export_log_bundle, submit_logs
+from editor.diagnostics import (
+    clear_crash_report,
+    collect_log_bundle,
+    export_log_bundle,
+    submit_logs,
+)
 from editor.i18n import tr
 
 from .formatting import human_size
@@ -51,8 +56,9 @@ class DiagnosticsExportWorker(QThread):
 class DiagnosticsDialog(QDialog):
     """Let the user send bounded local logs and show the opaque report id."""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, *, after_crash: bool = False) -> None:
         super().__init__(parent)
+        self._after_crash = after_crash
         self.setWindowTitle(tr("Диагностика Save Editor"))
         self.setModal(True)
         self._worker: DiagnosticsWorker | None = None
@@ -65,6 +71,13 @@ class DiagnosticsDialog(QDialog):
             tr("Отправятся только обезличенные технические журналы ограниченного размера. Сохранения и их содержимое не отправляются.")
         )
         description.setWordWrap(True)
+        if after_crash:
+            crash_note = QLabel(
+                tr("В прошлый раз редактор закрылся из-за ошибки. Отправь отчёт — это поможет её исправить.")
+            )
+            crash_note.setWordWrap(True)
+            crash_note.setObjectName("diagnosticsCrashNote")
+            layout.addWidget(crash_note)
         layout.addWidget(description)
         self.preview_label = QLabel(
             tr("Перед отправкой будет подготовлен архив обезличенных журналов.")
@@ -137,6 +150,12 @@ class DiagnosticsDialog(QDialog):
 
     def _on_previewed(self, size: int) -> None:
         self.preview_label.setText(tr("Обезличенный архив подготовлен ({0}).", human_size(size)))
+
+    def done(self, result: int) -> None:
+        if self._after_crash:
+            # Offered once: sent or dismissed, the same crash is not raised again.
+            clear_crash_report()
+        super().done(result)
 
     def _on_completed(self, report_id: str) -> None:
         self.status_label.setText(tr("Журналы отправлены. Номер отчёта: {0}", report_id))

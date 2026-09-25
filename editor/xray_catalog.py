@@ -870,6 +870,7 @@ class XRayCatalogProvider:
         game_root: Path | None = None,
         *,
         allowed_editions: frozenset[str] = frozenset({"original"}),
+        allow_mod_overlay: bool = False,
     ) -> ItemCatalog | None:
         self._catalog = None
         self._game_catalog = None
@@ -891,7 +892,11 @@ class XRayCatalogProvider:
         data_root = root / "gamedata"
         section_sources: dict[str, _Section] = {}
         localization: dict[str, str] = {}
-        use_unpacked = data_root.is_dir() and not _has_obvious_mod_overlay(data_root)
+        # A community overlay is read only for presentation (names, icons) when
+        # the caller asks for it; save-editing catalogs stay official-only.
+        use_unpacked = data_root.is_dir() and (
+            allow_mod_overlay or not _has_obvious_mod_overlay(data_root)
+        )
         source_root = data_root if use_unpacked else root
         if use_unpacked:
             for path in sorted(data_root.rglob("*.ltx"), key=lambda value: value.as_posix().casefold()):
@@ -989,4 +994,9 @@ class XRayCatalogProvider:
         return self._catalog.resolve(key) if self._catalog is not None else None
 
 
-__all__ = ["XRayCatalogProvider", "read_xray_asset"]
+def has_mod_overlay(root: Path) -> bool:
+    data_root = Path(root) / "gamedata"
+    return data_root.is_dir() and _has_obvious_mod_overlay(data_root)
+
+
+__all__ = ["XRayCatalogProvider", "has_mod_overlay", "read_xray_asset"]
