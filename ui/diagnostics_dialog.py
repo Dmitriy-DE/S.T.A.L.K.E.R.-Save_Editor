@@ -58,6 +58,7 @@ class DiagnosticsDialog(QDialog):
 
     def __init__(self, parent=None, *, after_crash: bool = False) -> None:
         super().__init__(parent)
+        self.setMinimumWidth(520)  # titles and buttons were clipped at the default width
         self._after_crash = after_crash
         self.setWindowTitle(tr("Диагностика Save Editor"))
         self.setModal(True)

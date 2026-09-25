@@ -334,7 +334,28 @@ def test_linux_package_handoff_prefers_pkexec_apt(monkeypatch: pytest.MonkeyPatc
 
     command = build_installer_command(archive, installation, kind="package", platform_name="linux")
 
-    assert command == ["/usr/bin/pkexec", "/usr/bin/apt-get", "install", "-y", str(archive.resolve())]
+    assert command[:2] == ["/usr/bin/sh", "-c"]
+    assert command[3:] == [
+        "/usr/bin/pkexec",
+        "/usr/bin/apt-get",
+        str(archive.resolve()),
+        "/usr/bin/stalker2-save-editor",
+    ]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="runs the POSIX sh handoff for real")
+def test_linux_package_handoff_shell_runs_pkexec_then_relaunches(tmp_path: Path) -> None:
+    import subprocess
+
+    log = tmp_path / "log"
+    fake = tmp_path / "fake"
+    fake.write_text(f'#!/bin/sh\necho "$@" >> {log}\n')
+    fake.chmod(0o755)
+    archive = tmp_path / "update.deb"
+    command = ["/bin/sh", "-c", updater.PKEXEC_HANDOFF_SCRIPT, str(fake), "apt-get", str(archive), str(fake)]
+    subprocess.run(command, check=True)
+    subprocess.run(["sleep", "0.3"])
+    assert log.read_text().splitlines()[0] == f"apt-get install -y {archive}"
 
 
 def test_launch_installer_returns_started_process(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

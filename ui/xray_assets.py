@@ -18,6 +18,7 @@ from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPixmap
 
 from editor.catalog import ItemCatalog, ItemDefinition
 from editor.icon_donor import discover_icon_donor_catalog
+from editor.s2_items import s2_icon_name
 from editor.xray_catalog import read_xray_asset
 
 _DDS_HEADER_SIZE = 128
@@ -451,7 +452,7 @@ class XRayIconResolver:
         self._bundled_cache: dict[tuple[str, int], QIcon | None] = {}
         self._direct_image_cache: dict[tuple[Path, str, int], QIcon | None] = {}
 
-    def _bundled_icon(self, key: str, *, size: int) -> QIcon | None:
+    def _bundled_icon(self, key: str, *, size: int, root: Path | None = None) -> QIcon | None:
         """Return the shipped icon for ``key``, or ``None`` if not packed.
 
         The pack is extracted from the official atlas by
@@ -463,7 +464,7 @@ class XRayIconResolver:
         if cache_key in self._bundled_cache:
             return self._bundled_cache[cache_key]
         icon: QIcon | None = None
-        path = _BUNDLED_ICON_DIR / f"{key}.png"
+        path = (root or _BUNDLED_ICON_DIR) / f"{key}.png"
         if path.is_file():
             image = QImage(str(path))
             if not image.isNull():
@@ -523,6 +524,11 @@ class XRayIconResolver:
             definition = self.catalog.resolve_key_or_display_name(display_name)
         if definition is not None:
             return self.icon_for(definition, size=size)
+        s2_icon = s2_icon_name(display_name) or s2_icon_name(key)
+        if s2_icon:
+            bundled = self._bundled_icon(s2_icon.removesuffix(".png"), size=size, root=_BUNDLED_ICON_DIR.parent)
+            if bundled is not None:
+                return bundled
         for candidate in (key, display_name or ""):
             if candidate:
                 bundled = self._bundled_icon(candidate, size=size)
