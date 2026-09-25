@@ -39,6 +39,9 @@ for _icon in ("app_icon.svg", "app_icon_256.png", "app_icon_128.png", "app_icon_
 icon_pack = ROOT / "assets" / "icons" / "xray"
 if icon_pack.is_dir():
     datas.append((str(icon_pack), "assets/icons/xray"))
+s2_icon_pack = ROOT / "assets" / "icons" / "s2"
+if s2_icon_pack.is_dir():
+    datas.append((str(s2_icon_pack), "assets/icons/s2"))
 # Bundled X-Ray UI chrome (frames, buttons) for the game-skinned shell.
 chrome_pack = ROOT / "assets" / "chrome" / "xray"
 if chrome_pack.is_dir():
@@ -64,6 +67,8 @@ if font_pack.is_dir():
 datas.append((str(ROOT / "web" / "catalogs.json"), "web"))
 # Official names in 13 languages (editor/official_names.py).
 datas.append((str(ROOT / "web" / "catalog_names.json"), "web"))
+# S.T.A.L.K.E.R. 2 official names and icons (editor/s2_items.py).
+datas.append((str(ROOT / "web" / "s2_items.json"), "web"))
 # Interface translations (editor/i18n.py reads <bundle>/locales/<code>.json).
 for locale_file in sorted((ROOT / "locales").glob("*.json")):
     if not locale_file.name.startswith("_"):

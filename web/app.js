@@ -197,7 +197,7 @@ function itemCategoryGlyph(category) {
 }
 
 function itemGlyph(item) {
-  const candidates = [item.type_key, item.name].filter(Boolean);
+  const candidates = [item.icon, item.type_key, item.name].filter(Boolean);
   if (!candidates.length) return itemCategoryGlyph(item.category);
   const img = document.createElement("img");
   img.className = "zone-item-icon";
@@ -208,7 +208,7 @@ function itemGlyph(item) {
     const candidate = candidates[candidateIndex];
     img.alt = t("Иконка предмета: {0}", item.name ?? item.category ?? t("предмет"));
     img.title = "";
-    img.src = `icons/${encodeURIComponent(candidate)}.png`;
+    img.src = `icons/${candidate.split("/").map(encodeURIComponent).join("/")}.png`;
   };
   img.addEventListener("error", () => {
     candidateIndex += 1;

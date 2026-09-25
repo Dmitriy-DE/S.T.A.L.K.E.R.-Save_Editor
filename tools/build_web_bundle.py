@@ -54,6 +54,7 @@ MODULES = (
     "editor/i18n.py",
     "editor/item_names.py",
     "editor/official_names.py",
+    "editor/s2_items.py",
     "editor/kraken_blocks.py",
     "editor/models.py",
     "editor/prepare.py",
