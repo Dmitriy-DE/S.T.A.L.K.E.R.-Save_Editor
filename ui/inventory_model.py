@@ -13,6 +13,7 @@ from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelInd
 from PySide6.QtGui import QBrush, QColor, QIcon
 
 from editor.equipment import category_label
+from editor.i18n import tr
 from save_format import EDITABLE_STACK_KIND_CODES, InventoryItem
 
 # Qt calls these overrides with either index type; narrowing the signature to
@@ -56,16 +57,16 @@ class InventoryTableModel(QAbstractTableModel):
     HANDLE_COLUMN = 9
 
     HEADERS = (
-        "НАЗВАНИЕ",
-        "ТИП",
-        "Позиция",
-        "Размер",
-        "Идентификатор типа",
-        "КОЛ-ВО",
-        "ВЕС (КГ)",
-        "СОСТОЯНИЕ",
-        "Поддержка",
-        "Идентификатор",
+        tr("НАЗВАНИЕ"),
+        tr("ТИП"),
+        tr("Позиция"),
+        tr("Размер"),
+        tr("Идентификатор типа"),
+        tr("КОЛ-ВО"),
+        tr("ВЕС (КГ)"),
+        tr("СОСТОЯНИЕ"),
+        tr("Поддержка"),
+        tr("Идентификатор"),
     )
     _CHANGED_BRUSH = QBrush(QColor("#fff2cc"))
     _CHANGED_TEXT_BRUSH = QBrush(QColor("#151713"))
@@ -75,7 +76,7 @@ class InventoryTableModel(QAbstractTableModel):
         self._items: tuple[InventoryItem, ...] = ()
         self._visible: tuple[InventoryItem, ...] = ()
         self._search = ""
-        self._category = "Все"
+        self._category = "all"
         self._changed_only = False
         self._changed_handles: frozenset[int] = frozenset()
         self._staged_counts: dict[int, int] = {}
@@ -273,7 +274,7 @@ class InventoryTableModel(QAbstractTableModel):
         self.endResetModel()
 
     def _matches(self, item: InventoryItem) -> bool:
-        if self._category != "Все":
+        if self._category not in {"all", "Все"}:
             group = CATEGORY_TABS.get(self._category)
             if group is None:
                 if item.category != self._category:
@@ -345,8 +346,8 @@ class InventoryTableModel(QAbstractTableModel):
         if staged is not None:
             placement_type, slot_id = staged
             if placement_type == "slot" and slot_id is not None:
-                return f"экипировано (слот {slot_id})"
-            return {"belt": "пояс", "ruck": "рюкзак"}.get(
+                return tr("экипировано (слот {0})", slot_id)
+            return {"belt": tr("пояс"), "ruck": tr("рюкзак")}.get(
                 placement_type,
                 item.position,
             )
@@ -354,7 +355,7 @@ class InventoryTableModel(QAbstractTableModel):
 
     @staticmethod
     def _normalise_absent(text: str) -> str:
-        return "—" if text == "неизвестно" else text
+        return "—" if text in {"неизвестно", tr("неизвестно")} else text
 
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)
@@ -398,11 +399,11 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.NAME_COLUMN:
             display_name = self._display_name(item)
             label = (
-                "Название предмета взято из каталога."
+                tr("Название предмета взято из каталога.")
                 if self._name_provider is not None and display_name != item.display_name
-                else "Название предмета из сохранения."
+                else tr("Название предмета из сохранения.")
                 if item.display_name is not None
-                else "Название предмета не определено."
+                else tr("Название предмета не определено.")
             )
             return label
         if column == self.HANDLE_COLUMN:
@@ -411,34 +412,34 @@ class InventoryTableModel(QAbstractTableModel):
             return self._support_text(item)
         if column == self.CONDITION_COLUMN:
             if item.condition is None:
-                return "Для этого предмета состояние не указано."
+                return tr("Для этого предмета состояние не указано.")
             if item.condition_editable:
-                return "Состояние предмета можно изменить."
-            return "Это значение нельзя изменить."
+                return tr("Состояние предмета можно изменить.")
+            return tr("Это значение нельзя изменить.")
         if column == self.COUNT_COLUMN and item.count is None:
-            return "Для этого предмета количество не указано."
+            return tr("Для этого предмета количество не указано.")
         if column == self.WEIGHT_COLUMN and item.total_weight is None:
-            return "Вес для этого предмета неизвестен."
+            return tr("Вес для этого предмета неизвестен.")
         if column == self.SIZE_COLUMN and self._display_value(item, column) in {"—", "неизвестно"}:
-            return "Размер предмета неизвестен."
+            return tr("Размер предмета неизвестен.")
         return self._display_value(item, column)
 
     @staticmethod
     def _support_text(item: InventoryItem) -> str:
         if item.editable_count:
-            return "Количество можно изменить"
+            return tr("Количество можно изменить")
         if item.count is None:
-            return "Это значение нельзя изменить."
+            return tr("Это значение нельзя изменить.")
         if item.count <= 1:
-            return "Для этого предмета нельзя изменить количество."
+            return tr("Для этого предмета нельзя изменить количество.")
         if item.kind_code not in EDITABLE_STACK_KIND_CODES:
-            return "Это значение нельзя изменить."
-        return "Количество нельзя изменить для этого предмета."
+            return tr("Это значение нельзя изменить.")
+        return tr("Количество нельзя изменить для этого предмета.")
 
     @staticmethod
     def _condition_text(item: InventoryItem) -> str:
         if item.condition is None:
-            return "неизвестно"
+            return tr("неизвестно")
         return f"{item.condition * 100.0:.1f}%"
 
     def _display_name(self, item: InventoryItem) -> str:
@@ -449,7 +450,7 @@ class InventoryTableModel(QAbstractTableModel):
                 resolved = None
             if resolved and str(resolved).strip():
                 return str(resolved).strip()
-        return item.display_name or "Неизвестный объект"
+        return item.display_name or tr("Неизвестный объект")
 
 
 __all__ = ["InventoryTableModel"]

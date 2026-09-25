@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
+from .i18n import tr
+
 _OBSERVED_LABELS = MappingProxyType(
     {
         "gunkharod_st": "Kharod",
@@ -38,7 +40,8 @@ def s2_presentation_name(value: str | None) -> str | None:
     normalized = str(value or "").strip()
     if not normalized:
         return None
-    return _OBSERVED_LABELS.get(normalized.casefold(), normalized)
+    label = _OBSERVED_LABELS.get(normalized.casefold())
+    return tr(label) if label is not None else normalized
 
 
 __all__ = ["s2_presentation_name"]

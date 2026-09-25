@@ -7,13 +7,14 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal
 
+from editor.i18n import tr
 from editor.service import EditorService
 from editor.storage import BackupRecord, RestoreReceipt, inspect_backup, list_backups
 
 _STATUS_TEXT = {
-    "verified": "Проверено",
-    "missing": "Отсутствует",
-    "corrupt": "Повреждено",
+    "verified": tr("Проверено"),
+    "missing": tr("Отсутствует"),
+    "corrupt": tr("Повреждено"),
 }
 
 
@@ -41,14 +42,14 @@ class RestoreWorker(QThread):
 
     def run(self) -> None:
         try:
-            self.progress.emit("Восстановление: проверка backup…")
+            self.progress.emit(tr("Восстановление: проверка резервной копии…"))
             if self.in_place:
                 receipt = self.service.restore_in_place(self.record)
             else:
                 if self.destination is None:
-                    raise ValueError("Для restore copy не задан destination")
+                    raise ValueError(tr("Не указано, куда восстановить копию"))
                 receipt = self.service.restore_local(self.record, self.destination)
-            self.progress.emit("Восстановление: output проверен по SHA256")
+            self.progress.emit(tr("Восстановление: результат проверен по контрольной сумме"))
             self.completed.emit(receipt)
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
@@ -74,7 +75,7 @@ class BackupController(QObject):
         self._records: tuple[BackupRecord, ...] = ()
         self._preview_record: BackupRecord | None = None
         self._busy = False
-        self._status_text = "Выбери запись журнала для проверки"
+        self._status_text = tr("Выбери запись журнала для проверки")
 
     @property
     def records(self) -> tuple[BackupRecord, ...]:
@@ -84,7 +85,7 @@ class BackupController(QObject):
         self._records = list_backups(self.backup_dirs)
         self._preview_record = None
         self.clear_error()
-        self.set_progress(f"Найдено записей: {len(self._records)}; файлы не изменены")
+        self.set_progress(tr("Найдено записей: {0}; файлы не изменены", len(self._records)))
         self.records_changed.emit(self._records)
 
     @staticmethod
@@ -112,7 +113,7 @@ class BackupController(QObject):
                 parts.append(f"{key}={value}")
         if operation.get("player_faction"):
             parts.append("player_faction")
-        return ", ".join(parts) or "без изменений"
+        return ", ".join(parts) or tr("без изменений")
 
     @staticmethod
     def _can_restore_in_place(record: BackupRecord) -> bool:
@@ -128,18 +129,16 @@ class BackupController(QObject):
     def preview_restore(self, record: BackupRecord | None) -> BackupRecord | None:
         self._preview_record = None
         if record is None:
-            self.set_progress("Выбери запись журнала для проверки")
+            self.set_progress(tr("Выбери запись журнала для проверки"))
             return None
         checked = inspect_backup(record.journal_path)
         self._preview_record = checked if checked.status == "verified" else None
         if checked.status != "verified":
-            detail = checked.error or "Backup недоступен"
-            self.set_error(f"Restore запрещён: {_STATUS_TEXT[checked.status]} — {detail}")
+            detail = checked.error or tr("Резервная копия недоступна")
+            self.set_error(tr("Восстановление запрещено: {0} — {1}", _STATUS_TEXT[checked.status], detail))
             return None
         self.set_progress(
-            f"Проверка копии готова: backup {checked.backup_path.name}; "
-            f"SHA256 {checked.source_sha256}; размер {checked.backup_path.stat().st_size} B. "
-            "Можно создать новую копию или явно откатить исходный слот."
+            tr("Копия проверена: {0}; контрольная сумма {1}; размер {2} Б. Можно восстановить её отдельным файлом или откатить исходное сохранение.", checked.backup_path.name, checked.source_sha256, checked.backup_path.stat().st_size)
         )
         return checked
 
@@ -187,7 +186,7 @@ class BackupController(QObject):
 
     def set_error(self, message: str) -> None:
         self.error_changed.emit(message)
-        self.set_progress("Восстановление остановлено")
+        self.set_progress(tr("Восстановление остановлено"))
 
     def clear_error(self) -> None:
         self.error_changed.emit("")
@@ -195,8 +194,7 @@ class BackupController(QObject):
     def mark_restored(self, receipt: RestoreReceipt) -> None:
         self.refresh()
         self.set_progress(
-            f"Копия восстановлена: {receipt.output_path}; "
-            f"SHA256 {receipt.output_sha256}"
+            tr("Копия восстановлена: {0}; контрольная сумма {1}", receipt.output_path, receipt.output_sha256)
         )
         self._preview_record = None
         self.restored.emit(receipt)
@@ -209,8 +207,7 @@ class BackupController(QObject):
             else ""
         )
         self.set_progress(
-            f"Исходный слот восстановлен: {receipt.output_path}; "
-            f"SHA256 {receipt.output_sha256}{safety}"
+            tr("Исходный файл восстановлен: {0}; контрольная сумма {1}{2}", receipt.output_path, receipt.output_sha256, safety)
         )
         self._preview_record = None
         self.restored_in_place.emit(receipt)

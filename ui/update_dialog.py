@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from editor.i18n import tr
 from editor.update_manifest import ArtifactSpec, ManifestError
 from editor.updater import (
     InstallationInfo,
@@ -91,7 +92,7 @@ class UpdateDialog(QDialog):
         parent=None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Обновление Save Editor")
+        self.setWindowTitle(tr("Обновление Save Editor"))
         self.setModal(True)
         self.installation = installation
         self.client = client
@@ -114,17 +115,17 @@ class UpdateDialog(QDialog):
         )
         self.details_label.setVisible(False)
         layout.addWidget(self.details_label)
-        self.details_button = QPushButton("Технические детали")
+        self.details_button = QPushButton(tr("Технические детали"))
         self.details_button.setObjectName("updateDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._toggle_details)
         layout.addWidget(self.details_button)
 
-        self.download_button = QPushButton("Скачать обновление")
+        self.download_button = QPushButton(tr("Скачать обновление"))
         self.download_button.setObjectName("updateDownloadButton")
         self.download_button.clicked.connect(self._start_download)
         layout.addWidget(self.download_button)
-        self.restart_button = QPushButton("Перезапустить и применить")
+        self.restart_button = QPushButton(tr("Перезапустить и применить"))
         self.restart_button.setObjectName("updateRestartButton")
         self.restart_button.setEnabled(False)
         self.restart_button.clicked.connect(self._apply_update)
@@ -137,29 +138,27 @@ class UpdateDialog(QDialog):
 
     def _render_result(self) -> None:
         if self.check_result.state == "current":
-            self.status_label.setText("Текущая версия актуальна")
+            self.status_label.setText(tr("Текущая версия актуальна"))
             self.download_button.setEnabled(False)
         elif self.check_result.state == "available" and self.check_result.artifact is not None:
             manifest = self.check_result.manifest
-            latest = manifest.version if manifest is not None else "новая версия"
+            latest = manifest.version if manifest is not None else tr("новая версия")
             artifact = self.check_result.artifact
-            self.status_label.setText(f"Доступно обновление: {latest}")
+            self.status_label.setText(tr("Доступно обновление: {0}", latest))
             self._set_technical_details(
-                f"Файл: {artifact.file}\n"
-                f"Размер: {artifact.size / 1024 / 1024:.1f} МБ\n"
-                f"SHA-256: {artifact.sha256}"
+                tr("Файл: {0}\nРазмер: {1:.1f} МБ\nSHA-256: {2}", artifact.file, artifact.size / 1024 / 1024, artifact.sha256)
             )
             self.download_button.setEnabled(self.client is not None)
         elif self.check_result.state == "invalid":
-            self.status_label.setText("Не удалось проверить обновление")
+            self.status_label.setText(tr("Не удалось проверить обновление"))
             self._set_technical_details(
-                self.check_result.error or "Данные обновления некорректны."
+                self.check_result.error or tr("Данные обновления некорректны.")
             )
             self.download_button.setEnabled(False)
         else:
-            self.status_label.setText("Сеть недоступна. Попробуй позже.")
+            self.status_label.setText(tr("Сеть недоступна. Попробуй позже."))
             self._set_technical_details(
-                self.check_result.error or "Приложение можно использовать дальше."
+                self.check_result.error or tr("Приложение можно использовать дальше.")
             )
             self.download_button.setEnabled(False)
 
@@ -169,7 +168,7 @@ class UpdateDialog(QDialog):
         if self._download_thread is not None and self._download_thread.isRunning():
             return
         self.download_button.setEnabled(False)
-        self.status_label.setText("Скачивание и проверка обновления…")
+        self.status_label.setText(tr("Скачивание и проверка обновления…"))
         worker = UpdateDownloadWorker(self.client, self.check_result.artifact, self)
         worker.completed.connect(self._on_downloaded)
         worker.failed.connect(self._on_download_failed)
@@ -184,19 +183,19 @@ class UpdateDialog(QDialog):
             self.check_result.artifact.kind if self.check_result.artifact else "-",
             self.check_result.artifact.file if self.check_result.artifact else "-",
         )
-        self.status_label.setText("Файл обновления проверен; установка ещё не запускалась.")
-        self._set_technical_details(f"Проверенный файл: {Path(path)}")
+        self.status_label.setText(tr("Файл обновления проверен; установка ещё не запускалась."))
+        self._set_technical_details(tr("Проверенный файл: {0}", Path(path)))
         self.restart_button.setText(
-            "Открыть установщик"
+            tr("Открыть установщик")
             if self.check_result.artifact
             and self.check_result.artifact.kind in {"package", "installer"}
-            else "Перезапустить и применить"
+            else tr("Перезапустить и применить")
         )
         self.restart_button.setEnabled(True)
 
     def _on_download_failed(self, message: str) -> None:
         LOGGER.error("update download failed in UI: %s", message)
-        self.status_label.setText("Не удалось скачать или проверить обновление.")
+        self.status_label.setText(tr("Не удалось скачать или проверить обновление."))
         self._set_technical_details(message)
         self.download_button.setEnabled(True)
 
@@ -211,13 +210,12 @@ class UpdateDialog(QDialog):
                 launch_installer(archive, self.installation, kind=artifact.kind)
             except (OSError, ValueError, ManifestError) as exc:
                 LOGGER.exception("update installer handoff rejected kind=%s", artifact.kind)
-                self.status_label.setText("Не удалось запустить установку.")
+                self.status_label.setText(tr("Не удалось запустить установку."))
                 self._set_technical_details(str(exc))
             else:
                 LOGGER.info("update installer handoff opened kind=%s", artifact.kind)
                 self.status_label.setText(
-                    "Установщик запущен; подтверди обновление в системе. "
-                    "Приложение закрывается."
+                    tr("Установщик запущен; подтверди обновление в системе. Приложение закрывается.")
                 )
                 application = QApplication.instance()
                 if application is not None:
@@ -226,19 +224,19 @@ class UpdateDialog(QDialog):
         updater_name = "SaveEditor-updater.exe" if platform.system().casefold() == "windows" else "SaveEditor-updater"
         updater = self.installation.root / updater_name
         if not updater.is_file():
-            self.status_label.setText("Не удалось найти компонент обновления.")
-            self._set_technical_details(f"Ожидаемый путь: {updater}")
+            self.status_label.setText(tr("Не удалось найти компонент обновления."))
+            self._set_technical_details(tr("Ожидаемый путь: {0}", updater))
             return
         command = build_update_command(updater, archive, self.installation)
         try:
             launch_update(command)
         except (OSError, ValueError, ManifestError) as exc:
             LOGGER.exception("portable update handoff failed")
-            self.status_label.setText("Не удалось запустить обновление.")
+            self.status_label.setText(tr("Не удалось запустить обновление."))
             self._set_technical_details(str(exc))
             return
         LOGGER.info("portable update handoff started")
-        self.status_label.setText("Приложение закрывается; обновление будет применено.")
+        self.status_label.setText(tr("Приложение закрывается; обновление будет применено."))
         application = QApplication.instance()
         if application is not None:
             application.quit()
@@ -250,7 +248,7 @@ class UpdateDialog(QDialog):
         self.details_button.setVisible(visible)
         if not visible:
             self.details_label.setVisible(False)
-            self.details_button.setText("Технические детали")
+            self.details_button.setText(tr("Технические детали"))
 
     def _toggle_details(self) -> None:
         if not self._technical_detail_text:

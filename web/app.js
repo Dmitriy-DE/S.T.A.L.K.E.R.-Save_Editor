@@ -3,6 +3,8 @@
 // operations deliberately remain desktop-only.
 
 import { installCatalogs, loadCoreResources } from "./bootstrap.js";
+import { fadeIn, play, setSoundTheme } from "./effects.js";
+import { catalogSource, currentLanguage, t, tn } from "./i18n.js";
 import {
   BROWSER_UI_COPY,
   capabilityLabel,
@@ -45,32 +47,32 @@ let referenceScreen = "library";
 function refreshReferenceData() {
   if (state.snapshot) {
     renderReferenceSnapshot(state.snapshot);
-    setStatus("Данные обновлены; исходный файл не изменён");
+    setStatus(t("Данные обновлены; исходный файл не изменён"));
   } else {
-    setStatus("Открой локальный файл сохранения", "error");
+    setStatus(t("Открой локальный файл сохранения"), "error");
   }
 }
 
 function footerActionsFor(screen) {
   const actions = {
     library: [
-      ["Enter", "Открыть", () => state.snapshot ? showReferenceScreen("editor") : el("file-input").click()],
-      ["I", "Импорт", () => el("file-input").click()],
-      ["R", "Обновить", refreshReferenceData],
-      ["F", "Фильтр", () => el("reference-library-search")?.focus()],
+      ["Enter", t("Открыть"), () => state.snapshot ? showReferenceScreen("editor") : el("file-input").click()],
+      ["I", t("Импорт"), () => el("file-input").click()],
+      ["R", t("Обновить"), refreshReferenceData],
+      ["F", t("Фильтр"), () => el("reference-library-search")?.focus()],
     ],
     editor: [
-      ["S", "Сохранить", () => { if (referenceChangeCount() > 0) showReferenceScreen("review"); }],
-      ["F", "Фильтр", () => el("reference-inventory-search")?.focus()],
-      ["Esc", "Назад", () => showReferenceScreen("library")],
+      ["S", t("Сохранить"), () => { if (referenceChangeCount() > 0) showReferenceScreen("review"); }],
+      ["F", t("Фильтр"), () => el("reference-inventory-search")?.focus()],
+      ["Esc", t("Назад"), () => showReferenceScreen("library")],
     ],
     review: [
-      ["Enter", "Подтвердить", () => el("reference-review-save")?.click()],
-      ["Esc", "Отмена", () => showReferenceScreen("editor")],
+      ["Enter", t("Подтвердить"), () => el("reference-review-save")?.click()],
+      ["Esc", t("Отмена"), () => showReferenceScreen("editor")],
     ],
-    cloud: [["Esc", "Назад", () => showReferenceScreen("library")]],
-    history: [["Esc", "Назад", () => showReferenceScreen("library")]],
-    settings: [["Esc", "Назад", () => showReferenceScreen("library")]],
+    cloud: [["Esc", t("Назад"), () => showReferenceScreen("library")]],
+    history: [["Esc", t("Назад"), () => showReferenceScreen("library")]],
+    settings: [["Esc", t("Назад"), () => showReferenceScreen("library")]],
   };
   return actions[screen] ?? [];
 }
@@ -102,6 +104,7 @@ function setStatus(text, kind = "") {
 
 function fail(error, kind = "generic") {
   console.error(error);
+  play("error");
   const details = String(error && error.message ? error.message : error);
   const presentation = errorPresentation(kind, details);
   setStatus(presentation.message, "error");
@@ -129,7 +132,7 @@ function setTechnicalDetails(value) {
 function showTechnicalDetails() {
   if (!technicalDetailText) return;
   el("technical-details-text").textContent = technicalDetailText;
-  el("technical-details-copy").textContent = "Копировать";
+  el("technical-details-copy").textContent = t("Копировать");
   detailsDialog.showModal();
 }
 
@@ -138,6 +141,7 @@ function showReferenceScreen(name) {
   for (const screen of document.querySelectorAll(".reference-screen")) {
     screen.hidden = screen.id !== `reference-screen-${name}`;
     screen.classList.toggle("is-active", !screen.hidden);
+    if (!screen.hidden) fadeIn(screen);
   }
   for (const button of document.querySelectorAll(".reference-nav-button")) {
     button.classList.toggle("is-active", button.dataset.referenceScreen === name);
@@ -164,11 +168,11 @@ function snapshotItem(handle) {
 
 function setItemTechnicalDetails(item) {
   const lines = [];
-  if (state.snapshot?.sha256) lines.push(`SHA-256 сохранения: ${state.snapshot.sha256}`);
+  if (state.snapshot?.sha256) lines.push(t("SHA-256 сохранения: {0}", state.snapshot.sha256));
   if (item) {
-    lines.push(`Идентификатор предмета: ${item.handle_hex ?? item.handle}`);
-    lines.push(`Ключ типа: ${item.type_key ?? "не определён"}`);
-    if (item.remove_reason) lines.push(`Причина недоступности удаления: ${item.remove_reason}`);
+    lines.push(t("Идентификатор предмета: {0}", item.handle_hex ?? item.handle));
+    lines.push(t("Ключ типа: {0}", item.type_key ?? t("не определён")));
+    if (item.remove_reason) lines.push(t("Причина недоступности удаления: {0}", item.remove_reason));
   }
   setTechnicalDetails(technicalDetails(lines.join("\n")));
 }
@@ -178,8 +182,8 @@ function formatCondition(value) {
 }
 
 function placementLabel(placementType, slotId) {
-  if (placementType === "slot" && slotId !== null && slotId !== undefined) return `Слот ${slotId}`;
-  return { belt: "Пояс", ruck: "Рюкзак" }[placementType] ?? "Неизвестно";
+  if (placementType === "slot" && slotId !== null && slotId !== undefined) return t("Слот {0}", slotId);
+  return { belt: t("Пояс"), ruck: t("Рюкзак") }[placementType] ?? t("Неизвестно");
 }
 
 function itemCategoryGlyph(category) {
@@ -187,7 +191,7 @@ function itemCategoryGlyph(category) {
   const glyph = document.createElement("span");
   glyph.className = `zone-item-glyph zone-item-glyph-${value || "item"}`;
   glyph.setAttribute("role", "img");
-  glyph.setAttribute("aria-label", `Категория предмета: ${category || "неизвестно"}`);
+  glyph.setAttribute("aria-label", t("Категория предмета: {0}", category || t("неизвестно")));
   glyph.textContent = "—";
   return glyph;
 }
@@ -202,7 +206,7 @@ function itemGlyph(item) {
   let candidateIndex = 0;
   const setSource = () => {
     const candidate = candidates[candidateIndex];
-    img.alt = `Иконка предмета: ${item.name ?? item.category ?? "предмет"}`;
+    img.alt = t("Иконка предмета: {0}", item.name ?? item.category ?? t("предмет"));
     img.title = "";
     img.src = `icons/${encodeURIComponent(candidate)}.png`;
   };
@@ -229,36 +233,36 @@ function renderReferenceReview() {
   const table = el("reference-review-table");
   if (!table || !state.snapshot) return;
   const rows = [];
-  if (state.money !== null) rows.push(["Баланс", String(state.snapshot.money ?? "—"), String(state.money)]);
+  if (state.money !== null) rows.push([t("Баланс"), String(state.snapshot.money ?? "—"), String(state.money)]);
   for (const [handle, count] of state.stacks) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? "Предмет", String(item?.count ?? "—"), String(count)]);
+    rows.push([item?.name ?? t("Предмет"), String(item?.count ?? "—"), String(count)]);
   }
   for (const [handle, condition] of state.durability) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? "Предмет", formatCondition(item?.condition), formatCondition(condition)]);
+    rows.push([item?.name ?? t("Предмет"), formatCondition(item?.condition), formatCondition(condition)]);
   }
   for (const [handle, placement] of state.placements) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? "Предмет", placementLabel(item?.placement_type, item?.placement_slot), placementLabel(placement[0], placement[1])]);
+    rows.push([item?.name ?? t("Предмет"), placementLabel(item?.placement_type, item?.placement_slot), placementLabel(placement[0], placement[1])]);
   }
   for (const [handle, values] of state.upgrades) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? "Предмет", upgradeNames(item, item?.upgrades), upgradeNames(item, values)]);
+    rows.push([item?.name ?? t("Предмет"), upgradeNames(item, item?.upgrades), upgradeNames(item, values)]);
   }
   for (const [key, quantity] of state.adds) {
     const catalogItem = (state.snapshot.catalog_items ?? []).find((item) => item.key === key);
-    rows.push([catalogItem?.name ?? "Предмет из каталога", "нет", `добавить × ${quantity}`]);
+    rows.push([catalogItem?.name ?? t("Предмет из каталога"), t("нет"), t("добавить × {0}", quantity)]);
   }
   for (const handle of state.detach) {
     const item = snapshotItem(handle);
-    rows.push([item?.name ?? "Предмет", "в сохранении", "удалить"]);
+    rows.push([item?.name ?? t("Предмет"), t("в сохранении"), t("удалить")]);
   }
   for (const [key, goodwill] of state.relations) {
     const row = state.snapshot.faction_relations?.find((entry) => entry.key === key);
-    rows.push([row?.name ?? "Группировка", String(row?.value ?? 0), String(goodwill)]);
+    rows.push([row?.name ?? t("Группировка"), String(row?.value ?? 0), String(goodwill)]);
   }
-  if (state.playerFaction !== null) rows.push(["Группировка игрока", "текущая", factionName(state.playerFaction)]);
+  if (state.playerFaction !== null) rows.push([t("Группировка игрока"), t("текущая"), factionName(state.playerFaction)]);
   table.tBodies[0].replaceChildren(...(rows.length ? rows.map((values) => {
     const tr = document.createElement("tr");
     for (const value of values) {
@@ -268,11 +272,11 @@ function renderReferenceReview() {
     }
     return tr;
   }) : [Object.assign(document.createElement("tr"), {
-    innerHTML: '<td colspan="3" class="reference-empty">Изменений ещё нет.</td>',
+    innerHTML: t("<td colspan=\"3\" class=\"reference-empty\">Изменений ещё нет.</td>"),
   })]));
   const count = referenceChangeCount();
   el("reference-review-save").disabled = count === 0;
-  el("reference-save").textContent = `СОХРАНИТЬ ${count} ИЗМЕНЕНИЙ`;
+  el("reference-save").textContent = t("СОХРАНИТЬ {0}", t("{0} {1}", count, tn(count, "ИЗМЕНЕНИЕ", "ИЗМЕНЕНИЯ", "ИЗМЕНЕНИЙ")));
   el("reference-save").disabled = count === 0;
 }
 
@@ -284,14 +288,14 @@ function upgradeDefinitionsFor(item) {
 
 function upgradeNames(item, keys) {
   const definitions = upgradeDefinitionsFor(item);
-  return (keys ?? []).map((key) => definitions.find((entry) => entry.key === key)?.name ?? "Неизвестная модификация").join(", ") || "нет";
+  return (keys ?? []).map((key) => definitions.find((entry) => entry.key === key)?.name ?? t("Неизвестная модификация")).join(", ") || t("нет");
 }
 
 function factionName(key) {
   const faction = (state.snapshot?.catalog_factions ?? []).find((entry) => entry.key === key);
   return faction && faction.name !== faction.key
     ? faction.name
-    : `Группировка ${faction?.numeric_id ?? ""}`.trim();
+    : t("Группировка {0}", faction?.numeric_id ?? "").trim();
 }
 
 function renderReferenceItemDetail(item) {
@@ -300,23 +304,23 @@ function renderReferenceItemDetail(item) {
   setItemTechnicalDetails(item);
   const reset = el("reference-item-reset");
   if (!item) {
-    el("reference-item-name").textContent = "Предмет не выбран";
-    el("reference-item-type").textContent = "Выбери строку инвентаря";
+    el("reference-item-name").textContent = t("Предмет не выбран");
+    el("reference-item-type").textContent = t("Выбери строку инвентаря");
     el("reference-item-image").replaceChildren(document.createTextNode("—"));
-    el("reference-item-detail").textContent = "Это значение нельзя изменить.";
-    el("reference-item-gate").textContent = "НЕТ ВЫБОРА";
+    el("reference-item-detail").textContent = t("Это значение нельзя изменить.");
+    el("reference-item-gate").textContent = t("НЕТ ВЫБОРА");
     reset.disabled = true;
     return;
   }
   const caps = state.snapshot.capabilities ?? {};
   const selectedImage = el("reference-item-image");
   selectedImage.replaceChildren(itemGlyph(item));
-  el("reference-item-name").textContent = item.name ?? "Неизвестный объект";
-  el("reference-item-type").textContent = item.category_label ?? item.category ?? "Предмет";
-  el("reference-item-detail").textContent = `Позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Это значение нельзя изменить.`;
+  el("reference-item-name").textContent = item.name ?? t("Неизвестный объект");
+  el("reference-item-type").textContent = item.category_label ?? item.category ?? t("Предмет");
+  el("reference-item-detail").textContent = t("Позиция: {0}. Это значение нельзя изменить.", placementLabel(item.placement_type, item.placement_slot));
   el("reference-item-detail").title = "";
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
-  el("reference-item-gate").textContent = writable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
+  el("reference-item-gate").textContent = writable ? t("МОЖНО ИЗМЕНИТЬ") : t("ТОЛЬКО ЧТЕНИЕ");
   el("reference-item-gate").className = `reference-chip ${writable ? "success" : "warning"}`;
   reset.disabled = !referenceItemStaged(item);
 
@@ -327,7 +331,7 @@ function renderReferenceItemDetail(item) {
     input.max = String(state.snapshot.stack_max ?? 1000000);
     input.value = String(state.stacks.get(item.handle) ?? item.count ?? 1);
     input.addEventListener("change", () => stageStack(item, input.value));
-    addDetailField(fields, "Количество", input);
+    addDetailField(fields, t("Количество"), input);
   }
   if (item.condition_editable && caps.edit_durability) {
     const input = document.createElement("input");
@@ -337,7 +341,7 @@ function renderReferenceItemDetail(item) {
     input.step = "0.1";
     input.value = String(((state.durability.get(item.handle) ?? item.condition) * 100).toFixed(1));
     input.addEventListener("change", () => stageDurability(item, input.value));
-    addDetailField(fields, "Состояние", input);
+    addDetailField(fields, t("Состояние"), input);
   }
   if (item.placement_editable && caps.edit_placement) {
     const select = document.createElement("select");
@@ -349,7 +353,7 @@ function renderReferenceItemDetail(item) {
       option.selected = placementType === current[0] && slotId === current[1];
       select.append(option);
     }
-    select.title = "Экспериментальная функция. Перед изменениями создаётся резервная копия.";
+    select.title = t("Экспериментальная функция. Перед изменениями создаётся резервная копия.");
     select.addEventListener("change", () => {
       const [placementType, rawSlot] = select.value.split(":");
       const slotId = rawSlot === undefined ? null : Number(rawSlot);
@@ -358,7 +362,7 @@ function renderReferenceItemDetail(item) {
       invalidate();
       renderReferenceEditor(state.snapshot);
     });
-    addDetailField(fields, "Размещение", select);
+    addDetailField(fields, t("Размещение"), select);
   }
   if (Array.isArray(item.upgrades)) {
     const definitions = upgradeDefinitionsFor(item);
@@ -371,12 +375,12 @@ function renderReferenceItemDetail(item) {
         const option = document.createElement("option");
         const definition = definitions.find((entry) => entry.key === key);
         option.value = key;
-        option.textContent = definition ? definition.name : "Неизвестное улучшение";
+        option.textContent = definition ? definition.name : t("Неизвестное улучшение");
         option.title = "";
         option.selected = effective.includes(key);
         select.append(option);
       }
-      select.title = "Экспериментальная функция. Перед изменениями создаётся резервная копия.";
+      select.title = t("Экспериментальная функция. Перед изменениями создаётся резервная копия.");
       select.addEventListener("change", () => {
         const values = [...select.selectedOptions].map((option) => option.value);
         if (values.length === item.upgrades.length && values.every((key, index) => key === item.upgrades[index])) state.upgrades.delete(item.handle);
@@ -384,11 +388,11 @@ function renderReferenceItemDetail(item) {
         invalidate();
         renderReferenceEditor(state.snapshot);
       });
-      addDetailField(fields, "Улучшения", select);
+      addDetailField(fields, t("Улучшения"), select);
     } else {
       const evidence = document.createElement("div");
       evidence.className = "reference-readonly-detail";
-      evidence.textContent = "Улучшения доступны только для просмотра.";
+      evidence.textContent = t("Улучшения доступны только для просмотра.");
       evidence.removeAttribute("title");
       fields.append(evidence);
     }
@@ -397,9 +401,9 @@ function renderReferenceItemDetail(item) {
     const remove = document.createElement("button");
     remove.className = "reference-danger";
     remove.type = "button";
-    remove.textContent = state.detach.has(item.handle) ? "ОТМЕНИТЬ УДАЛЕНИЕ" : "УДАЛИТЬ ПРЕДМЕТ";
+    remove.textContent = state.detach.has(item.handle) ? t("ОТМЕНИТЬ УДАЛЕНИЕ") : t("УДАЛИТЬ ПРЕДМЕТ");
     remove.disabled = !item.remove_editable;
-    remove.title = "Удалить предмет";
+    remove.title = t("Удалить предмет");
     remove.addEventListener("click", () => {
       if (state.detach.has(item.handle)) state.detach.delete(item.handle);
       else {
@@ -417,7 +421,7 @@ function renderReferenceItemDetail(item) {
 
 // S.T.A.L.K.E.R. 2 pays in coupons; the original trilogy uses roubles.
 function currencySuffix(s) {
-  return String(s?.release_id ?? "").startsWith("stalker2") ? "куп." : "₽";
+  return String(s?.release_id ?? "").startsWith("stalker2") ? t("куп.") : "₽";
 }
 
 function formatMoney(value) {
@@ -444,7 +448,7 @@ function stageStack(item, rawValue) {
   const value = Number(rawValue);
   const max = Number(state.snapshot?.stack_max ?? 1000000);
   if (!Number.isInteger(value) || value < 1 || value > max) {
-    setStatus(`Количество должно быть целым числом 1…${max}`, "error");
+    setStatus(t("Количество должно быть целым числом 1…{0}", max), "error");
     return;
   }
   if (value === item.count) state.stacks.delete(item.handle);
@@ -456,7 +460,7 @@ function stageStack(item, rawValue) {
 function stageDurability(item, rawValue) {
   const value = Number(rawValue);
   if (!Number.isFinite(value) || value < 0 || value > 100) {
-    setStatus("Состояние должно быть числом 0…100", "error");
+    setStatus(t("Состояние должно быть числом 0…100"), "error");
     return;
   }
   const normalized = value / 100;
@@ -479,7 +483,7 @@ function renderReferenceEditor(s) {
     select.className = "reference-row-select";
     select.type = "button";
     select.textContent = item.handle === state.referenceSelectedHandle ? "✓" : "□";
-    select.title = "Выбрать предмет";
+    select.title = t("Выбрать предмет");
     select.addEventListener("click", () => {
       state.referenceSelectedHandle = item.handle;
       renderReferenceEditor(s);
@@ -506,17 +510,17 @@ function renderReferenceEditor(s) {
     condition.textContent = formatCondition(state.durability.get(item.handle) ?? item.condition);
     row.append(condition);
     const support = document.createElement("td");
-    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
-    support.className = support.textContent === "ТОЛЬКО ПРОСМОТР" ? "muted" : "";
+    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? t("МОЖНО ИЗМЕНИТЬ") : t("ТОЛЬКО ЧТЕНИЕ");
+    support.className = support.textContent === t("ТОЛЬКО ЧТЕНИЕ") ? "muted" : "";
     row.append(support);
     const action = document.createElement("td");
     action.textContent = item.remove_editable ? "…" : "—";
     row.append(action);
     return row;
   }) : [Object.assign(document.createElement("tr"), {
-    innerHTML: '<td colspan="8" class="reference-empty">Предметов не найдено.</td>',
+    innerHTML: t("<td colspan=\"8\" class=\"reference-empty\">Предметов не найдено.</td>"),
   })]));
-  el("reference-item-count").textContent = `Элементов: ${s.inventory_count ?? items.length}`;
+  el("reference-item-count").textContent = t("Предметов: {0}", s.inventory_count ?? items.length);
   const selected = (s.inventory ?? []).find((item) => item.handle === state.referenceSelectedHandle) ?? items[0] ?? null;
   if (selected && state.referenceSelectedHandle === null) state.referenceSelectedHandle = selected.handle;
   renderReferenceItemDetail(selected);
@@ -552,7 +556,7 @@ function renderReferenceCharacter(s) {
   panel.replaceChildren();
   panel.hidden = !supported;
   if (!supported) {
-    panel.textContent = "Данные о персонаже и группировках недоступны для этого сохранения.";
+    panel.textContent = t("Данные о персонаже и группировках недоступны для этого сохранения.");
     panel.hidden = false;
     return;
   }
@@ -561,7 +565,7 @@ function renderReferenceCharacter(s) {
     for (const faction of factions) {
       const option = document.createElement("option");
       option.value = faction.key;
-      option.textContent = faction.name === faction.key ? `Группировка ${faction.numeric_id}` : faction.name;
+      option.textContent = faction.name === faction.key ? t("Группировка {0}", faction.numeric_id) : faction.name;
       option.title = "";
       option.selected = faction.numeric_id === s.player_faction_index || faction.key === state.playerFaction;
       select.append(option);
@@ -569,7 +573,7 @@ function renderReferenceCharacter(s) {
     const button = document.createElement("button");
     button.className = "reference-secondary";
     button.type = "button";
-    button.textContent = state.playerFaction === null ? "ИЗМЕНИТЬ ГРУППИРОВКУ" : "ГРУППИРОВКА*";
+    button.textContent = state.playerFaction === null ? t("ИЗМЕНИТЬ ГРУППИРОВКУ") : t("ГРУППИРОВКА*");
     button.addEventListener("click", () => {
       const current = factions.find((entry) => entry.numeric_id === s.player_faction_index)?.key;
       state.playerFaction = select.value === current ? null : select.value;
@@ -577,7 +581,7 @@ function renderReferenceCharacter(s) {
       renderReferenceCharacter(s);
       renderReferenceReview();
     });
-    addDetailField(panel, "Игрок", select);
+    addDetailField(panel, t("Игрок"), select);
     panel.append(button);
   }
   for (const relation of rows.slice(0, 8)) {
@@ -597,19 +601,19 @@ function renderReferenceCharacter(s) {
       renderReferenceCharacter(s);
       renderReferenceReview();
     });
-    addDetailField(panel, relation.name ?? "Группировка", input);
+    addDetailField(panel, relation.name ?? t("Группировка"), input);
   }
 }
 
 function renderReferenceSnapshot(s) {
-  el("reference-game-count").textContent = "1 сохранение";
+  el("reference-game-count").textContent = t("1 сохранение");
   el("reference-preview-name").textContent = s.name;
   const previewMeta = el("reference-preview-meta");
   previewMeta.replaceChildren();
   for (const [index, line] of [
-    `Игра: ${s.format_title}`,
-    "Источник: локальное сохранение",
-    `Размер: ${s.size_text}`,
+    t("Игра: {0}", s.format_title),
+    t("Источник: локальное сохранение"),
+    t("Размер: {0}", s.size_text),
     `${BROWSER_UI_COPY.integrity}: ${integrityLabel(s)}`,
   ].entries()) {
     if (index) previewMeta.append(document.createElement("br"));
@@ -617,27 +621,27 @@ function renderReferenceSnapshot(s) {
   }
   previewMeta.title = "";
   el("reference-preview-status").textContent = integrityLabel(s).toUpperCase();
-  el("reference-activity").textContent = `Проанализирован ${s.name}; исходный файл не изменён.`;
+  el("reference-activity").textContent = t("Проанализирован {0}; исходный файл не изменён.", s.name);
   const caps = s.capabilities ?? {};
   const editable = Boolean(caps.edit_money || caps.edit_stacks || caps.edit_durability || caps.edit_placement || caps.edit_upgrades);
   el("reference-preview-capability").textContent = capabilityLabel(editable);
   el("reference-preview-capability").className = `reference-chip ${editable ? "success" : "warning"}`;
-  el("reference-summary-money").innerHTML = `ДЕНЬГИ<br>${formatMoney(s.money)} ${currencySuffix(s)}`;
-  el("reference-summary-items").innerHTML = `ПРЕДМЕТЫ<br>${s.inventory_count ?? "—"}`;
-  el("reference-summary-equipment").innerHTML = `ЭКИПИРОВКА<br>${s.equipment_count ?? "—"}`;
+  el("reference-summary-money").innerHTML = t("ДЕНЬГИ<br>{0} {1}", formatMoney(s.money), currencySuffix(s));
+  el("reference-summary-items").innerHTML = t("ПРЕДМЕТЫ<br>{0}", s.inventory_count ?? "—");
+  el("reference-summary-equipment").innerHTML = t("ЭКИПИРОВКА<br>{0}", s.equipment_count ?? "—");
   el("reference-summary-condition").innerHTML = `${BROWSER_UI_COPY.integritySummary}<br>${integrityLabel(s)}`;
   el("reference-editor-breadcrumb").textContent = `${s.format_title}  ›  ${s.name}`;
   el("reference-editor-state").textContent = capabilityLabel(editable);
   el("reference-editor-state").className = `reference-chip ${editable ? "success" : "warning"}`;
-  el("reference-money").textContent = `ДЕНЬГИ  ${formatMoney(s.money)} ${currencySuffix(s)}`;
+  el("reference-money").textContent = t("ДЕНЬГИ  {0} {1}", formatMoney(s.money), currencySuffix(s));
   el("reference-money-input").value = String(s.money ?? 0);
   el("reference-money-input").disabled = !s.money_editable;
   el("reference-money-clear").disabled = state.money === null;
-  el("reference-weight").textContent = "ВЕС  — кг";
-  el("reference-source").innerHTML = "Источник<br>Локальный файл";
+  el("reference-weight").textContent = t("ВЕС  — кг");
+  el("reference-source").innerHTML = t("Источник<br>Локальный файл");
   el("reference-integrity").innerHTML = `${BROWSER_UI_COPY.integrity}<br>${integrityLabel(s)}`;
-  el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только просмотр"}`;
-  el("reference-equipment-summary").textContent = `${s.equipment_count ?? 0} объектов оборудования · неподтверждённые данные нельзя изменить`;
+  el("reference-editor-capability").innerHTML = t("Статус<br>{0}", editable ? t("Можно изменять") : t("Только чтение"));
+  el("reference-equipment-summary").textContent = t("{0} объектов оборудования · неподтверждённые данные нельзя изменить", s.equipment_count ?? 0);
   renderReferenceEditor(s);
   renderReferenceCharacter(s);
 }
@@ -657,7 +661,10 @@ async function boot() {
   py.FS.mkdirTree("/core/editor");
   for (const [name, source] of Object.entries(bundle.files)) py.FS.writeFile(`/core/${name}`, source, { encoding: "utf8" });
   py.FS.writeFile("/core/web_bridge.py", bridgeSource, { encoding: "utf8" });
-  py.runPython(`import sys; sys.path.insert(0, "/core")`);
+  // The shared core translates its messages from the same locale file.
+  py.FS.mkdirTree("/core/locales");
+  py.FS.writeFile(`/core/locales/${currentLanguage()}.json`, catalogSource(), { encoding: "utf8" });
+  py.runPython(`import os, sys; os.environ["STALKER_EDITOR_LANG"] = ${JSON.stringify(currentLanguage())}; sys.path.insert(0, "/core")`);
   globalThis.__oozDecompress = (stream, size) => ooz.decompress(stream, size);
   const bridge = py.pyimport("web_bridge");
   bridge.install_decoder(globalThis.__oozDecompress);
@@ -666,22 +673,24 @@ async function boot() {
   state.catalogsReady = installCatalogs({ bridge });
   state.catalogsReady.catch(fail);
   el("file-input").disabled = false;
-  setStatus("Редактор готов. Выбери локальное сохранение.");
+  setStatus(t("Редактор готов. Выбери локальное сохранение."));
   state.catalogsReady.then(
-    () => { if (!state.snapshot) setStatus("Приложение готово. Открой локальный файл сохранения."); },
+    () => { if (!state.snapshot) setStatus(t("Приложение готово. Открой локальный файл сохранения.")); },
     () => {},
   );
 }
 
 async function openFile(file) {
   if (!state.bridge || !state.catalogsReady) return;
-  setStatus("Открытие сохранения…", "busy");
+  setStatus(t("Открытие сохранения…"), "busy");
   try {
     const bytesReady = file.arrayBuffer();
     await state.catalogsReady;
     const bytes = new Uint8Array(await bytesReady);
     const snapshot = JSON.parse(state.bridge.analyze(bytes, file.name));
     state.snapshot = snapshot;
+    setSoundTheme(snapshot.release_id ?? snapshot.format_id);
+    play("open");
     state.money = null;
     state.stacks.clear();
     state.durability.clear();
@@ -694,7 +703,7 @@ async function openFile(file) {
     state.referenceSelectedHandle = null;
     state.prepared = null;
     renderSnapshot(snapshot);
-    setStatus("Сохранение проверено; исходный файл не изменён");
+    setStatus(t("Сохранение проверено; исходный файл не изменён"));
     setItemTechnicalDetails(snapshotItem(state.referenceSelectedHandle));
   } catch (error) {
     fail(error, "open");
@@ -705,14 +714,14 @@ function invalidate() {
   if (state.prepared !== null) state.prepared = null;
   if (state.snapshot) {
     renderReferenceReview();
-    el("reference-review-status").textContent = "Изменения готовы к проверке; исходный файл не изменён.";
+    el("reference-review-status").textContent = t("Изменения готовы к проверке; исходный файл не изменён.");
   }
 }
 
 function preview() {
   try {
-    if (!state.snapshot || !state.bridge) throw new Error("Сначала открой сохранение");
-    setStatus("Проверка изменений и создание копии…", "busy");
+    if (!state.snapshot || !state.bridge) throw new Error(t("Сначала открой сохранение"));
+    setStatus(t("Проверка изменений и создание копии…"), "busy");
     const result = JSON.parse(state.bridge.prepare(
       state.money,
       JSON.stringify([...state.stacks.entries()]),
@@ -725,9 +734,9 @@ function preview() {
       JSON.stringify([...state.placements.entries()].map(([handle, [placementType, slotId]]) => [handle, placementType, slotId])),
     ));
     state.prepared = result;
-    el("reference-review-status").textContent = `Копия проверена (${result.size_text}). Оригинальный файл пока не изменён.`;
-    setStatus("Проверка выполнена; можно скачать копию");
-    setTechnicalDetails(technicalDetails(`SHA-256 копии: ${result.output_sha256}`));
+    el("reference-review-status").textContent = t("Копия проверена ({0}). Оригинальный файл пока не изменён.", result.size_text);
+    setStatus(t("Проверка выполнена; можно скачать копию"));
+    setTechnicalDetails(technicalDetails(t("SHA-256 копии: {0}", result.output_sha256)));
     return result;
   } catch (error) {
     fail(error, "verify");
@@ -746,8 +755,9 @@ function download() {
     const link = Object.assign(document.createElement("a"), { href: url, download: name });
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(`Сохранена проверенная копия ${name}; исходный файл не изменён.`);
-    setTechnicalDetails(technicalDetails(`SHA-256 копии: ${state.prepared.output_sha256}`));
+    play("save");
+    setStatus(t("Сохранена проверенная копия {0}; исходный файл не изменён.", name));
+    setTechnicalDetails(technicalDetails(t("SHA-256 копии: {0}", state.prepared.output_sha256)));
   } catch (error) {
     fail(error, "verify");
   }
@@ -765,7 +775,7 @@ el("reference-character").addEventListener("click", () => {
   if (!state.snapshot) return;
   renderReferenceCharacter(state.snapshot);
   details.hidden = !details.hidden;
-  setStatus(details.hidden ? "Персонаж скрыт" : "Данные о персонаже и группировках показаны.");
+  setStatus(details.hidden ? t("Персонаж скрыт") : t("Данные о персонаже и группировках показаны."));
 });
 el("reference-save").addEventListener("click", () => {
   if (referenceChangeCount() > 0) showReferenceScreen("review");
@@ -777,7 +787,7 @@ el("technical-details-copy").addEventListener("click", async () => {
   const text = el("technical-details-text").textContent ?? "";
   try {
     await navigator.clipboard.writeText(text);
-    el("technical-details-copy").textContent = "Скопировано";
+    el("technical-details-copy").textContent = t("Скопировано");
   } catch {
     const fallback = document.createElement("textarea");
     fallback.value = text;
@@ -787,7 +797,7 @@ el("technical-details-copy").addEventListener("click", async () => {
     document.body.append(fallback);
     fallback.select();
     if (document.execCommand("copy")) {
-      el("technical-details-copy").textContent = "Скопировано";
+      el("technical-details-copy").textContent = t("Скопировано");
     }
     fallback.remove();
   }
@@ -807,14 +817,14 @@ el("reference-money-input").addEventListener("input", () => {
   if (!state.snapshot?.money_editable) return;
   const value = Number(el("reference-money-input").value);
   if (!Number.isInteger(value) || value < 0 || value > 2_000_000_000) {
-    setStatus("Сумма должна быть целым числом 0…2 000 000 000", "error");
+    setStatus(t("Сумма должна быть целым числом 0…2 000 000 000"), "error");
     return;
   }
   state.money = value === state.snapshot.money ? null : value;
   invalidate();
-  el("reference-money").textContent = `ДЕНЬГИ  ${formatMoney(value)} ${currencySuffix(state.snapshot)}`;
+  el("reference-money").textContent = t("ДЕНЬГИ  {0} {1}", formatMoney(value), currencySuffix(state.snapshot));
   el("reference-money-clear").disabled = state.money === null;
-  setStatus("Баланс изменён в памяти; исходный файл не изменён");
+  setStatus(t("Баланс изменён в памяти; исходный файл не изменён"));
 });
 el("reference-money-clear").addEventListener("click", () => {
   state.money = null;
@@ -840,13 +850,13 @@ el("reference-add-button").addEventListener("click", () => {
   const definition = (state.snapshot?.catalog_items ?? []).find((item) => item.key === key);
   const max = Number(definition?.max_stack ?? 65535);
   if (!key || !Number.isInteger(quantity) || quantity < 1 || quantity > max) {
-    setStatus(`Количество должно быть целым числом 1…${max}`, "error");
+    setStatus(t("Количество должно быть целым числом 1…{0}", max), "error");
     return;
   }
   state.adds.set(key, quantity);
   invalidate();
   renderReferenceEditor(state.snapshot);
-  setStatus(`Добавлен предмет: ${definition?.name ?? "из каталога"}. Оригинальный файл пока не изменён.`);
+  setStatus(t("Добавлен предмет: {0}. Оригинальный файл пока не изменён.", definition?.name ?? t("из каталога")));
 });
 el("file-input").addEventListener("change", (event) => {
   const file = event.target.files?.[0];
@@ -882,9 +892,9 @@ for (const button of document.querySelectorAll(".support-copy")) {
       copied = document.execCommand("copy");
       input.remove();
     }
-    if (copied) button.textContent = "Скопировано";
-    else button.textContent = "Не удалось скопировать";
-    setTimeout(() => { button.textContent = "Копировать"; }, 1400);
+    if (copied) button.textContent = t("Скопировано");
+    else button.textContent = t("Не удалось скопировать");
+    setTimeout(() => { button.textContent = t("Копировать"); }, 1400);
   });
 }
 

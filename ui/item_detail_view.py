@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import ClassVar
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import UpgradeCatalog
 from editor.equipment import category_label
+from editor.i18n import tr
 from save_format import InventoryItem
 
 from .formatting import count_ru
@@ -34,11 +36,11 @@ from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
 
 _DETAIL_IMAGE_SIZE = QSize(355, 80)
-_PLACEMENT_LABELS = {"belt": "Пояс", "ruck": "Рюкзак"}
+_PLACEMENT_LABELS = {"belt": tr("Пояс"), "ruck": tr("Рюкзак")}
 _SOURCE_LABELS = {
-    "actor_inventory": "инвентарь игрока",
-    "grid": "инвентарь",
-    "equipped": "экипировка",
+    "actor_inventory": tr("инвентарь игрока"),
+    "grid": tr("инвентарь"),
+    "equipped": tr("экипировка"),
 }
 
 
@@ -57,7 +59,7 @@ def _detail_pixmap(icon: QIcon) -> QPixmap:
 
 def _placement_text(placement_type: str | None, slot: int | None) -> str:
     if placement_type == "slot":
-        return f"Слот {slot}" if slot is not None else "Слот"
+        return tr("Слот {0}", slot) if slot is not None else tr("Слот")
     return _PLACEMENT_LABELS.get(str(placement_type), "—")
 
 
@@ -106,8 +108,8 @@ class ItemDetailView(QWidget):
         body = QVBoxLayout(self.detail_content)
         body.setContentsMargins(0, 0, 5, 4)
         body.setSpacing(4)
-        self.status_chip = status_chip("ТОЛЬКО ПРОСМОТР", self.detail_content, tone="neutral")
-        detail_header = section_header("ПРЕДМЕТ", parent=self.detail_content)
+        self.status_chip = status_chip(tr("ТОЛЬКО ЧТЕНИЕ"), self.detail_content, tone="neutral")
+        detail_header = section_header(tr("ПРЕДМЕТ"), parent=self.detail_content)
         detail_header.setObjectName("detailHeader")
         detail_header.setFixedHeight(40)
         detail_header_layout = detail_header.layout()
@@ -115,11 +117,11 @@ class ItemDetailView(QWidget):
             raise RuntimeError("item detail header has no layout")
         detail_header_layout.addWidget(self.status_chip)
         body.addWidget(detail_header)
-        self.name_label = QLabel("Предмет не выбран", self.detail_content)
+        self.name_label = QLabel(tr("Предмет не выбран"), self.detail_content)
         self.name_label.setObjectName("detailItemName")
         self.name_label.setWordWrap(True)
         body.addWidget(self.name_label)
-        self.type_label = QLabel("Выбери строку инвентаря", self.detail_content)
+        self.type_label = QLabel(tr("Выбери строку инвентаря"), self.detail_content)
         self.type_label.setObjectName("detailItemType")
         body.addWidget(self.type_label)
         self.image_label = QLabel("", self.detail_content)
@@ -132,7 +134,7 @@ class ItemDetailView(QWidget):
         self.detail_tabs: list[QPushButton] = []
         tabs = QHBoxLayout()
         tabs.setSpacing(4)
-        for index, label in enumerate(("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")):
+        for index, label in enumerate((tr("ОСНОВНОЕ"), tr("МОДИФИКАЦИИ"), tr("ХАРАКТЕРИСТИКИ"))):
             button = QPushButton(label, self.detail_content)
             button.setObjectName("detailTab")
             button.setToolTip(label.capitalize())
@@ -157,17 +159,17 @@ class ItemDetailView(QWidget):
         self.count_spin.setRange(1, 1_000_000)
         self.count_spin.setKeyboardTracking(False)
         self.count_spin.valueChanged.connect(lambda _value: self._emit_count())
-        self.detail_form.addRow("Количество", self.count_spin)
+        self.detail_form.addRow(tr("Количество"), self.count_spin)
         self.condition_spin = QDoubleSpinBox(form_panel)
         self.condition_spin.setRange(0.0, 100.0)
         self.condition_spin.setDecimals(1)
         self.condition_spin.setSuffix(" %")
         self.condition_spin.setKeyboardTracking(False)
         self.condition_spin.valueChanged.connect(lambda _value: self._emit_condition())
-        self.detail_form.addRow("Состояние", self.condition_spin)
+        self.detail_form.addRow(tr("Состояние"), self.condition_spin)
         self.placement_combo = QComboBox(form_panel)
         self.placement_combo.currentIndexChanged.connect(lambda _index: self._emit_placement())
-        self.detail_form.addRow("Размещение", self.placement_combo)
+        self.detail_form.addRow(tr("Размещение"), self.placement_combo)
         form_layout.addLayout(self.detail_form)
         self.fields_note = QLabel("", form_panel)
         self.fields_note.setObjectName("detailFieldsNote")
@@ -180,7 +182,7 @@ class ItemDetailView(QWidget):
         upgrades_layout = QVBoxLayout(upgrades_page)
         upgrades_layout.setContentsMargins(0, 6, 0, 0)
         upgrades_layout.setSpacing(6)
-        self.upgrade_heading = QLabel("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ", upgrades_page)
+        self.upgrade_heading = QLabel(tr("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ"), upgrades_page)
         self.upgrade_heading.setObjectName("detailUpgradesHeading")
         upgrades_layout.addWidget(self.upgrade_heading)
         self.upgrade_list = QListWidget(upgrades_page)
@@ -191,7 +193,7 @@ class ItemDetailView(QWidget):
         self.upgrade_status.setObjectName("detailUpgradeStatus")
         self.upgrade_status.setWordWrap(True)
         upgrades_layout.addWidget(self.upgrade_status)
-        self.upgrade_apply_button = action_button("ПРИМЕНИТЬ МОДИФИКАЦИИ", upgrades_page)
+        self.upgrade_apply_button = action_button(tr("ПРИМЕНИТЬ МОДИФИКАЦИИ"), upgrades_page)
         self.upgrade_apply_button.setObjectName("detailUpgradeApply")
         self.upgrade_apply_button.clicked.connect(self._emit_upgrades)
         upgrades_layout.addWidget(self.upgrade_apply_button)
@@ -202,12 +204,12 @@ class ItemDetailView(QWidget):
         facts_layout = QVBoxLayout(facts_page)
         facts_layout.setContentsMargins(0, 6, 0, 0)
         facts_layout.setSpacing(6)
-        self.description_label = QLabel("Данные взяты из открытого сохранения.", facts_page)
+        self.description_label = QLabel(tr("Данные взяты из открытого сохранения."), facts_page)
         self.description_label.setObjectName("detailDescription")
         self.description_label.setWordWrap(True)
         self.description_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         facts_layout.addWidget(self.description_label)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", facts_page)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), facts_page)
         self.details_button.setObjectName("itemTechnicalDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._show_technical_details)
@@ -223,20 +225,20 @@ class ItemDetailView(QWidget):
         self.detail_scroll.setWidget(self.detail_content)
         root.addWidget(self.detail_scroll, 1)
 
-        self.save_button = action_button("СОХРАНИТЬ 0 ИЗМЕНЕНИЙ", self, kind="primary", object_name="primaryActionButton")
+        self.save_button = action_button(tr("СОХРАНИТЬ 0 ИЗМЕНЕНИЙ"), self, kind="primary", object_name="primaryActionButton")
         self.save_button.setMinimumHeight(42)
         self.save_button.setFixedHeight(42)
         self.save_button.setEnabled(False)
         root.addWidget(self.save_button)
         root.addSpacing(6)
         actions = QHBoxLayout()
-        self.reset_button = action_button("СБРОСИТЬ", self)
+        self.reset_button = action_button(tr("СБРОСИТЬ"), self)
         self.reset_button.setFixedHeight(38)
         self.reset_button.setEnabled(False)
-        self.reset_button.setToolTip("Отменить черновые изменения выбранного предмета")
+        self.reset_button.setToolTip(tr("Отменить черновые изменения выбранного предмета"))
         self.reset_button.clicked.connect(self._emit_reset)
         actions.addWidget(self.reset_button)
-        self.remove_button = action_button("УДАЛИТЬ ПРЕДМЕТ", self, kind="danger")
+        self.remove_button = action_button(tr("УДАЛИТЬ ПРЕДМЕТ"), self, kind="danger")
         self.remove_button.setFixedHeight(38)
         self.remove_button.setEnabled(False)
         self.remove_button.clicked.connect(self._emit_remove)
@@ -246,9 +248,9 @@ class ItemDetailView(QWidget):
 
     def set_compact(self, compact: bool) -> None:
         labels = (
-            ("ОСНОВНОЕ", "МОДИФ.", "ХАРАКТ.")
+            (tr("ОСНОВНОЕ"), tr("МОДИФ."), tr("ХАРАКТ."))
             if compact
-            else ("ОСНОВНОЕ", "МОДИФИКАЦИИ", "ХАРАКТЕРИСТИКИ")
+            else (tr("ОСНОВНОЕ"), tr("МОДИФИКАЦИИ"), tr("ХАРАКТЕРИСТИКИ"))
         )
         for button, label in zip(self.detail_tabs, labels, strict=True):
             button.setText(label)
@@ -294,7 +296,7 @@ class ItemDetailView(QWidget):
 
     def set_change_count(self, count: int) -> None:
         self.save_button.setText(
-            f"СОХРАНИТЬ {count_ru(count, 'ИЗМЕНЕНИЕ', 'ИЗМЕНЕНИЯ', 'ИЗМЕНЕНИЙ')}"
+            tr("СОХРАНИТЬ {0}", count_ru(count, 'ИЗМЕНЕНИЕ', 'ИЗМЕНЕНИЯ', 'ИЗМЕНЕНИЙ'))
         )
         self.save_button.setEnabled(count > 0)
 
@@ -316,10 +318,10 @@ class ItemDetailView(QWidget):
         item = self._item
         caps = self._capabilities
         if item is None:
-            self.name_label.setText("Предмет не выбран")
-            self.type_label.setText("Выбери строку инвентаря")
-            self.description_label.setText("Данные взяты из открытого сохранения.")
-            self._set_status("ТОЛЬКО ПРОСМОТР", "neutral")
+            self.name_label.setText(tr("Предмет не выбран"))
+            self.type_label.setText(tr("Выбери строку инвентаря"))
+            self.description_label.setText(tr("Данные взяты из открытого сохранения."))
+            self._set_status(tr("ТОЛЬКО ЧТЕНИЕ"), "neutral")
             for widget in (self.count_spin, self.condition_spin, self.placement_combo):
                 self.detail_form.setRowVisible(widget, False)
             self.fields_note.setText("")
@@ -334,7 +336,7 @@ class ItemDetailView(QWidget):
             self.image_label.clear()
             return
 
-        self.name_label.setText(self._display_name or item.display_name or "Неизвестный предмет")
+        self.name_label.setText(self._display_name or item.display_name or tr("Неизвестный предмет"))
         self.details_button.setVisible(True)
         self.type_label.setText(
             category_label(self._category_key) if self._category_key else item.category
@@ -372,11 +374,11 @@ class ItemDetailView(QWidget):
                 if writable:
                     supports.append(caps.support(name))
         if not supports:
-            self._set_status("ТОЛЬКО ПРОСМОТР", "neutral")
+            self._set_status(tr("ТОЛЬКО ЧТЕНИЕ"), "neutral")
         elif any(support.maturity == "experimental" for support in supports):
-            self._set_status("ЭКСПЕРИМЕНТАЛЬНО", "warning")
+            self._set_status(tr("ЭКСПЕРИМЕНТАЛЬНО"), "warning")
         else:
-            self._set_status("МОЖНО ИЗМЕНИТЬ", "success")
+            self._set_status(tr("МОЖНО ИЗМЕНИТЬ"), "success")
 
         # Rows the save does not have are hidden instead of showing "0 %".
         has_count = item.count is not None
@@ -405,10 +407,10 @@ class ItemDetailView(QWidget):
         self.placement_combo.blockSignals(True)
         self.placement_combo.clear()
         # Exactly the values the X-Ray place codec accepts.
-        self.placement_combo.addItem("Рюкзак", ("ruck", None))
-        self.placement_combo.addItem("Пояс", ("belt", None))
+        self.placement_combo.addItem(tr("Рюкзак"), ("ruck", None))
+        self.placement_combo.addItem(tr("Пояс"), ("belt", None))
         for slot in range(1, 14):
-            self.placement_combo.addItem(f"Слот {slot}", ("slot", slot))
+            self.placement_combo.addItem(tr("Слот {0}", slot), ("slot", slot))
         for index in range(self.placement_combo.count()):
             if tuple(self.placement_combo.itemData(index)) == tuple(effective_placement):
                 self.placement_combo.setCurrentIndex(index)
@@ -418,25 +420,25 @@ class ItemDetailView(QWidget):
         self.detail_form.setRowVisible(self.placement_combo, has_placement)
 
         if item.handle in self._removed_handles:
-            self.fields_note.setText("Предмет будет удалён при сохранении.")
+            self.fields_note.setText(tr("Предмет будет удалён при сохранении."))
         elif not (has_count or has_condition or has_placement):
-            self.fields_note.setText("Для этого предмета в сохранении нет изменяемых полей.")
+            self.fields_note.setText(tr("Для этого предмета в сохранении нет изменяемых полей."))
         elif not (writable_stack or writable_condition or placement_writable):
-            self.fields_note.setText("Эти значения доступны только для просмотра.")
+            self.fields_note.setText(tr("Эти значения доступны только для просмотра."))
         else:
             self.fields_note.setText("")
 
         self._render_upgrades(item)
-        weight = "—" if item.total_weight is None else f"{item.total_weight:.1f} кг"
-        source = _SOURCE_LABELS.get(str(item.observation_source or ""), "открытое сохранение")
-        facts = [f"Вес: {weight}", f"Источник: {source}"]
+        weight = "—" if item.total_weight is None else tr("{0:.1f} кг", item.total_weight)
+        source = _SOURCE_LABELS.get(str(item.observation_source or ""), tr("открытое сохранение"))
+        facts = [tr("Вес: {0}", weight), tr("Источник: {0}", source)]
         if has_placement:
             facts.append(
-                "Размещение: "
+                tr("Размещение: ")
                 + _placement_text(item.placement_type, item.placement_slot)
             )
         if item.count is not None:
-            facts.append(f"Количество в сохранении: {item.count}")
+            facts.append(tr("Количество в сохранении: {0}", item.count))
         self.description_label.setText("\n".join(facts))
         self.reset_button.setEnabled(
             any(
@@ -455,7 +457,7 @@ class ItemDetailView(QWidget):
         self.remove_button.setVisible(can_remove)
         self.remove_button.setEnabled(can_remove)
         self.remove_button.setText(
-            "ВЕРНУТЬ ПРЕДМЕТ" if item.handle in self._removed_handles else "УДАЛИТЬ ПРЕДМЕТ"
+            tr("ВЕРНУТЬ ПРЕДМЕТ") if item.handle in self._removed_handles else tr("УДАЛИТЬ ПРЕДМЕТ")
         )
         self._render_icon()
 
@@ -469,7 +471,7 @@ class ItemDetailView(QWidget):
         # translated labels; those are not readable names either.
         if name and not name.casefold().startswith("st_"):
             return name
-        return f"Улучшение {index}"
+        return tr("Улучшение {0}", index)
 
     def _render_upgrades(self, item: InventoryItem) -> None:
         self.upgrade_list.blockSignals(True)
@@ -494,12 +496,11 @@ class ItemDetailView(QWidget):
                 )
                 self.upgrade_list.addItem(entry)
             self.upgrade_apply_button.setVisible(bool(keys))
-            self.upgrade_heading.setText(f"МОДИФИКАЦИИ · УСТАНОВЛЕНО {len(effective)}")
+            self.upgrade_heading.setText(tr("МОДИФИКАЦИИ · УСТАНОВЛЕНО {0}", len(effective)))
             self.upgrade_status.setText(
-                "Отметь модификации и нажми «Применить». Запись — экспериментальная, "
-                "перед сохранением создаётся резервная копия."
+                tr("Отметь модификации и нажми «Применить». Запись — экспериментальная, перед сохранением создаётся резервная копия.")
                 if keys
-                else "Для этого предмета в каталоге нет модификаций."
+                else tr("Для этого предмета в каталоге нет модификаций.")
             )
         else:
             for index, value in enumerate(effective, start=1):
@@ -509,16 +510,27 @@ class ItemDetailView(QWidget):
                 row.setData(Qt.ItemDataRole.AccessibleTextRole, label)
                 self.upgrade_list.addItem(row)
             self.upgrade_apply_button.setVisible(False)
-            self.upgrade_heading.setText("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ")
+            self.upgrade_heading.setText(tr("УСТАНОВЛЕННЫЕ МОДИФИКАЦИИ"))
             self.upgrade_status.setText(
-                "Модули и улучшения доступны только для просмотра."
+                tr("Модули и улучшения доступны только для просмотра.")
                 if effective
-                else "Данные о модификациях недоступны."
+                else tr("Данные о модификациях недоступны.")
             )
         self.upgrade_list.blockSignals(False)
 
+    _STATUS_TOOLTIPS: ClassVar[dict[str, str]] = {
+        "neutral": "Это поле распознано, но запись в него не подтверждена на реальных сохранениях.",
+        "warning": (
+            "Запись проверена на части сохранений. Перед сохранением создаётся "
+            "резервная копия, а результат перечитывается и сверяется."
+        ),
+        "success": "Изменение проверено на реальных сохранениях этой игры.",
+    }
+
     def _set_status(self, text: str, tone: str) -> None:
         self.status_chip.setText(text)
+        tip = self._STATUS_TOOLTIPS.get(tone)
+        self.status_chip.setToolTip(tr(tip) if tip else "")
         self.status_chip.setProperty("tone", tone)
         self.status_chip.style().unpolish(self.status_chip)
         self.status_chip.style().polish(self.status_chip)
@@ -531,16 +543,16 @@ class ItemDetailView(QWidget):
         if item is not None:
             lines.extend(
                 (
-                    f"Идентификатор предмета: {item.handle_hex}",
-                    f"Ключ типа: {item.type_key}",
-                    f"Категория в сохранении: {item.category}",
-                    f"Источник данных: {item.observation_source or 'не определено'}",
+                    tr("Идентификатор предмета: {0}", item.handle_hex),
+                    tr("Ключ типа: {0}", item.type_key),
+                    tr("Категория в сохранении: {0}", item.category),
+                    tr("Источник данных: {0}", item.observation_source or tr("не определено")),
                 )
             )
             if item.modules:
-                lines.append(f"Идентификаторы модулей: {', '.join(item.modules)}")
+                lines.append(tr("Идентификаторы модулей: {0}", ', '.join(item.modules)))
             if item.upgrades:
-                lines.append(f"Идентификаторы модификаций: {', '.join(item.upgrades)}")
+                lines.append(tr("Идентификаторы модификаций: {0}", ', '.join(item.upgrades)))
         if self._operation_detail_text:
             lines.append(self._operation_detail_text)
         if self._details_dialog is not None:

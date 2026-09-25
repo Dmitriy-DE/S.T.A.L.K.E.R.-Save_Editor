@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import source_text, tr
 from editor.releases import release_by_id
 
 from .cloud_controller import CloudController
@@ -84,23 +85,23 @@ class CloudLibraryView(QWidget):
 
         title_row = QHBoxLayout()
         title_row.addWidget(QLabel("STEAM CLOUD", self))
-        subtitle = QLabel("Облачные сохранения и проверенная запись", self)
+        subtitle = QLabel(tr("Облачные сохранения и проверенная запись"), self)
         subtitle.setObjectName("screenSubtitle")
         title_row.addWidget(subtitle)
         title_row.addStretch(1)
-        self.status_chip = status_chip("НЕ ПОДКЛЮЧЕНО", self, tone="neutral")
+        self.status_chip = status_chip(tr("НЕ ПОДКЛЮЧЕНО"), self, tone="neutral")
         title_row.addWidget(self.status_chip)
         root.addLayout(title_row)
 
         controls = panel(self, object_name="cloudControlsPanel")
         controls_layout = QHBoxLayout(controls)
         controls_layout.setContentsMargins(12, 10, 12, 10)
-        controls_layout.addWidget(QLabel("ПРОФИЛЬ", controls))
+        controls_layout.addWidget(QLabel(tr("ПРОФИЛЬ"), controls))
         self.profile_combo = QComboBox(controls)
         self.profile_combo.setObjectName("cloudProfileCombo")
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
         controls_layout.addWidget(self.profile_combo, 1)
-        self.refresh_button = action_button("ОБНОВИТЬ СПИСОК", controls)
+        self.refresh_button = action_button(tr("ОБНОВИТЬ СПИСОК"), controls)
         self.refresh_button.clicked.connect(self.backend.start_connect)
         controls_layout.addWidget(self.refresh_button)
         self.web_button = action_button("STEAM WEB", controls)
@@ -121,10 +122,10 @@ class CloudLibraryView(QWidget):
         table_panel = panel(self, object_name="cloudTablePanel")
         table_layout = QVBoxLayout(table_panel)
         table_layout.setContentsMargins(12, 12, 12, 12)
-        table_layout.addWidget(section_header("ОБЛАЧНЫЕ СОХРАНЕНИЯ", "СОСТОЯНИЕ ЗАПИСИ", table_panel))
+        table_layout.addWidget(section_header(tr("ОБЛАЧНЫЕ СОХРАНЕНИЯ"), tr("СОСТОЯНИЕ ЗАПИСИ"), table_panel))
         self.save_table = QTableWidget(0, 5, table_panel)
         self.save_table.setObjectName("cloudSaveTable")
-        self.save_table.setHorizontalHeaderLabels(("НАЗВАНИЕ", "РАЗМЕР", "ДАТА", "В CLOUD", "ИСТОЧНИК"))
+        self.save_table.setHorizontalHeaderLabels((tr("НАЗВАНИЕ"), tr("РАЗМЕР"), tr("ДАТА"), tr("В CLOUD"), tr("ИСТОЧНИК")))
         self.save_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.save_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.save_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -153,8 +154,8 @@ class CloudLibraryView(QWidget):
         detail_content_layout.setSpacing(5)
         detail_content_layout.addWidget(
             section_header(
-                "ПРОСМОТР СОХРАНЕНИЯ",
-                "ИСТОЧНИК И СТАТУС",
+                tr("ПРОСМОТР СОХРАНЕНИЯ"),
+                tr("ИСТОЧНИК И СТАТУС"),
                 self.detail_content,
             )
         )
@@ -167,11 +168,11 @@ class CloudLibraryView(QWidget):
             self.detail_image.setPixmap(detail_pixmap)
             self.detail_image.setScaledContents(True)
         detail_content_layout.addWidget(self.detail_image)
-        self.detail_name = QLabel("Сохранение не выбрано", self.detail_content)
+        self.detail_name = QLabel(tr("Сохранение не выбрано"), self.detail_content)
         self.detail_name.setObjectName("cloudDetailName")
         self.detail_name.setWordWrap(True)
         detail_content_layout.addWidget(self.detail_name)
-        self.detail_meta = QLabel("Выбери сохранение, чтобы увидеть подробности.", self.detail_content)
+        self.detail_meta = QLabel(tr("Выбери сохранение, чтобы увидеть подробности."), self.detail_content)
         self.detail_meta.setObjectName("cloudDetailMeta")
         self.detail_meta.setWordWrap(True)
         detail_content_layout.addWidget(self.detail_meta)
@@ -185,11 +186,11 @@ class CloudLibraryView(QWidget):
         detail_content_layout.addStretch(1)
         self.detail_scroll.setWidget(self.detail_content)
         detail.addWidget(self.detail_scroll, 1)
-        self.download_button = action_button("СКАЧАТЬ И ОТКРЫТЬ", self.detail_panel, kind="primary")
+        self.download_button = action_button(tr("СКАЧАТЬ И ОТКРЫТЬ"), self.detail_panel, kind="primary")
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self._analyze_selected)
         detail.addWidget(self.download_button)
-        self.upload_button = action_button("ЗАПИСАТЬ В CLOUD", self.detail_panel, kind="primary")
+        self.upload_button = action_button(tr("ЗАПИСАТЬ В CLOUD"), self.detail_panel, kind="primary")
         self.upload_button.setEnabled(False)
         self.upload_button.clicked.connect(self.backend.start_upload)
         detail.addWidget(self.upload_button)
@@ -197,7 +198,7 @@ class CloudLibraryView(QWidget):
         self.result_label.setObjectName("cloudResultLabel")
         self.result_label.setWordWrap(True)
         detail.addWidget(self.result_label)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.detail_panel)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), self.detail_panel)
         self.details_button.setObjectName("cloudTechnicalDetailsButton")
         self.details_button.setEnabled(False)
         self.details_button.clicked.connect(self._show_technical_details)
@@ -213,8 +214,7 @@ class CloudLibraryView(QWidget):
         safety_layout = QHBoxLayout(safety)
         safety_layout.setContentsMargins(12, 8, 12, 8)
         safety_layout.addWidget(QLabel(
-            "Перед записью создаётся резервная копия. Если Steam не подтвердил запись, "
-            "редактор сначала проверит состояние облака.",
+            tr("Перед записью создаётся резервная копия. Если Steam не подтвердил запись, редактор сначала проверит состояние облака."),
             safety,
         ))
         root.addWidget(safety)
@@ -261,9 +261,7 @@ class CloudLibraryView(QWidget):
             )
             self._set_technical_details(
                 technical_details(
-                    f"Путь в Steam Cloud: {selected_file.name}\n"
-                    f"Источник: {selected_file.source}\n"
-                    f"Сохранено в облаке: {selected_file.is_persisted}"
+                    tr("Путь в Steam Cloud: {0}\nИсточник: {1}\nСохранено в облаке: {2}", selected_file.name, selected_file.source, selected_file.is_persisted)
                 )
                 if selected_file is not None
                 else ""
@@ -294,7 +292,7 @@ class CloudLibraryView(QWidget):
                 PurePosixPath(cloud_file.name.replace("\\", "/")).name,
                 human_size(cloud_file.size),
                 datetime.fromtimestamp(cloud_file.timestamp).strftime("%d.%m.%Y %H:%M"),
-                "Сохранено" if cloud_file.is_persisted else "Не подтверждено",
+                tr("Сохранено") if cloud_file.is_persisted else tr("Не подтверждено"),
                 self._source_label(cloud_file.source),
             )
             for column, value in enumerate(values):
@@ -309,13 +307,13 @@ class CloudLibraryView(QWidget):
             self.save_table.selectRow(selected_row)
         else:
             self.detail_name.setText(
-                "Сохранение не выбрано" if files else "Подходящие сохранения не найдены"
+                tr("Сохранение не выбрано") if files else tr("Подходящие сохранения не найдены")
             )
             self.detail_name.setToolTip("")
             self.detail_meta.setText(
-                "Выбери сохранение, чтобы увидеть подробности."
+                tr("Выбери сохранение, чтобы увидеть подробности.")
                 if files
-                else "В выбранном профиле нет доступных сохранений."
+                else tr("В выбранном профиле нет доступных сохранений.")
             )
             self._set_technical_details("")
             self._selection_changed()
@@ -325,12 +323,12 @@ class CloudLibraryView(QWidget):
 
     def _on_snapshot_ready(self, snapshot) -> None:
         self._set_result(
-            CLOUD_COPY["checked"] if snapshot.info.crc_ok else "Файл не прошёл проверку",
+            CLOUD_COPY["checked"] if snapshot.info.crc_ok else tr("Файл не прошёл проверку"),
             f"CRC: {'PASS' if snapshot.info.crc_ok else 'FAIL'}\n"
             f"SHA-256: {snapshot.info.sha256}",
         )
-        self.detail_meta.setText(f"{snapshot.name}\nСохранение получено из Steam Cloud.")
-        self.status_chip.setText("СОХРАНЕНИЕ ПРОВЕРЕНО" if snapshot.info.crc_ok else "ПРОВЕРКА НЕ ПРОЙДЕНА")
+        self.detail_meta.setText(tr("{0}\nСохранение получено из Steam Cloud.", snapshot.name))
+        self.status_chip.setText(tr("СОХРАНЕНИЕ ПРОВЕРЕНО") if snapshot.info.crc_ok else tr("ПРОВЕРКА НЕ ПРОЙДЕНА"))
 
     def _on_upload_ready(self, receipt) -> None:
         self.upload_button.setEnabled(False)
@@ -339,9 +337,7 @@ class CloudLibraryView(QWidget):
             CLOUD_COPY["uploaded"] if not uncertain else CLOUD_COPY["uncertain"]
         )
         detail_lines = (
-            f"Статус: {receipt.status}\n"
-            f"persisted={getattr(receipt, 'persisted', None)}\n"
-            f"SHA-256: {getattr(receipt, 'output_sha256', '')}"
+            tr("Статус: {0}\nСохранено Steam: {1}\nSHA-256: {2}", receipt.status, getattr(receipt, 'persisted', None), getattr(receipt, 'output_sha256', ''))
         )
         detail_text = (
             format_error_details(present_error("cloud_uncertain", detail_lines))
@@ -350,7 +346,7 @@ class CloudLibraryView(QWidget):
         )
         self._set_technical_details(detail_text)
         self.status_chip.setText(
-            "ЗАПИСЬ ПРОВЕРЕНА" if receipt.status == "verified" else "STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ"
+            tr("ЗАПИСЬ ПРОВЕРЕНА") if receipt.status == "verified" else tr("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ")
         )
 
     def _on_error(self, message: str) -> None:
@@ -359,56 +355,56 @@ class CloudLibraryView(QWidget):
         kind = classify_operation_error(message)
         if kind == "cloud_write_unavailable":
             copy = ERROR_COPY[kind]
-            self.status_chip.setText("ЗАПИСЬ В CLOUD НЕДОСТУПНА")
+            self.status_chip.setText(tr("ЗАПИСЬ В CLOUD НЕДОСТУПНА"))
         elif kind == "cloud_uncertain":
             copy = ERROR_COPY[kind]
-            self.status_chip.setText("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ")
+            self.status_chip.setText(tr("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ"))
         elif kind == "cloud_unavailable":
             copy = ERROR_COPY[kind]
-            self.status_chip.setText("STEAM CLOUD НЕДОСТУПЕН")
+            self.status_chip.setText(tr("STEAM CLOUD НЕДОСТУПЕН"))
         else:
             kind = "generic"
             copy = ERROR_COPY[kind]
-            self.status_chip.setText("НЕ УДАЛОСЬ ВЫПОЛНИТЬ ДЕЙСТВИЕ")
+            self.status_chip.setText(tr("НЕ УДАЛОСЬ ВЫПОЛНИТЬ ДЕЙСТВИЕ"))
         self._set_result(
             CLOUD_COPY["uncertain"] if kind == "cloud_uncertain" else copy.message,
             format_error_details(present_error(kind, message))
         )
 
     def _on_progress(self, message: str) -> None:
-        if message == "Cloud operation завершена":
+        if message == tr("Действие в Steam Cloud завершено"):
             return
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         if "подключ" in normalized or "connect" in normalized:
-            text = "Подключение к Steam Cloud…"
+            text = tr("Подключение к Steam Cloud…")
         elif "скачив" in normalized or "download" in normalized:
-            text = "Получение сохранения из Steam Cloud…"
+            text = tr("Получение сохранения из Steam Cloud…")
         elif "sha" in normalized or "fresh read" in normalized or "провер" in normalized:
-            text = "Проверка сохранения в Steam Cloud…"
+            text = tr("Проверка сохранения в Steam Cloud…")
         elif "запис" in normalized or "upload" in normalized or "writefile" in normalized:
-            text = "Запись сохранения в Steam Cloud…"
+            text = tr("Запись сохранения в Steam Cloud…")
         else:
-            text = "Выполняется операция Steam Cloud…"
+            text = tr("Выполняется операция Steam Cloud…")
         self._set_result(text, message)
 
     def _on_backend_status(self, message: str) -> None:
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         if "uncertain" in normalized or "не подтвержд" in normalized or "reconciliation" in normalized:
-            label = "STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ"
+            label = tr("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ")
         elif "не подключ" in normalized or "not connected" in normalized:
-            label = "НЕ ПОДКЛЮЧЕНО"
+            label = tr("НЕ ПОДКЛЮЧЕНО")
         elif "verified" in normalized or "подключено" in normalized or "доступен" in normalized:
-            label = "ПОДКЛЮЧЕНО"
+            label = tr("ПОДКЛЮЧЕНО")
         elif "подключ" in normalized or "connect" in normalized:
-            label = "ПОДКЛЮЧЕНИЕ…"
+            label = tr("ПОДКЛЮЧЕНИЕ…")
         elif "недоступ" in normalized or "не включ" in normalized or "ошиб" in normalized:
-            label = "STEAM CLOUD НЕДОСТУПЕН"
+            label = tr("STEAM CLOUD НЕДОСТУПЕН")
         elif "обновлён" in normalized or "обновлен" in normalized or "cache" in normalized:
-            label = "СПИСОК ОБНОВЛЁН"
+            label = tr("СПИСОК ОБНОВЛЁН")
         elif "операц" in normalized or "operation" in normalized or "ожид" in normalized:
-            label = "ВЫПОЛНЯЕТСЯ ОПЕРАЦИЯ"
+            label = tr("ВЫПОЛНЯЕТСЯ ОПЕРАЦИЯ")
         else:
-            label = "НЕ ПОДКЛЮЧЕНО"
+            label = tr("НЕ ПОДКЛЮЧЕНО")
         self.status_chip.setText(label)
         self._set_technical_details(technical_details(message))
 
@@ -417,23 +413,30 @@ class CloudLibraryView(QWidget):
             self.result_label.clear()
             self._set_technical_details("")
             return
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         error_kind: ErrorKind | None = None
         if "uncertain" in normalized or "не подтвержд" in normalized:
             error_kind = "cloud_uncertain"
             text = CLOUD_COPY["uncertain"]
         elif any(token in normalized for token in (
             "upload недоступ", "upload отключ", "writer unavailable", "writer недоступ",
+            "запись в облако недоступ", "запись в облако отключ",
         )):
             error_kind = "cloud_write_unavailable"
             text = ERROR_COPY[error_kind].message
-        elif "проверка cloud готова" in normalized:
-            text = "Изменения проверены. Можно сохранить."
-        elif "проверка не относится" in normalized:
-            text = "Проверь выбранное сохранение и повтори проверку."
+        elif "проверка cloud готова" in normalized or "проверка облачного сохранения готова" in normalized:
+            text = tr("Изменения проверены. Можно сохранить.")
+        elif "проверка не относится" in normalized or "проверка относится к другому" in normalized:
+            text = tr("Проверь выбранное сохранение и повтори проверку.")
         elif "сначала выбери" in normalized:
-            text = "Сначала выбери сохранение и проверь его."
-        elif "verified" in normalized or "read-back" in normalized or "persisted=true" in normalized:
+            text = tr("Сначала выбери сохранение и проверь его.")
+        elif (
+            "verified" in normalized
+            or "read-back" in normalized
+            or "persisted=true" in normalized
+            or "запись в облако подтверждена" in normalized
+            or "состояние облака подтверждено" in normalized
+        ):
             text = CLOUD_COPY["uploaded"]
         elif "sha" in normalized or "crc" in normalized:
             text = CLOUD_COPY["checked"]
@@ -441,7 +444,7 @@ class CloudLibraryView(QWidget):
             error_kind = "cloud_unavailable"
             text = ERROR_COPY[error_kind].message
         else:
-            text = "Состояние Steam Cloud обновлено."
+            text = tr("Состояние Steam Cloud обновлено.")
         details = (
             format_error_details(present_error(error_kind, message))
             if error_kind is not None
@@ -475,7 +478,7 @@ class CloudLibraryView(QWidget):
             return "Steam Cloud"
         if source in {"steam_web", "web"}:
             return "Steam Web"
-        return "Неизвестно"
+        return tr("Неизвестно")
 
     def _on_busy(self, busy: bool) -> None:
         self.refresh_button.setEnabled(not busy)

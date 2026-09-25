@@ -6,16 +6,18 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 
+from editor.i18n import tr, trn
+
 
 def human_size(size: int) -> str:
     """Format a byte count with the binary units used by the desktop UI."""
 
     value = float(size)
-    for unit in ("B", "KB", "MB", "GB"):
-        if value < 1024 or unit == "GB":
-            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
+    for unit in (tr("Б"), tr("КБ"), tr("МБ"), tr("ГБ")):
+        if value < 1024 or unit == tr("ГБ"):
+            return f"{value:.1f} {unit}" if unit != tr("Б") else tr("{0} Б", int(value))
         value /= 1024
-    return f"{size} B"
+    return tr("{0} Б", size)
 
 
 def human_money(value: int) -> str:
@@ -27,18 +29,13 @@ def human_money(value: int) -> str:
 def currency_suffix(release_id: str | None) -> str:
     """S.T.A.L.K.E.R. 2 pays in coupons; the original trilogy uses roubles."""
 
-    return "куп." if str(release_id or "").casefold().startswith("stalker2") else "₽"
+    return tr("куп.") if str(release_id or "").casefold().startswith("stalker2") else "₽"
 
 
 def plural_ru(count: int, one: str, few: str, many: str) -> str:
-    """Pick the Russian plural form: 1 сохранение, 2 сохранения, 5 сохранений."""
+    """Plural of a Russian source word in the UI language: 1 сохранение, 5 сохранений."""
 
-    value = abs(int(count))
-    if value % 10 == 1 and value % 100 != 11:
-        return one
-    if 2 <= value % 10 <= 4 and not 12 <= value % 100 <= 14:
-        return few
-    return many
+    return trn(count, one, few, many)
 
 
 def count_ru(count: int, one: str, few: str, many: str) -> str:
@@ -69,12 +66,13 @@ def human_datetime(value: datetime | str | None, *, now: datetime | None = None)
     # Never pass Cyrillic to strftime: on Windows it encodes the format with
     # the C locale and raises UnicodeEncodeError outside Russian locales.
     if value.date() == today:
-        return f"Сегодня, {value:%H:%M}"
+        return tr("Сегодня, {0:%H:%M}", value)
     if value.date() == today - timedelta(days=1):
-        return f"Вчера, {value:%H:%M}"
-    month = _MONTHS_RU[value.month - 1]
-    year = "" if value.year == today.year else f" {value.year}"
-    return f"{value.day:02d} {month}{year}, {value:%H:%M}"
+        return tr("Вчера, {0:%H:%M}", value)
+    month = tr(_MONTHS_RU[value.month - 1])
+    if value.year == today.year:
+        return tr("{0:02d} {1}, {2:%H:%M}", value.day, month, value)
+    return tr("{0:02d} {1} {2}, {3:%H:%M}", value.day, month, value.year, value)
 
 
 def source_display_name(source_path: str | None, backup_path: Path | None = None) -> str:
@@ -88,7 +86,7 @@ def source_display_name(source_path: str | None, backup_path: Path | None = None
         stem = _BACKUP_SUFFIX_RE.sub("", Path(backup_path).stem)
         # Cloud locators are flattened with "_" inside the backup name.
         return f"{stem.rsplit('_', 1)[-1] if stem.startswith('%') else stem}{Path(backup_path).suffix}"
-    return "Неизвестный источник"
+    return tr("Неизвестный источник")
 
 
 __all__ = [

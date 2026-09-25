@@ -27,10 +27,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
 from editor.releases import release_by_id
 
 from .formatting import count_ru, currency_suffix, human_datetime, human_money, human_size
 from .save_discovery import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot, _slot_family
+from .save_thumbnails import s2_row_text, save_preview
 from .style_components import TextureFrame, action_button, panel, section_header, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import technical_details
@@ -91,7 +93,7 @@ class LibraryView(QWidget):
         root.setContentsMargins(0, 6, 0, 9)
         root.setSpacing(0)
 
-        self.status_label = QLabel("Поиск стандартных каталогов…", self)
+        self.status_label = QLabel(tr("Поиск стандартных каталогов…"), self)
         self.status_label.setObjectName("libraryStatus")
         self.status_label.setVisible(False)
         self.error_label = QLabel("", self)
@@ -100,7 +102,7 @@ class LibraryView(QWidget):
         self.error_label.setVisible(False)
         error_row = QHBoxLayout()
         error_row.addWidget(self.error_label, 1)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), self)
         self.details_button.setObjectName("libraryTechnicalDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._show_technical_details)
@@ -116,7 +118,7 @@ class LibraryView(QWidget):
         rail_layout = QVBoxLayout(self.game_rail)
         rail_layout.setContentsMargins(10, 21, 10, 12)
         rail_layout.setSpacing(8)
-        rail_layout.addWidget(QLabel("ИГРЫ", self.game_rail), 0)
+        rail_layout.addWidget(QLabel(tr("ИГРЫ"), self.game_rail), 0)
         rail_layout.addSpacing(6)
         rule = QFrame(self.game_rail)
         rule.setFrameShape(QFrame.Shape.HLine)
@@ -143,7 +145,7 @@ class LibraryView(QWidget):
         zone_layout.setContentsMargins(26, 20, 12, 12)
         zone_layout.addStretch(1)
         zone_label = QLabel(
-            "ОДНИ СОХРАНЯЮТ\nИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ.",
+            tr("ЗОНА НЕ ПРОЩАЕТ\nОШИБОК.\nРЕЗЕРВНАЯ КОПИЯ\nПРОЩАЕТ."),
             self.zone_panel,
         )
         zone_label.setObjectName("libraryZoneDecorationText")
@@ -162,7 +164,7 @@ class LibraryView(QWidget):
         centre_layout = QVBoxLayout(centre)
         centre_layout.setContentsMargins(0, 0, 0, 0)
         centre_layout.setSpacing(0)
-        centre_heading = QLabel("СОХРАНЕНИЯ", centre)
+        centre_heading = QLabel(tr("СОХРАНЕНИЯ"), centre)
         centre_heading.setObjectName("screenTitle")
         centre_heading.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         centre_heading.setFixedHeight(53)
@@ -173,14 +175,14 @@ class LibraryView(QWidget):
         self.search_edit = QLineEdit(centre)
         self.search_edit.setObjectName("referenceSearch")
         self.search_edit.setMinimumHeight(39)
-        self.search_edit.setPlaceholderText("Поиск сохранений…")
+        self.search_edit.setPlaceholderText(tr("Поиск сохранений…"))
         self.search_edit.textChanged.connect(lambda _value: self._render_saves(self.game_list.currentRow()))
         controls.addWidget(self.search_edit, 1)
         self.sort_combo = QComboBox(centre)
         self.sort_combo.setObjectName("referenceSort")
         self.sort_combo.setMinimumHeight(39)
-        self.sort_combo.addItem("Сначала новые", "newest")
-        self.sort_combo.addItem("Сначала старые", "oldest")
+        self.sort_combo.addItem(tr("Сначала новые"), "newest")
+        self.sort_combo.addItem(tr("Сначала старые"), "oldest")
         self.sort_combo.setFixedWidth(204)
         self.sort_combo.currentIndexChanged.connect(lambda _index: self._render_saves(self.game_list.currentRow()))
         controls.addWidget(self.sort_combo)
@@ -189,7 +191,7 @@ class LibraryView(QWidget):
 
         self.save_table = QTableWidget(0, 5, centre)
         self.save_table.setObjectName("librarySaveTable")
-        self.save_table.setHorizontalHeaderLabels(("НАЗВАНИЕ", "ИГРА", "ДАТА И ВРЕМЯ", "РАЗМЕР", "СТАТУС"))
+        self.save_table.setHorizontalHeaderLabels((tr("НАЗВАНИЕ"), tr("ИГРА"), tr("ДАТА И ВРЕМЯ"), tr("РАЗМЕР"), tr("СТАТУС")))
         self.save_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.save_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.save_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -217,7 +219,7 @@ class LibraryView(QWidget):
         self.recent_activity.setFixedHeight(150)
         activity_layout = QVBoxLayout(self.recent_activity)
         activity_layout.setContentsMargins(10, 8, 10, 8)
-        activity_layout.addWidget(section_header("НЕДАВНЯЯ АКТИВНОСТЬ", "ПРОВЕРКА ИСТОРИИ", self.recent_activity))
+        activity_layout.addWidget(section_header(tr("НЕДАВНЯЯ АКТИВНОСТЬ"), tr("ВСЯ ИСТОРИЯ"), self.recent_activity))
         self.activity_table = QTableWidget(0, 4, self.recent_activity)
         self.activity_table.setObjectName("libraryActivityTable")
         self.activity_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
@@ -234,7 +236,7 @@ class LibraryView(QWidget):
         self.activity_table.setColumnWidth(3, 174)
         self.activity_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         activity_layout.addWidget(self.activity_table, 1)
-        self.activity_label = QLabel("Нет операций в текущем сеансе", self.recent_activity)
+        self.activity_label = QLabel(tr("Нет операций в текущем сеансе"), self.recent_activity)
         self.activity_label.setObjectName("libraryActivityText")
         self.activity_label.setVisible(False)
         centre_layout.addWidget(self.recent_activity, 0)
@@ -244,7 +246,7 @@ class LibraryView(QWidget):
         preview_layout = QVBoxLayout(self.preview_panel)
         preview_layout.setContentsMargins(18, 0, 0, 0)
         preview_layout.setSpacing(5)
-        preview_heading = section_header("ПРОСМОТР СОХРАНЕНИЯ", parent=self.preview_panel)
+        preview_heading = section_header(tr("ПРОСМОТР СОХРАНЕНИЯ"), parent=self.preview_panel)
         preview_heading.setFixedHeight(45)
         preview_layout.addWidget(preview_heading)
         self.preview_scroll = QScrollArea(self.preview_panel)
@@ -258,19 +260,20 @@ class LibraryView(QWidget):
         preview_body_layout = QVBoxLayout(self.preview_body)
         preview_body_layout.setContentsMargins(0, 0, 5, 0)
         preview_body_layout.setSpacing(5)
-        self.preview_image = QLabel("ЗОНА\nПОМНИ\nВСЁ", self.preview_body)
+        self.preview_image = QLabel(tr("ЗОНА\nПОМНИ\nВСЁ"), self.preview_body)
         self.preview_image.setObjectName("libraryPreviewImage")
         self.preview_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_image.setFixedHeight(140)
         preview_pixmap = QPixmap(str(_SHELL_ASSETS / "preview_zone.png"))
+        self._default_preview_pixmap = preview_pixmap
         if not preview_pixmap.isNull():
             self.preview_image.setPixmap(preview_pixmap)
             self.preview_image.setScaledContents(True)
             self.preview_image.setToolTip(
-                "Декоративное изображение зоны; обложка сохранения недоступна."
+                tr("Декоративное изображение зоны; обложка сохранения недоступна.")
             )
         preview_body_layout.addWidget(self.preview_image)
-        self.preview_name = QLabel("Сохранение не выбрано", self.preview_body)
+        self.preview_name = QLabel(tr("Сохранение не выбрано"), self.preview_body)
         self.preview_name.setObjectName("libraryPreviewName")
         self.preview_name.setWordWrap(True)
         self.preview_name.setContentsMargins(0, 8, 0, 0)
@@ -284,16 +287,16 @@ class LibraryView(QWidget):
         metadata_layout.setColumnMinimumWidth(0, 64)
         self.preview_game_value = QLabel("—", self.preview_metadata)
         self.preview_game_value.setWordWrap(True)
-        self.preview_source_value = QLabel("Локальное сохранение", self.preview_metadata)
+        self.preview_source_value = QLabel(tr("Локальное сохранение"), self.preview_metadata)
         self.preview_date_value = QLabel("—", self.preview_metadata)
         self.preview_size_value = QLabel("—", self.preview_metadata)
-        self.preview_integrity_value = QLabel("Не проверено", self.preview_metadata)
+        self.preview_integrity_value = QLabel(tr("Не проверено"), self.preview_metadata)
         metadata_rows = (
-            ("Игра", self.preview_game_value),
-            ("Источник", self.preview_source_value),
-            ("Дата", self.preview_date_value),
-            ("Размер", self.preview_size_value),
-            ("Проверка", self.preview_integrity_value),
+            (tr("Игра"), self.preview_game_value),
+            (tr("Источник"), self.preview_source_value),
+            (tr("Дата"), self.preview_date_value),
+            (tr("Размер"), self.preview_size_value),
+            (tr("Проверка"), self.preview_integrity_value),
         )
         for row, (caption, value) in enumerate(metadata_rows):
             label = QLabel(f"{caption}:", self.preview_metadata)
@@ -304,15 +307,15 @@ class LibraryView(QWidget):
             metadata_layout.addWidget(value, row, 1)
             metadata_layout.setRowMinimumHeight(row, 27)
         preview_body_layout.addWidget(self.preview_metadata)
-        self.preview_meta = QLabel("Выбери сохранение, чтобы увидеть подробности.", self.preview_body)
+        self.preview_meta = QLabel(tr("Выбери сохранение, чтобы увидеть подробности."), self.preview_body)
         self.preview_meta.setObjectName("libraryPreviewMeta")
         self.preview_meta.setWordWrap(True)
         self.preview_meta.setVisible(False)
         preview_body_layout.addWidget(self.preview_meta)
-        self.preview_status = status_chip("НЕ ПРОВЕРЕНО", self.preview_body, tone="neutral")
+        self.preview_status = status_chip(tr("НЕ ПРОВЕРЕНО"), self.preview_body, tone="neutral")
         self.preview_status.setVisible(False)
         preview_body_layout.addWidget(self.preview_status, 0, Qt.AlignmentFlag.AlignLeft)
-        self.capability_heading = section_header("ВОЗМОЖНОСТИ", parent=self.preview_body)
+        self.capability_heading = section_header(tr("ВОЗМОЖНОСТИ"), parent=self.preview_body)
         capability_heading_layout = self.capability_heading.layout()
         if capability_heading_layout is not None:
             capability_heading_layout.setContentsMargins(8, 0, 8, 0)
@@ -321,11 +324,11 @@ class LibraryView(QWidget):
         self.capability_row.setHorizontalSpacing(5)
         self.capability_row.setVerticalSpacing(8)
         self.preview_editable_chip = status_chip(
-            "ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ", self.preview_body, tone="neutral"
+            tr("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ"), self.preview_body, tone="neutral"
         )
-        self.preview_local_chip = status_chip("ЛОКАЛЬНЫЙ", self.preview_body, tone="neutral")
-        self.preview_integrity_chip = status_chip("НЕ ПРОВЕРЕНО", self.preview_body, tone="neutral")
-        self.preview_inventory_chip = status_chip("ИНВЕНТАРЬ —", self.preview_body, tone="neutral")
+        self.preview_local_chip = status_chip(tr("ЛОКАЛЬНЫЙ"), self.preview_body, tone="neutral")
+        self.preview_integrity_chip = status_chip(tr("НЕ ПРОВЕРЕНО"), self.preview_body, tone="neutral")
+        self.preview_inventory_chip = status_chip(tr("ИНВЕНТАРЬ —"), self.preview_body, tone="neutral")
         self.capability_row.addWidget(self.preview_editable_chip, 0, 0)
         self.capability_row.addWidget(self.preview_local_chip, 0, 1)
         self.capability_row.addWidget(self.preview_integrity_chip, 1, 0)
@@ -333,7 +336,7 @@ class LibraryView(QWidget):
         preview_body_layout.addSpacing(7)
         self.capability_heading.setFixedHeight(24)
         preview_body_layout.addLayout(self.capability_row)
-        self.summary_heading = section_header("БЫСТРАЯ СВОДКА", parent=self.preview_body)
+        self.summary_heading = section_header(tr("БЫСТРАЯ СВОДКА"), parent=self.preview_body)
         summary_heading_layout = self.summary_heading.layout()
         if summary_heading_layout is not None:
             summary_heading_layout.setContentsMargins(8, 0, 8, 0)
@@ -346,10 +349,10 @@ class LibraryView(QWidget):
         summary_layout.setHorizontalSpacing(10)
         summary_layout.setVerticalSpacing(7)
         summary_specs = (
-            ("currency.svg", "ДЕНЬГИ", "money_summary"),
-            ("inventory.svg", "ПРЕДМЕТЫ", "items_summary"),
-            ("equipment.svg", "СНАРЯЖЕНИЕ", "equipment_summary"),
-            ("durability.svg", "ПРОЧНОСТЬ", "condition_summary"),
+            ("currency.svg", tr("ДЕНЬГИ"), "money_summary"),
+            ("inventory.svg", tr("ПРЕДМЕТЫ"), "items_summary"),
+            ("equipment.svg", tr("СНАРЯЖЕНИЕ"), "equipment_summary"),
+            ("durability.svg", tr("ПРОЧНОСТЬ"), "condition_summary"),
         )
         summary_values: dict[str, QLabel] = {}
         for index, (icon_name, caption, value_name) in enumerate(summary_specs):
@@ -387,16 +390,17 @@ class LibraryView(QWidget):
         preview_body_layout.addStretch(1)
         self.preview_scroll.setWidget(self.preview_body)
         preview_layout.addWidget(self.preview_scroll, 1)
-        self.open_button = action_button("ОТКРЫТЬ СОХРАНЕНИЕ  →", self.preview_panel, kind="primary", object_name="primaryActionButton")
+        self.open_button = action_button(tr("ОТКРЫТЬ СОХРАНЕНИЕ  →"), self.preview_panel, kind="primary", object_name="primaryActionButton")
         self.open_button.setFixedHeight(48)
         self.open_button.setEnabled(False)
         self.open_button.clicked.connect(self.open_selected)
         preview_layout.addWidget(self.open_button)
         preview_layout.addSpacing(7)
         buttons = QHBoxLayout()
-        self.import_button = action_button("ИМПОРТИРОВАТЬ…", self.preview_panel)
+        self.import_button = action_button(tr("ИМПОРТИРОВАТЬ…"), self.preview_panel)
+        self.import_button.setToolTip(tr("Открыть файл сохранения. Можно просто перетащить файл в окно."))
         self.import_button.clicked.connect(self.import_requested)
-        self.refresh_button = action_button("ОБНОВИТЬ", self.preview_panel)
+        self.refresh_button = action_button(tr("ОБНОВИТЬ"), self.preview_panel)
         self.refresh_button.clicked.connect(self.refresh_requested)
         buttons.addWidget(self.import_button)
         buttons.addWidget(self.refresh_button)
@@ -404,7 +408,7 @@ class LibraryView(QWidget):
         self.refresh_button.setFixedHeight(36)
         preview_layout.addLayout(buttons)
         preview_layout.addSpacing(7)
-        self.restore_button = action_button("ВОССТАНОВИТЬ КОПИЮ", self.preview_panel)
+        self.restore_button = action_button(tr("ВОССТАНОВИТЬ КОПИЮ"), self.preview_panel)
         self.restore_button.setFixedHeight(38)
         self.restore_button.setEnabled(False)
         self.restore_button.clicked.connect(self.restore_selected)
@@ -429,15 +433,15 @@ class LibraryView(QWidget):
     def set_discovery(self, discovery: SaveDiscovery) -> None:
         self._slots = tuple(discovery.slots)
         self._searched_paths = tuple(discovery.searched_paths)
-        self.status_label.setText(f"Найдено сохранений: {len(self._slots)}  ·  каталогов: {len(self._searched_paths)}")
+        self.status_label.setText(tr("Найдено сохранений: {0}  ·  каталогов: {1}", len(self._slots), len(self._searched_paths)))
         self._render_game_list()
 
     def set_error(self, message: str) -> None:
         self._technical_details = technical_details(message)
-        message = "Не удалось обновить список сохранений. Проверь выбранные папки."
-        self.status_label.setText("Не удалось обновить список сохранений")
+        message = tr("Не удалось обновить список сохранений. Проверь выбранные папки.")
+        self.status_label.setText(tr("Не удалось обновить список сохранений"))
         self.status_label.setToolTip("")
-        self.preview_status.setText("ОШИБКА ПОИСКА")
+        self.preview_status.setText(tr("ОШИБКА ПОИСКА"))
         self.preview_status.setProperty("tone", "danger")
         self.preview_status.style().unpolish(self.preview_status)
         self.preview_status.style().polish(self.preview_status)
@@ -456,18 +460,18 @@ class LibraryView(QWidget):
         self.error_label.setVisible(False)
         self.details_button.setVisible(False)
         self._technical_details = ""
-        self.preview_name.setText("Открытие сохранения…")
-        self.preview_meta.setText("Проверяем файл. Редактор откроется после успешной проверки.")
+        self.preview_name.setText(tr("Открытие сохранения…"))
+        self.preview_meta.setText(tr("Проверяем файл. Редактор откроется после успешной проверки."))
         self.preview_metadata.setVisible(False)
         self.preview_meta.setVisible(True)
         self.preview_status.setVisible(True)
-        self.preview_status.setText("ПРОВЕРКА")
+        self.preview_status.setText(tr("ПРОВЕРКА"))
         self.preview_status.setProperty("tone", "warning")
         self.preview_status.style().unpolish(self.preview_status)
         self.preview_status.style().polish(self.preview_status)
         self.open_button.setEnabled(False)
-        self.preview_integrity_chip.setText("ПРОВЕРКА ФАЙЛА")
-        self.preview_inventory_chip.setText("ИНВЕНТАРЬ ПРОВЕРЯЕТСЯ")
+        self.preview_integrity_chip.setText(tr("ПРОВЕРКА ФАЙЛА"))
+        self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ ПРОВЕРЯЕТСЯ"))
 
     def set_analysis_error(self, message: str, *, details: str | None = None) -> None:
         self._technical_details = technical_details(details or "")
@@ -475,20 +479,20 @@ class LibraryView(QWidget):
         self.error_label.setToolTip("")
         self.error_label.setVisible(True)
         self.details_button.setVisible(bool(self._technical_details))
-        self.preview_name.setText("Сохранение не открыто")
-        self.preview_meta.setText("Предыдущий файл остался открыт. Новое сохранение не загружено.")
+        self.preview_name.setText(tr("Сохранение не открыто"))
+        self.preview_meta.setText(tr("Предыдущий файл остался открыт. Новое сохранение не загружено."))
         self.preview_meta.setToolTip("")
         self.preview_metadata.setVisible(False)
         self.preview_meta.setVisible(True)
         self.preview_status.setVisible(True)
-        self.preview_status.setText("НЕ УДАЛОСЬ ОТКРЫТЬ")
+        self.preview_status.setText(tr("НЕ УДАЛОСЬ ОТКРЫТЬ"))
         self.preview_status.setProperty("tone", "danger")
         self.preview_status.style().unpolish(self.preview_status)
         self.preview_status.style().polish(self.preview_status)
         self.open_button.setEnabled(False)
-        self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
-        self.preview_inventory_chip.setText("ИНВЕНТАРЬ НЕ ПРОЧИТАН")
-        self.open_button.setText("ВЫБРАТЬ ДРУГОЙ ФАЙЛ")
+        self.preview_integrity_chip.setText(tr("НЕ ПРОВЕРЕНО"))
+        self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ НЕ ПРОЧИТАН"))
+        self.open_button.setText(tr("ВЫБРАТЬ ДРУГОЙ ФАЙЛ"))
 
     def _show_technical_details(self) -> None:
         if not self._technical_details:
@@ -520,7 +524,7 @@ class LibraryView(QWidget):
             normalized.append((label, target, occurred_at, status))
         self._activity_entries = normalized[-4:]
         if not self._activity_entries:
-            self.activity_label.setText("Нет подтверждённых операций в текущем сеансе")
+            self.activity_label.setText(tr("Нет подтверждённых операций в текущем сеансе"))
             self.activity_table.setRowCount(0)
             return
         visible = tuple(reversed(self._activity_entries))
@@ -579,14 +583,14 @@ class LibraryView(QWidget):
         if "userdata" in parts and "remote" in parts:
             # Steam keeps its own synced copy of cloud saves; label it so it
             # is not mistaken for a duplicate of the game's local slot.
-            return "Копия Steam Cloud на диске"
+            return tr("Копия Steam Cloud на диске")
         stem = slot.path.stem.casefold()
         if "auto" in stem:
-            return "Автосохранение"
+            return tr("Автосохранение")
         if "quick" in stem:
-            return "Быстрое сохранение"
+            return tr("Быстрое сохранение")
         if "manual" in stem:
-            return "Ручное сохранение"
+            return tr("Ручное сохранение")
         release_id = slot.detected_release_id or slot.candidate_release_id
         if release_id:
             try:
@@ -598,8 +602,8 @@ class LibraryView(QWidget):
                     return "Enhanced Edition"
                 if release.family == "stalker2":
                     return "S.T.A.L.K.E.R. 2"
-                return "Оригинальная версия"
-        return "Формат не определён"
+                return tr("Оригинальная версия")
+        return tr("Формат не определён")
 
     def _set_save_title_cell(self, row: int, slot: SaveSlot) -> None:
         host = QWidget(self.save_table)
@@ -613,7 +617,17 @@ class LibraryView(QWidget):
         thumbnail.setObjectName("libraryRowThumbnail")
         thumbnail.setFixedSize(84, 50)
         art_path = self._thumbnail_art_path(slot)
-        source = self._row_thumbnail_cache.get(art_path)
+        preview = save_preview(slot.path, _slot_family(slot))
+        source = None if preview is not None else self._row_thumbnail_cache.get(art_path)
+        if preview is not None:
+            scaled = QPixmap.fromImage(preview).scaled(
+                QSize(84, 50),
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            source = scaled.copy(
+                max(0, (scaled.width() - 84) // 2), max(0, (scaled.height() - 50) // 2), 84, 50
+            )
         if source is None:
             source = QPixmap(str(art_path))
             if not source.isNull():
@@ -631,7 +645,9 @@ class LibraryView(QWidget):
         if not source.isNull():
             thumbnail.setPixmap(source)
         thumbnail.setToolTip(
-            "Декоративное изображение интерфейса; формат файла им не определяется."
+            tr("Скриншот из игры")
+            if preview is not None
+            else tr("Декоративное изображение интерфейса; формат файла им не определяется.")
         )
         layout.addWidget(thumbnail, 0)
 
@@ -643,12 +659,15 @@ class LibraryView(QWidget):
         text_layout.setSpacing(1)
         title = QLabel(text_column)
         title.setObjectName("libraryRowTitle")
+        s2_text = s2_row_text(slot.path) if _slot_family(slot) == "stalker2" else None
         title.setText(
-            title.fontMetrics().elidedText(slot.path.stem, Qt.TextElideMode.ElideMiddle, 200)
+            title.fontMetrics().elidedText(
+                s2_text[0] if s2_text else slot.path.stem, Qt.TextElideMode.ElideMiddle, 190
+            )
         )
         title.setToolTip(slot.path.name)
         title.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        subtitle = QLabel(self._row_subtitle(slot), text_column)
+        subtitle = QLabel(s2_text[1] if s2_text else self._row_subtitle(slot), text_column)
         subtitle.setObjectName("libraryRowSubtitle")
         subtitle.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         text_layout.addWidget(title, 0, Qt.AlignmentFlag.AlignBottom)
@@ -666,7 +685,7 @@ class LibraryView(QWidget):
         self.game_list.blockSignals(True)
         self.game_list.clear()
         all_item = QListWidgetItem(
-            f"ВСЕ ИГРЫ\n{count_ru(len(self._slots), 'сохранение', 'сохранения', 'сохранений')}"
+            tr("ВСЕ ИГРЫ\n{0}", count_ru(len(self._slots), 'сохранение', 'сохранения', 'сохранений'))
         )
         all_icon = QIcon(str(_SHELL_ICONS / "game-grid.svg"))
         if not all_icon.isNull():
@@ -732,7 +751,7 @@ class LibraryView(QWidget):
                 "libraryReadyDot" if slot.format_id is not None else "libraryCandidateDot"
             )
             ready_label = QLabel(
-                "Готово" if slot.format_id is not None else "Только просмотр",
+                tr("Готово") if slot.format_id is not None else tr("Только чтение"),
                 status_cell,
             )
             ready_label.setObjectName("libraryReadyLabel")
@@ -743,9 +762,9 @@ class LibraryView(QWidget):
                 except KeyError:
                     release = None
             candidate_chip = status_chip(
-                "Редактируемый" if slot.format_id is not None else (
-                    "Экспериментальный" if release is not None and release.edition == "enhanced"
-                    else "Не распознано"
+                tr("Можно изменять") if slot.format_id is not None else (
+                    tr("Экспериментально") if release is not None and release.edition == "enhanced"
+                    else tr("Не распознано")
                 ),
                 status_cell,
                 tone="success" if slot.format_id is not None else "warning",
@@ -787,6 +806,28 @@ class LibraryView(QWidget):
         row = selected[0].row()
         return self._visible_slots[row] if 0 <= row < len(self._visible_slots) else None
 
+    def _set_preview_image(self, slot: SaveSlot | None) -> None:
+        image = save_preview(slot.path, _slot_family(slot)) if slot is not None else None
+        if image is None:
+            if not self._default_preview_pixmap.isNull():
+                self.preview_image.setPixmap(self._default_preview_pixmap)
+            self.preview_image.setToolTip(
+                tr("Декоративное изображение зоны; обложка сохранения недоступна.")
+            )
+            return
+        size = self.preview_image.size()
+        width = max(1, size.width())
+        height = max(1, size.height())
+        scaled = QPixmap.fromImage(image).scaled(
+            QSize(width, height),
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.preview_image.setPixmap(
+            scaled.copy((scaled.width() - width) // 2, (scaled.height() - height) // 2, width, height)
+        )
+        self.preview_image.setToolTip(tr("Скриншот, сохранённый игрой вместе с этим сохранением."))
+
     def _update_preview(self) -> None:
         slot = self._selected_slot()
         selected_row = self.save_table.currentRow() if slot is not None else -1
@@ -811,8 +852,9 @@ class LibraryView(QWidget):
         self.open_button.setEnabled(slot is not None)
         self.restore_button.setEnabled(slot is not None)
         if slot is None:
-            self.preview_name.setText("Сохранение не выбрано")
-            self.preview_meta.setText("Выбери сохранение, чтобы увидеть подробности.")
+            self._set_preview_image(None)
+            self.preview_name.setText(tr("Сохранение не выбрано"))
+            self.preview_meta.setText(tr("Выбери сохранение, чтобы увидеть подробности."))
             self.preview_metadata.setVisible(False)
             self.preview_meta.setVisible(True)
             self.preview_status.setVisible(False)
@@ -820,11 +862,14 @@ class LibraryView(QWidget):
             self.items_summary.setText("—")
             self.equipment_summary.setText("—")
             self.condition_summary.setText("—")
-            self.preview_editable_chip.setText("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ")
-            self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
-            self.preview_inventory_chip.setText("ИНВЕНТАРЬ —")
+            self.preview_editable_chip.setText(tr("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ"))
+            self.preview_integrity_chip.setText(tr("НЕ ПРОВЕРЕНО"))
+            self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ —"))
             return
-        self.preview_name.setText(slot.path.name)
+        self._set_preview_image(slot)
+        s2_text = s2_row_text(slot.path) if _slot_family(slot) == "stalker2" else None
+        self.preview_name.setText(f"{s2_text[0]} · {s2_text[1]}" if s2_text else slot.path.name)
+        self.preview_name.setToolTip(slot.path.name)
         snapshot = self._snapshot
         snapshot_matches = bool(
             snapshot is not None
@@ -840,7 +885,7 @@ class LibraryView(QWidget):
                     for name in ("edit_money", "edit_stacks", "edit_durability")
                 )
             )
-            self.preview_editable_chip.setText("РЕДАКТИРУЕМЫЙ" if editable else "ТОЛЬКО ПРОСМОТР")
+            self.preview_editable_chip.setText(tr("МОЖНО ИЗМЕНЯТЬ") if editable else tr("ТОЛЬКО ЧТЕНИЕ"))
             self.preview_editable_chip.setProperty("tone", "success" if editable else "neutral")
             money = human_money(info.money) if info.money is not None else "—"
             currency = currency_suffix(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", ""))
@@ -857,7 +902,7 @@ class LibraryView(QWidget):
                 if item.condition is not None
             )
             average_condition = (
-                f"{sum(conditions) / len(conditions):.0f}% (средняя)"
+                tr("{0:.0f}% (средняя)", sum(conditions) / len(conditions))
                 if conditions
                 else "—"
             )
@@ -866,14 +911,14 @@ class LibraryView(QWidget):
             )
             self.condition_summary.setText(average_condition)
             self.preview_integrity_chip.setText(
-            "Сохранение проверено" if info.crc_ok else "Файл не прошёл проверку"
+            tr("Сохранение проверено") if info.crc_ok else tr("Файл не прошёл проверку")
             )
-            self.preview_inventory_chip.setText(f"ИНВЕНТАРЬ · {len(info.inventory)}")
+            self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ · {0}", len(info.inventory)))
         else:
-            self.preview_editable_chip.setText("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ")
+            self.preview_editable_chip.setText(tr("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ"))
             self.preview_editable_chip.setProperty("tone", "neutral")
-            self.preview_integrity_chip.setText("НЕ ПРОВЕРЕНО")
-            self.preview_inventory_chip.setText("ИНВЕНТАРЬ —")
+            self.preview_integrity_chip.setText(tr("НЕ ПРОВЕРЕНО"))
+            self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ —"))
             self.money_summary.setText("—")
             self.items_summary.setText("—")
             self.equipment_summary.setText("—")
@@ -884,7 +929,7 @@ class LibraryView(QWidget):
         source = (
             "Steam Cloud"
             if snapshot_matches and getattr(self._snapshot, "source_kind", None) == "cloud"
-            else "Локальное сохранение"
+            else tr("Локальное сохранение")
         )
         game_title = slot.game_title or slot.candidate_game_title
         self.preview_game_value.setText(game_title)
@@ -894,20 +939,20 @@ class LibraryView(QWidget):
         self.preview_size_value.setText(human_size(slot.size))
         if snapshot is not None and snapshot_matches:
             self.preview_integrity_value.setText(
-                "Сохранение проверено" if snapshot.info.crc_ok else "Файл не прошёл проверку"
+                tr("Сохранение проверено") if snapshot.info.crc_ok else tr("Файл не прошёл проверку")
             )
             self.preview_integrity_value.setProperty(
                 "integrityState", "verified" if snapshot.info.crc_ok else "warning"
             )
         else:
-            self.preview_integrity_value.setText("Не проверено")
+            self.preview_integrity_value.setText(tr("Не проверено"))
             self.preview_integrity_value.setProperty("integrityState", "unknown")
         self.preview_integrity_value.style().unpolish(self.preview_integrity_value)
         self.preview_integrity_value.style().polish(self.preview_integrity_value)
         self.preview_metadata.setVisible(True)
         self.preview_meta.setVisible(False)
         self.preview_status.setVisible(False)
-        self.open_button.setText("ОТКРЫТЬ СОХРАНЕНИЕ  →")
+        self.open_button.setText(tr("ОТКРЫТЬ СОХРАНЕНИЕ  →"))
 
     def _open_row(self, row: int) -> None:
         if 0 <= row < len(self._visible_slots):

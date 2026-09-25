@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
+
 from .style_components import action_button, panel, section_header, status_chip
 
 
@@ -36,12 +38,12 @@ class SaveReviewView(QWidget):
         root.setContentsMargins(42, 24, 42, 24)
         root.setSpacing(8)
         heading = QHBoxLayout()
-        heading.addWidget(QLabel("ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ", self))
+        heading.addWidget(QLabel(tr("ПОДТВЕРЖДЕНИЕ СОХРАНЕНИЯ"), self))
         heading.addStretch(1)
-        self.status_chip = status_chip("ПРОВЕРКА ПЕРЕД СОХРАНЕНИЕМ", self, tone="warning")
+        self.status_chip = status_chip(tr("ПРОВЕРКА ПЕРЕД СОХРАНЕНИЕМ"), self, tone="warning")
         heading.addWidget(self.status_chip)
         root.addLayout(heading)
-        self.source_label = QLabel("Изменения ожидают подтверждения.", self)
+        self.source_label = QLabel(tr("Изменения ожидают подтверждения."), self)
         self.source_label.setObjectName("reviewSourceLabel")
         self.source_label.setWordWrap(True)
         root.addWidget(self.source_label)
@@ -51,10 +53,10 @@ class SaveReviewView(QWidget):
         changes_panel = panel(self, object_name="reviewChangesPanel")
         changes_layout = QVBoxLayout(changes_panel)
         changes_layout.setContentsMargins(12, 12, 12, 12)
-        changes_layout.addWidget(section_header("ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ", "ПРОВЕРКА", changes_panel))
+        changes_layout.addWidget(section_header(tr("ПЛАНИРУЕМЫЕ ИЗМЕНЕНИЯ"), tr("ПРОВЕРКА"), changes_panel))
         self.changes_table = QTableWidget(0, 3, changes_panel)
         self.changes_table.setObjectName("reviewChangesTable")
-        self.changes_table.setHorizontalHeaderLabels(("ОБЪЕКТ", "БЫЛО", "СТАНЕТ"))
+        self.changes_table.setHorizontalHeaderLabels((tr("ОБЪЕКТ"), tr("БЫЛО"), tr("СТАНЕТ")))
         self.changes_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.changes_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.changes_table.setShowGrid(False)
@@ -65,19 +67,19 @@ class SaveReviewView(QWidget):
         pipeline_panel = panel(self, object_name="reviewPipelinePanel")
         pipeline_layout = QVBoxLayout(pipeline_panel)
         pipeline_layout.setContentsMargins(12, 12, 12, 12)
-        pipeline_layout.addWidget(section_header("ПОРЯДОК СОХРАНЕНИЯ", parent=pipeline_panel))
+        pipeline_layout.addWidget(section_header(tr("ПОРЯДОК СОХРАНЕНИЯ"), parent=pipeline_panel))
         self.pipeline_steps = QListWidget(pipeline_panel)
         self.pipeline_steps.setObjectName("reviewPipelineSteps")
         for text in (
-            "1  Проверить изменения",
-            "2  Создать резервную копию",
-            "3  Сохранить файл",
-            "4  Проверить результат",
+            tr("1  Проверить изменения"),
+            tr("2  Создать резервную копию"),
+            tr("3  Сохранить файл"),
+            tr("4  Проверить результат"),
         ):
             self.pipeline_steps.addItem(QListWidgetItem(text))
         pipeline_layout.addWidget(self.pipeline_steps, 1)
         self.warning_label = QLabel(
-            "Если Steam не подтвердил запись, редактор сначала проверит состояние облака.",
+            tr("Если Steam не подтвердил запись, редактор сначала проверит состояние облака."),
             pipeline_panel,
         )
         self.warning_label.setObjectName("reviewWarningLabel")
@@ -93,11 +95,11 @@ class SaveReviewView(QWidget):
         root.addWidget(body_host, 0)
 
         actions = QHBoxLayout()
-        self.cancel_button = action_button("ОТМЕНА", self)
+        self.cancel_button = action_button(tr("ОТМЕНА"), self)
         self.cancel_button.clicked.connect(self.cancelled)
         actions.addWidget(self.cancel_button)
         actions.addStretch(1)
-        self.confirm_button = action_button("СОХРАНИТЬ С ИЗМЕНЕНИЯМИ", self, kind="primary")
+        self.confirm_button = action_button(tr("СОХРАНИТЬ С ИЗМЕНЕНИЯМИ"), self, kind="primary")
         self.confirm_button.clicked.connect(self.confirmed)
         actions.addWidget(self.confirm_button)
         root.addLayout(actions)

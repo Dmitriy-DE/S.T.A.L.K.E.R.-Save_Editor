@@ -84,7 +84,7 @@ def test_library_and_editor_use_plain_language_for_search_and_integrity(
 
     assert window.library_view.search_edit.placeholderText() == "Поиск сохранений…"
     assert window.library_view.preview_status.text() == "НЕ ПРОВЕРЕНО"
-    assert window.editor_view.header_status.text() == "РЕДАКТИРУЕМЫЙ"
+    assert window.editor_view.header_status.text() == "МОЖНО ИЗМЕНЯТЬ"
     assert window.editor_view.integrity_label.text() == "Файл проверен"
     assert "Проверка:" in {
         label.text() for label in window.library_view.findChildren(QLabel)
@@ -147,7 +147,7 @@ def test_local_receipt_shows_user_result_and_keeps_hash_in_details(
             if view.receipt_table.item(row, column) is not None
         ]
     )
-    assert "ИЗМЕНЕНИЯ СОХРАНЕНЫ" in visible
+    assert "Изменения сохранены" in visible
     assert "Сохранение записано и проверено." in visible
     assert "SHA" not in visible
     view._show_technical_details()
@@ -173,7 +173,7 @@ def test_success_receipt_says_what_changed_without_showing_internal_hashes(
         (view.receipt_table.item(row, 0).text(), view.receipt_table.item(row, 1).text())
         for row in range(view.receipt_table.rowCount())
     ]
-    assert view.heading_label.text() == "ИЗМЕНЕНИЯ СОХРАНЕНЫ"
+    assert view.heading_label.text() == "Изменения сохранены"
     assert view.subtitle.text() == "Сохранение записано и проверено. Резервная копия создана."
     assert rows == [
         ("Изменено", "3 параметра"),
@@ -453,7 +453,7 @@ def test_save_review_steps_describe_user_actions(qtbot) -> None:
 def test_success_copy_and_technical_details_action_are_available(
     qtbot, tmp_path: Path
 ) -> None:
-    assert SAVE_SUCCESS.title == "ИЗМЕНЕНИЯ СОХРАНЕНЫ"
+    assert SAVE_SUCCESS.title == "Изменения сохранены"
     view = SaveResultView()
     qtbot.addWidget(view)
     view.set_receipt(

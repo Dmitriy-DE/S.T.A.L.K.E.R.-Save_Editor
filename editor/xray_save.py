@@ -184,6 +184,17 @@ class _Reader:
         self.pos = end + 1
         return value.decode("utf-8", errors="replace")
 
+    def zstring_text(self) -> str:
+        """A display string: X-Ray stores player-visible text in cp1251."""
+
+        start = self.pos
+        self.zstring()
+        value = self.data[start : self.pos - 1]
+        try:
+            return value.decode("utf-8")
+        except UnicodeDecodeError:
+            return value.decode("cp1251", errors="replace")
+
     def vector_u16(self) -> None:
         count = self.u32()
         if count > _MAX_VECTOR:
@@ -263,6 +274,10 @@ class _ActorStateDetails:
     money: int
     player_faction_offset: int | None
     player_faction_index: int | None
+    health: float | None = None
+    rank: int | None = None
+    reputation: int | None = None
+    character_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -291,6 +306,10 @@ class XRaySave:
     owned_handles: tuple[int, ...]
     unresolved_handles: tuple[int, ...]
     warnings: tuple[str, ...]
+    actor_health: float | None = None
+    actor_rank: int | None = None
+    actor_reputation: int | None = None
+    actor_name: str | None = None
 
     def object_by_id(self, object_id: int) -> XRayObject:
         for obj in self.objects:
@@ -366,8 +385,9 @@ def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetail
     reader.u8()  # team
     reader.u8()  # squad
     reader.u8()  # group
+    health: float | None = None
     if version > 18:
-        reader.f32()  # health
+        health = reader.f32()
     if version < 32:
         reader.zstring()  # old visual_read branch
     if version > 87:
@@ -407,11 +427,14 @@ def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetail
     if version > 85:
         player_faction_offset = obj.state_offset + reader.pos
         player_faction_index = reader.s32()
+    rank: int | None = None
+    reputation: int | None = None
+    character_name: str | None = None
     if version > 86:
-        reader.s32()  # rank
-        reader.s32()  # reputation
+        rank = reader.s32()
+        reputation = reader.s32()
     if version > 104:
-        reader.zstring()  # generated/display character name
+        character_name = reader.zstring_text() or None
     if version > 124:
         reader.u8()  # deadbody can take
         reader.u8()  # deadbody closed
@@ -421,6 +444,10 @@ def _parse_actor_state_details(raw: bytes, obj: XRayObject) -> _ActorStateDetail
         money=money,
         player_faction_offset=player_faction_offset,
         player_faction_index=player_faction_index,
+        health=health if health is not None and 0.0 <= health <= 1.0 else None,
+        rank=rank,
+        reputation=reputation,
+        character_name=character_name,
     )
 
 
@@ -1203,6 +1230,10 @@ def parse_xray(
         unresolved_handles=unresolved,
         warnings=tuple(dict.fromkeys(warnings)),
         faction_relations_editable=faction_relations_editable,
+        actor_health=actor_state.health,
+        actor_rank=actor_state.rank,
+        actor_reputation=actor_state.reputation,
+        actor_name=actor_state.character_name,
     )
     if with_inventory:
         parsed = replace(
@@ -1260,6 +1291,10 @@ def inspect_xray(
         faction_relations_editable=parsed.faction_relations_editable,
         player_faction_index=parsed.player_faction_index,
         player_faction_editable=parsed.player_faction_editable,
+        actor_health=parsed.actor_health,
+        actor_rank=parsed.actor_rank,
+        actor_reputation=parsed.actor_reputation,
+        actor_name=parsed.actor_name,
     )
 
 

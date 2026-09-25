@@ -55,6 +55,10 @@ if shell_icon_pack.is_dir():
 font_pack = ROOT / "assets" / "fonts"
 if font_pack.is_dir():
     datas.append((str(font_pack), "assets/fonts"))
+# Interface translations (editor/i18n.py reads <bundle>/locales/<code>.json).
+for locale_file in sorted((ROOT / "locales").glob("*.json")):
+    if not locale_file.name.startswith("_"):
+        datas.append((str(locale_file), "locales"))
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))

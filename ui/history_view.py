@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import source_text, tr
 from editor.storage import BackupRecord
 
 from .backup_controller import BackupController
@@ -55,12 +56,12 @@ class HistoryView(QWidget):
         root.setContentsMargins(0, 20, 0, 0)
         root.setSpacing(10)
         title = QHBoxLayout()
-        title.addWidget(QLabel("ИСТОРИЯ И РЕЗЕРВНЫЕ КОПИИ", self))
-        subtitle = QLabel("Проверенные действия и безопасное восстановление", self)
+        title.addWidget(QLabel(tr("ИСТОРИЯ И РЕЗЕРВНЫЕ КОПИИ"), self))
+        subtitle = QLabel(tr("Проверенные действия и безопасное восстановление"), self)
         subtitle.setObjectName("screenSubtitle")
         title.addWidget(subtitle)
         title.addStretch(1)
-        self.status_chip = status_chip("ИСТОРИЯ ГОТОВА", self, tone="success")
+        self.status_chip = status_chip(tr("ИСТОРИЯ ГОТОВА"), self, tone="success")
         title.addWidget(self.status_chip)
         root.addLayout(title)
 
@@ -80,14 +81,14 @@ class HistoryView(QWidget):
         self.table_panel = table_panel
         table_layout = QVBoxLayout(table_panel)
         table_layout.setContentsMargins(12, 12, 12, 12)
-        table_layout.addWidget(section_header("ИСТОРИЯ РЕЗЕРВНЫХ КОПИЙ", "ПРОВЕРКА / СТАТУС", table_panel))
+        table_layout.addWidget(section_header(tr("ИСТОРИЯ РЕЗЕРВНЫХ КОПИЙ"), tr("ПРОВЕРКА / СТАТУС"), table_panel))
         self.source_filter_edit = QLineEdit(table_panel)
-        self.source_filter_edit.setPlaceholderText("Фильтр по исходному слоту…")
+        self.source_filter_edit.setPlaceholderText(tr("Фильтр по сохранению…"))
         self.source_filter_edit.textChanged.connect(self._filter_changed)
         table_layout.addWidget(self.source_filter_edit)
         self.table = QTableWidget(0, 5, table_panel)
         self.table.setObjectName("historyTable")
-        self.table.setHorizontalHeaderLabels(("ДАТА", "СОХРАНЕНИЕ", "ДЕЙСТВИЕ", "РЕЗЕРВНАЯ КОПИЯ", "СТАТУС"))
+        self.table.setHorizontalHeaderLabels((tr("ДАТА"), tr("СОХРАНЕНИЕ"), tr("ДЕЙСТВИЕ"), tr("РЕЗЕРВНАЯ КОПИЯ"), tr("СТАТУС")))
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -106,10 +107,10 @@ class HistoryView(QWidget):
         self.table.itemSelectionChanged.connect(self._selection_changed)
         table_layout.addWidget(self.table, 1)
         toolbar = QHBoxLayout()
-        self.refresh_button = action_button("ОБНОВИТЬ", table_panel)
+        self.refresh_button = action_button(tr("ОБНОВИТЬ"), table_panel)
         self.refresh_button.clicked.connect(self._refresh)
         toolbar.addWidget(self.refresh_button)
-        self.open_folder_button = action_button("ОТКРЫТЬ ПАПКУ", table_panel)
+        self.open_folder_button = action_button(tr("ОТКРЫТЬ ПАПКУ"), table_panel)
         self.open_folder_button.clicked.connect(self._open_folder)
         toolbar.addWidget(self.open_folder_button)
         toolbar.addStretch(1)
@@ -119,7 +120,7 @@ class HistoryView(QWidget):
         self.detail_panel = panel(self, object_name="historyDetailPanel")
         detail = QVBoxLayout(self.detail_panel)
         detail.setContentsMargins(12, 12, 12, 12)
-        detail.addWidget(section_header("ДЕТАЛИ ЗАПИСИ", "ВОССТАНОВЛЕНИЕ", self.detail_panel))
+        detail.addWidget(section_header(tr("ДЕТАЛИ ЗАПИСИ"), tr("ВОССТАНОВЛЕНИЕ"), self.detail_panel))
         self.detail_image = QLabel(self.detail_panel)
         self.detail_image.setObjectName("historyDetailImage")
         self.detail_image.setMinimumHeight(112)
@@ -129,33 +130,33 @@ class HistoryView(QWidget):
             self.detail_image.setPixmap(detail_pixmap)
             self.detail_image.setScaledContents(True)
         detail.addWidget(self.detail_image)
-        self.detail_name = QLabel("Запись не выбрана", self.detail_panel)
+        self.detail_name = QLabel(tr("Запись не выбрана"), self.detail_panel)
         self.detail_name.setObjectName("historyDetailName")
         self.detail_name.setWordWrap(True)
         detail.addWidget(self.detail_name)
-        self.detail_status = QLabel("Перед восстановлением копия будет автоматически проверена.", self.detail_panel)
+        self.detail_status = QLabel(tr("Перед восстановлением копия будет автоматически проверена."), self.detail_panel)
         self.detail_status.setObjectName("historyDetailStatus")
         self.detail_status.setWordWrap(True)
         detail.addWidget(self.detail_status)
         self.destination_edit = QLineEdit(self.detail_panel)
-        self.destination_edit.setPlaceholderText("Путь восстановленной копии")
+        self.destination_edit.setPlaceholderText(tr("Путь восстановленной копии"))
         self.destination_edit.textChanged.connect(self._destination_changed)
         detail.addWidget(self.destination_edit)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self.detail_panel)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), self.detail_panel)
         self.details_button.setObjectName("historyTechnicalDetailsButton")
         self.details_button.setEnabled(False)
         self.details_button.clicked.connect(self._show_technical_details)
         detail.addWidget(self.details_button)
         detail.addStretch(1)
-        self.preview_button = action_button("ПРОВЕРИТЬ КОПИЮ", self.detail_panel)
+        self.preview_button = action_button(tr("ПРОВЕРИТЬ КОПИЮ"), self.detail_panel)
         self.preview_button.setEnabled(False)
         self.preview_button.clicked.connect(self._preview)
         detail.addWidget(self.preview_button)
-        self.restore_button = action_button("ВОССТАНОВИТЬ КОПИЮ", self.detail_panel, kind="primary")
+        self.restore_button = action_button(tr("ВОССТАНОВИТЬ КОПИЮ"), self.detail_panel, kind="primary")
         self.restore_button.setEnabled(False)
         self.restore_button.clicked.connect(self._restore)
         detail.addWidget(self.restore_button)
-        self.restore_in_place_button = action_button("ОТКАТИТЬ ИСХОДНЫЙ СЛОТ", self.detail_panel, kind="danger")
+        self.restore_in_place_button = action_button(tr("ОТКАТИТЬ ИСХОДНЫЙ ФАЙЛ"), self.detail_panel, kind="danger")
         self.restore_in_place_button.setEnabled(False)
         self.restore_in_place_button.clicked.connect(self._restore_in_place)
         detail.addWidget(self.restore_in_place_button)
@@ -198,7 +199,7 @@ class HistoryView(QWidget):
                     source_display_name(record.source_path, record.backup_path),
                     self._operation_label(record.operation),
                     Path(record.backup_path).name,
-                    BACKUP_STATUS_COPY.get(record.status, "Требует проверки"),
+                    BACKUP_STATUS_COPY.get(record.status, tr("Требует проверки")),
                 )
                 for column, value in enumerate(values):
                     item = QTableWidgetItem("" if column == 4 else str(value))
@@ -214,7 +215,7 @@ class HistoryView(QWidget):
                 status.setObjectName("historyVerificationChip")
                 self.table.setCellWidget(row, 4, status)
                 self.table.setRowHeight(row, 58)
-        self.status_chip.setText("ИСТОРИЯ ГОТОВА" if records else "ИСТОРИЯ ПОКА ПУСТА")
+        self.status_chip.setText(tr("ИСТОРИЯ ГОТОВА") if records else tr("ИСТОРИЯ ПОКА ПУСТА"))
         self._selection_changed()
 
     def _selection_changed(self) -> None:
@@ -224,15 +225,15 @@ class HistoryView(QWidget):
         self.restore_button.setEnabled(False)
         self.restore_in_place_button.setEnabled(False)
         if record is None:
-            self.detail_name.setText("Запись не выбрана")
-            self.detail_status.setText("Перед восстановлением копия будет автоматически проверена.")
+            self.detail_name.setText(tr("Запись не выбрана"))
+            self.detail_status.setText(tr("Перед восстановлением копия будет автоматически проверена."))
             self.detail_status.setToolTip("")
             self.destination_edit.clear()
             self.details_button.setEnabled(bool(self._technical_error_details))
             return
         self.detail_name.setText(source_display_name(record.source_path, record.backup_path))
         self.detail_name.setToolTip("")
-        self.detail_status.setText(BACKUP_STATUS_COPY.get(record.status, "Требует проверки"))
+        self.detail_status.setText(BACKUP_STATUS_COPY.get(record.status, tr("Требует проверки")))
         self.detail_status.setToolTip("")
         self.destination_edit.clear()
         self.details_button.setEnabled(True)
@@ -245,17 +246,17 @@ class HistoryView(QWidget):
         if record is not None:
             lines.extend(
                 (
-                    f"Путь к сохранению: {record.source_path}",
-                    f"Путь к резервной копии: {record.backup_path}",
-                    f"Статус: {record.status}",
-                    f"Действие: {self.backend._operation_text(record.operation)}",
+                    tr("Путь к сохранению: {0}", record.source_path),
+                    tr("Путь к резервной копии: {0}", record.backup_path),
+                    tr("Статус: {0}", record.status),
+                    tr("Действие: {0}", self.backend._operation_text(record.operation)),
                 )
             )
             for name, value in (
-                ("SHA-256 сохранения", record.source_sha256),
-                ("SHA-256 результата", record.output_sha256),
-                ("SHA-256 копии при проверке", record.actual_sha256),
-                ("Причина", record.error),
+                (tr("SHA-256 сохранения"), record.source_sha256),
+                (tr("SHA-256 результата"), record.output_sha256),
+                (tr("SHA-256 копии при проверке"), record.actual_sha256),
+                (tr("Причина"), record.error),
             ):
                 if value:
                     lines.append(f"{name}: {value}")
@@ -272,9 +273,9 @@ class HistoryView(QWidget):
     def _preview(self) -> None:
         checked = self.backend.preview_restore(self._selected_record())
         self.detail_status.setText(
-            "Резервная копия проверена. Её можно восстановить."
+            tr("Резервная копия проверена. Её можно восстановить.")
             if checked is not None
-            else "Не удалось проверить резервную копию."
+            else tr("Не удалось проверить резервную копию.")
         )
         self.detail_status.setToolTip("")
         self.restore_in_place_button.setEnabled(
@@ -339,50 +340,50 @@ class HistoryView(QWidget):
             widget.setEnabled(not busy)
 
     def set_progress(self, message: str) -> None:
-        value = str(message).casefold()
+        value = source_text(str(message)).casefold()
         if "восстановление" in value:
-            display = "Восстанавливаем резервную копию…"
+            display = tr("Восстанавливаем резервную копию…")
         elif "sha" in value or "проверка копии готова" in value:
-            display = "Резервная копия проверена. Её можно восстановить."
+            display = tr("Резервная копия проверена. Её можно восстановить.")
         elif "восстановлена" in value or "откачен" in value:
-            display = "Резервная копия восстановлена и проверена."
+            display = tr("Резервная копия восстановлена и проверена.")
         else:
-            display = "История резервных копий обновлена."
+            display = tr("История резервных копий обновлена.")
         self.detail_status.setText(display)
         self.detail_status.setToolTip("")
 
     def set_error(self, message: str) -> None:
-        self.detail_status.setText("Не удалось проверить или восстановить резервную копию.")
+        self.detail_status.setText(tr("Не удалось проверить или восстановить резервную копию."))
         self.detail_status.setToolTip("")
         self._technical_error_details = technical_details(message)
         self.details_button.setEnabled(True)
-        self.status_chip.setText("ТРЕБУЕТ ВНИМАНИЯ")
+        self.status_chip.setText(tr("ТРЕБУЕТ ВНИМАНИЯ"))
 
     def mark_restored(self, receipt) -> None:
         self.backend.mark_restored(receipt)
         self._render()
-        self.detail_status.setText("Резервная копия восстановлена и проверена.")
+        self.detail_status.setText(tr("Резервная копия восстановлена и проверена."))
         self.detail_status.setToolTip("")
 
     def mark_in_place_restored(self, receipt) -> None:
         self.backend.mark_in_place_restored(receipt)
         self._render()
-        self.detail_status.setText("Исходное сохранение восстановлено и проверено.")
+        self.detail_status.setText(tr("Исходное сохранение восстановлено и проверено."))
         self.detail_status.setToolTip("")
 
     @staticmethod
     def _operation_label(operation: dict[str, object]) -> str:
         mode = str(operation.get("mode", "")).casefold()
         if "restore" in mode or "recover" in mode:
-            return "Восстановление"
+            return tr("Восстановление")
         if "export" in mode or "copy" in mode:
-            return "Создание копии"
+            return tr("Создание копии")
         if any(
             operation.get(name) is not None
             for name in ("money", "stack_count", "durability_count", "relation_count")
         ):
-            return "Изменение сохранения"
-        return "Сохранение"
+            return tr("Изменение сохранения")
+        return tr("Сохранение")
 
 
 __all__ = ["HistoryView"]

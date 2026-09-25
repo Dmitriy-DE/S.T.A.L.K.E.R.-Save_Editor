@@ -7,13 +7,14 @@
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="style.css">
 <link rel="modulepreload" href="bootstrap.js">
+<link rel="modulepreload" href="i18n.js">
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
     <div class="brand-title-row">
       <span class="brand-name">S.T.A.L.K.E.R. — SAVE EDITOR</span>
-      <span class="badge badge-version">v0.6.0</span>
+      <span class="badge badge-version">v0.7.0</span>
     </div>
     <span class="brand-subtitle">РЕДАКТОР СОХРАНЕНИЙ ДЛЯ ВСЕЙ СЕРИИ S.T.A.L.K.E.R.</span>
   </div>
@@ -24,6 +25,7 @@
       <button class="reference-nav-button" data-reference-screen="history" type="button"><img src="assets/ui/shell_icons/history.svg" alt=""> ИСТОРИЯ</button>
       <button class="reference-nav-button" data-reference-screen="settings" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> НАСТРОЙКИ</button>
     </nav>
+    <div class="effect-toggles"><button class="effect-toggle" id="sound-toggle" type="button" aria-pressed="true" title="Звуки интерфейса"><img src="assets/ui/shell_icons/sound-on.svg" alt=""></button><button class="effect-toggle" id="motion-toggle" type="button" aria-pressed="true" title="Анимации переходов"><img src="assets/ui/shell_icons/motion-on.svg" alt=""></button></div>
     <button class="button support-button" id="support-button" type="button">♡  ПОДДЕРЖАТЬ ПРОЕКТ</button>
   </div>
 </header>
@@ -38,7 +40,7 @@
     <button class="reference-game" type="button"><img class="reference-game-icon" src="assets/ui/shell_icons/history.svg" alt=""> Call of Pripyat <span>локальный файл</span></button>
     <button class="reference-game" type="button"><img class="reference-game-icon" src="assets/ui/shell_icons/history.svg" alt=""> Clear Sky <span>локальный файл</span></button>
     <button class="reference-game" type="button"><img class="reference-game-icon" src="assets/ui/shell_icons/history.svg" alt=""> Shadow of Chornobyl <span>локальный файл</span></button>
-    <div class="reference-zone-note">ОДНИ СОХРАНЯЮТ ИГРЫ.<br>МЫ СОХРАНЯЕМ<br>ИСТОРИИ.</div>
+    <div class="reference-zone-note">ЗОНА НЕ ПРОЩАЕТ ОШИБОК.<br>РЕЗЕРВНАЯ КОПИЯ<br>ПРОЩАЕТ.</div>
   </aside>
 
   <section class="reference-workspace">
@@ -89,8 +91,8 @@
           <div id="reference-character-details" class="reference-readonly-detail" hidden></div>
         </aside>
         <section class="reference-panel reference-inventory-panel">
-          <div class="reference-panel-title"><span>ИНВЕНТАРЬ</span><span id="reference-item-count">Элементов: 0</span></div>
-          <div class="reference-toolbar"><input id="reference-inventory-search" type="search" placeholder="Поиск предметов…"><select id="reference-inventory-filter"><option value="all">ВСЕ</option><option value="weapon">ОРУЖИЕ</option><option value="ammo">БОЕПРИПАСЫ</option><option value="outfit">СНАРЯЖЕНИЕ</option><option value="consumable">РАСХОДНИКИ</option><option value="artifact">АРТЕФАКТЫ</option><option value="quest">КЛЮЧИ</option><option value="other">ПРОЧЕ</option></select></div>
+          <div class="reference-panel-title"><span>ИНВЕНТАРЬ</span><span id="reference-item-count">Предметов: 0</span></div>
+          <div class="reference-toolbar"><input id="reference-inventory-search" type="search" placeholder="Поиск предметов…"><select id="reference-inventory-filter"><option value="all">ВСЕ</option><option value="weapon">ОРУЖИЕ</option><option value="ammo">БОЕПРИПАСЫ</option><option value="outfit">СНАРЯЖЕНИЕ</option><option value="consumable">РАСХОДНИКИ</option><option value="artifact">АРТЕФАКТЫ</option><option value="quest">КЛЮЧИ</option><option value="other">ПРОЧЕЕ</option></select></div>
           <table class="reference-table" id="reference-inventory-table"><thead><tr><th></th><th>НАЗВАНИЕ</th><th>ТИП</th><th>КОЛ-ВО</th><th>ВЕС (КГ)</th><th>СОСТОЯНИЕ</th><th>ПОДДЕРЖКА</th><th></th></tr></thead><tbody><tr><td colspan="8" class="reference-empty">Сохранение не проанализировано.</td></tr></tbody></table>
           <section class="reference-subpanel reference-add-panel"><div class="reference-subheading">ДОБАВЛЕНИЕ ИЗ КАТАЛОГА</div><div class="reference-toolbar"><select id="reference-add-select" aria-label="Предмет из каталога"></select><input id="reference-add-quantity" type="number" min="1" max="65535" value="1" aria-label="Количество"><button class="reference-secondary" id="reference-add-button" type="button">ДОБАВИТЬ</button></div><div class="muted">Только для форматов и предметов, которые поддерживают это действие.</div></section>
         </section>
@@ -115,7 +117,7 @@
 
     <section class="reference-screen" id="reference-screen-cloud" hidden><div class="reference-screen-heading"><h1>STEAM CLOUD</h1><span>Облачные сохранения доступны только в настольной версии</span></div><section class="reference-panel reference-desktop-only"><div class="reference-chip warning">ТОЛЬКО ДЛЯ НАСТОЛЬНОЙ ВЕРСИИ</div><h2>Steam Cloud подключается по запросу</h2><p>Браузер не подключается к Steam и не открывает папки на компьютере. Для списка облачных сохранений, проверки и записи используй настольную версию.</p></section></section>
     <section class="reference-screen" id="reference-screen-history" hidden><div class="reference-screen-heading"><h1>ИСТОРИЯ И РЕЗЕРВНЫЕ КОПИИ</h1><span>История резервных копий доступна в настольной версии</span></div><section class="reference-panel reference-desktop-only"><div class="reference-chip warning">ТОЛЬКО ДЛЯ НАСТОЛЬНОЙ ВЕРСИИ</div><h2>Веб-версия не хранит резервные копии на компьютере</h2><p>Скачиваемая копия создаётся после проверки целостности. Восстановление резервной копии доступно в настольной версии.</p></section></section>
-    <section class="reference-screen" id="reference-screen-settings" hidden><div class="reference-screen-heading"><h1>НАСТРОЙКИ</h1><span>Браузер обрабатывает только выбранный локальный файл</span></div><section class="reference-panel reference-settings-grid"><div class="reference-settings-rail"><button class="reference-settings-category is-active" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ОБЩИЕ</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/library.svg" alt=""> ПУТИ И АВТОПОИСК</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/history.svg" alt=""> РЕЗЕРВНЫЕ КОПИИ</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/cloud.svg" alt=""> STEAM CLOUD</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/history.svg" alt=""> ОБНОВЛЕНИЯ И ДИАГНОСТИКА</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ИНТЕРФЕЙС</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ПОДДЕРЖКА</button></div><div class="reference-settings-content"><div class="reference-subheading">БЕЗОПАСНОСТЬ И ПАРИТЕТ</div><div class="reference-safety">Файл не покидает браузер<br>Steam Cloud и файлы компьютера недоступны<br>Исходный файл не изменяется<br>Резервное копирование и проверка целостности обязательны и не отключаются</div><p class="muted">Веб-версия сохраняет проверенную локальную копию. Доступ к файлам и диагностика настольного приложения доступны только в настольной версии.</p></div></section></section>
+    <section class="reference-screen" id="reference-screen-settings" hidden><div class="reference-screen-heading"><h1>НАСТРОЙКИ</h1><span>Браузер обрабатывает только выбранный локальный файл</span></div><section class="reference-panel reference-settings-grid"><div class="reference-settings-rail"><button class="reference-settings-category is-active" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ОБЩИЕ</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/library.svg" alt=""> ПУТИ И АВТОПОИСК</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/history.svg" alt=""> РЕЗЕРВНЫЕ КОПИИ</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/cloud.svg" alt=""> STEAM CLOUD</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/history.svg" alt=""> ОБНОВЛЕНИЯ И ДИАГНОСТИКА</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ИНТЕРФЕЙС</button><button class="reference-settings-category" type="button"><img src="assets/ui/shell_icons/settings.svg" alt=""> ПОДДЕРЖКА</button></div><div class="reference-settings-content"><div class="reference-subheading">БЕЗОПАСНОСТЬ И ПАРИТЕТ</div><div class="reference-safety">Файл не покидает браузер<br>Steam Cloud и файлы компьютера недоступны<br>Исходный файл не изменяется<br>Резервное копирование и проверка целостности обязательны и не отключаются</div><p class="muted">Веб-версия сохраняет проверенную локальную копию. Доступ к файлам и диагностика настольного приложения доступны только в настольной версии.</p><div class="reference-subheading">ИНТЕРФЕЙС</div><div class="reference-interface-settings"><label class="reference-setting-row"><span>Язык интерфейса</span><select id="language-select"><option value="">Как в системе</option></select></label><label class="reference-setting-check"><input type="checkbox" id="sound-check"> <span>Звуки интерфейса</span></label><label class="reference-setting-check"><input type="checkbox" id="motion-check"> <span>Анимации переходов</span></label><p class="muted">Язык сменится после перезагрузки страницы.</p></div></div></section></section>
   </section>
 </main>
 
@@ -149,6 +151,6 @@
   </div>
 </dialog>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="start.js"></script>
 </body>
 </html>

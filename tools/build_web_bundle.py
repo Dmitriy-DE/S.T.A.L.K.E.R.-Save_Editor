@@ -25,6 +25,16 @@ BUNDLE = ROOT / "web" / "pysrc.json"
 STATIC_ASSETS = (
     ("assets/fonts/Oswald[wght].ttf", "web/assets/fonts/Oswald[wght].ttf"),
     ("assets/fonts/Oswald-OFL.txt", "web/assets/fonts/Oswald-OFL.txt"),
+    *(
+        (f"assets/ui/shell_icons/{name}.svg", f"web/assets/ui/shell_icons/{name}.svg")
+        for name in ("sound-on", "sound-off", "motion-on", "motion-off")
+    ),
+    # Interface translations shared with the desktop app (see editor/i18n.py).
+    *(
+        (f"locales/{path.name}", f"web/locales/{path.name}")
+        for path in sorted((ROOT / "locales").glob("*.json"))
+        if not path.name.startswith("_")
+    ),
 )
 
 # Only what the browser actually needs: parse a save, build an immutable edit
@@ -41,6 +51,7 @@ MODULES = (
     "editor/equipment.py",
     "editor/equipment_matrix.py",
     "editor/formats.py",
+    "editor/i18n.py",
     "editor/kraken_blocks.py",
     "editor/models.py",
     "editor/prepare.py",

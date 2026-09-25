@@ -20,7 +20,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
+
+from .effects import Effects
 from .style_components import TextureFrame, action_button, key_hint
+
+_SHELL_ICON_DIR = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
 
 def app_version() -> str:
@@ -123,12 +128,13 @@ class AppShell(QWidget):
     destination_requested = Signal(str)
     support_requested = Signal()
     close_requested = Signal()
+    effects_changed = Signal()
 
     destination_names = (
-        "ЛОКАЛЬНЫЕ СОХРАНЕНИЯ",
+        tr("ЛОКАЛЬНЫЕ СОХРАНЕНИЯ"),
         "STEAM CLOUD",
-        "ИСТОРИЯ",
-        "НАСТРОЙКИ",
+        tr("ИСТОРИЯ"),
+        tr("НАСТРОЙКИ"),
     )
     _destination_keys = ("library", "cloud", "history", "settings")
     _destination_icons = ("library", "cloud", "history", "settings")
@@ -173,7 +179,7 @@ class AppShell(QWidget):
         title_row.addWidget(version, 0, Qt.AlignmentFlag.AlignBottom)
         title_row.addStretch(1)
         brand.addLayout(title_row)
-        subtitle = QLabel("РЕДАКТОР СОХРАНЕНИЙ ДЛЯ ВСЕЙ СЕРИИ S.T.A.L.K.E.R.", header)
+        subtitle = QLabel(tr("РЕДАКТОР СОХРАНЕНИЙ ДЛЯ ВСЕЙ СЕРИИ S.T.A.L.K.E.R."), header)
         subtitle.setObjectName("referenceSubtitle")
         brand.addWidget(subtitle)
         brand_host = QFrame(header)
@@ -215,7 +221,7 @@ class AppShell(QWidget):
         support_host = QWidget(header)
         support_host.setFixedSize(180, 45)
         support = action_button(
-            "♡  ПОДДЕРЖАТЬ ПРОЕКТ",
+            tr("♡  ПОДДЕРЖАТЬ ПРОЕКТ"),
             support_host,
             kind="support",
             object_name="supportProject",
@@ -227,10 +233,20 @@ class AppShell(QWidget):
 
         controls_host = QWidget(header)
         controls_host.setObjectName("windowControlsHost")
-        controls_host.setFixedSize(100, 26)
+        controls_host.setFixedSize(172, 26)
         window_controls = QHBoxLayout(controls_host)
         window_controls.setContentsMargins(0, 0, 0, 0)
         window_controls.setSpacing(3)
+        effects = Effects.instance()
+        self.sound_toggle = self._effect_toggle(
+            controls_host, "soundToggle", "sound", effects.sound_enabled, self._toggle_sound
+        )
+        self.motion_toggle = self._effect_toggle(
+            controls_host, "motionToggle", "motion", effects.motion_enabled, self._toggle_motion
+        )
+        window_controls.addWidget(self.sound_toggle)
+        window_controls.addWidget(self.motion_toggle)
+        window_controls.addSpacing(6)
         controls = []
         for label in ("—", "□", "×"):
             control = QPushButton(label, controls_host)
@@ -277,7 +293,7 @@ class AppShell(QWidget):
         self.footer_hints.hide()
         footer_layout.addStretch(1)
         self.footer_status = QLabel(
-            "ПРИЛОЖЕНИЕ ГОТОВО  |  ПРОВЕРКА И РЕЗЕРВНОЕ КОПИРОВАНИЕ ВКЛЮЧЕНЫ",
+            tr("ПРИЛОЖЕНИЕ ГОТОВО  |  ПРОВЕРКА И РЕЗЕРВНОЕ КОПИРОВАНИЕ ВКЛЮЧЕНЫ"),
             footer,
         )
         self.footer_status.setObjectName("footerStatus")
@@ -285,7 +301,7 @@ class AppShell(QWidget):
         # The window is frameless, so it needs an explicit resize handle.
         self.size_grip = QSizeGrip(footer)
         self.size_grip.setObjectName("windowSizeGrip")
-        self.size_grip.setToolTip("Изменить размер окна")
+        self.size_grip.setToolTip(tr("Изменить размер окна"))
         footer_layout.addWidget(self.size_grip, 0, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
         root.addWidget(footer)
 
@@ -302,6 +318,53 @@ class AppShell(QWidget):
             button.style().unpolish(button)
             button.style().polish(button)
             button.updateGeometry()
+
+    @staticmethod
+    def _effect_icon(kind: str, enabled: bool) -> QIcon:
+        return QIcon(str(_SHELL_ICON_DIR / f"{kind}-{'on' if enabled else 'off'}.svg"))
+
+    def _effect_toggle(self, parent, name, kind, enabled, handler) -> QPushButton:
+        button = QPushButton(parent)
+        button.setObjectName(name)
+        button.setProperty("effectKind", kind)
+        button.setCheckable(True)
+        button.setChecked(enabled)
+        button.setFixedSize(30, 26)
+        button.setIconSize(QSize(17, 17))
+        button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        button.toggled.connect(handler)
+        self._sync_effect_toggle(button)
+        return button
+
+    def _sync_effect_toggle(self, button: QPushButton) -> None:
+        kind = button.property("effectKind")
+        enabled = button.isChecked()
+        button.setIcon(self._effect_icon(kind, enabled))
+        if kind == "sound":
+            button.setToolTip(tr("Звуки интерфейса: включены") if enabled else tr("Звуки интерфейса: выключены"))
+        else:
+            button.setToolTip(tr("Анимации: включены") if enabled else tr("Анимации: выключены"))
+
+    def _toggle_sound(self, enabled: bool) -> None:
+        Effects.instance().set_sound_enabled(enabled)
+        self._sync_effect_toggle(self.sound_toggle)
+        Effects.instance().play("click")
+        self.effects_changed.emit()
+
+    def _toggle_motion(self, enabled: bool) -> None:
+        Effects.instance().set_motion_enabled(enabled)
+        self._sync_effect_toggle(self.motion_toggle)
+        self.effects_changed.emit()
+
+    def sync_effect_toggles(self) -> None:
+        """Reflect switches changed elsewhere (settings screen)."""
+
+        effects = Effects.instance()
+        for button, value in ((self.sound_toggle, effects.sound_enabled), (self.motion_toggle, effects.motion_enabled)):
+            button.blockSignals(True)
+            button.setChecked(value)
+            button.blockSignals(False)
+            self._sync_effect_toggle(button)
 
     def _minimize_window(self) -> None:
         self.window().showMinimized()

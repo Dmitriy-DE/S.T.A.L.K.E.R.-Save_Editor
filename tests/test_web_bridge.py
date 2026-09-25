@@ -99,7 +99,7 @@ def test_web_money_edit_is_experimental_but_stack_edit_is_refused(
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
     result = json.loads(web_bridge.prepare(900_000, "[]"))
     assert result["money"] == [100, 900_000]
-    with pytest.raises(SaveError, match="read-only"):
+    with pytest.raises(SaveError, match="не подтверждено"):
         web_bridge.prepare(None, json.dumps([[0x30000001, 3]]))
     assert snapshot["money_editable"] is True
 

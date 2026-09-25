@@ -111,7 +111,7 @@ def test_web_bridge_rejects_upgrade_edit_without_release_capability() -> None:
         },
     )()
 
-    with pytest.raises(Exception, match="upgrades|read-only|evidence"):
+    with pytest.raises(Exception, match="улучшений ещё не подтверждено"):
         web_bridge.prepare(
             None,
             "[]",

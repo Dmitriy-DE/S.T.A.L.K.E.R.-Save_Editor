@@ -16,6 +16,7 @@ from save_format import InventoryItem
 from .capability_types import CapabilityMaturity, CapabilitySupport
 from .catalog import ItemCatalog, ItemDefinition
 from .equipment_matrix import EquipmentFeature, equipment_profile_for_release
+from .i18n import tr
 
 EquipmentCategory = Literal[
     "weapon",
@@ -539,7 +540,7 @@ EQUIPMENT_CATEGORY_LABELS: dict[str, str] = {
 def category_label(category: str | None) -> str:
     """Return the Russian product label shared by the desktop and web UIs."""
 
-    return EQUIPMENT_CATEGORY_LABELS.get(str(category or "other"), "Прочее")
+    return tr(EQUIPMENT_CATEGORY_LABELS.get(str(category or "other"), "Прочее"))
 
 
 def helmet_category_supported(release_id: str) -> bool:

@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.catalog import ItemCatalog, ItemDefinition
+from editor.i18n import tr
 
 IconFor = Callable[[ItemDefinition], QIcon]
 
@@ -36,7 +37,7 @@ class AddItemDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("addItemDialog")
-        self.setWindowTitle("Добавить предмет")
+        self.setWindowTitle(tr("Добавить предмет"))
         self.resize(520, 560)
         self._definitions = sorted(
             catalog.items,
@@ -44,14 +45,13 @@ class AddItemDialog(QDialog):
         )
         layout = QVBoxLayout(self)
         intro = QLabel(
-            "Предмет будет добавлен в рюкзак при сохранении. "
-            "Перед записью создаётся проверенная резервная копия.",
+            tr("Предмет будет добавлен в рюкзак при сохранении. Перед записью создаётся проверенная резервная копия."),
             self,
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
         self.search_edit = QLineEdit(self)
-        self.search_edit.setPlaceholderText("Поиск по названию или ключу…")
+        self.search_edit.setPlaceholderText(tr("Поиск по названию или ключу…"))
         self.search_edit.textChanged.connect(self._filter)
         layout.addWidget(self.search_edit)
         self.item_list = QListWidget(self)
@@ -63,15 +63,15 @@ class AddItemDialog(QDialog):
         form = QFormLayout()
         self.quantity_spin = QSpinBox(self)
         self.quantity_spin.setRange(1, 65535)
-        form.addRow("Количество", self.quantity_spin)
+        form.addRow(tr("Количество"), self.quantity_spin)
         layout.addLayout(form)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
             parent=self,
         )
         ok = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
-        ok.setText("Добавить")
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Отмена")
+        ok.setText(tr("Добавить"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Отмена"))
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)

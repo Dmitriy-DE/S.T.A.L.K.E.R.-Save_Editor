@@ -283,3 +283,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px s
   align-items: baseline;
   gap: 12px;
 }
+
+/* Sound and motion switches (topbar) and interface settings. */
+.effect-toggles { display: flex; gap: 4px; align-self: flex-start; }
+.effect-toggle {
+  width: 32px; height: 28px; padding: 0; display: grid; place-items: center;
+  background: transparent; border: 1px solid transparent; cursor: pointer;
+}
+.effect-toggle:hover, .effect-toggle:focus-visible { border-color: var(--border, #3a3a30); }
+.effect-toggle[aria-pressed="false"] { background: rgb(0 0 0 / 35%); }
+.effect-toggle img { width: 17px; height: 17px; }
+.reference-interface-settings { display: grid; gap: 10px; margin-top: 8px; }
+.reference-setting-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; max-width: 420px; }
+.reference-setting-check { display: flex; gap: 8px; align-items: center; }
+.reference-screen.is-entering { animation: screen-fade 160ms ease-out; }
+@keyframes screen-fade { from { opacity: 0; } to { opacity: 1; } }
+html.no-motion *, html.no-motion *::before, html.no-motion *::after {
+  animation: none !important; transition: none !important;
+}
