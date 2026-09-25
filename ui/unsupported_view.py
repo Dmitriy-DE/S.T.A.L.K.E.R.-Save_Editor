@@ -89,13 +89,13 @@ class UnsupportedView(QWidget):
 
     def set_snapshot(self, snapshot: Any, reason: str | None = None) -> None:
         self.file_label.setText(
-            tr("{0}\nФормат: {1}", snapshot.path.name, getattr(snapshot, 'format_title', None) or 'Неизвестный формат')
+            tr("{0}\nФормат: {1}", snapshot.path.name, getattr(snapshot, 'format_title', None) or tr("Неизвестный формат"))
         )
         self.file_label.setToolTip("")
         self.reason_label.setText(ERROR_COPY["unsupported"].message)
         self.reason_label.setToolTip("")
         self._technical_detail_text = technical_details(
-            tr("Идентификатор формата: {0}\nSHA-256: {1}\nФайл: {2}\nПричина: {3}", getattr(snapshot, 'format_id', None), snapshot.info.sha256, snapshot.path, reason or 'Редактирование для этой версии ещё не поддерживается.')
+            tr("Идентификатор формата: {0}\nSHA-256: {1}\nФайл: {2}\nПричина: {3}", getattr(snapshot, 'format_id', None), snapshot.info.sha256, snapshot.path, reason or tr("Редактирование для этой версии ещё не поддерживается."))
         )
         self.details_button.setVisible(bool(self._technical_detail_text))
 

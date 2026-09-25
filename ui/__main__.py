@@ -68,7 +68,7 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
             packed = compress(raw, encoder=encoder, level=5)
             round_trip = decompress(packed, len(raw), decoder=decoder)
             if round_trip != raw:
-                raise CodecError(tr("Kraken encoder smoke round-trip изменил raw payload"))
+                raise CodecError(tr("Внутренняя ошибка: проверочное сжатие изменило данные"))
         except CodecError as exc:
             report.update({"encoder": "error", "encoder_error": str(exc)})
             print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         index = arguments.index("--steam-native-op")
         return run_cli_op(arguments[index + 1 :])
     if "--help" in arguments or "-h" in arguments:
-        print(tr("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений."))
+        print(tr("Использование: SaveEditor [--help]\nОткрывает окно редактора сохранений."))
         return 0
     from editor.diagnostics import configure_logging
 
@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         from PySide6.QtWidgets import QApplication
     except ImportError as exc:
         print(
-            tr("Qt UI не установлен. Выполните: python -m pip install -r requirements.txt"),
+            tr("Интерфейс Qt не установлен. Выполни: python -m pip install -r requirements.txt"),
             file=sys.stderr,
         )
         print(tr("Детали: {0}", exc), file=sys.stderr)

@@ -52,7 +52,7 @@ _DEVICE_CARD_TITLES = {
 }
 _LOW_PRIORITY_KEYS = ("wpn_knife", "device_pda", "device_torch", "wpn_binoc")
 _CATEGORY_TABS = (
-    (tr("ВСЕ"), tr("Все")),
+    (tr("ВСЕ"), "all"),
     (tr("ОРУЖИЕ"), "weapon"),
     (tr("БОЕПРИПАСЫ"), "ammo"),
     (tr("СНАРЯЖЕНИЕ"), "armor"),
@@ -160,6 +160,7 @@ class EditorView(QWidget):
     add_requested = Signal()
     repair_all_requested = Signal()
     discard_requested = Signal()
+    compare_requested = Signal()
     money_stage_requested = Signal(int)
     money_clear_requested = Signal()
 
@@ -210,6 +211,12 @@ class EditorView(QWidget):
         self.discard_button.setVisible(False)
         self.discard_button.clicked.connect(self.discard_requested)
         header.addWidget(self.discard_button)
+        self.compare_button = action_button(tr("СРАВНИТЬ…"), self)
+        self.compare_button.setObjectName("editorCompareButton")
+        self.compare_button.setFixedHeight(28)
+        self.compare_button.setToolTip(tr("Сравнить открытое сохранение с другим файлом"))
+        self.compare_button.clicked.connect(self.compare_requested)
+        header.addWidget(self.compare_button)
         header.addSpacing(8)
         self.header_status = status_chip(tr("НЕТ ОТКРЫТОГО СОХРАНЕНИЯ"), self, tone="neutral")
         self.header_status.setFixedHeight(28)
@@ -735,7 +742,7 @@ class EditorView(QWidget):
 
         if handle not in {item.handle for item in self.model.visible_items()}:
             self.search_edit.clear()
-            self._set_category(tr("Все"))
+            self._set_category("all")
         self.select_handle(handle)
 
     def icon_for_definition(self, definition) -> QIcon:

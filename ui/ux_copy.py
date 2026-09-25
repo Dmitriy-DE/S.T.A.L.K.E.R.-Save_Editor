@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Literal
 
-from editor.i18n import tr
+from editor.i18n import source_text, tr
 
 MessageSeverity = Literal["info", "success", "warning", "error"]
 ErrorKind = Literal[
@@ -187,17 +187,25 @@ def format_error_details(presentation: ErrorCopy) -> str:
 def classify_operation_error(message: str) -> ErrorKind:
     """Map known internal failures to the requested concise UI state."""
 
-    value = str(message).casefold()
-    if "cloud" in value and any(
+    value = source_text(str(message)).casefold()
+    cloud = "cloud" in value or "облак" in value
+    if cloud and any(
         token in value for token in ("uncertain", "не подтвержд", "uncertainty", "неясно")
     ):
         return "cloud_uncertain"
-    if "cloud" in value and any(
+    if cloud and any(
         token in value
-        for token in ("writer unavailable", "writer недоступ", "запись недоступ", "upload недоступ")
+        for token in (
+            "writer unavailable",
+            "writer недоступ",
+            "запись недоступ",
+            "upload недоступ",
+            "запись в облако недоступ",
+            "запись в облако отключ",
+        )
     ):
         return "cloud_write_unavailable"
-    if "cloud" in value and any(
+    if cloud and any(
         token in value for token in ("connect", "подключ", "transport", "недоступ")
     ):
         return "cloud_unavailable"
@@ -234,7 +242,7 @@ def classify_operation_error(message: str) -> ErrorKind:
 def classify_analysis_error(message: str) -> ErrorKind:
     """Distinguish a file-integrity failure from other open failures."""
 
-    value = str(message).casefold()
+    value = source_text(str(message)).casefold()
     if any(
         token in value
         for token in (

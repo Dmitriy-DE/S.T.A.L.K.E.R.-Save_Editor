@@ -198,6 +198,11 @@ class SaveInfo:
     faction_relations_editable: bool = False
     player_faction_index: int | None = None
     player_faction_editable: bool = False
+    # Read-only X-Ray actor facts (never written).
+    actor_health: float | None = None
+    actor_rank: int | None = None
+    actor_reputation: int | None = None
+    actor_name: str | None = None
 
 
 @dataclass(frozen=True)

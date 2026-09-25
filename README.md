@@ -55,6 +55,15 @@ read-only instead of being guessed.
 - **Steam Cloud for S.T.A.L.K.E.R. 2.** Download a cloud slot, edit it and
   upload it back with an explicit confirmation; an uncertain Steam write is
   reconciled, never retried blindly.
+- **Real save cards.** Rows show the game's own screenshot of each save; for
+  S.T.A.L.K.E.R. 2 the region and play time instead of a GUID file name.
+- **15 interface languages** — every language the games shipped in:
+  Українська, English, Русский, Deutsch, Français, Italiano, Español, Polski,
+  Čeština, Português (Brasil), Türkçe, 日本語, 한국어, 简体中文, 繁體中文.
+- **Feels like the Zone.** Quiet PDA-style interface sounds tuned per game and
+  short transitions; both switch off from the top bar in one click.
+- **Compare two saves** (money, items, character stats) and see the X-Ray
+  character's name, health, rating and in-game date — read-only.
 - **No Python required** for the Windows installer/portable build, the Linux
   portable build or the Debian package.
 

@@ -76,7 +76,7 @@ class InventoryTableModel(QAbstractTableModel):
         self._items: tuple[InventoryItem, ...] = ()
         self._visible: tuple[InventoryItem, ...] = ()
         self._search = ""
-        self._category = tr("Все")
+        self._category = "all"
         self._changed_only = False
         self._changed_handles: frozenset[int] = frozenset()
         self._staged_counts: dict[int, int] = {}
@@ -274,7 +274,7 @@ class InventoryTableModel(QAbstractTableModel):
         self.endResetModel()
 
     def _matches(self, item: InventoryItem) -> bool:
-        if self._category != "Все":
+        if self._category not in {"all", "Все"}:
             group = CATEGORY_TABS.get(self._category)
             if group is None:
                 if item.category != self._category:
@@ -355,7 +355,7 @@ class InventoryTableModel(QAbstractTableModel):
 
     @staticmethod
     def _normalise_absent(text: str) -> str:
-        return "—" if text == tr("неизвестно") else text
+        return "—" if text in {"неизвестно", tr("неизвестно")} else text
 
     def _display_value(self, item: InventoryItem, column: int) -> str:
         staged = self._staged_counts.get(item.handle)

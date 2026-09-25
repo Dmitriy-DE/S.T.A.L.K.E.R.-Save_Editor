@@ -546,7 +546,7 @@ class ItemDetailView(QWidget):
                     tr("Идентификатор предмета: {0}", item.handle_hex),
                     tr("Ключ типа: {0}", item.type_key),
                     tr("Категория в сохранении: {0}", item.category),
-                    tr("Источник данных: {0}", item.observation_source or 'не определено'),
+                    tr("Источник данных: {0}", item.observation_source or tr("не определено")),
                 )
             )
             if item.modules:

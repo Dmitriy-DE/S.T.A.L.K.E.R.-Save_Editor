@@ -42,14 +42,14 @@ class RestoreWorker(QThread):
 
     def run(self) -> None:
         try:
-            self.progress.emit(tr("Восстановление: проверка backup…"))
+            self.progress.emit(tr("Восстановление: проверка резервной копии…"))
             if self.in_place:
                 receipt = self.service.restore_in_place(self.record)
             else:
                 if self.destination is None:
-                    raise ValueError(tr("Для restore copy не задан destination"))
+                    raise ValueError(tr("Не указано, куда восстановить копию"))
                 receipt = self.service.restore_local(self.record, self.destination)
-            self.progress.emit(tr("Восстановление: output проверен по SHA256"))
+            self.progress.emit(tr("Восстановление: результат проверен по контрольной сумме"))
             self.completed.emit(receipt)
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
@@ -134,11 +134,11 @@ class BackupController(QObject):
         checked = inspect_backup(record.journal_path)
         self._preview_record = checked if checked.status == "verified" else None
         if checked.status != "verified":
-            detail = checked.error or tr("Backup недоступен")
-            self.set_error(tr("Restore запрещён: {0} — {1}", _STATUS_TEXT[checked.status], detail))
+            detail = checked.error or tr("Резервная копия недоступна")
+            self.set_error(tr("Восстановление запрещено: {0} — {1}", _STATUS_TEXT[checked.status], detail))
             return None
         self.set_progress(
-            tr("Проверка копии готова: backup {0}; SHA256 {1}; размер {2} B. Можно создать новую копию или явно откатить исходный слот.", checked.backup_path.name, checked.source_sha256, checked.backup_path.stat().st_size)
+            tr("Копия проверена: {0}; контрольная сумма {1}; размер {2} Б. Можно восстановить её отдельным файлом или откатить исходное сохранение.", checked.backup_path.name, checked.source_sha256, checked.backup_path.stat().st_size)
         )
         return checked
 
@@ -194,7 +194,7 @@ class BackupController(QObject):
     def mark_restored(self, receipt: RestoreReceipt) -> None:
         self.refresh()
         self.set_progress(
-            tr("Копия восстановлена: {0}; SHA256 {1}", receipt.output_path, receipt.output_sha256)
+            tr("Копия восстановлена: {0}; контрольная сумма {1}", receipt.output_path, receipt.output_sha256)
         )
         self._preview_record = None
         self.restored.emit(receipt)
@@ -207,7 +207,7 @@ class BackupController(QObject):
             else ""
         )
         self.set_progress(
-            tr("Исходный слот восстановлен: {0}; SHA256 {1}{2}", receipt.output_path, receipt.output_sha256, safety)
+            tr("Исходный файл восстановлен: {0}; контрольная сумма {1}{2}", receipt.output_path, receipt.output_sha256, safety)
         )
         self._preview_record = None
         self.restored_in_place.emit(receipt)

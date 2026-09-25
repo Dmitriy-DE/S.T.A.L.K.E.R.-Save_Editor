@@ -152,7 +152,7 @@ def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
         return UnsupportedSaveReason(
             code="unknown_format",
             message=(
-                tr("Формат не распознан. Если это сохранение старой версии игры (конец 2024 года), загрузите его в S.T.A.L.K.E.R. 2 и сохраните заново — после этого редактор его откроет.")
+                tr("Формат не распознан. Если это сохранение старой версии игры (конец 2024 года), загрузи его в S.T.A.L.K.E.R. 2 и сохрани заново — после этого редактор его откроет.")
             ),
         )
     return UnsupportedSaveReason(

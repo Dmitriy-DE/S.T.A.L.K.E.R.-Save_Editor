@@ -898,7 +898,7 @@ class SettingsView(QWidget):
         self.discovery_details_button.setVisible(True)
         found_count = max(0, len(lines) - 1)
         self.found_all_label.setText(
-            tr("Автопоиск: Steam {0} · игр найдено: {1}", 'найден' if steam else 'не найден', found_count)
+            tr("Автопоиск: Steam {0} · игр найдено: {1}", tr("найден") if steam else tr("не найден"), found_count)
         )
 
     def _show_discovery_details(self) -> None:

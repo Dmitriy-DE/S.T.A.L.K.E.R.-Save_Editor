@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime, timedelta
 from typing import Any
 
 from PySide6.QtCore import Qt, Signal
@@ -94,8 +95,13 @@ class CharacterView(QWidget):
         self.player_faction_button.setEnabled(False)
         self.player_faction_button.clicked.connect(self._stage_player_faction)
         profile_layout.addWidget(self.player_faction_button)
-        # Health, rank, reputation etc. are not parsed from any supported save;
-        # a panel of permanent dashes only suggested otherwise.
+        # Read-only actor facts parsed from the X-Ray actor STATE; nothing
+        # here is ever written back.
+        self.actor_facts = QLabel("", profile)
+        self.actor_facts.setObjectName("characterActorFacts")
+        self.actor_facts.setWordWrap(True)
+        self.actor_facts.setToolTip(tr("Только просмотр: эти значения прочитаны из сохранения и не изменяются."))
+        profile_layout.addWidget(self.actor_facts)
         profile_layout.addStretch(1)
         workspace.addWidget(profile, 34)
 
@@ -160,7 +166,7 @@ class CharacterView(QWidget):
         )
         info = snapshot.info
         self.profile_label.setText(
-            tr("Версия: {0}\nФайл: {1}\nПроверка: {2}", getattr(snapshot, 'format_title', None) or 'Неизвестная версия', snapshot.path.name, 'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён')
+            tr("Версия: {0}\nФайл: {1}\nПроверка: {2}", getattr(snapshot, 'format_title', None) or tr("Неизвестная версия"), snapshot.path.name, tr("Файл проверен") if info.crc_ok else tr("Файл повреждён или изменён"))
         )
         self.profile_label.setToolTip("")
         self._technical_detail_text = technical_details(
@@ -168,6 +174,8 @@ class CharacterView(QWidget):
         )
         self.details_button.setVisible(True)
         self.status_chip.setText(tr("МОЖНО ИЗМЕНЯТЬ") if self.editable else tr("ТОЛЬКО ЧТЕНИЕ"))
+        self.actor_facts.setText(actor_facts_text(info))
+        self.actor_facts.setVisible(bool(self.actor_facts.text()))
         self._render_factions()
 
     def set_diagnostic_details(self, value: object) -> None:
@@ -291,3 +299,30 @@ class CharacterView(QWidget):
 
 
 __all__ = ["CharacterView"]
+
+
+def actor_facts_text(info: Any) -> str:
+    """Name, health, rating, reputation and in-game date, when the save has them."""
+
+    lines: list[str] = []
+    name = getattr(info, "actor_name", None)
+    if name:
+        lines.append(tr("Имя: {0}", name))
+    health = getattr(info, "actor_health", None)
+    if health is not None:
+        lines.append(tr("Здоровье: {0}%", round(health * 100)))
+    rank = getattr(info, "actor_rank", None)
+    if rank is not None:
+        lines.append(tr("Рейтинг: {0}", rank))
+    reputation = getattr(info, "actor_reputation", None)
+    if reputation is not None:
+        lines.append(tr("Репутация: {0}", reputation))
+    game_time = getattr(info, "game_time", None)
+    if game_time:
+        try:
+            moment = datetime(1, 1, 1) + timedelta(milliseconds=int(game_time))
+        except (OverflowError, ValueError):
+            moment = None
+        if moment is not None and 1990 <= moment.year <= 2100:
+            lines.append(tr("Дата в игре: {0}", f"{moment:%d.%m.%Y %H:%M}"))
+    return "\n".join(lines)

@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.i18n import tr
+from editor.i18n import source_text, tr
 from editor.releases import release_by_id
 
 from .cloud_controller import CloudController
@@ -337,7 +337,7 @@ class CloudLibraryView(QWidget):
             CLOUD_COPY["uploaded"] if not uncertain else CLOUD_COPY["uncertain"]
         )
         detail_lines = (
-            tr("Статус: {0}\npersisted={1}\nSHA-256: {2}", receipt.status, getattr(receipt, 'persisted', None), getattr(receipt, 'output_sha256', ''))
+            tr("Статус: {0}\nСохранено Steam: {1}\nSHA-256: {2}", receipt.status, getattr(receipt, 'persisted', None), getattr(receipt, 'output_sha256', ''))
         )
         detail_text = (
             format_error_details(present_error("cloud_uncertain", detail_lines))
@@ -372,9 +372,9 @@ class CloudLibraryView(QWidget):
         )
 
     def _on_progress(self, message: str) -> None:
-        if message == tr("Cloud operation завершена"):
+        if message == tr("Действие в Steam Cloud завершено"):
             return
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         if "подключ" in normalized or "connect" in normalized:
             text = tr("Подключение к Steam Cloud…")
         elif "скачив" in normalized or "download" in normalized:
@@ -388,7 +388,7 @@ class CloudLibraryView(QWidget):
         self._set_result(text, message)
 
     def _on_backend_status(self, message: str) -> None:
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         if "uncertain" in normalized or "не подтвержд" in normalized or "reconciliation" in normalized:
             label = tr("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ")
         elif "не подключ" in normalized or "not connected" in normalized:
@@ -413,23 +413,30 @@ class CloudLibraryView(QWidget):
             self.result_label.clear()
             self._set_technical_details("")
             return
-        normalized = message.casefold()
+        normalized = source_text(message).casefold()
         error_kind: ErrorKind | None = None
         if "uncertain" in normalized or "не подтвержд" in normalized:
             error_kind = "cloud_uncertain"
             text = CLOUD_COPY["uncertain"]
         elif any(token in normalized for token in (
             "upload недоступ", "upload отключ", "writer unavailable", "writer недоступ",
+            "запись в облако недоступ", "запись в облако отключ",
         )):
             error_kind = "cloud_write_unavailable"
             text = ERROR_COPY[error_kind].message
-        elif "проверка cloud готова" in normalized:
+        elif "проверка cloud готова" in normalized or "проверка облачного сохранения готова" in normalized:
             text = tr("Изменения проверены. Можно сохранить.")
-        elif "проверка не относится" in normalized:
+        elif "проверка не относится" in normalized or "проверка относится к другому" in normalized:
             text = tr("Проверь выбранное сохранение и повтори проверку.")
         elif "сначала выбери" in normalized:
             text = tr("Сначала выбери сохранение и проверь его.")
-        elif "verified" in normalized or "read-back" in normalized or "persisted=true" in normalized:
+        elif (
+            "verified" in normalized
+            or "read-back" in normalized
+            or "persisted=true" in normalized
+            or "запись в облако подтверждена" in normalized
+            or "состояние облака подтверждено" in normalized
+        ):
             text = CLOUD_COPY["uploaded"]
         elif "sha" in normalized or "crc" in normalized:
             text = CLOUD_COPY["checked"]

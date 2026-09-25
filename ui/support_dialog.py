@@ -45,7 +45,7 @@ class SupportDialog(QDialog):
             layout,
             "Binance Pay",
             "434350727",
-            prefix=tr("Идентификатор Binance:"),
+            prefix=tr("Binance ID:"),
         )
         self._add_payment_row(
             layout,

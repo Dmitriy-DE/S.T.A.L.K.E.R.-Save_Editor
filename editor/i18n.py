@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import locale
 import os
+import re
 from functools import cache
 from pathlib import Path
 
@@ -45,6 +46,7 @@ LANGUAGES: dict[str, str] = {
 }
 
 _current: str | None = None
+_PLACEHOLDER = re.compile(r"\{(\d+)(?:![rsa])?(?::[^{}]*)?\}")
 
 
 def _normalise(code: str | None) -> str | None:
@@ -134,6 +136,51 @@ def tr(text: str, *args: object) -> str:
     return _format(text, args)
 
 
+@cache
+def _reverse(code: str) -> tuple[dict[str, str], tuple[tuple[re.Pattern[str], str], ...]]:
+    exact: dict[str, str] = {}
+    patterns: list[tuple[re.Pattern[str], str]] = []
+    for source, value in _catalog(code).items():
+        if not isinstance(value, str) or not value:
+            continue
+        if not _PLACEHOLDER.search(value):
+            exact.setdefault(value, source)
+            continue
+        parts = _PLACEHOLDER.split(value)
+        # split() yields text, index, text, index, …; rebuild as a regex.
+        regex = "".join(
+            re.escape(part) if position % 2 == 0 else f"(?P<p{part}_{position}>.*?)"
+            for position, part in enumerate(parts)
+        )
+        patterns.append((re.compile(f"^{regex}$", re.DOTALL), source))
+    return exact, tuple(patterns)
+
+
+def source_text(text: str) -> str:
+    """Map a translated message back to its Russian source for classifiers.
+
+    Status and error messages are matched against Russian tokens in a few
+    places; this keeps that logic language-independent.  Unknown text is
+    returned unchanged.
+    """
+
+    code = current_language()
+    if code == SOURCE_LANGUAGE or not text:
+        return text
+    exact, patterns = _reverse(code)
+    if text in exact:
+        return exact[text]
+    for pattern, source in patterns:
+        match = pattern.match(text)
+        if match is None:
+            continue
+        values: dict[str, str] = {}
+        for name, value in match.groupdict().items():
+            values.setdefault(name[1:].split("_")[0], value)
+        return _PLACEHOLDER.sub(lambda m, found=values: found.get(m.group(1), m.group(0)), source)
+    return text
+
+
 def _plural_index(code: str, count: int) -> int:
     n = abs(int(count))
     if code in {"ru", "uk"}:
@@ -205,6 +252,7 @@ __all__ = [
     "LOCALES_DIR",
     "current_language",
     "set_language",
+    "source_text",
     "system_language",
     "tr",
     "trn",

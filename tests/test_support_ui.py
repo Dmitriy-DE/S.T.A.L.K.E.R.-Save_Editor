@@ -78,5 +78,5 @@ def test_web_support_shell_keeps_copyable_values_and_local_modal() -> None:
     assert "Идентификатор Binance: 434350727" in html
     assert "Адрес:" in html
     assert "navigator.clipboard.writeText" in script
-    assert 'button.textContent = "Скопировано"' in script
+    assert 'button.textContent = t("Скопировано")' in script
     assert ".support-modal" in styles

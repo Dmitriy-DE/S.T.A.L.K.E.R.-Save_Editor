@@ -1,51 +1,53 @@
+import { t } from "./i18n.js";
+
 const COPY = Object.freeze({
   open: Object.freeze({
     errorCode: "ANALYSIS_FAILED",
-    title: "Не удалось открыть сохранение",
-    message: "Файл повреждён, не поддерживается или изменён другой программой.",
+    title: t("Не удалось открыть сохранение"),
+    message: t("Файл повреждён, не поддерживается или изменён другой программой."),
     severity: "error",
-    primaryAction: "Выбрать другой файл",
-    secondaryAction: "Подробнее",
+    primaryAction: t("Выбрать другой файл"),
+    secondaryAction: t("Подробнее"),
   }),
   verify: Object.freeze({
     errorCode: "VERIFY_FAILED",
-    title: "Не удалось проверить сохранение",
-    message: "Изменения не были записаны, потому что файл не прошёл проверку.",
+    title: t("Не удалось проверить сохранение"),
+    message: t("Изменения не были записаны, потому что файл не прошёл проверку."),
     severity: "error",
-    primaryAction: "Вернуться в редактор",
-    secondaryAction: "Подробнее",
+    primaryAction: t("Вернуться в редактор"),
+    secondaryAction: t("Подробнее"),
   }),
   generic: Object.freeze({
     errorCode: "ACTION_FAILED",
-    title: "Не удалось выполнить действие",
-    message: "Попробуй ещё раз. Если проблема повторится, открой технические детали.",
+    title: t("Не удалось выполнить действие"),
+    message: t("Попробуй ещё раз. Если проблема повторится, открой технические детали."),
     severity: "error",
-    primaryAction: "Закрыть",
-    secondaryAction: "Подробнее",
+    primaryAction: t("Закрыть"),
+    secondaryAction: t("Подробнее"),
   }),
 });
 
 export const BROWSER_UI_COPY = Object.freeze({
-  startupLoading: "Загрузка редактора…",
-  startupPreparing: "Подготовка редактора…",
-  integrity: "Проверка",
-  integritySummary: "ПРОВЕРКА",
+  startupLoading: t("Загрузка редактора…"),
+  startupPreparing: t("Подготовка редактора…"),
+  integrity: t("Проверка"),
+  integritySummary: t("ПРОВЕРКА"),
 });
 
 export function integrityLabel(info) {
   if (info?.crc_present === false) {
     const label = String(info.integrity_name ?? "").toLowerCase();
     return label.includes("fail") || label.includes("invalid")
-      ? "Файл повреждён или изменён"
-      : "Файл проверен";
+      ? t("Файл повреждён или изменён")
+      : t("Файл проверен");
   }
   return info?.crc_ok === false
-    ? "Файл повреждён или изменён"
-    : "Файл проверен";
+    ? t("Файл повреждён или изменён")
+    : t("Файл проверен");
 }
 
 export function capabilityLabel(editable) {
-  return editable ? "МОЖНО ИЗМЕНЯТЬ" : "ТОЛЬКО ЧТЕНИЕ";
+  return editable ? t("МОЖНО ИЗМЕНЯТЬ") : t("ТОЛЬКО ЧТЕНИЕ");
 }
 
 export function errorCopy(kind = "generic") {
@@ -61,6 +63,6 @@ export function errorPresentation(kind = "generic", details = null) {
 
 export function technicalDetails(value, errorCode = null) {
   if (!value) return "";
-  const code = errorCode ? `Код ошибки: ${errorCode}\n` : "";
+  const code = errorCode ? t("Код ошибки: {0}\n", errorCode) : "";
   return `${code}${value}`;
 }

@@ -49,7 +49,7 @@ class OperationWorker(QThread):
     def run(self) -> None:
         try:
             if self.mode == "preview":
-                self.progress.emit(tr("Подготовка выходного файла: проверка SHA и round-trip…"))
+                self.progress.emit(tr("Подготовка файла: проверка контрольной суммы и повторное чтение…"))
                 prepared = self.service.prepare(
                     self.data,
                     self.plan,
@@ -58,13 +58,13 @@ class OperationWorker(QThread):
                     game_catalog=self.game_catalog,
                 )
                 if not isinstance(prepared, PreparedEdit):
-                    raise TypeError(tr("EditorService.prepare вернул не PreparedEdit"))
+                    raise TypeError(tr("Внутренняя ошибка: подготовка изменений вернула неожиданный результат"))
                 self.preview_ready.emit(prepared)
                 return
             if self.mode == "apply":
                 if self.source_path is None or self.output_path is None or self.backup_dir is None:
-                    raise ValueError(tr("Для apply нужны source, output и backup paths"))
-                self.progress.emit(tr("Создание backup, запись и read-back SHA…"))
+                    raise ValueError(tr("Внутренняя ошибка: для записи не заданы пути исходника, результата и копии"))
+                self.progress.emit(tr("Создание резервной копии, запись и проверка…"))
                 receipt = self.service.export_local(
                     self.source_path,
                     self.output_path,
@@ -75,9 +75,9 @@ class OperationWorker(QThread):
                 return
             if self.mode == "replace":
                 if self.source_path is None or self.backup_dir is None:
-                    raise ValueError(tr("Для replace нужны source и backup paths"))
+                    raise ValueError(tr("Внутренняя ошибка: для замены не заданы пути исходника и копии"))
                 self.progress.emit(
-                    tr("Создание backup и атомарная замена исходного слота…")
+                    tr("Создание резервной копии и безопасная замена исходного файла…")
                 )
                 receipt = self.service.replace_local(
                     self.source_path,
@@ -99,7 +99,7 @@ class OperationWorker(QThread):
         # stale-preview invariant.
         prepared = getattr(self, "_prepared", None)
         if not isinstance(prepared, PreparedEdit):
-            raise ValueError(tr("Для apply отсутствует PreparedEdit"))
+            raise ValueError(tr("Внутренняя ошибка: нет подготовленных изменений для записи"))
         return prepared
 
     def set_prepared(self, prepared: PreparedEdit) -> None:

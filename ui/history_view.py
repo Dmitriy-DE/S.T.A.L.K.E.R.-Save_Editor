@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.i18n import tr
+from editor.i18n import source_text, tr
 from editor.storage import BackupRecord
 
 from .backup_controller import BackupController
@@ -83,7 +83,7 @@ class HistoryView(QWidget):
         table_layout.setContentsMargins(12, 12, 12, 12)
         table_layout.addWidget(section_header(tr("ИСТОРИЯ РЕЗЕРВНЫХ КОПИЙ"), tr("ПРОВЕРКА / СТАТУС"), table_panel))
         self.source_filter_edit = QLineEdit(table_panel)
-        self.source_filter_edit.setPlaceholderText(tr("Фильтр по исходному слоту…"))
+        self.source_filter_edit.setPlaceholderText(tr("Фильтр по сохранению…"))
         self.source_filter_edit.textChanged.connect(self._filter_changed)
         table_layout.addWidget(self.source_filter_edit)
         self.table = QTableWidget(0, 5, table_panel)
@@ -156,7 +156,7 @@ class HistoryView(QWidget):
         self.restore_button.setEnabled(False)
         self.restore_button.clicked.connect(self._restore)
         detail.addWidget(self.restore_button)
-        self.restore_in_place_button = action_button(tr("ОТКАТИТЬ ИСХОДНЫЙ СЛОТ"), self.detail_panel, kind="danger")
+        self.restore_in_place_button = action_button(tr("ОТКАТИТЬ ИСХОДНЫЙ ФАЙЛ"), self.detail_panel, kind="danger")
         self.restore_in_place_button.setEnabled(False)
         self.restore_in_place_button.clicked.connect(self._restore_in_place)
         detail.addWidget(self.restore_in_place_button)
@@ -340,7 +340,7 @@ class HistoryView(QWidget):
             widget.setEnabled(not busy)
 
     def set_progress(self, message: str) -> None:
-        value = str(message).casefold()
+        value = source_text(str(message)).casefold()
         if "восстановление" in value:
             display = tr("Восстанавливаем резервную копию…")
         elif "sha" in value or "проверка копии готова" in value:

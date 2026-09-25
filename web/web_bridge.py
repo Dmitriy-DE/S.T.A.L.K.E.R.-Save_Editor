@@ -19,6 +19,7 @@ from editor.catalog import FactionCatalog, GameCatalog, ItemCatalog, UpgradeCata
 from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.equipment import category_label, equipment_items, helmet_category_supported
 from editor.formats import detect_or_raise
+from editor.i18n import tr
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
 
@@ -65,10 +66,10 @@ def install_decoder(call: Any) -> None:
 
 def _human_size(size: int) -> str:
     if size < 1024:
-        return f"{size} Б"
+        return tr("{0} Б", size)
     if size < 1024 * 1024:
-        return f"{size / 1024:.1f} КБ"
-    return f"{size / (1024 * 1024):.2f} МБ"
+        return tr("{0:.1f} КБ", size / 1024)
+    return tr("{0:.2f} МБ", size / (1024 * 1024))
 
 
 def _metadata_rows(
@@ -78,59 +79,59 @@ def _metadata_rows(
     *,
     money_editable: bool,
 ) -> list[list[str]]:
-    money = "неизвестно" if info.money is None else str(info.money)
+    money = tr("неизвестно") if info.money is None else str(info.money)
     money_status = (
-        "редактируется"
+        tr("редактируется")
         if money_editable
         else f"read-only (anchor × {info.money_anchor_count})"
     )
     parsed = len({item.handle for item in info.inventory})
     rows = [
-        ["Файл", name, _human_size(size)],
+        [tr("Файл"), name, _human_size(size)],
         ([
             "CRC-32",
             f"{info.stored_crc32:08X}",
-            "PASS" if info.crc_ok else f"FAIL (вычислено {info.computed_crc32:08X})",
+            "PASS" if info.crc_ok else tr("FAIL (вычислено {0:08X})", info.computed_crc32),
         ] if info.crc_present else [
-            "Целостность",
+            tr("Целостность"),
             info.integrity_name,
-            "проверен контейнер и LZO payload",
+            tr("проверен контейнер и LZO payload"),
         ]),
-        ["SHA-256", info.sha256, "исходный снимок"],
+        ["SHA-256", info.sha256, tr("исходный снимок")],
         [
-            "Размер контейнера",
+            tr("Размер контейнера"),
             f"{_human_size(info.packed_size)} → {_human_size(info.unpacked_size)}",
-            "Kraken распакован" if info.crc_present else "LZO1X распакован",
+            tr("Kraken распакован") if info.crc_present else tr("LZO1X распакован"),
         ],
-        ["Баланс купонов", money, money_status],
-        ["Owned handles", str(len(info.owned_handles)), "прочитано"],
+        [tr("Баланс купонов"), money, money_status],
+        ["Owned handles", str(len(info.owned_handles)), tr("прочитано")],
         [
             "Grid handles" if info.crc_present else "Actor inventory objects",
             f"{parsed} / {info.grid_handle_count}",
-            "разобрано / объявлено" if info.crc_present else "прочитано по parent actor",
+            tr("разобрано / объявлено") if info.crc_present else tr("прочитано по parent actor"),
         ],
         [
             "Grid cells",
             str(info.grid_cell_count),
-            "прочитано" if info.crc_present else "в X-Ray не используется",
+            tr("прочитано") if info.crc_present else tr("в X-Ray не используется"),
         ],
-        ["Объекты инвентаря", str(len(info.inventory)), "в сетке" if info.crc_present else "в actor registry"],
-        ["Orphan handles", str(len(info.orphans)), "вне сетки"],
+        [tr("Объекты инвентаря"), str(len(info.inventory)), tr("в сетке") if info.crc_present else tr("в actor registry")],
+        ["Orphan handles", str(len(info.orphans)), tr("вне сетки")],
         [
             "Unresolved handles",
             str(len(info.unresolved_handles)),
-            "read-only" if info.unresolved_handles else "нет",
+            "read-only" if info.unresolved_handles else tr("нет"),
         ],
     ]
     if info.crc_present:
-        rows.append(["UE5 GVAS schema", "не разобрана", "контейнер валиден, схема не подтверждена"])
+        rows.append(["UE5 GVAS schema", tr("не разобрана"), tr("контейнер валиден, схема не подтверждена")])
     else:
         rows.extend(
             [
-                ["X-Ray outer version", str(info.container_version), "подтверждён"],
-                ["Actor spawn version", str(info.format_version), "подтверждён"],
-                ["Время игры", "неизвестно" if info.game_time is None else str(info.game_time), "прочитано"],
-                ["Уровень", info.level_name or "неизвестно", "прочитано из SPAWN" if info.level_name else "не найден"],
+                ["X-Ray outer version", str(info.container_version), tr("подтверждён")],
+                ["Actor spawn version", str(info.format_version), tr("подтверждён")],
+                [tr("Время игры"), tr("неизвестно") if info.game_time is None else str(info.game_time), tr("прочитано")],
+                [tr("Уровень"), info.level_name or tr("неизвестно"), tr("прочитано из SPAWN") if info.level_name else tr("не найден")],
             ]
         )
     return rows
@@ -193,7 +194,7 @@ def _item_name(catalog: ItemCatalog | None, item: sf.InventoryItem) -> str:
             definition = catalog.resolve_key_or_display_name(item.display_name)
         if definition is not None and definition.display_name:
             return definition.display_name
-    return item.display_name or "Неизвестный объект"
+    return item.display_name or tr("Неизвестный объект")
 
 
 def analyze(data: bytes, name: str) -> str:
@@ -420,7 +421,7 @@ def prepare(
 
     data = _state.get("data")
     if data is None:
-        raise sf.SaveError("Сначала открой сейв")
+        raise sf.SaveError(tr("Сначала открой сейв"))
 
     stacks = tuple((int(handle), int(count)) for handle, count in json.loads(stacks_json))
     adds = tuple(
@@ -448,7 +449,7 @@ def prepare(
     elif isinstance(player_faction_value, str):
         player_faction = player_faction_value
     else:
-        raise sf.SaveError("player faction должен быть catalog key или null")
+        raise sf.SaveError(tr("Внутренняя ошибка: неверная группировка игрока"))
     upgrades = tuple(
         (int(entry[0]), tuple(str(value) for value in entry[1]))
         for entry in json.loads(upgrades_json)
@@ -483,41 +484,39 @@ def prepare(
         format_ = detect_or_raise(data, display_name=str(_state.get("name") or "save"))
     if normalized_money is not None and not format_.capabilities.edit_money:
         raise sf.SaveError(
-            f"Формат {format_.release_id} остаётся read-only до подтверждения загрузкой и "
-            "повторным сохранением в игре"
+            tr("{0}: запись пока недоступна — формат ещё не подтверждён загрузкой в игре", format_.release_id)
         )
     if stacks and not format_.capabilities.edit_stacks:
         raise sf.SaveError(
-            f"Формат {format_.release_id}: правка стаков остаётся read-only до игрового evidence"
+            tr("{0}: изменение количества ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if adds and not format_.capabilities.add_items:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает добавление предметов до игрового evidence"
+            tr("{0}: добавление предметов ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if detach and not format_.capabilities.remove_items:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает удаление предметов до игрового evidence"
+            tr("{0}: удаление предметов ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if durability and not format_.capabilities.edit_durability:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает правку прочности до игрового evidence"
+            tr("{0}: изменение прочности ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if faction_relations and not format_.capabilities.edit_relations:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает правку отношений до игрового evidence"
+            tr("{0}: изменение отношений ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if player_faction is not None and not format_.capabilities.edit_player_faction:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает смену группировки игрока "
-            "до игрового evidence"
+            tr("{0}: смена группировки игрока ещё не подтверждена проверкой в игре", format_.release_id)
         )
     if upgrades and not format_.capabilities.edit_upgrades:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает правку upgrades до игрового evidence"
+            tr("{0}: изменение улучшений ещё не подтверждено проверкой в игре", format_.release_id)
         )
     if placements and not format_.capabilities.edit_placement:
         raise sf.SaveError(
-            f"Формат {format_.release_id} не разрешает правку позиции до игрового evidence"
+            tr("{0}: изменение размещения ещё не подтверждено проверкой в игре", format_.release_id)
         )
     item_catalog = _state.get("catalog")
     faction_catalog = _state.get("faction_catalog")
@@ -632,5 +631,5 @@ def prepare(
 def output_bytes() -> bytes:
     data = _state.get("output")
     if data is None:
-        raise sf.SaveError("Нет подготовленной копии")
+        raise sf.SaveError(tr("Нет подготовленной копии"))
     return bytes(data)

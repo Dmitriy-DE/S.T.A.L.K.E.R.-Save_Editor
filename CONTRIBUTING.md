@@ -19,6 +19,16 @@ release directories, or machine-specific paths. Parser and Steam Cloud changes
 must retain the backup, source-hash, CRC/framing, atomic replacement and
 fail-closed guards already covered by the tests.
 
+## Translations
+
+Russian is the source language. UI text goes through `tr("…")` (Python) or
+`t("…")` (web) with the Russian string as the key and `{0}`-style
+placeholders; plurals use `trn(n, one, few, many)` / `tn(…)`. After changing
+text run `python3 tools/i18n_extract.py` and add the new keys to every
+`locales/<code>.json`; `python3 tools/i18n_extract.py --check` (also a test)
+fails on missing, stale or placeholder-mismatched entries. Place names and
+item names shown by the game keep the game's official spelling.
+
 ## Release artifacts
 
 The public tag workflow builds the Windows installer and portable ZIP, the

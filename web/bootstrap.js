@@ -1,9 +1,11 @@
+import { t } from "./i18n.js";
+
 const dynamicImport = (url) => import(url);
 
 async function responseBody(responsePromise, url, reader) {
   const response = await responsePromise;
   if (!response.ok) {
-    throw new Error(`Не удалось загрузить ${url}: HTTP ${response.status}`);
+    throw new Error(t("Не удалось загрузить {0}: HTTP {1}", url, response.status));
   }
   return response[reader]();
 }
