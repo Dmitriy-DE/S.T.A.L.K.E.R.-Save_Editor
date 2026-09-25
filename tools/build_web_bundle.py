@@ -35,6 +35,11 @@ STATIC_ASSETS = (
         for path in sorted((ROOT / "locales").glob("*.json"))
         if not path.name.startswith("_")
     ),
+    # Official item names for languages other than Russian (editor.i18n.tr_item).
+    *(
+        (f"locales/items/{path.name}", f"web/locales/items/{path.name}")
+        for path in sorted((ROOT / "locales" / "items").glob("*.json"))
+    ),
 )
 
 # Only what the browser actually needs: parse a save, build an immutable edit
@@ -52,12 +57,14 @@ MODULES = (
     "editor/equipment_matrix.py",
     "editor/formats.py",
     "editor/i18n.py",
+    "editor/item_names.py",
     "editor/kraken_blocks.py",
     "editor/models.py",
     "editor/prepare.py",
     "editor/releases.py",
     "editor/s2_catalog.py",
     "editor/s2_item_state.py",
+    "editor/s2_names.py",
     "editor/s2_presentation.py",
     "editor/xray_container.py",
     "editor/xray_factions.py",

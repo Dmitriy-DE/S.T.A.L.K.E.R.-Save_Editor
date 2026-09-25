@@ -30,8 +30,10 @@ from PySide6.QtWidgets import (
 from editor.i18n import tr
 from editor.releases import release_by_id
 
+from .effects import Effects
 from .formatting import count_ru, currency_suffix, human_datetime, human_money, human_size
 from .save_discovery import GAME_IDS, GAME_TITLES, SaveDiscovery, SaveSlot, _slot_family
+from .save_peek import SavePeek, SavePeeker, summarize
 from .save_thumbnails import s2_row_text, save_preview
 from .style_components import TextureFrame, action_button, panel, section_header, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
@@ -82,8 +84,13 @@ class LibraryView(QWidget):
         self._row_thumbnail_cache: dict[Path, QPixmap] = {}
         self._technical_details = ""
         self._details_dialog: TechnicalDetailsDialog | None = None
+        self._peeker = SavePeeker(self)
+        self._peeker.ready.connect(self._peek_ready)
         self._build_ui()
         self._render_game_list()
+
+    def _peek_ready(self, _peek: object) -> None:
+        self._update_preview()
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -715,6 +722,9 @@ class LibraryView(QWidget):
             return
         family = self.game_list.item(row).data(Qt.ItemDataRole.UserRole)
         family = str(family) if family is not None else None
+        if family is not None:
+            # Browsing a game already sounds like that game's menu.
+            Effects.instance().set_theme(family)
         self._visible_slots = self._family_slots(family)
         self.save_table.setRowCount(0)
         for slot in self._visible_slots:
@@ -875,54 +885,47 @@ class LibraryView(QWidget):
             snapshot is not None
             and Path(snapshot.path).resolve() == Path(slot.path).resolve()
         )
+        peek: SavePeek | None = None
         if snapshot_matches and snapshot is not None:
-            info = snapshot.info
             capabilities = getattr(snapshot, "capabilities", None)
-            editable = bool(
-                capabilities is not None
-                and any(
-                    capabilities.support(name).writable
-                    for name in ("edit_money", "edit_stacks", "edit_durability")
-                )
+            peek = summarize(
+                snapshot.info,
+                release_id=str(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", "")),
+                editable=bool(
+                    capabilities is not None
+                    and any(
+                        capabilities.support(name).writable
+                        for name in ("edit_money", "edit_stacks", "edit_durability")
+                    )
+                ),
+                path=Path(slot.path),
             )
-            self.preview_editable_chip.setText(tr("МОЖНО ИЗМЕНЯТЬ") if editable else tr("ТОЛЬКО ЧТЕНИЕ"))
-            self.preview_editable_chip.setProperty("tone", "success" if editable else "neutral")
-            money = human_money(info.money) if info.money is not None else "—"
-            currency = currency_suffix(getattr(snapshot, "release_id", "") or getattr(snapshot, "format_id", ""))
-            self.money_summary.setText(f"{money} {currency}")
-            self.items_summary.setText(str(len(info.inventory)))
-            equipment_count = sum(
-                1
-                for item in info.inventory
-                if item.category not in {"ammo", "consumable", "artifact", "quest", "module"}
+        else:
+            peek = self._peeker.cached(Path(slot.path))
+            if peek is None and not self._peeker.failed(Path(slot.path)):
+                self._peeker.request(Path(slot.path))
+        if peek is not None:
+            self.preview_editable_chip.setText(tr("МОЖНО ИЗМЕНЯТЬ") if peek.editable else tr("ТОЛЬКО ЧТЕНИЕ"))
+            self.preview_editable_chip.setProperty("tone", "success" if peek.editable else "neutral")
+            money = human_money(peek.money) if peek.money is not None else "—"
+            self.money_summary.setText(f"{money} {currency_suffix(peek.release_id)}")
+            self.items_summary.setText(str(peek.items))
+            self.equipment_summary.setText(count_ru(peek.equipment, "предмет", "предмета", "предметов"))
+            self.condition_summary.setText(
+                tr("{0:.0f}% (средняя)", peek.condition * 100.0) if peek.condition is not None else "—"
             )
-            conditions = tuple(
-                float(item.condition) * 100.0
-                for item in info.inventory
-                if item.condition is not None
-            )
-            average_condition = (
-                tr("{0:.0f}% (средняя)", sum(conditions) / len(conditions))
-                if conditions
-                else "—"
-            )
-            self.equipment_summary.setText(
-                count_ru(equipment_count, "предмет", "предмета", "предметов")
-            )
-            self.condition_summary.setText(average_condition)
             self.preview_integrity_chip.setText(
-            tr("Сохранение проверено") if info.crc_ok else tr("Файл не прошёл проверку")
+                tr("Сохранение проверено") if peek.crc_ok else tr("Файл не прошёл проверку")
             )
-            self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ · {0}", len(info.inventory)))
+            self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ · {0}", peek.items))
         else:
             self.preview_editable_chip.setText(tr("ПРОВЕРИТСЯ ПРИ ОТКРЫТИИ"))
             self.preview_editable_chip.setProperty("tone", "neutral")
             self.preview_integrity_chip.setText(tr("НЕ ПРОВЕРЕНО"))
             self.preview_inventory_chip.setText(tr("ИНВЕНТАРЬ —"))
-            self.money_summary.setText("—")
-            self.items_summary.setText("—")
-            self.equipment_summary.setText("—")
-            self.condition_summary.setText("—")
+            pending = not self._peeker.failed(Path(slot.path))
+            for label in (self.money_summary, self.items_summary, self.equipment_summary, self.condition_summary):
+                label.setText("…" if pending else "—")
         for chip in (self.preview_editable_chip, self.preview_integrity_chip):
             chip.style().unpolish(chip)
             chip.style().polish(chip)

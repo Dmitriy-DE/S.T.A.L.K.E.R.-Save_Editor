@@ -220,6 +220,43 @@ def _s2_observed_category(name: str | None) -> EquipmentCategory | None:
     return None
 
 
+_S2_KIND_CATEGORIES: dict[int, EquipmentCategory] = {
+    0: "weapon",
+    1: "armor",
+    2: "artifact",
+    4: "consumable",
+    5: "ammo",
+    7: "ammo",
+}
+_S2_QUEST_ITEM_RE = re.compile(r"pda|keycard|keys?(?:_|$)|doc\d*$|chevron|dogtag|journal|note|map$")
+
+
+def _s2_kind_category(item: InventoryItem) -> EquipmentCategory | None:
+    """Classify an S2 row by its serializer kind once its name resolved.
+
+    With every compact key resolved through the chained save-local name
+    tables, the kind codes line up with the in-game inventory: 0 weapons,
+    1 outfits, 2 artifacts, 4 consumables, 5 rounds, 7 grenades and 8 quest
+    or sellable loot.  Unnamed rows keep the older name heuristics.
+    """
+
+    name = re.sub(r"\s+", "_", (item.display_name or "").strip()).casefold()
+    if not name or item.display_name == item.type_key:
+        return None
+    if _S2_MODULE_RE.search(name):
+        return "module"
+    if item.kind_code == 1 and name.endswith("_helmet"):
+        return "helmet"
+    if item.kind_code == 8:
+        return "quest" if _S2_QUEST_ITEM_RE.search(name) else "other"
+    return _S2_KIND_CATEGORIES.get(item.kind_code)
+
+
+_XRAY_CONSUMABLE_KEYS = frozenset(
+    {"bread", "kolbasa", "conserva", "vodka", "bandage", "antirad", "antidote", "mutant_part_food"}
+)
+
+
 def _name_category(name: str | None) -> EquipmentCategory | None:
     """Map an observed serialized name to a safe product category."""
 
@@ -235,6 +272,14 @@ def _name_category(name: str | None) -> EquipmentCategory | None:
         return "device"
     if normalized.startswith(("attach_", "attachment_", "addon_", "upgrade_")):
         return "module"
+    # Story PDAs (``gar_digger_messenger_pda``) are quest items; the player's
+    # own ``device_pda`` stays a device.
+    if ("_pda" in normalized or normalized.startswith("pda_")) and not normalized.startswith("device_"):
+        return "quest"
+    # X-Ray food and medicine share the generic "item" class with junk, so the
+    # section key is the only reliable signal that it belongs with consumables.
+    if normalized in _XRAY_CONSUMABLE_KEYS or normalized.startswith(("medkit", "drug_", "antirad", "energy_drink")):
+        return "consumable"
     return None
 
 
@@ -368,6 +413,12 @@ def _classify(
     parser_named_category = _text_category(item.category)
     if release_id != "stalker2" and parser_named_category is not None:
         return parser_named_category
+    if release_id == "stalker2" and parser_named_category in {"device", "module"}:
+        return parser_named_category
+    if release_id == "stalker2":
+        kind_category = _s2_kind_category(item)
+        if kind_category is not None:
+            return kind_category
     if release_id == "stalker2" and definition is None:
         observed = _s2_observed_category(item.display_name)
         if observed is not None:

@@ -6,7 +6,7 @@ import os
 from collections.abc import Iterable
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -96,6 +96,7 @@ class SettingsView(QWidget):
     copy_diagnostics_requested = Signal()
     support_requested = Signal()
     restart_requested = Signal()
+    report_requested = Signal()
     effects_changed = Signal()
 
     def __init__(
@@ -245,8 +246,6 @@ class SettingsView(QWidget):
         for page in canonical_pages:
             self.settings_stack.addWidget(page)
             settings_sections.addWidget(page)
-        for page in (self.backups_panel, self.interface_panel, self.support_panel):
-            page.setVisible(False)
         settings_sections.addStretch(1)
         self.settings_scroll.setWidget(self.settings_content)
         self._settings_pages = canonical_pages
@@ -545,14 +544,20 @@ class SettingsView(QWidget):
         self.backup_folder_button.clicked.connect(self.backup_folder_requested.emit)
         self.diagnostics_action_button = action_button(tr("ОТКРЫТЬ ЖУРНАЛ ОШИБОК"), self.diagnostics_panel)
         self.copy_diagnostics_button = action_button(tr("СКОПИРОВАТЬ ДИАГНОСТИКУ"), self.diagnostics_panel)
+        self.report_button = action_button(tr("ОТПРАВИТЬ ОТЧЁТ"), self.diagnostics_panel, kind="primary")
+        self.report_button.setToolTip(
+            tr("Отправить разработчику короткий обезличенный журнал. Сохранения не отправляются.")
+        )
         self.diagnostics_action_button.clicked.connect(self.journal_requested)
         self.copy_diagnostics_button.clicked.connect(self.copy_diagnostics_requested)
+        self.report_button.clicked.connect(self.report_requested)
         actions = QHBoxLayout()
         actions.setSpacing(8)
         actions.addWidget(self.backup_folder_button, 1)
         actions.addWidget(self.diagnostics_action_button, 1)
         actions.addWidget(self.copy_diagnostics_button, 1)
         layout.addLayout(actions)
+        layout.addWidget(self.report_button)
         note = QLabel(
             tr("Диагностика не нужна для обычного использования, но полезна для отчётов об ошибках."),
             self.diagnostics_panel,
@@ -638,6 +643,9 @@ class SettingsView(QWidget):
         form.setVerticalSpacing(10)
         self.language_combo = QComboBox(page)
         self.language_combo.setObjectName("languageCombo")
+        # Scrolling the page over the combo must not silently switch language.
+        self.language_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.language_combo.installEventFilter(self)
         self.language_combo.addItem(tr("Как в системе"), None)
         for code, name in LANGUAGES.items():
             self.language_combo.addItem(name, code)
@@ -675,6 +683,18 @@ class SettingsView(QWidget):
         self.restart_button.clicked.connect(self.restart_requested)
         layout.addWidget(self.restart_button)
         layout.addStretch(1)
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802 - Qt override
+        combo = getattr(self, "language_combo", None)
+        if (
+            combo is not None
+            and watched is combo
+            and event.type() == QEvent.Type.Wheel
+            and not combo.hasFocus()
+        ):
+            event.ignore()
+            return True
+        return super().eventFilter(watched, event)
 
     def _language_changed(self, _index: int) -> None:
         code = self.language_combo.currentData()
@@ -720,12 +740,12 @@ class SettingsView(QWidget):
         self.settings_stack.setCurrentIndex(index)
         for button_index, button in enumerate(self.category_buttons):
             button.setChecked(button_index == index)
-        self._settings_pages[index].setVisible(True)
+        # One section at a time: a rail click always visibly changes the page.
+        for page_index, page in enumerate(self._settings_pages):
+            page.setVisible(page_index == index)
         if hasattr(self, "settings_scroll"):
-            if index == 0:
-                self.settings_scroll.verticalScrollBar().setValue(0)
-            else:
-                self.settings_scroll.ensureWidgetVisible(self._settings_pages[index], 0, 10)
+            self.settings_scroll.verticalScrollBar().setValue(0)
+            Effects.instance().fade_in(self._settings_pages[index])
 
     def _reset_fields(self) -> None:
         self.steam_root_edit.clear()

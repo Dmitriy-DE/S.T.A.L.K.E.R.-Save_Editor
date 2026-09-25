@@ -1657,7 +1657,7 @@
         },
         {
           "category": "item",
-          "display_name": "КПК",
+          "display_name": "Ацетон",
           "icon_texture": "ui_icon_equipment",
           "icon_x": 2,
           "icon_y": 18,
@@ -1667,7 +1667,7 @@
         },
         {
           "category": "item",
-          "display_name": "КПК",
+          "display_name": "Конденсаторы",
           "icon_texture": "ui_icon_equipment",
           "icon_x": 11,
           "icon_y": 21,
@@ -1677,7 +1677,7 @@
         },
         {
           "category": "item",
-          "display_name": "КПК",
+          "display_name": "Текстолит",
           "icon_texture": "ui_icon_equipment",
           "icon_x": 2,
           "icon_y": 19,
@@ -1687,7 +1687,7 @@
         },
         {
           "category": "item",
-          "display_name": "КПК",
+          "display_name": "Транзисторы",
           "icon_texture": "ui_icon_equipment",
           "icon_x": 10,
           "icon_y": 21,
@@ -1697,7 +1697,7 @@
         },
         {
           "category": "item",
-          "display_name": "КПК",
+          "display_name": "Медная проволока",
           "icon_texture": "ui_icon_equipment",
           "icon_x": 14,
           "icon_y": 19,

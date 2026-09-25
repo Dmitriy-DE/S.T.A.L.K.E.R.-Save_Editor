@@ -130,8 +130,10 @@ def test_compact_settings_actions_fit_and_content_has_visible_scroll(
         left.right() < right.left()
         for left, right in pairwise(rectangles)
     )
-    assert view.settings_scroll.verticalScrollBar().maximum() > 0
-    assert view.settings_scroll.verticalScrollBar().isVisible()
+    # The rail switches pages: exactly one section is shown at a time.
+    assert [page.isVisible() for page in view._settings_pages].count(True) == 1
+    scroll = view.settings_scroll.verticalScrollBar()
+    assert scroll.isVisible() == (scroll.maximum() > 0)
     if view.settings_content.width() > view.settings_scroll.viewport().width():
         horizontal = view.settings_scroll.horizontalScrollBar()
         assert horizontal.isVisible()

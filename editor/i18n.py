@@ -137,6 +137,32 @@ def tr(text: str, *args: object) -> str:
 
 
 @cache
+def _item_catalog(code: str) -> dict[str, str]:
+    try:
+        payload = json.loads((LOCALES_DIR / "items" / f"{code}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(k): str(v) for k, v in payload.items()} if isinstance(payload, dict) else {}
+
+
+def tr_item(name: str | None) -> str | None:
+    """Translate an official Russian item, upgrade or community name.
+
+    The trilogy catalog ships Russian names.  Ukrainian and English have
+    full name tables; every other interface language uses the English names,
+    which is what those players saw in their own release.
+    """
+
+    if not name:
+        return name
+    code = current_language()
+    if code == SOURCE_LANGUAGE:
+        return name
+    table = _item_catalog(code) or _item_catalog("en")
+    return table.get(name) or _item_catalog("en").get(name) or name
+
+
+@cache
 def _reverse(code: str) -> tuple[dict[str, str], tuple[tuple[re.Pattern[str], str], ...]]:
     exact: dict[str, str] = {}
     patterns: list[tuple[re.Pattern[str], str]] = []
@@ -258,6 +284,7 @@ __all__ = [
     "source_text",
     "system_language",
     "tr",
+    "tr_item",
     "trn",
     "xray_text_codes",
 ]

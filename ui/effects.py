@@ -1,8 +1,9 @@
 """Quiet interface sounds and short transitions, both switchable at runtime.
 
-Sounds are synthesised on first use (no game audio is redistributed): a
-PDA-style square blip for the X-Ray trilogy, pitched per game, and a softer
-sine for S.T.A.L.K.E.R. 2.  Qt Multimedia is imported lazily; any failure
+Sounds are synthesised on first use (no game audio is redistributed), each
+game with its own menu character: a heavy metal switch for Shadow of
+Chernobyl, crackling static for Clear Sky, soft PDA clicks for Call of
+Pripyat and airy blips for S.T.A.L.K.E.R. 2.  Qt Multimedia is imported lazily; any failure
 leaves the editor silent instead of breaking it.
 """
 
@@ -24,9 +25,11 @@ from editor.platforms import user_data_dir
 from editor.preferences import Preferences, load_preferences, save_preferences
 
 SAMPLE_RATE = 22_050
-SOUND_EVENTS = ("click", "tab", "open", "save", "error")
-# X-Ray games share the PDA voice; the pitch tells them apart.
-_THEME_PITCH = {"soc": 1.0, "clear_sky": 0.92, "cop": 1.08}
+SOUND_EVENTS = ("click", "tab", "open", "save", "error", "hover")
+# Bump when the synthesis changes so cached WAVs from older builds are redone.
+SOUND_VERSION = 2
+# Relative loudness per event; "hover" is barely there, like the menus.
+_EVENT_GAIN = {"hover": 0.35, "click": 0.8, "tab": 0.8, "open": 0.8, "save": 0.8, "error": 0.8}
 
 
 def _envelope(index: int, total: int, attack: float = 0.004) -> float:
@@ -47,7 +50,6 @@ def _tone(freqs: list[tuple[float, float]], *, square: bool, noise: float = 0.0)
             phase += freq / SAMPLE_RATE
             value = math.sin(2 * math.pi * phase)
             if square:
-                # Soft-clipped square: the PDA beep without harsh aliasing.
                 value = math.tanh(value * 4.0) * 0.6
             if noise:
                 value += (rng.random() * 2 - 1) * noise
@@ -55,33 +57,118 @@ def _tone(freqs: list[tuple[float, float]], *, square: bool, noise: float = 0.0)
     return out
 
 
+def _pluck(freq: float, seconds: float, *, decay: float = 9.0, glide: float = 1.0) -> list[float]:
+    """A damped sine; ``glide`` < 1 bends the pitch down like a relay."""
+
+    total = int(SAMPLE_RATE * seconds)
+    out: list[float] = []
+    phase = 0.0
+    for index in range(total):
+        progress = index / max(1, total)
+        phase += freq * (1.0 + (glide - 1.0) * progress) / SAMPLE_RATE
+        out.append(math.sin(2 * math.pi * phase) * math.exp(-decay * progress) * min(1.0, index / 60))
+    return out
+
+
+def _noise(seconds: float, *, smooth: float, seed: int, crackle: float = 0.0) -> list[float]:
+    """Low-passed noise burst (``smooth`` 0…1); ``crackle`` adds sparse pops."""
+
+    rng = random.Random(seed)
+    total = int(SAMPLE_RATE * seconds)
+    out: list[float] = []
+    value = 0.0
+    for index in range(total):
+        value = value * smooth + (rng.random() * 2 - 1) * (1.0 - smooth)
+        pop = (rng.random() * 2 - 1) * 3.0 if crackle and rng.random() < crackle else 0.0
+        out.append((value + pop * (1.0 - smooth)) * math.exp(-7.0 * index / max(1, total)))
+    return out
+
+
+def _mix(*layers: tuple[float, list[float]], gap: float = 0.0) -> list[float]:
+    """Sum (offset seconds, samples) layers into one buffer."""
+
+    length = max(int(offset * SAMPLE_RATE) + len(samples) for offset, samples in layers)
+    out = [0.0] * (length + int(gap * SAMPLE_RATE))
+    for offset, samples in layers:
+        start = int(offset * SAMPLE_RATE)
+        for index, value in enumerate(samples):
+            out[start + index] += value
+    return out
+
+
+def _render_soc(event: str) -> list[float]:
+    # Shadow of Chernobyl: a heavy metal switch — low thud under a dry clack.
+    thud = _pluck(95, 0.12, decay=7, glide=0.8)
+    clack = [v * 0.7 for v in _noise(0.03, smooth=0.35, seed=1)]
+    return {
+        "hover": _mix((0, [v * 0.5 for v in _noise(0.02, smooth=0.5, seed=2)])),
+        "click": _mix((0, thud), (0, clack)),
+        "tab": _mix((0, clack), (0.05, thud)),
+        "open": _mix((0, thud), (0, clack), (0.09, _pluck(140, 0.16, decay=6, glide=0.7))),
+        "save": _mix((0, clack), (0.06, _pluck(180, 0.1)), (0.14, _pluck(240, 0.14))),
+        "error": _mix((0, _pluck(70, 0.25, decay=5, glide=0.6)), (0, clack)),
+    }[event]
+
+
+def _render_clear_sky(event: str) -> list[float]:
+    # Clear Sky: the same hardware, but noisier — a crackle of static.
+    static = [v * 0.8 for v in _noise(0.05, smooth=0.2, seed=3, crackle=0.02)]
+    ping = _pluck(880, 0.06, decay=12)
+    return {
+        "hover": _mix((0, [v * 0.4 for v in _noise(0.025, smooth=0.25, seed=4, crackle=0.03)])),
+        "click": _mix((0, static), (0.01, ping)),
+        "tab": _mix((0, static), (0.04, _pluck(660, 0.06, decay=12))),
+        "open": _mix((0, static), (0.05, _pluck(520, 0.08)), (0.12, _pluck(780, 0.1))),
+        "save": _mix((0, static), (0.05, _pluck(780, 0.08)), (0.13, _pluck(1040, 0.12))),
+        "error": _mix((0, _noise(0.2, smooth=0.1, seed=5, crackle=0.05)), (0, _pluck(110, 0.22, glide=0.7))),
+    }[event]
+
+
+def _render_cop(event: str) -> list[float]:
+    # Call of Pripyat: softer, rounder clicks of a newer PDA.
+    tick = [v * 0.4 for v in _noise(0.015, smooth=0.6, seed=6)]
+    return {
+        "hover": _mix((0, [v * 0.6 for v in _pluck(1200, 0.02, decay=14)])),
+        "click": _mix((0, tick), (0, _pluck(720, 0.07, decay=10))),
+        "tab": _mix((0, _pluck(600, 0.06, decay=10)), (0.045, _pluck(900, 0.07, decay=10))),
+        "open": _mix((0, _pluck(480, 0.08)), (0.07, _pluck(640, 0.08)), (0.14, _pluck(960, 0.12))),
+        "save": _mix((0, _pluck(820, 0.08)), (0.08, _pluck(1230, 0.14))),
+        "error": _mix((0, _pluck(300, 0.22, decay=6, glide=0.7))),
+    }[event]
+
+
+def _render_stalker2(event: str) -> list[float]:
+    # S.T.A.L.K.E.R. 2: modern, airy UI blips with a gentle pitch glide.
+    base = 520.0
+    return {
+        "hover": _mix((0, [v * 0.6 for v in _pluck(base * 2, 0.03, decay=10, glide=1.05)])),
+        "click": _mix((0, _pluck(base * 1.5, 0.05, decay=8, glide=1.04))),
+        "tab": _mix((0, _pluck(base, 0.06)), (0.05, _pluck(base * 1.26, 0.07))),
+        "open": _mix((0, _pluck(base * 0.75, 0.08)), (0.07, _pluck(base, 0.08)), (0.14, _pluck(base * 1.5, 0.12))),
+        "save": _mix((0, _pluck(base * 1.5, 0.09)), (0.08, _pluck(base * 2, 0.16))),
+        "error": _mix((0, _pluck(base * 0.5, 0.14, glide=0.9)), (0.11, _pluck(base * 0.42, 0.18, glide=0.9))),
+    }[event]
+
+
+_RENDERERS = {
+    "soc": _render_soc,
+    "clear_sky": _render_clear_sky,
+    "cop": _render_cop,
+    "stalker2": _render_stalker2,
+}
+
+
 def _render(event: str, theme: str) -> list[float]:
-    if theme == "stalker2":
-        base = 520.0
-        table = {
-            "click": [(base * 1.5, 0.035)],
-            "tab": [(base, 0.05), (base * 1.26, 0.06)],
-            "open": [(base * 0.75, 0.07), (base, 0.07), (base * 1.5, 0.1)],
-            "save": [(base * 1.5, 0.08), (base * 2, 0.14)],
-            "error": [(base * 0.5, 0.12), (base * 0.42, 0.16)],
-        }
-        return _tone(table[event], square=False, noise=0.01)
-    pitch = _THEME_PITCH.get(theme, 1.0)
-    base = 1100.0 * pitch
-    table = {
-        "click": [(base, 0.025)],
-        "tab": [(base * 0.8, 0.035), (base * 1.2, 0.045)],
-        "open": [(base * 0.5, 0.05), (base * 0.75, 0.05), (base, 0.08)],
-        "save": [(base * 0.8, 0.06), (base * 1.2, 0.12)],
-        "error": [(base * 0.2, 0.18)],
-    }
-    return _tone(table[event], square=True, noise=0.02)
+    samples = _RENDERERS.get(theme, _render_soc)(event)
+    peak = max((abs(value) for value in samples), default=1.0) or 1.0
+    gain = _EVENT_GAIN.get(event, 0.8)
+    return [value / peak * gain for value in samples]
 
 
 def write_wav(path: Path, samples: list[float]) -> None:
-    peak = max((abs(value) for value in samples), default=1.0) or 1.0
+    # ``_render`` already normalises and applies the per-event gain.
     frames = b"".join(
-        struct.pack("<h", int(max(-1.0, min(1.0, value / peak * 0.8)) * 32767))
+        struct.pack("<h", int(max(-1.0, min(1.0, value)) * 32767))
         for value in samples
     )
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,7 +258,7 @@ class Effects(QObject):
         except Exception:
             self._audio_failed = True
             return None
-        path = self._cache / f"{self.theme}-{event}.wav"
+        path = self._cache / f"v{SOUND_VERSION}-{self.theme}-{event}.wav"
         if not path.is_file():
             try:
                 write_wav(path, _render(event, self.theme))
@@ -216,6 +303,9 @@ class Effects(QObject):
         animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
 
 
+_HOVER_BUTTONS = frozenset({"globalNav", "categoryTab", "libraryGameButton", "settingsCategoryButton"})
+
+
 class ClickSounds(QObject):
     """Application-wide event filter: a quiet blip for every button press."""
 
@@ -230,6 +320,14 @@ class ClickSounds(QObject):
         ):
             kind = "tab" if watched.objectName() in {"globalNav", "categoryTab"} else "click"
             Effects.instance().play(kind)
+        elif (
+            event.type() == QEvent.Type.Enter
+            and isinstance(watched, QAbstractButton)
+            and watched.isEnabled()
+            and watched.objectName() in _HOVER_BUTTONS
+        ):
+            # Game menus answer hovering over their items with a soft tick.
+            Effects.instance().play("hover")
         return False
 
 

@@ -224,8 +224,81 @@ def decode_dds(data: bytes) -> QImage:
     return QImage(rgba, width, height, width * 4, _RGBA_FORMAT).copy()
 
 
-def category_icon(category: str | None, size: int = 28) -> QIcon:
+_GLYPH_DIR = Path(__file__).resolve().parents[1] / "assets" / "ui" / "item_glyphs"
+
+_WEAPON_GLYPHS = (
+    (("_hg", "pistol", "wpn_pm", "wpn_fort", "wpn_walther", "wpn_usp", "wpn_colt", "wpn_beretta",
+      "wpn_desert", "wpn_sig220", "wpn_hpsa", "wpn_pb", "wpn_eagle", "deadeye"), "pistol"),
+    (("_sg", "shotgun", "wpn_toz", "wpn_bm16", "wpn_spas", "wpn_wincheaster", "wpn_protecta", "wpn_saiga"), "shotgun"),
+    (("_sp", "sniper", "wpn_vintorez", "wpn_svd", "wpn_svu", "wpn_gauss", "gauss"), "sniper"),
+    (("_pp", "smg", "wpn_mp5", "wpn_bizon", "wpn_ak74u", "udp"), "smg"),
+    (("rpg", "rg-6", "rg6", "_gl", "launcher"), "launcher"),
+)
+_CONSUMABLE_GLYPHS = (
+    (("bandage", "бинт"), "bandage"),
+    (("medkit", "аптеч"), "medkit"),
+    (("vodka", "beer", "water", "energ", "drink", "водка", "пиво", "вода", "энерг"), "drink"),
+    (("bread", "sausage", "kolbasa", "conserv", "canned", "food", "cinnamon", "хлеб", "колбас", "консерв"), "food"),
+    (("antirad", "drug", "pill", "radioprot", "antidot", "psy", "hercules", "anabiot", "антирад", "препарат"), "pills"),
+)
+_QUEST_GLYPHS = (
+    (("keycard", "key_card", "ключ-карт"), "keycard"),
+    (("pda", "кпк"), "pda"),
+    (("key", "ключ"), "key"),
+    (("loot", "dogtag", "collar", "трофей", "жетон", "хабар", "ошейник"), "loot"),
+)
+
+
+def _match_glyph(value: str, table) -> str | None:
+    for tokens, glyph in table:
+        if any(token in value for token in tokens):
+            return glyph
+    return None
+
+
+def glyph_name(category: str | None, key: str | None = None) -> str:
+    """Pick the item silhouette for a product category and item identifier."""
+
+    normalized = str(category or "").casefold()
+    value = str(key or "").casefold()
+    if normalized == "weapon":
+        return _match_glyph(value, _WEAPON_GLYPHS) or "rifle"
+    if normalized in {"armor", "outfit"}:
+        return "exo" if "exo" in value or "экзо" in value else "armor"
+    if normalized == "helmet":
+        return "helmet"
+    if normalized == "artifact":
+        return "artifact"
+    if normalized == "consumable":
+        return _match_glyph(value, _CONSUMABLE_GLYPHS) or "medkit"
+    if normalized in {"ammo", "grenade"}:
+        return "grenade" if normalized == "grenade" or "grenade" in value or "гранат" in value else "ammo"
+    if normalized == "quest":
+        return _match_glyph(value, _QUEST_GLYPHS) or "document"
+    if normalized == "module":
+        return "scope" if any(token in value for token in ("scope", "sight", "прицел")) else "module"
+    if normalized == "device":
+        return "device"
+    return _match_glyph(value, _QUEST_GLYPHS) or "other"
+
+
+def item_glyph(category: str | None, key: str | None = None, size: int = 28) -> QIcon | None:
+    """Repository-drawn silhouette used where the game ships no icon."""
+
+    path = _GLYPH_DIR / f"{glyph_name(category, key)}.svg"
+    if not path.is_file():
+        return None
+    icon = QIcon(str(path))
+    pixmap = icon.pixmap(size, size)
+    return QIcon(pixmap) if not pixmap.isNull() else None
+
+
+def category_icon(category: str | None, size: int = 28, key: str | None = None) -> QIcon:
     """Draw a small repository-owned fallback glyph for an unknown icon."""
+
+    glyph = item_glyph(category, key, size)
+    if glyph is not None:
+        return glyph
 
     canvas = QPixmap(size, size)
     canvas.fill(Qt.GlobalColor.transparent)
@@ -461,7 +534,7 @@ class XRayIconResolver:
                     donated = self._donor.atlas_icon_for_key(candidate, size=size)
                     if donated is not None:
                         return donated
-        return category_icon(category, size=size)
+        return category_icon(category, size=size, key=f"{key} {display_name or ''}")
 
     def icon_for_key(self, key: str, category: str | None = None, size: int = 30) -> QIcon:
         return self.icon_for_item(key, category=category, size=size)

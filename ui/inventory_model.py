@@ -87,6 +87,10 @@ class InventoryTableModel(QAbstractTableModel):
         self._category_provider: CategoryProvider | None = None
         self._sort_column = self.POSITION_COLUMN
         self._sort_order = Qt.SortOrder.AscendingOrder
+        # X-Ray keeps every ammo box and every loaf as its own object; the
+        # table folds identical untouched rows into one, like the game does.
+        self._grouped = True
+        self._groups: dict[int, tuple[InventoryItem, ...]] = {}
 
     @property
     def source_items(self) -> tuple[InventoryItem, ...]:
@@ -266,8 +270,74 @@ class InventoryTableModel(QAbstractTableModel):
         self._sort_order = Qt.SortOrder(order)
         self._rebuild()
 
+    def set_grouped(self, enabled: bool) -> None:
+        value = bool(enabled)
+        if value == self._grouped:
+            return
+        self._grouped = value
+        self._rebuild()
+
+    @property
+    def grouped(self) -> bool:
+        return self._grouped
+
+    def group_members(self, item: InventoryItem | None) -> tuple[InventoryItem, ...]:
+        """Every parsed row folded into ``item``'s visible row (itself first)."""
+
+        if item is None:
+            return ()
+        return self._groups.get(item.handle, (item,))
+
+    def _group_key(self, item: InventoryItem) -> tuple[object, ...] | None:
+        touched = (
+            item.handle in self._staged_counts
+            or item.handle in self._staged_durability
+            or item.handle in self._staged_placements
+            or item.handle in self._changed_handles
+        )
+        if touched or item.condition is not None or item.modules or item.upgrades:
+            return None
+        return (item.type_key, item.display_name, item.storage, item.placement_type, item.placement_slot)
+
+    def _fold(self, items: list[InventoryItem]) -> list[InventoryItem]:
+        self._groups = {}
+        if not self._grouped:
+            return items
+        buckets: dict[tuple[object, ...], list[InventoryItem]] = {}
+        folded: list[InventoryItem] = []
+        for item in items:
+            key = self._group_key(item)
+            if key is None:
+                folded.append(item)
+                continue
+            bucket = buckets.get(key)
+            if bucket is None:
+                buckets[key] = [item]
+                folded.append(item)
+            else:
+                bucket.append(item)
+        for bucket in buckets.values():
+            if len(bucket) > 1:
+                self._groups[bucket[0].handle] = tuple(bucket)
+        return folded
+
+    def _group_count(self, item: InventoryItem) -> int | None:
+        members = self._groups.get(item.handle)
+        if members is None:
+            return item.count
+        return sum(member.count if member.count is not None else 1 for member in members)
+
+    def _group_weight(self, item: InventoryItem) -> float | None:
+        members = self._groups.get(item.handle)
+        if members is None:
+            return item.total_weight
+        weights = [member.total_weight for member in members]
+        if any(weight is None for weight in weights):
+            return None
+        return sum(weight for weight in weights if weight is not None)
+
     def _rebuild(self) -> None:
-        filtered = [item for item in self._items if self._matches(item)]
+        filtered = self._fold([item for item in self._items if self._matches(item)])
         filtered.sort(key=self._sort_key, reverse=self._sort_order == Qt.SortOrder.DescendingOrder)
         self.beginResetModel()
         self._visible = tuple(filtered)
@@ -302,7 +372,6 @@ class InventoryTableModel(QAbstractTableModel):
 
     def _sort_key(self, item: InventoryItem):
         staged = self._staged_counts.get(item.handle)
-        count = staged if staged is not None else item.count
         position = (
             item.y is None,
             item.y if item.y is not None else 0,
@@ -327,7 +396,10 @@ class InventoryTableModel(QAbstractTableModel):
             self.POSITION_COLUMN: position,
             self.SIZE_COLUMN: size,
             self.TYPE_KEY_COLUMN: item.type_key.casefold(),
-            self.COUNT_COLUMN: (count is None, count if count is not None else 0),
+            self.COUNT_COLUMN: (
+                self._group_count(item) is None if staged is None else False,
+                (self._group_count(item) or 0) if staged is None else staged,
+            ),
             self.WEIGHT_COLUMN: (
                 effective_weight is None,
                 effective_weight if effective_weight is not None else 0.0,
@@ -370,10 +442,15 @@ class InventoryTableModel(QAbstractTableModel):
         if column == self.TYPE_KEY_COLUMN:
             return item.type_key if item.display_name is not None else f"0x{item.type_key}"
         if column == self.COUNT_COLUMN:
+            if item.handle in self._groups:
+                return str(self._group_count(item))
             if item.count is None:
-                return "—"
+                return "1" if item.storage != "equipped" else "—"
             return str(item.count) if staged is None else f"{item.count} → {staged}"
         if column == self.WEIGHT_COLUMN:
+            if item.handle in self._groups:
+                weight = self._group_weight(item)
+                return "—" if weight is None else f"{weight:.1f}"
             if item.total_weight is None:
                 return "—"
             if staged is None or item.unit_weight is None:
@@ -396,6 +473,9 @@ class InventoryTableModel(QAbstractTableModel):
         return ""
 
     def _tooltip(self, item: InventoryItem, column: int) -> str:
+        members = self._groups.get(item.handle)
+        if members is not None and column in {self.NAME_COLUMN, self.COUNT_COLUMN}:
+            return tr("Объединено одинаковых предметов: {0}", len(members))
         if column == self.NAME_COLUMN:
             display_name = self._display_name(item)
             label = (

@@ -101,9 +101,25 @@ def main(argv: list[str] | None = None) -> int:
     if "--help" in arguments or "-h" in arguments:
         print(tr("Использование: SaveEditor [--help]\nОткрывает окно редактора сохранений."))
         return 0
-    from editor.diagnostics import configure_logging
+    from editor.diagnostics import LOGGER_NAME, configure_logging, install_crash_handler
 
     configure_logging()
+    install_crash_handler()
+    import logging
+
+    from editor.i18n import current_language
+
+    try:
+        version = (Path(__file__).resolve().parents[1] / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        version = "?"
+    logging.getLogger(LOGGER_NAME).info(
+        "start version=%s platform=%s python=%s language=%s",
+        version,
+        platform.platform(terse=True),
+        platform.python_version(),
+        current_language(),
+    )
     try:
         from PySide6.QtWidgets import QApplication
     except ImportError as exc:

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import struct
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Protocol
 
@@ -21,7 +22,7 @@ from .s2_catalog import (
     S2CatalogSource,
     discover_s2_catalog_sources,
 )
-from .xray_catalog import XRayCatalogProvider
+from .xray_catalog import XRayCatalogProvider, has_mod_overlay
 from .xray_save import (
     COP_FORMAT,
     CS_FORMAT,
@@ -81,6 +82,8 @@ class FormatInspection:
     capabilities: FormatCapabilities = field(default_factory=FormatCapabilities)
     catalog: ItemCatalog | None = None
     game_catalog: GameCatalog | None = None
+    # Names/icons only: may include a community mod the save was made with.
+    display_catalog: ItemCatalog | None = None
 
 
 class FormatDetectionError(SaveError):
@@ -435,6 +438,25 @@ class _XRayFormat:
         generated = provider.load_generated_bundle(release)
         return generated.items if generated is not None else None
 
+    def display_catalog_for_source(self, source_name: str | None) -> ItemCatalog | None:
+        """Names and icons from a modded install next to the save, if any.
+
+        Presentation only: the modded tree is never used to prepare an edit.
+        Its definitions come first; official ones fill the gaps.
+        """
+
+        if not source_name:
+            return None
+        try:
+            start = Path(source_name).expanduser().resolve()
+        except OSError:
+            return None
+        start = start.parent if start.is_file() else start
+        for root in (start, *start.parents):
+            if has_mod_overlay(root):
+                return _mod_display_catalog(self.release_id, str(root))
+        return None
+
     def game_catalog_for_source(
         self,
         source_name: str | None,
@@ -619,3 +641,21 @@ __all__ = [
     "formats",
     "register",
 ]
+
+
+@lru_cache(maxsize=4)
+def _mod_display_catalog(release_id: str, root: str) -> ItemCatalog | None:
+    release = release_by_id(release_id)
+    provider = XRayCatalogProvider()
+    modded = provider.load(release, Path(root), allow_mod_overlay=True)
+    if modded is None:
+        return None
+    official = provider.load_generated_bundle(release)
+    official_items = {item.key: item for item in (official.items.items if official is not None else ())}
+    merged = []
+    for item in modded.items:
+        fallback = official_items.pop(item.key, None)
+        if fallback is not None and not item.display_name:
+            item = replace(item, display_name=fallback.display_name)
+        merged.append(item)
+    return ItemCatalog(release_id, modded.source_root, (*merged, *official_items.values()))

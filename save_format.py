@@ -5,7 +5,7 @@ import math
 import struct
 import zlib
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -22,14 +22,16 @@ from editor.kraken_blocks import (
 from editor.s2_item_state import (
     S2_EQUIPMENT_KIND_CODES,
     S2ConditionAnchor,
+    S2NameTables,
     S2WeaponConditionAnchor,
     has_s2_equipment_shape,
     patch_s2_armor_condition,
     patch_s2_weapon_condition,
     read_s2_armor_condition,
+    read_s2_armor_upgrades,
     read_s2_weapon_condition,
+    s2_name_for_key,
 )
-from editor.s2_presentation import s2_presentation_name
 
 BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
@@ -37,6 +39,7 @@ GRID_RECORD_SIZE = 8
 GRID_WIDTH = 8
 KNOWN_KIND_CODES = frozenset({0, 1, 2, 4, 5, 7, 8})
 EDITABLE_STACK_KIND_CODES = frozenset({4, 5, 7, 8})
+SINGLE_STACK_KIND_CODES = frozenset({4, 5, 7})
 
 # Confirmed in the user's real saves. This is a campaign/player structure anchor,
 # not a universal GSC guarantee; all mutating operations fail closed if it stops
@@ -275,10 +278,10 @@ def _category_name(kind: int) -> str:
     return {
         0: "Оружие",
         1: "Броня/экипировка",
-        2: "Уникальный/экипировка",
+        2: "Артефакт",
         4: "Расходник",
         5: "Патроны",
-        7: "Гранаты/стак",
+        7: "Гранаты",
         8: "Разное",
     }.get(kind, f"Тип {kind}")
 
@@ -515,21 +518,17 @@ def _parse_s2_name_table(raw: bytes | bytearray, start: int) -> tuple[str, ...] 
 def locate_s2_item_name_table(
     raw: bytes | bytearray,
     type_keys: Iterable[bytes] = (),
-) -> tuple[str, ...] | None:
-    """Locate the save-local item name table used by the S2 compact key.
+) -> S2NameTables | None:
+    """Locate the save-local item name tables used by the S2 compact key.
 
-    The currently observed S2 saves serialize a counted string table whose
-    first entry is ``GunAK74_ST``.  The low two bytes of an inventory
-    ``type_key`` are an index into that table.  This helper exposes only that
-    save-local display metadata; it does not turn the entry into a public SID
-    and does not provide a constructor/writer.
+    The observed S2 saves serialize a run of counted string tables; the one
+    whose first entry is ``GunAK74_ST`` is selected by key byte 4 and the
+    tables that follow it by 5, 6, …  The low two bytes of a ``type_key``
+    index into the selected table.  This exposes save-local display metadata
+    only; it does not turn an entry into a public SID or a constructor.
     """
 
-    indexes: list[int] = []
-    for type_key in type_keys:
-        if len(type_key) != 3:
-            continue
-        indexes.append(type_key[1] | (type_key[2] << 8))
+    keys = [bytes(key) for key in type_keys if len(key) == 3]
     needle = struct.pack("<H", len(b"GunAK74_ST")) + b"GunAK74_ST"
     search_from = 0
     while True:
@@ -540,23 +539,28 @@ def locate_s2_item_name_table(
         # table's u16 entry count.
         table_start = name_offset - 2
         names = _parse_s2_name_table(raw, table_start)
-        if names is not None and names[0] == "GunAK74_ST" and (
-            not indexes or any(index < len(names) for index in indexes)
-        ):
-            return names
+        if names is not None and names[0] == "GunAK74_ST":
+            tables = [names]
+            offset = table_start + 2 + sum(2 + len(name.encode("utf-8")) for name in names)
+            while len(tables) < 16:
+                following = _parse_s2_name_table(raw, offset)
+                if following is None:
+                    break
+                tables.append(following)
+                offset += 2 + sum(2 + len(name.encode("utf-8")) for name in following)
+            found = S2NameTables(tables)
+            if not keys or any(found.resolve(key) is not None for key in keys):
+                return found
         search_from = name_offset + 1
 
 
 def _s2_display_name(
-    name_table: tuple[str, ...] | None,
+    name_table: Sequence[str] | None,
     type_key: bytes,
 ) -> str | None:
     if name_table is None or len(type_key) != 3:
         return None
-    index = type_key[1] | (type_key[2] << 8)
-    if not (0 <= index < len(name_table)):
-        return None
-    return s2_presentation_name(name_table[index])
+    return s2_name_for_key(bytes(type_key), name_table)
 
 
 def _inventory_details(
@@ -605,7 +609,11 @@ def _inventory_details(
             warnings.append(
                 f"Handle 0x{handle:08X}: неизвестный object kind={kind}, только read-only"
             )
-        editable = count > 1 and kind in EDITABLE_STACK_KIND_CODES and handle not in unresolved
+        # A single consumable, round or grenade uses the same stack record as a
+        # pile of them, so its count is as safe to change as any stack.
+        editable = handle not in unresolved and (
+            (count > 1 and kind in EDITABLE_STACK_KIND_CODES) or (count >= 1 and kind in SINGLE_STACK_KIND_CODES)
+        )
         fingerprint = raw[rec_off + 4 : rec_off + 18].hex()
         # The first byte remains an opaque S2 serialization discriminator. The
         # lower two bytes resolve through the save-local name table when the
@@ -691,6 +699,10 @@ def _inventory_details(
             if condition_anchor is not None:
                 condition = condition_anchor.value
                 condition_editable = _s2_armor_name(display_name)
+                if name_table is not None:
+                    upgrades = read_s2_armor_upgrades(
+                        raw, anchor=condition_anchor, name_table=name_table
+                    ) or None
             else:
                 warnings.append(
                     f"Equipped handle 0x{handle:08X}: S2 armor condition не подтверждён"

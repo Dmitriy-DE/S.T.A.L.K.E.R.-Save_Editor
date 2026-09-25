@@ -20,6 +20,7 @@ from editor.catalog_bundle import CatalogBundleError, load_catalog_payload
 from editor.equipment import category_label, equipment_items, helmet_category_supported
 from editor.formats import detect_or_raise
 from editor.i18n import tr
+from editor.item_names import item_label
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
 
@@ -188,13 +189,7 @@ def install_catalogs(payload: str) -> None:
 def _item_name(catalog: ItemCatalog | None, item: sf.InventoryItem) -> str:
     """Prefer the catalogue name, like the desktop table does."""
 
-    if catalog is not None:
-        definition = catalog.resolve(item.type_key)
-        if definition is None and item.display_name:
-            definition = catalog.resolve_key_or_display_name(item.display_name)
-        if definition is not None and definition.display_name:
-            return definition.display_name
-    return item.display_name or tr("Неизвестный объект")
+    return item_label(item, catalog) or tr("Неизвестный объект")
 
 
 def analyze(data: bytes, name: str) -> str:

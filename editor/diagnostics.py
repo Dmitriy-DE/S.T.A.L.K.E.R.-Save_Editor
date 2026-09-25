@@ -18,8 +18,9 @@ from .platforms import user_data_dir
 
 LOGGER_NAME = "stalker2_save_editor"
 LOG_FILENAME = "save-editor.log"
-MAX_LOG_BYTES = 1 * 1024 * 1024
-LOG_BACKUP_COUNT = 3
+# Logs stay tiny: a quarter megabyte plus one rotated copy.
+MAX_LOG_BYTES = 256 * 1024
+LOG_BACKUP_COUNT = 1
 LOG_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 LOG_MAX_TOTAL_BYTES = MAX_LOG_BYTES * (LOG_BACKUP_COUNT + 1)
 MAX_BUNDLE_BYTES = 1_500_000
@@ -57,6 +58,11 @@ _WINDOWS_HOME_RE = re.compile(r"(?i)(?:[a-z]:)?[\\/]Users[\\/][^\\/\s]+")
 _POSIX_HOME_RE = re.compile(r"/home/[^/\s]+|/Users/[^/\s]+")
 _STEAM_USERDATA_RE = re.compile(r"(?i)([\\/]userdata[\\/])\d{6,20}")
 _LOG_PATH_RE = re.compile(rf"^{re.escape(LOG_FILENAME)}(?:\.\d+)?$")
+
+
+CRASH_FILENAME = "last-crash.txt"
+FATAL_FILENAME = "fatal.log"
+MAX_CRASH_BYTES = 32 * 1024
 
 
 class DiagnosticsError(RuntimeError):
@@ -247,6 +253,9 @@ def collect_log_bundle(directory: Path | None = None, *, max_bytes: int = MAX_BU
             encoded = encoded[-remaining:]
         blocks.append(encoded.decode("utf-8", errors="replace"))
         remaining -= len(encoded)
+    crash = pending_crash_report(source_dir)
+    if crash:
+        blocks.append(f"--- crash ---\n{crash[-MAX_CRASH_BYTES:]}\n")
     raw = "".join(reversed(blocks)).encode("utf-8", errors="replace")
     payload = gzip.compress(raw, mtime=0)
     if len(payload) > MAX_UPLOAD_BYTES:
@@ -274,6 +283,91 @@ def export_log_bundle(
     except OSError as exc:
         raise DiagnosticsError(f"Не удалось сохранить экспорт логов: {exc}") from exc
     return destination
+
+
+def install_crash_handler(directory: Path | None = None) -> None:
+    """Record unhandled Python errors and hard crashes for the next start.
+
+    The traceback goes to the regular log and, redacted and capped, to
+    ``last-crash.txt`` so the next launch can offer to send it.  Native
+    crashes (segfaults inside Qt) are captured by :mod:`faulthandler`.
+    """
+
+    import faulthandler
+    import sys
+    import threading
+    import traceback
+
+    target = directory or log_directory()
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+    logger = logging.getLogger(LOGGER_NAME)
+
+    def record(kind: str, exc_type, exc, tb) -> None:
+        text = "".join(traceback.format_exception(exc_type, exc, tb))
+        logger.critical("unhandled %s\n%s", kind, text)
+        report = _redact(f"{time.strftime('%Y-%m-%dT%H:%M:%S%z')} {kind}\n{text}")
+        try:
+            (target / CRASH_FILENAME).write_text(report[-MAX_CRASH_BYTES:], encoding="utf-8")
+        except OSError:
+            pass
+
+    previous_hook = sys.excepthook
+
+    def excepthook(exc_type, exc, tb) -> None:
+        record("exception", exc_type, exc, tb)
+        previous_hook(exc_type, exc, tb)
+
+    def thread_hook(args) -> None:
+        if args.exc_type is not SystemExit:
+            record(f"exception in thread {getattr(args.thread, 'name', '?')}", args.exc_type, args.exc_value, args.exc_traceback)
+
+    sys.excepthook = excepthook
+    threading.excepthook = thread_hook
+    fatal = target / FATAL_FILENAME
+    try:
+        if fatal.is_file() and fatal.stat().st_size > MAX_CRASH_BYTES:
+            fatal.unlink()
+        handle = open(fatal, "a", encoding="utf-8")  # noqa: SIM115 - must outlive this call
+        faulthandler.enable(handle)
+        install_crash_handler._fatal_handle = handle  # type: ignore[attr-defined]
+    except (OSError, RuntimeError, ValueError):
+        pass
+
+
+def pending_crash_report(directory: Path | None = None) -> str | None:
+    """Return the redacted report of the previous crash, if one is waiting."""
+
+    target = directory or log_directory()
+    parts: list[str] = []
+    try:
+        crash = target / CRASH_FILENAME
+        if crash.is_file():
+            parts.append(crash.read_text(encoding="utf-8", errors="replace"))
+        fatal = target / FATAL_FILENAME
+        if fatal.is_file() and fatal.stat().st_size:
+            parts.append(_redact(fatal.read_text(encoding="utf-8", errors="replace"))[-MAX_CRASH_BYTES:])
+    except OSError:
+        return None
+    report = "\n".join(part for part in parts if part.strip())
+    return report or None
+
+
+def clear_crash_report(directory: Path | None = None) -> None:
+    target = directory or log_directory()
+    for name in (CRASH_FILENAME, FATAL_FILENAME):
+        path = target / name
+        try:
+            if name == FATAL_FILENAME:
+                # faulthandler keeps the file open; empty it instead.
+                if path.is_file():
+                    path.write_text("", encoding="utf-8")
+            else:
+                path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _response_payload(response: Any) -> dict[str, object]:
@@ -334,9 +428,12 @@ __all__ = [
     "DEFAULT_TIMEOUT",
     "DiagnosticsError",
     "cleanup_logs",
+    "clear_crash_report",
     "collect_log_bundle",
     "configure_logging",
     "export_log_bundle",
+    "install_crash_handler",
     "log_directory",
+    "pending_crash_report",
     "submit_logs",
 ]

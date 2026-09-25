@@ -12,7 +12,7 @@ WEAPON_HANDLE = 0x30000AAA
 def _equipped_record(handle: int = EQUIPPED_HANDLE, condition: float = 0.75) -> bytes:
     record = bytearray(0x90)
     struct.pack_into("<I", record, 0, handle)
-    record[8:11] = b"\x01\x20\x01"
+    record[8:11] = b"\x04\x20\x01"
     struct.pack_into("<HH", record, sf.OBJ_POS_X_OFFSET, 0xFFFF, 0xFFFF)
     record[sf.STACK_MARKER_OFFSET] = 0x38
     struct.pack_into("<I", record, sf.STACK_COUNT_OFFSET, 1)
@@ -123,7 +123,7 @@ def test_s2_grid_weapon_exposes_condition_modules_and_upgrades(
 
     assert item.storage == "inventory"
     assert item.observation_source == "grid"
-    assert item.display_name == "Kharod"
+    assert item.display_name == "GunKharod_ST"
     assert item.condition == 0.75
     assert item.condition_editable is True
     assert item.modules == ("GunKharod_MagDefault", "HP_Laser_1")
@@ -138,7 +138,7 @@ def test_s2_presentation_labels_cover_observed_devices_without_changing_unknowns
 
     assert s2_presentation_name("NVG_NPC_Gen3") == "ПНВ (3-е поколение)"
     assert s2_presentation_name("Binoculars_03") == "Бинокль"
-    assert s2_presentation_name("unmapped_save_name") == "unmapped_save_name"
+    assert s2_presentation_name("unmapped_save_name") == "unmapped save name"
 
 
 def test_s2_shape_guard_does_not_reclassify_existing_synthetic_orphan(
