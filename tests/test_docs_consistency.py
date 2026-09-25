@@ -180,3 +180,44 @@ def test_browser_catalog_is_compact_official_metadata_only() -> None:
                 suffix not in item["key"].casefold()
                 for suffix in (".sav", ".scop", ".scs", ".bak", ".db")
             )
+
+
+def test_web_bundle_ships_every_core_module_the_bridge_imports() -> None:
+    """A module missing from the bundle breaks the page at start-up."""
+
+    import ast
+
+    import tools.build_web_bundle as bundle
+
+    root = Path(__file__).resolve().parents[1]
+    shipped = set(bundle.MODULES)
+    pending = ["web/web_bridge.py", "save_format.py"]
+    seen: set[str] = set()
+    while pending:
+        path = pending.pop()
+        if path in seen:
+            continue
+        seen.add(path)
+        tree = ast.parse((root / path).read_text(encoding="utf-8"))
+        package = path.rsplit("/", 1)[0] if path.startswith("editor/") else "editor"
+        # Module-level imports only: lazy imports inside functions are guarded
+        # and never run in the browser (preferences, platforms).
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom):
+                if node.level == 1:
+                    module = f"{package}/{(node.module or '').replace('.', '/')}"
+                elif node.module and node.module.startswith("editor"):
+                    module = node.module.replace(".", "/")
+                else:
+                    continue
+                names = [module] + [f"{module}/{alias.name}" for alias in node.names]
+            elif isinstance(node, ast.Import):
+                names = [alias.name.replace(".", "/") for alias in node.names if alias.name.startswith("editor")]
+            else:
+                continue
+            for name in names:
+                candidate = f"{name}.py"
+                if (root / candidate).is_file():
+                    pending.append(candidate)
+    missing = sorted(path for path in seen if path.startswith("editor/") and path not in shipped)
+    assert missing == [], f"add to tools/build_web_bundle.py MODULES: {missing}"
