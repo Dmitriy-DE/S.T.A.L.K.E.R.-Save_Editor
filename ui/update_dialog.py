@@ -92,6 +92,7 @@ class UpdateDialog(QDialog):
         parent=None,
     ) -> None:
         super().__init__(parent)
+        self.setMinimumWidth(480)  # titles and buttons were clipped at the default width
         self.setWindowTitle(tr("Обновление Save Editor"))
         self.setModal(True)
         self.installation = installation
