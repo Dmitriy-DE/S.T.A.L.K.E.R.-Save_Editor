@@ -380,6 +380,7 @@
  "Игра не определена": "Oyun belirlenemedi",
  "Игра распознана, но безопасное редактирование инвентаря для этой версии ещё не подтверждено. Диагностика доступна, запись отключена.": "Oyun tanındı ancak bu sürüm için güvenli envanter düzenleme henüz doğrulanmadı. Tanılama kullanılabilir, yazma kapalı.",
  "Игра: {0}": "Oyun: {0}",
+ "Играет тему меню ТЧ, ЧН или ЗП, когда открыто или выбрано сохранение этой игры и сама игра установлена. Для S.T.A.L.K.E.R. 2 музыки пока нет.": "O oyunun bir kaydı açık veya seçiliyken ve oyun kuruluysa SoC, CS veya CoP menü müziğini çalar. S.T.A.L.K.E.R. 2 için henüz müzik yok.",
  "Игрок": "Oyuncu",
  "Идентификатор": "Tanımlayıcı",
  "Идентификатор Binance: 434350727": "Binance ID: 434350727",

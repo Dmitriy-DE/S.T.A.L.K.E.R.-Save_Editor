@@ -295,14 +295,21 @@ jobs:
       GH_TOKEN: ${{ github.token }}
 
     steps:
-      - name: Validate release credentials before external mutations
+      - name: Detect which release credentials exist
+        id: creds
         shell: bash
         run: |
           set -euo pipefail
-          : "${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN secret is required}"
-          : "${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID secret is required}"
-          : "${APT_SIGNING_KEY:?APT_SIGNING_KEY secret is required}"
-          : "${APT_SIGNING_KEY_ID:?APT_SIGNING_KEY_ID secret is required}"
+          # R2, APT and the web deploy run only when their credentials exist.
+          # Without Cloudflare the GitHub Release is created as a draft, so no
+          # public asset ever runs ahead of the R2 OTA channel.
+          cloud=false; apt=false
+          if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then cloud=true; fi
+          if [ -n "${APT_SIGNING_KEY:-}" ] && [ -n "${APT_SIGNING_KEY_ID:-}" ]; then apt=true; fi
+          [ "$cloud" = true ] || echo "::notice::No Cloudflare secrets: R2 downloads, OTA manifest and web deploy are skipped (publish them locally, see docs/RELEASE.md)."
+          [ "$apt" = true ] || echo "::notice::No APT signing secrets: the APT repository is skipped."
+          echo "cloud=$cloud" >> "$GITHUB_OUTPUT"
+          echo "apt=$apt" >> "$GITHUB_OUTPUT"
 
       - name: Check out source
         uses: actions/checkout@v7
@@ -342,6 +349,7 @@ jobs:
           python tools/publish_release.py --artifacts release-input --version "$VERSION" --commit "$GITHUB_SHA" --output release-output
 
       - name: Build signed APT repository
+        if: steps.creds.outputs.apt == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -360,20 +368,26 @@ jobs:
           rm -f "$key_file"
 
       - name: Deploy download Worker
+        if: steps.creds.outputs.cloud == 'true'
         shell: bash
         run: npx --yes wrangler@4 deploy --config infra/downloads-worker/wrangler.toml
 
       - name: Apply diagnostics retention policy
+        if: steps.creds.outputs.cloud == 'true'
         shell: bash
         run: npx --yes wrangler@4 r2 bucket lifecycle set save-editor-downloads --file infra/downloads-worker/lifecycle.json --force
 
       - name: Publish stable R2 objects and verify read-back
+        if: steps.creds.outputs.cloud == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          python tools/publish_release.py --output release-output --prepared --require-apt --publish-r2 --verify-r2
+          apt_flag=()
+          [ "${{ steps.creds.outputs.apt }}" = true ] && apt_flag=(--require-apt)
+          python tools/publish_release.py --output release-output --prepared "${apt_flag[@]}" --publish-r2 --verify-r2
 
       - name: Verify public APT update and package discovery
+        if: steps.creds.outputs.cloud == 'true' && steps.creds.outputs.apt == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -394,10 +408,34 @@ jobs:
             release-output/stalker2-save-editor_amd64.deb
             release-output/SHA256SUMS
             release-output/latest.json
-            release-output/apt/repository-key.asc
           )
+          if [ -f release-output/apt/repository-key.asc ]; then
+            assets+=(release-output/apt/repository-key.asc)
+          fi
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes
+            # Without R2 the OTA manifest would not match: keep it a draft
+            # until the local R2 publish (docs/RELEASE.md) makes it public.
+            draft=()
+            [ "${{ steps.creds.outputs.cloud }}" = true ] || draft=(--draft)
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes "${draft[@]}"
           fi
+
+      - name: Deploy the web edition
+        if: steps.creds.outputs.cloud == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/build_web_bundle.py --check
+          ! find web -name '*.sav' -o -name '*.bak' | grep -q .
+          rm -rf web/__pycache__
+          npx --yes wrangler@4 pages deploy web --project-name=stalker-save-editor --branch=main --commit-dirty=true
+          # The page must serve the bundle this tag built.
+          expected=$(sha256sum web/pysrc.json | cut -d' ' -f1)
+          for attempt in 1 2 3 4 5 6; do
+            live=$(curl -fsSL https://stalker-save-editor.pages.dev/pysrc.json | sha256sum | cut -d' ' -f1) || live=
+            [ "$live" = "$expected" ] && exit 0
+            sleep 10
+          done
+          echo "::error::the live site does not serve this tag's bundle"; exit 1
