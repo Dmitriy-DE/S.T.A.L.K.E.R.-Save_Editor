@@ -10,15 +10,20 @@ in the user data directory.  Without an install the synthesized cues in
 
 from __future__ import annotations
 
+import logging
 import os
 import wave
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, QUrl, Signal
+from PySide6.QtCore import QObject, QUrl, Signal
 
+from editor.diagnostics import LOGGER_NAME
 from editor.platforms import installed_releases, user_data_dir
 from editor.releases import release_by_id
 
+from .worker_process import JsonJob
+
+LOGGER = logging.getLogger(f"{LOGGER_NAME}.audio")
 AUDIO_VERSION = 1
 SAMPLE_RATE = 44_100
 
@@ -85,34 +90,31 @@ def interleave(left: bytes, right: bytes) -> bytes:
     return bytes(out)
 
 
-class _ExtractSignals(QObject):
-    done = Signal(str, object)  # family, {relative: Path} | None
+def extract_files(family: str, root: Path, raw_dir: Path) -> dict[str, str]:
+    """Copy this family's menu audio out of the install (``--extract-game-audio``)."""
+
+    from editor.xray_catalog import read_xray_assets
+
+    wanted = (*EVENT_FILES.values(), *MUSIC_FILES[family])
+    result: dict[str, str] = {}
+    for relative, data in read_xray_assets(root, wanted).items():
+        target = raw_dir / relative.rsplit("/", 1)[-1]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        result[relative] = str(target)
+    return result
 
 
-class _Extract(QRunnable):
-    def __init__(self, family: str, root: Path, raw_dir: Path, signals: _ExtractSignals) -> None:
-        super().__init__()
-        self._family, self._root, self._raw_dir, self._signals = family, root, raw_dir, signals
+def extract_main(arguments: list[str]) -> int:
+    """``--extract-game-audio <family> <install root> <raw dir>``."""
 
-    def run(self) -> None:  # pragma: no cover - needs a game install
-        result: dict[str, Path] | None = None
-        try:
-            from editor.xray_catalog import read_xray_assets
+    from .worker_process import emit_result
 
-            wanted = (*EVENT_FILES.values(), *MUSIC_FILES[self._family])
-            found = read_xray_assets(self._root, wanted)
-            result = {}
-            for relative, data in found.items():
-                target = self._raw_dir / relative.rsplit("/", 1)[-1]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(data)
-                result[relative] = target
-        except Exception:
-            result = None
-        try:
-            self._signals.done.emit(self._family, result)
-        except RuntimeError:
-            pass
+    try:
+        family, root, raw_dir = arguments[:3]
+        return emit_result(extract_files(family, Path(root), Path(raw_dir)))
+    except Exception:
+        return emit_result(None)
 
 
 class GameAudio(QObject):
@@ -125,10 +127,7 @@ class GameAudio(QObject):
         self._cache = (cache_dir or user_data_dir() / "sounds") / f"game-v{AUDIO_VERSION}"
         self._pending: set[str] = set()
         self._failed: set[str] = set()
-        self._signals = _ExtractSignals()
-        self._signals.done.connect(self._extracted)
-        self._pool = QThreadPool()
-        self._pool.setMaxThreadCount(1)
+        self._jobs: dict[str, JsonJob] = {}
         self._decoders: list[object] = []
         self._cleanup: dict[str, list[Path]] = {}
 
@@ -159,17 +158,30 @@ class GameAudio(QObject):
             return
         root = install_root(family)
         if root is None:
+            LOGGER.info("game audio: no installed %s, synthesized cues stay", family)
             self._failed.add(family)
             return
+        LOGGER.info("game audio: extracting %s from %s", family, root)
         self._pending.add(family)
-        self._pool.start(_Extract(family, root, self._cache / family / "raw", self._signals))
+        self._jobs[family] = JsonJob(
+            ["--extract-game-audio", family, str(root), str(self._cache / family / "raw")],
+            lambda payload: self._extracted(family, payload),
+            self,
+        )
 
     def shutdown(self) -> None:
-        self._pool.clear()
-        self._pool.waitForDone(5000)
+        for job in list(self._jobs.values()):
+            job.kill()
 
-    def _extracted(self, family: str, files: dict[str, Path] | None) -> None:
+    def _extracted(self, family: str, payload: object) -> None:
+        self._jobs.pop(family, None)
+        files = (
+            {str(key): Path(str(value)) for key, value in payload.items()}
+            if isinstance(payload, dict)
+            else None
+        )
         if not files:
+            LOGGER.warning("game audio: nothing extracted for %s", family)
             self._pending.discard(family)
             self._failed.add(family)
             return
@@ -197,6 +209,7 @@ class GameAudio(QObject):
             for path in self._cleanup.pop(family, ()):
                 path.unlink(missing_ok=True)
             self._pending.discard(family)
+            LOGGER.info("game audio: %s ready (music=%s)", family, self.has_music(family))
             self.ready.emit(family)
             return
         sources, target, channels = jobs[0]
@@ -252,6 +265,7 @@ __all__ = [
     "FAMILIES",
     "MUSIC_FILES",
     "GameAudio",
+    "extract_main",
     "install_root",
     "interleave",
     "write_pcm_wav",
