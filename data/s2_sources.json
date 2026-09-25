@@ -1,0 +1,688 @@
+{
+ "_source": "English names: weapon and consumable SIDs matched by hand to stalker2.wiki.fextralife.com (with its inventory images); remaining SID → English name pairs from the gamepressure.com STALKER 2 item-ID list, cross-checked against the game's Russian string table; artifact/armour images matched by English name.",
+ "consumables": {
+  "AntiRad": [
+   "Anti-Radiation Drugs",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a0/Stalker-2-anti-radiation-drugs.png"
+  ],
+  "ArmyMedkit": [
+   "Army Medkit",
+   "https://static0.fextralifeimages.com/file/stalker2/6/69/Stalker-2-army-medkit.png"
+  ],
+  "Bandage": [
+   "Bandage",
+   "https://static0.fextralifeimages.com/file/stalker2/6/6e/Stalker-2-bandage.png"
+  ],
+  "Beer": [
+   "Beer",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d4/Stalker-2-beer.png"
+  ],
+  "Bread": [
+   "Bread",
+   "https://static0.fextralifeimages.com/file/stalker2/2/25/Stalker-2-bread.png"
+  ],
+  "CannedFood": [
+   "Canned Food",
+   "https://static0.fextralifeimages.com/file/stalker2/2/2c/Stalker-2-canned-food.png"
+  ],
+  "Cinnamon": [
+   "Vinca",
+   "https://static0.fextralifeimages.com/file/stalker2/a/a5/Stalker-2-vinca.png"
+  ],
+  "EcoMedkit": [
+   "Scientific Medkit",
+   "https://static0.fextralifeimages.com/file/stalker2/f/fa/Stalker-2-scientific-medkit.png"
+  ],
+  "Energetic": [
+   "Non Stop Energy Drink",
+   "https://static0.fextralifeimages.com/file/stalker2/3/31/Stalker-2-non-stop-energy-drink.png"
+  ],
+  "GrenadeF1": [
+   "F-1 Grenade",
+   "https://static0.fextralifeimages.com/file/stalker2/8/84/Stalker-2-f-1-grenade1.png"
+  ],
+  "GrenadeRGD5": [
+   "RGD-5 Grenade",
+   "https://static0.fextralifeimages.com/file/stalker2/8/83/Stalker-2-rgd-5-grenade1.png"
+  ],
+  "Hercules": [
+   "Hercules",
+   "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-hercules.png"
+  ],
+  "Medkit": [
+   "Medkit",
+   "https://static0.fextralifeimages.com/file/stalker2/4/42/Stalker-2-medkit.png"
+  ],
+  "Milk": [
+   "Condensed Milk",
+   "https://static0.fextralifeimages.com/file/stalker2/4/40/Stalker-2-condensed-milk.png"
+  ],
+  "PSYBlocker": [
+   "Psi-Block",
+   "https://static0.fextralifeimages.com/file/stalker2/e/e6/Stalker-2-psi-block.png"
+  ],
+  "Sausage": [
+   "Sausage",
+   "https://static0.fextralifeimages.com/file/stalker2/6/6b/Stalker-2-sausage.png"
+  ],
+  "SpoiledCannedFood": [
+   "Spoiled Canned Food",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c8/Stalker-2-spoiled-canned-food.png"
+  ],
+  "Vodka": [
+   "Cossacks Vodka",
+   "https://static0.fextralifeimages.com/file/stalker2/6/68/Stalker-2-cossacks-vodka.png"
+  ],
+  "Water": [
+   "Water",
+   "https://static0.fextralifeimages.com/file/stalker2/5/5a/Stalker-2-water.png"
+  ]
+ },
+ "english_names": {
+  "A012A": "12x76mm Slug",
+  "A012D": "12x70mm Buckshot",
+  "A012E": "12x76mm Expanding Dart",
+  "A045A": ".45 ACP AP",
+  "A045D": ".45 ACP FMJ",
+  "A045E": ".45 ACP HP",
+  "A545A": "5.45x39mm PP",
+  "A545D": "5.45x39mm PS",
+  "A545E": "5.45x39mm MZHV-13",
+  "A556A": "5.56x45mm M995",
+  "A556D": "5.56x45mm M885",
+  "A556E": "5.56x45mm HP",
+  "A556S": "5.56x45mm MK 262",
+  "A762A": "7.62x39mm BZ",
+  "A762D": "7.62x39mm PS",
+  "A762E": "7.62x39mm LAN",
+  "A762NATOA": ".308 AP",
+  "A762NATOD": ".308 W",
+  "A762NATOS": ".308 Match",
+  "A762SniperA": "7.62x54mm B-32",
+  "A762SniperD": "7.62x54mm LPS",
+  "A762SniperS": "7.62x54mm 7N1",
+  "A918A": "9x18mm RG028",
+  "A918D": "9x18mm PST",
+  "A919A": "9x19mm P",
+  "A919D": "9x19mm FMJ",
+  "A939A": "9x39mm SP-6",
+  "A939D": "9x39mm PA",
+  "A939E": "9x39mm PPE",
+  "A939S": "9x39mm SP-5",
+  "AArtifactWeirdBall": "Weird Ball",
+  "AArtifactWeirdBolt": "Weird Bolt",
+  "AArtifactWeirdFlower": "Weird Flower",
+  "AArtifactWeirdKettle": "Weird Kettle",
+  "AArtifactWeirdNut": "Weird Nut",
+  "AArtifactWeirdWater": "Weird Water",
+  "AGAHEDP": "Gauss Cartridge",
+  "APG7V": "PG-7v",
+  "AVOG": "VOG-25",
+  "AntiRad": "Anti-Rad",
+  "ArmyMedkit": "Army Medkit",
+  "Bear": "Bear",
+  "Beer": "Beer",
+  "Bread": "Bread",
+  "CArtifactBouncyBall": "Skipjack",
+  "CArtifactBubble": "Bubble",
+  "CArtifactBun": "Kolobok",
+  "CArtifactBung": "Horn",
+  "CArtifactChunkMeat": "Meat Chunk",
+  "CArtifactCottonWool": "Crust",
+  "CArtifactCrystalThorn": "Crystal Thorn",
+  "CArtifactDevilsMushroom": "Devil's Mushroom",
+  "CArtifactEchinus": "Urchin",
+  "CArtifactKryptonite": "Mold",
+  "CArtifactLiquidStone": "Liquid Rock",
+  "CArtifactMica": "Mica",
+  "CArtifactPellicle": "Pellicle",
+  "CArtifactPlasticine": "Ciliate",
+  "CArtifactRosin": "Tourist's Breakfast",
+  "CArtifactSlime": "Slime",
+  "CArtifactSlug": "Slug",
+  "CArtifactThorn": "Thorn",
+  "CannedFood": "Canned Food",
+  "EArtifactAtom": "Glare",
+  "EArtifactBattery": "Battery",
+  "EArtifactChocolate": "Chocolate Bar",
+  "EArtifactCloud": "Harp",
+  "EArtifactCrystalGlass": "Crest",
+  "EArtifactDope": "Thunderberry",
+  "EArtifactDummy": "Shell",
+  "EArtifactFlash": "Flash",
+  "EArtifactJellyFish": "Sapphire",
+  "EArtifactMoonlight": "Moonlight",
+  "EArtifactRazor": "Starfish",
+  "EArtifactSnowflake": "Snowflake",
+  "EArtifactSoul": "Soul",
+  "EArtifactSparkler": "Sparkler",
+  "EArtifactThunderHedgehog": "Lantern",
+  "EArtifactTow": "Shop Class",
+  "EArtifactWorm": "Rat King",
+  "EN_BuckLaunch_1": "Hoemaker-L",
+  "EN_ColimScope_1": "Collimator Sight",
+  "EN_GLaunch_1": "Two-O-Three Underbarrel Grenade Launcher",
+  "EN_GoloScope_1": "Holographic Sight",
+  "EN_Silen_2": "Pistol Silencer",
+  "EN_Silen_3": "Assault Rifle Silencer",
+  "EN_Silen_4": "Sniper Rifle Silencer",
+  "EN_Silencer_1": "Tactical Pistol Silencer",
+  "EN_X2Scope_1": "RNBW 2x Scope",
+  "EN_X4Scope_1": "ACOG 4x Scope",
+  "EN_X8Scope_1": "Storm Falcon 8x Scope",
+  "Echo": "Echo",
+  "EcoMedkit": "Eco Medkit",
+  "Energetic": "Energetic",
+  "FArtifactBakedBolts": "Flaw",
+  "FArtifactBurntHunk": "Spinner",
+  "FArtifactCandle": "Petal",
+  "FArtifactCore": "Torch",
+  "FArtifactCrystal": "Crystal",
+  "FArtifactDeadSponge": "Dead Sponge",
+  "FArtifactDrops": "Droplets",
+  "FArtifactEye": "Eye",
+  "FArtifactFireBall": "Fireball",
+  "FArtifactFireworks": "Meat Lighter",
+  "FArtifactGlass": "Cavity",
+  "FArtifactHellishHedgehog": "Magma",
+  "FArtifactMomsBeads": "Mama's Beads",
+  "FArtifactPlasma": "Plasma",
+  "FArtifactResin": "Lyre",
+  "FArtifactRingOmnipotence": "Hypercube",
+  "FArtifactSteak": "Steak",
+  "GArtifactBloodStone": "Stone Blood",
+  "GArtifactBud": "Flower Bud",
+  "GArtifactCompass": "Compass",
+  "GArtifactGoldFish": "Goldfish",
+  "GArtifactGraphiteBlock": "Crown",
+  "GArtifactGravy": "Gravi",
+  "GArtifactHedgehog": "Flytrap",
+  "GArtifactLandSlug": "Jellyfish",
+  "GArtifactNightStar": "Night Star",
+  "GArtifactPlane": "Pebble",
+  "GArtifactRubiksCube": "Magic Cube",
+  "GArtifactSplitStone": "Broken Rock",
+  "GArtifactSponge": "Whirlwind",
+  "GArtifactSpring": "Spring",
+  "GArtifactStoneDrop": "Stone Heart",
+  "GArtifactTrunk": "Rosin",
+  "GArtifactWrenched": "Wrenched",
+  "Gilka": "Hilka",
+  "GunAK74_Korshunov_ST": "AKM-74S (Korshunov)",
+  "GunAK74_MagIncreased": "High-Capacity AKM-74 Magazine",
+  "GunAK74_ST": "AKM-74S",
+  "GunAK74_Strelok_ST": "AKM-74S (Strelok)",
+  "GunAKU_PP": "AKM-74U",
+  "GunAK_MagPaired": "Coupled AKM-74 Magazines",
+  "GunAPB_HG": "APSB",
+  "GunAPB_MagIncreased": "High-Capacity APSB Magazine",
+  "GunBucket_MagIncreased": "High-Capacity Buket S-2 Magazine",
+  "GunBucket_PP": "Bucket S-2",
+  "GunD12_MagIncreased": "High-Capacity Saiga D-12 Magazine",
+  "GunD12_MagLarge": "Saiga D-12 Drum Magazine",
+  "GunD12_MagPaired": "Paired Saiga D-12 Magazine",
+  "GunD12_SG": "Saiga D-12",
+  "GunDnipro_MagPaired": "Coupled Dnipro Magazines",
+  "GunDnipro_ST": "Dnipro",
+  "GunFora_MagIncreased": "High-Capacity Fora-221 and Kharod Magazine",
+  "GunFora_ST": "Fora-221",
+  "GunG37_ST": "GP37",
+  "GunGP37_MagLarge": "GP37 Drum Magazine",
+  "GunGP37_MagPaired": "High-Capacity GP37 Magazine",
+  "GunGauss_MagIncreased": "High-Capacity Gauss Magazine",
+  "GunGauss_SP": "Gauss Gun",
+  "GunGauss_Scar_SP": "EM-1",
+  "GunGrim_ST": "Grom S-14",
+  "GunGvintar_MagIncreased": "High-Capacity VS Vintar Magazine",
+  "GunGvintar_ST": "VS Vintar",
+  "GunIntegral_MagIncreased": "High-Capacity Built-In Magazine",
+  "GunIntegral_PP": "Integral-A",
+  "GunKharod_MagPaired": "Paired Kharod Magazine",
+  "GunKharod_ST": "Kharod",
+  "GunLavina_MagIncreased": "High-Capacity AS Lavina Magazine",
+  "GunLavina_ST": "AS Lavina",
+  "GunM10_HG": "M10 Gordon",
+  "GunM10_MagIncreased": "High-Capacity M10 Magazine",
+  "GunM16_MagIncreased": "High-Capacity AR416 System Magazine",
+  "GunM16_ST": "AR416",
+  "GunM701_SP": "M701 Super",
+  "GunM860_SG": "M860 Cracker",
+  "GunMark_MagIncreased": "High-Capacity Mark I Magazine",
+  "GunMark_SP": "Mark I EMR",
+  "GunObrez_SG": "Boomstick",
+  "GunPKP_Korshunov_MG": "Beast",
+  "GunPKP_MG": "RPM-74",
+  "GunPKP_MagIncreased": "Large RP-74 Ammo Box",
+  "GunPKP_MagLarge": "Tank-Mounted RP-74 Ammo Box",
+  "GunPM_HG": "PTM",
+  "GunPM_MagIncreased": "High-Capacity PTM Magazine",
+  "GunRam2_SG": "RAM-2",
+  "GunRhino_HG": "Rhino",
+  "GunRpg7_GL": "RPG-7U",
+  "GunSPSA_SG": "SPSA-14",
+  "GunSVDM_SP": "SVDM-2",
+  "GunSVU_MagIncreased": "High-Capacity SVU-MK S-3 Magazine",
+  "GunSVU_SP": "SVU-MK S-3",
+  "GunSVU_Sniper_Duga_SP": "SVU-MK S-3 (Duga)",
+  "GunTOZ_SG": "TOZ-34",
+  "GunUDP_HG": "UDP Compact",
+  "GunUDP_MagIncreased": "High-Capacity UDP Magazine",
+  "GunViper_MagIncreased": "High-Capacity Viper-5 Magazine",
+  "GunViper_PP": "Viper-5",
+  "GunZubr_MagIncreased": "High-Capacity Zubr-16 Magazine",
+  "GunZubr_PP": "Zubr-19",
+  "Gun_Cavalier_SR": "Cavalier",
+  "Gun_Combatant_AR": "Combatant",
+  "Gun_Deadeye_HG": "Deadeye",
+  "Gun_Decider_AR": "Decider",
+  "Gun_Drowned_AR": "Drowned",
+  "Gun_Encourage_HG": "Encourage",
+  "Gun_GStreet_HG": "Gangster",
+  "Gun_Gabion_AR": "SA-U \"Gabion\"",
+  "Gun_Krivenko_HG": "Gambit",
+  "Gun_Logarithm_SMG": "Riemann",
+  "Gun_Lummox_AR": "Valik Lummox's AKM-74S",
+  "Gun_Lynx_SR": "Lynx",
+  "Gun_Margach_SG": "Margach D-12MT",
+  "Gun_Merc_AR": "Merc",
+  "Gun_ModelSpecial_HG": "Model Competitor",
+  "Gun_Novator_AR": "Lullaby",
+  "Gun_Partner_SR": "Partner",
+  "Gun_PistolMonolith_HG": "PTM Monolith",
+  "Gun_Predator_SG": "Predator",
+  "Gun_ProjectY_HG": "Labyrinth IV",
+  "Gun_Rail_SG": "Reyka",
+  "Gun_RatKiller_SMG": "Rat Killer",
+  "Gun_RifleMonolith_AR": "AR416 Monolith",
+  "Gun_S15_AR": "Grom S-15",
+  "Gun_SMGMonolith_SMG": "Viper \"Monolith\"",
+  "Gun_SOFMOD_AR": "SOFMOD",
+  "Gun_Shakh_SMG": "Shah's Mate",
+  "Gun_Sharpshooter_AR": "Clusterfuck",
+  "Gun_ShotgunMonolith_SG": "M860 Monolith",
+  "Gun_Silence_SMG": "Special",
+  "Gun_SkifGun_HG": "Skif's Gun",
+  "Gun_Sledgehammer_SG": "Sledgehammer",
+  "Gun_Sotnyk_AR": "Sotnyk",
+  "Gun_Spitfire_SMG": "Spitfire",
+  "Gun_Spitter_SMG": "Spitter",
+  "Gun_Star_HG": "PTM (Silenced)",
+  "Gun_Tank_MG": "Glutton",
+  "Gun_Texas_SG": "Texan",
+  "Gun_Trophy_AR": "Trophy",
+  "Gun_Unknown_AR": "Unknown Stalker's AR416",
+  "Gun_Veteran_AR": "Veteran",
+  "Gun_Whip_SR": "Whip",
+  "Gun_Zvirolov_SR": "Hunter",
+  "Hercules": "Hercules",
+  "Medkit": "Medkit",
+  "Milk": "Milk",
+  "PSYBlocker": "PSY Blocker",
+  "RU_ColimScope_1": "Open Collimator Sight",
+  "RU_GLaunch_1": "GP-25",
+  "RU_Silen_1": "Pistol Suppressor",
+  "RU_Silen_2": "Assault Rifle Suppressor",
+  "RU_Silen_3": "Sniper Rifle Suppressor",
+  "RU_X2Scope_1": "PAO 2x Scope",
+  "RU_X4Scope_1": "PSO 4x Scope",
+  "RU_X8Scope_1": "POS 8x Scope",
+  "Sausage": "Sausage",
+  "SpoiledCannedFood": "Spoiled Canned Food",
+  "Veles": "Veles",
+  "Vodka": "Vodka",
+  "Water": "Water"
+ },
+ "images_by_name": {
+  "Aeroprotection Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/4/4e/Stalker-2-aeroprotection-gas-mask.png",
+  "Armored Jacket": "https://static0.fextralifeimages.com/file/stalker2/5/57/Stalker-2-armored_bandit_jacked.png",
+  "Aurora Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/0/0e/Stalker-2-aurora-gas-mask.png",
+  "Ballistic Helmet": "https://static0.fextralifeimages.com/file/stalker2/7/7b/Stalker-2-ballistic-helmet.png",
+  "Bandit Jacket": "https://static0.fextralifeimages.com/file/stalker2/2/27/Stalker-2-bandit-jacket.png",
+  "Battery": "https://static0.fextralifeimages.com/file/stalker2/b/bc/Stalker-2-battery.png",
+  "Berill-5M Armored Suit": "https://static0.fextralifeimages.com/file/stalker2/e/eb/Stalker-2-berill-5m-armored-suit.png",
+  "Broken Rock": "https://static0.fextralifeimages.com/file/stalker2/f/f1/Stalker-2-broken-rock.png",
+  "Brummbar Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/1/14/Stalker-2-brummbar-exoskeleton.png",
+  "Bubble": "https://static0.fextralifeimages.com/file/stalker2/f/ff/Stalker-2-bubble.png",
+  "Bulwark Exosuit": "https://static0.fextralifeimages.com/file/stalker2/e/e0/Stalker-2-bulwark-exosuit.png",
+  "Cavity": "https://static0.fextralifeimages.com/file/stalker2/6/61/Stalker-2-cavity.png",
+  "Chocolate Bar": "https://static0.fextralifeimages.com/file/stalker2/5/5b/Stalker-2-chocolate-bar.png",
+  "Ciliate": "https://static0.fextralifeimages.com/file/stalker2/4/46/Stalker-2-ciliate.png",
+  "Compass": "https://static0.fextralifeimages.com/file/stalker2/1/17/Stalker-2-compass.png",
+  "Corundum Suit": "https://static0.fextralifeimages.com/file/stalker2/4/4d/Stalker-2-corundum-suit.png",
+  "Crest": "https://static0.fextralifeimages.com/file/stalker2/6/6e/Stalker-2-crest.png",
+  "Crown": "https://static0.fextralifeimages.com/file/stalker2/1/12/Stalker-2-crown.png",
+  "Crust": "https://static0.fextralifeimages.com/file/stalker2/a/ae/Stalker-2-crust.png",
+  "Crystal": "https://static0.fextralifeimages.com/file/stalker2/e/ea/Stalker-2-crystal.png",
+  "Crystal Thorn": "https://static0.fextralifeimages.com/file/stalker2/2/26/Stalker-2-crystal-thorn.png",
+  "Cuirass Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/2/2d/Stalker-2-cuirass-exoskeleton.png",
+  "Dead Sponge": "https://static0.fextralifeimages.com/file/stalker2/a/a8/Stalker-2-dead-sponge.png",
+  "Debut Suit": "https://static0.fextralifeimages.com/file/stalker2/f/f4/Stalker-2-debut-suit.png",
+  "Devil's Mushroom": "https://static0.fextralifeimages.com/file/stalker2/4/48/Stalker-2-devils-mushroom.png",
+  "Diamond Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/b/b4/Stalker-2-diamond-exoskeleton.png",
+  "Droplets": "https://static0.fextralifeimages.com/file/stalker2/6/6a/Stalker-2-droplets.png",
+  "Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/2/29/Stalker-2-exoskeleton.png",
+  "Eye": "https://static0.fextralifeimages.com/file/stalker2/c/cf/Stalker-2-eye.png",
+  "Fireball": "https://static0.fextralifeimages.com/file/stalker2/e/e5/Stalker-2-fireball.png",
+  "Flash": "https://static0.fextralifeimages.com/file/stalker2/0/05/Stalker-2-flash.png",
+  "Flaw": "https://static0.fextralifeimages.com/file/stalker2/b/bb/Stalker-2-flaw.png",
+  "Flower Bud": "https://static0.fextralifeimages.com/file/stalker2/f/f1/Stalker-2-flower-bud.png",
+  "Flytrap": "https://static0.fextralifeimages.com/file/stalker2/8/87/Stalker-2-flytrap.png",
+  "Glare": "https://static0.fextralifeimages.com/file/stalker2/a/ac/Stalker-2-glare.png",
+  "Goldfish": "https://static0.fextralifeimages.com/file/stalker2/5/5a/Stalker-2-goldfish.png",
+  "Gravi": "https://static0.fextralifeimages.com/file/stalker2/7/74/Stalker-2-gravi.png",
+  "Harp": "https://static0.fextralifeimages.com/file/stalker2/0/0f/Stalker-2-harp.png",
+  "Horn": "https://static0.fextralifeimages.com/file/stalker2/9/92/Stalker-2-horn.png",
+  "Hypercube": "https://static0.fextralifeimages.com/file/stalker2/9/9c/Stalker-2-hypercube.png",
+  "Jellyfish": "https://static0.fextralifeimages.com/file/stalker2/f/ff/Stalker-2-jellyfish.png",
+  "Kolobok": "https://static0.fextralifeimages.com/file/stalker2/9/9a/Stalker-2-kolobok.png",
+  "Lantern": "https://static0.fextralifeimages.com/file/stalker2/f/f6/Stalker-2-lantern.png",
+  "Leather Jacket": "https://static0.fextralifeimages.com/file/stalker2/6/60/Stalker-2-leather-jacket.png",
+  "Liberty Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/a/a6/Stalker-2-liberty-exoskeleton.png",
+  "Liquid Rock": "https://static0.fextralifeimages.com/file/stalker2/1/12/Stalker-2-liquid-rock.png",
+  "Lyre": "https://static0.fextralifeimages.com/file/stalker2/a/a3/Stalker-2-lyre.png",
+  "Magic Cube": "https://static0.fextralifeimages.com/file/stalker2/c/cb/Stalker-2-magic-cube.png",
+  "Magma": "https://static0.fextralifeimages.com/file/stalker2/c/cb/Stalker-2-magma.png",
+  "Mama's Beads": "https://static0.fextralifeimages.com/file/stalker2/d/de/Stalker-2-mamas-beads.png",
+  "Marauder Suit": "https://static0.fextralifeimages.com/file/stalker2/1/1e/Stalker-2-marauder-suit.png",
+  "Mask-1 Helmet": "https://static0.fextralifeimages.com/file/stalker2/8/81/Stalker-2-mask-1-helmet.png",
+  "Meat Chunk": "https://static0.fextralifeimages.com/file/stalker2/8/85/Stalker-2-meat-chunk.png",
+  "Meat Lighter": "https://static0.fextralifeimages.com/file/stalker2/9/9d/Stalker-2-meat-lighter.png",
+  "Mercenary Suit": "https://static0.fextralifeimages.com/file/stalker2/5/57/Stalker-2-mercenary-suit.png",
+  "Mercenary's Light Suit": "https://static0.fextralifeimages.com/file/stalker2/1/19/Stalker-2-mercenarys-light-suit.png",
+  "Mica": "https://static0.fextralifeimages.com/file/stalker2/1/14/Stalker-2-mica.png",
+  "Mold": "https://static0.fextralifeimages.com/file/stalker2/5/5f/Stalker-2-mold.png",
+  "Moonlight": "https://static0.fextralifeimages.com/file/stalker2/1/16/Stalker-2-moonlight.png",
+  "Night Star": "https://static0.fextralifeimages.com/file/stalker2/4/46/Stalker-2-night-star.png",
+  "OZK Explorer's Suit": "https://static0.fextralifeimages.com/file/stalker2/c/cc/Stalker-2-ozk-explorers-suit.png",
+  "Operator Exoskeleton": "https://static0.fextralifeimages.com/file/stalker2/a/a8/Stalker-2-operator-exoskeleton.png",
+  "Optician Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/4/4d/Stalker-2-optician-gas-mask.png",
+  "PA-10 Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/0/0a/Stalker-2-pa-10-gas-mask.png",
+  "PA-7 Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/d/de/Stalker-2-pa-7-gas-mask.png",
+  "PG-4 Facehugger Gas Mask": "https://static0.fextralifeimages.com/file/stalker2/b/be/Stalker-2-pg-4-facehugger-gas-mask.png",
+  "PSZ-12V Bulat": "https://static0.fextralifeimages.com/file/stalker2/f/fa/Stalker-2-psz-12v-bulat.png",
+  "PSZ-20W Convoy": "https://static0.fextralifeimages.com/file/stalker2/e/ef/Stalker-2-psz-20w-convoy.png",
+  "PSZ-21W Shturm": "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-psz-21w-shturm.png",
+  "PSZ-5D Universal Protection": "https://static0.fextralifeimages.com/file/stalker2/c/c4/Stalker-2-psz-5d-universal-protection.png",
+  "PSZ-5I Hawk": "https://static0.fextralifeimages.com/file/stalker2/a/af/Stalker-2-psz-5i-hawk.png",
+  "PSZ-5V Guardian of Freedom Suit": "https://static0.fextralifeimages.com/file/stalker2/d/d2/Stalker-2-psz-5v-guardian-of-freedom-suit.png",
+  "PSZ-7 Military Body Armor": "https://static0.fextralifeimages.com/file/stalker2/7/7d/Stalker-2-psz-7-military-body-armor.png",
+  "PSZ-9D Duty Armor": "https://static0.fextralifeimages.com/file/stalker2/8/88/Stalker-2-psz-9d-duty-armor.png",
+  "PSZ-9I Falcon": "https://static0.fextralifeimages.com/file/stalker2/6/61/Stalker-2-psz-9i-falcon.png",
+  "PSZ-9N Wolfhound": "https://static0.fextralifeimages.com/file/stalker2/7/7f/Stalker-2-psz-9n-wolfhound.png",
+  "Pebble": "https://static0.fextralifeimages.com/file/stalker2/a/ab/Stalker-2-pebble.png",
+  "Pellicle": "https://static0.fextralifeimages.com/file/stalker2/d/da/Stalker-2-pellicle.png",
+  "Petal": "https://static0.fextralifeimages.com/file/stalker2/1/19/Stalker-2-petal.png",
+  "Plasma": "https://static0.fextralifeimages.com/file/stalker2/5/56/Stalker-2-plasma.png",
+  "Rat King": "https://static0.fextralifeimages.com/file/stalker2/e/e6/Stalker-2-rat-king.png",
+  "Recruit Suit": "https://static0.fextralifeimages.com/file/stalker2/3/3a/Stalker-2-recruit-suit.png",
+  "Rosin": "https://static0.fextralifeimages.com/file/stalker2/6/67/Stalker-2-rosin.png",
+  "Ruby Exosuit": "https://static0.fextralifeimages.com/file/stalker2/0/05/Stalker-2-ruby-exosuit.png",
+  "SEVA Suit": "https://static0.fextralifeimages.com/file/stalker2/7/77/Stalker-2-seva-suit.png",
+  "SEVA-D Suit": "https://static0.fextralifeimages.com/file/stalker2/1/1e/Stalker-2-seva-d-suit.png",
+  "SEVA-I Suit": "https://static0.fextralifeimages.com/file/stalker2/8/8f/Stalker-2-seva-i-suit.png",
+  "SEVA-V Suit": "https://static0.fextralifeimages.com/file/stalker2/3/35/Stalker-2-seva-v-suit.png",
+  "SSP-100 Discovery": "https://static0.fextralifeimages.com/file/stalker2/a/a4/Stalker-2-ssp-100-discovery.png",
+  "SSP-100I Survey": "https://static0.fextralifeimages.com/file/stalker2/0/00/Stalker-2-ssp-1001-survey.png",
+  "SSP-100M SIRCAA": "https://static0.fextralifeimages.com/file/stalker2/1/10/Stalker-2-ssp-100m-sircaa.png",
+  "SSP-99 Ecologist": "https://static0.fextralifeimages.com/file/stalker2/c/cd/Stalker-2-ssp-99-ecologist.png",
+  "Sapphire": "https://static0.fextralifeimages.com/file/stalker2/9/9f/Stalker-2-sapphire.png",
+  "Shell": "https://static0.fextralifeimages.com/file/stalker2/3/3c/Stalker-2-shell.png",
+  "Shield of Duty Exosuit": "https://static0.fextralifeimages.com/file/stalker2/2/28/Stalker-2-shield-of-duty-exosuit.png",
+  "Shop Class": "https://static0.fextralifeimages.com/file/stalker2/d/d7/Stalker-2-shop-class.png",
+  "Skipjack": "https://static0.fextralifeimages.com/file/stalker2/3/32/Stalker-2-skipjack.png",
+  "Slime": "https://static0.fextralifeimages.com/file/stalker2/0/05/Stalker-2-slime.png",
+  "Slug": "https://static0.fextralifeimages.com/file/stalker2/5/58/Stalker-2-slug.png",
+  "Snowflake": "https://static0.fextralifeimages.com/file/stalker2/e/e5/Stalker-2-snowflake.png",
+  "Soul": "https://static0.fextralifeimages.com/file/stalker2/7/7a/Stalker-2-soul.png",
+  "Sparkler": "https://static0.fextralifeimages.com/file/stalker2/0/0e/Stalker-2-sparkler.png",
+  "Sphere M20 Helmet": "https://static0.fextralifeimages.com/file/stalker2/3/39/Stalker-2-sphere-m20-helmet.png",
+  "Spinner": "https://static0.fextralifeimages.com/file/stalker2/d/d6/Stalker-2-spinner.png",
+  "Spring": "https://static0.fextralifeimages.com/file/stalker2/7/72/Stalker-2-spring.png",
+  "Starfish": "https://static0.fextralifeimages.com/file/stalker2/f/f4/Stalker-2-starfish.png",
+  "Steak": "https://static0.fextralifeimages.com/file/stalker2/4/48/Stalker-2-steak.png",
+  "Stone Blood": "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-stone-blood.png",
+  "Stone Heart": "https://static0.fextralifeimages.com/file/stalker2/5/5f/Stalker-2-stone-heart.png",
+  "Sunrise Suit": "https://static0.fextralifeimages.com/file/stalker2/4/4d/Stalker-2-sunrise-suit.png",
+  "Tactical Helmet": "https://static0.fextralifeimages.com/file/stalker2/f/fc/Stalker-2-tactical-helmet.png",
+  "Thorn": "https://static0.fextralifeimages.com/file/stalker2/0/04/Stalker-2-thorn.png",
+  "Thunderberry": "https://static0.fextralifeimages.com/file/stalker2/1/1b/Stalker-2-thunderberry.png",
+  "Torch": "https://static0.fextralifeimages.com/file/stalker2/6/6e/Stalker-2-torch.png",
+  "Tourist Suit": "https://static0.fextralifeimages.com/file/stalker2/1/18/Stalker-2-tourist-suit.png",
+  "Tourist's Breakfast": "https://static0.fextralifeimages.com/file/stalker2/e/e0/Stalker-2-tourists-breakfast.png",
+  "Urchin": "https://static0.fextralifeimages.com/file/stalker2/b/b4/Stalker-2-urchin.png",
+  "Wanderer Suit": "https://static0.fextralifeimages.com/file/stalker2/7/78/Stalker-2-wanderer-suit.png",
+  "Weird Ball": "https://static0.fextralifeimages.com/file/stalker2/e/e5/Stalker-2-weird-ball.png",
+  "Weird Bolt": "https://static0.fextralifeimages.com/file/stalker2/c/cf/Stalker-2-weird-bolt.png",
+  "Weird Flower": "https://static0.fextralifeimages.com/file/stalker2/f/f3/Stalker-2-weird-flower.png",
+  "Weird Nut": "https://static0.fextralifeimages.com/file/stalker2/1/1f/Stalker-2-weird-nut.png",
+  "Weird Pot": "https://static0.fextralifeimages.com/file/stalker2/3/38/Stalker-2-weird-pot.png",
+  "Weird Water": "https://static0.fextralifeimages.com/file/stalker2/5/5d/Stalker-2-weird-water.png",
+  "Whirlwind": "https://static0.fextralifeimages.com/file/stalker2/9/9c/Stalker-2-whirlwind.png",
+  "Wind of Freedom Suit": "https://static0.fextralifeimages.com/file/stalker2/1/1f/Stalker-2-wind-of-freedom-suit.png",
+  "Wrenched": "https://static0.fextralifeimages.com/file/stalker2/3/33/Stalker-2-wrenched.png",
+  "X7 Suit": "https://static0.fextralifeimages.com/file/stalker2/0/0e/Stalker-2-x7-suit.png",
+  "Zircon Suit": "https://static0.fextralifeimages.com/file/stalker2/2/2b/Stalker-2-zircon-suit.png"
+ },
+ "weapons": {
+  "GunAK74_ST": [
+   "AKM-74S",
+   "https://static0.fextralifeimages.com/file/stalker2/e/ec/Akm-74s-stalker2.png"
+  ],
+  "GunAKU_PP": [
+   "AKM-74U",
+   "https://static0.fextralifeimages.com/file/stalker2/6/60/Akm-74u-stalker2.png"
+  ],
+  "GunAPB_HG": [
+   "APSB",
+   "https://static0.fextralifeimages.com/file/stalker2/d/dc/Aspb-stalker2.png"
+  ],
+  "GunArev_ST": [
+   "AR416",
+   "https://static0.fextralifeimages.com/file/stalker2/e/eb/Ar416-stalker2.png"
+  ],
+  "GunBucket_PP": [
+   "Buket S-2",
+   "https://static0.fextralifeimages.com/file/stalker2/b/ba/Buket_s-2-stalker2.png"
+  ],
+  "GunD12_SG": [
+   "Saiga D-12",
+   "https://static0.fextralifeimages.com/file/stalker2/3/32/Saiga_d-12-stalker2.png"
+  ],
+  "GunDnipro_ST": [
+   "Dnipro",
+   null
+  ],
+  "GunFora_ST": [
+   "Fora-221",
+   null
+  ],
+  "GunG37_ST": [
+   "GP37",
+   null
+  ],
+  "GunGauss_SP": [
+   "Gauss Rifle",
+   "https://static0.fextralifeimages.com/file/stalker2/0/0c/Gauss_gun-stalker2.png"
+  ],
+  "GunGrim_ST": [
+   "Grom S-14",
+   null
+  ],
+  "GunGvintar_ST": [
+   "VS Vintar",
+   "https://static0.fextralifeimages.com/file/stalker2/b/bc/Vs_vintar-stalker2.png"
+  ],
+  "GunIntegral_PP": [
+   "Integral-A",
+   "https://static0.fextralifeimages.com/file/stalker2/0/0f/Integral-a-stalker2.png"
+  ],
+  "GunKharod_ST": [
+   "Kharod",
+   null
+  ],
+  "GunLavina_ST": [
+   "AS Lavina",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c9/As_lavina-stalker2.png"
+  ],
+  "GunM10_HG": [
+   "M10 Gordon",
+   "https://static0.fextralifeimages.com/file/stalker2/2/22/M10_gordon-stalker2.png"
+  ],
+  "GunM701_SP": [
+   "M701 Super",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d1/M701_super-stalker2.png"
+  ],
+  "GunM860_SG": [
+   "M860 Cracker",
+   "https://static0.fextralifeimages.com/file/stalker2/1/1d/M860_cracker-stalker2.png"
+  ],
+  "GunMark_SP": [
+   "Mark I EMR",
+   null
+  ],
+  "GunObrez_SG": [
+   "Boomstick",
+   "https://static0.fextralifeimages.com/file/stalker2/f/f7/Boomstick-stalker2.png"
+  ],
+  "GunPKP_MG": [
+   "RPM-74",
+   "https://static0.fextralifeimages.com/file/stalker2/b/b4/Rpm-74-stalker2.png"
+  ],
+  "GunPM_HG": [
+   "PTM",
+   "https://static0.fextralifeimages.com/file/stalker2/1/18/Ptm-stalker2.png"
+  ],
+  "GunRam2_SG": [
+   "Ram-2",
+   "https://static0.fextralifeimages.com/file/stalker2/1/1b/Ram-2-stalker2.png"
+  ],
+  "GunRhino_HG": [
+   "Rhino",
+   "https://static0.fextralifeimages.com/file/stalker2/1/1e/Rhino-stalker2.png"
+  ],
+  "GunRpg7_GL": [
+   "RPG-7U",
+   "https://static0.fextralifeimages.com/file/stalker2/1/13/Stalker-2-rpg-7u.png"
+  ],
+  "GunSPSA_SG": [
+   "SPSA-14",
+   "https://static0.fextralifeimages.com/file/stalker2/a/ac/Spsa-14-stalker2.png"
+  ],
+  "GunSVDM_SP": [
+   "SVDM-2",
+   "https://static0.fextralifeimages.com/file/stalker2/2/27/Svdm-2-stalker2.png"
+  ],
+  "GunSVU_SP": [
+   "SVU-MK S-3",
+   null
+  ],
+  "GunTOZ_SG": [
+   "Toz-34",
+   "https://static0.fextralifeimages.com/file/stalker2/0/05/Toz-34-stalker2.png"
+  ],
+  "GunUDP_HG": [
+   "UDP Compact",
+   "https://static0.fextralifeimages.com/file/stalker2/6/67/Udp_compact-stalker2.png"
+  ],
+  "GunViper_PP": [
+   "Viper-5",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c7/Viper-5-stalker2.png"
+  ],
+  "GunZubr_PP": [
+   "Zubr-19",
+   "https://static0.fextralifeimages.com/file/stalker2/d/d5/Zubr-19-stalker2.png"
+  ],
+  "Gun_Cavalier_SR": [
+   "Cavalier",
+   "https://static0.fextralifeimages.com/file/stalker2/8/89/Cavalier-stalker2.png"
+  ],
+  "Gun_Combatant_AR": [
+   "Combatant",
+   null
+  ],
+  "Gun_Deadeye_HG": [
+   "Deadeye",
+   "https://static0.fextralifeimages.com/file/stalker2/f/f0/Deadeye-stalker2.png"
+  ],
+  "Gun_GStreet_HG": [
+   "Gangster",
+   "https://static0.fextralifeimages.com/file/stalker2/c/c0/Gangster-stalker2.png"
+  ],
+  "Gun_Gabion_AR": [
+   "SA-U Gabion",
+   null
+  ],
+  "Gun_Lynx_SR": [
+   "Lynx",
+   "https://static0.fextralifeimages.com/file/stalker2/d/dc/Lynx-stalker2.png"
+  ],
+  "Gun_Margach_SG": [
+   "Margach D-12MT",
+   "https://static0.fextralifeimages.com/file/stalker2/0/02/Margach_d-12_mt-stalker2.png"
+  ],
+  "Gun_ModelSpecial_HG": [
+   "Model Competitor",
+   "https://static0.fextralifeimages.com/file/stalker2/7/74/Model_competitor-stalker2.png"
+  ],
+  "Gun_PistolMonolith_HG": [
+   "PTM Monolith",
+   "https://static0.fextralifeimages.com/file/stalker2/a/aa/Ptm_monolith-stalker2.png"
+  ],
+  "Gun_Predator_SG": [
+   "Predator",
+   "https://static0.fextralifeimages.com/file/stalker2/2/26/Predator-stalker2.png"
+  ],
+  "Gun_RatKiller_SMG": [
+   "Rat Killer",
+   "https://static0.fextralifeimages.com/file/stalker2/9/97/Rat_killer-stalker2.png"
+  ],
+  "Gun_RifleMonolith_AR": [
+   "AR416 Monolith",
+   "https://static0.fextralifeimages.com/file/stalker2/e/ed/Ar416_monolith-stalker2.png"
+  ],
+  "Gun_S15_AR": [
+   "Grom S-15",
+   null
+  ],
+  "Gun_SMGMonolith_SMG": [
+   "Viper-5 Monolith",
+   "https://static0.fextralifeimages.com/file/stalker2/7/79/Viper_monolith-stalker2.png"
+  ],
+  "Gun_SOFMOD_AR": [
+   "SOFMOD",
+   null
+  ],
+  "Gun_Shakh_SMG": [
+   "Shah's Mate",
+   "https://static0.fextralifeimages.com/file/stalker2/6/66/Shah%27s_mate-stalker2.png"
+  ],
+  "Gun_ShotgunMonolith_SG": [
+   "M860 Monolith",
+   "https://static0.fextralifeimages.com/file/stalker2/f/f8/M860_monolith-stalker2.png"
+  ],
+  "Gun_SkifGun_HG": [
+   "Skif's Pistol",
+   "https://static0.fextralifeimages.com/file/stalker2/8/83/Skif%27s_pistol-stalker2.png"
+  ],
+  "Gun_Sledgehammer_SG": [
+   "Sledgehammer",
+   "https://static0.fextralifeimages.com/file/stalker2/e/e7/Sledgehammer-stalker2.png"
+  ],
+  "Gun_Spitter_SMG": [
+   "Spitter",
+   "https://static0.fextralifeimages.com/file/stalker2/0/03/Spitter-stalker2.png"
+  ],
+  "Gun_Texas_SG": [
+   "Texan",
+   null
+  ],
+  "Gun_Veteran_AR": [
+   "Veteran",
+   "https://static0.fextralifeimages.com/file/stalker2/2/20/Veteran-stalker2.png"
+  ],
+  "Gun_Zvirolov_SR": [
+   "Hunter",
+   "https://static0.fextralifeimages.com/file/stalker2/1/15/Hunter-stalker2.png"
+  ]
+ }
+}

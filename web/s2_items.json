@@ -1,0 +1,7946 @@
+{
+ "items": {
+  "A012A": {
+   "names": {
+    "en": "12x76mm Slug",
+    "ru": "12/76 мм жекан"
+   }
+  },
+  "A012D": {
+   "names": {
+    "en": "12x70mm Buckshot",
+    "ru": "12/70 мм картечь"
+   }
+  },
+  "A012E": {
+   "names": {
+    "en": "12x76mm Expanding Dart",
+    "ru": "12/76 мм экспансивный дротик"
+   }
+  },
+  "A045A": {
+   "names": {
+    "en": ".45 ACP AP",
+    "ru": ".45 ACP AP"
+   }
+  },
+  "A045D": {
+   "names": {
+    "en": ".45 ACP FMJ",
+    "pl": "Naboje .45 ACP",
+    "ru": ".45 ACP FMJ"
+   }
+  },
+  "A045E": {
+   "names": {
+    "en": ".45 ACP HP",
+    "ru": ".45 ACP HP"
+   }
+  },
+  "A545A": {
+   "names": {
+    "en": "5.45x39mm PP",
+    "ru": "5.45х39 мм ПП"
+   }
+  },
+  "A545D": {
+   "names": {
+    "en": "5.45x39mm PS",
+    "ru": "5.45x39 мм ПС"
+   }
+  },
+  "A545E": {
+   "names": {
+    "en": "5.45x39mm MZHV-13",
+    "ru": "5.45x39 мм МЖВ-13"
+   }
+  },
+  "A556A": {
+   "names": {
+    "en": "5.56x45mm M995",
+    "ru": "5.56х45 мм М995"
+   }
+  },
+  "A556D": {
+   "names": {
+    "en": "5.56x45mm M885",
+    "ru": "5.56x45 мм M885"
+   }
+  },
+  "A556E": {
+   "names": {
+    "en": "5.56x45mm HP",
+    "ru": "5.56x45 мм HP"
+   }
+  },
+  "A556S": {
+   "names": {
+    "en": "5.56x45mm MK 262",
+    "ru": "5.56x45 мм Mk 262"
+   }
+  },
+  "A762A": {
+   "names": {
+    "en": "7.62x39mm BZ",
+    "ru": "7.62x39 мм БЗ"
+   }
+  },
+  "A762D": {
+   "names": {
+    "en": "7.62x39mm PS",
+    "ru": "7.62x39 мм ПС"
+   }
+  },
+  "A762E": {
+   "names": {
+    "en": "7.62x39mm LAN",
+    "ru": "7.62х39 мм «Лань»"
+   }
+  },
+  "A762NATOA": {
+   "names": {
+    "en": ".308 AP",
+    "ru": ".308 AP"
+   }
+  },
+  "A762NATOD": {
+   "names": {
+    "en": ".308 W",
+    "ru": ".308 W"
+   }
+  },
+  "A762NATOS": {
+   "names": {
+    "en": ".308 Match",
+    "ru": ".308 Match"
+   }
+  },
+  "A762SniperA": {
+   "names": {
+    "en": "7.62x54mm B-32",
+    "ru": "7.62х54 мм Б-32"
+   }
+  },
+  "A762SniperD": {
+   "names": {
+    "en": "7.62x54mm LPS",
+    "ru": "7.62x54 мм ЛПС"
+   }
+  },
+  "A762SniperS": {
+   "names": {
+    "en": "7.62x54mm 7N1",
+    "ru": "7.62х54 мм 7Н1"
+   }
+  },
+  "A918A": {
+   "names": {
+    "en": "9x18mm RG028",
+    "ru": "9x18 мм РГ028"
+   }
+  },
+  "A918D": {
+   "names": {
+    "en": "9x18mm PST",
+    "ru": "9x18 мм ПСТ"
+   }
+  },
+  "A919A": {
+   "names": {
+    "en": "9x19mm P",
+    "ru": "9x19 мм +P"
+   }
+  },
+  "A919D": {
+   "names": {
+    "en": "9x19mm FMJ",
+    "pl": "Naboje 9×19mm FMJ",
+    "ru": "9x19 мм FMJ",
+    "uk": "9×19 мм FMJ"
+   }
+  },
+  "A939A": {
+   "names": {
+    "en": "9x39mm SP-6",
+    "pl": "Naboje 9×39 mm SP-6",
+    "ru": "9x39 мм СП-6",
+    "uk": "9×39 мм СП-6"
+   }
+  },
+  "A939D": {
+   "names": {
+    "en": "9x39mm PA",
+    "ru": "9x39 мм ПА"
+   }
+  },
+  "A939E": {
+   "names": {
+    "en": "9x39mm PPE",
+    "ru": "9x39 мм ППЭ"
+   }
+  },
+  "A939S": {
+   "names": {
+    "en": "9x39mm SP-5",
+    "pl": "Naboje 9×39 mm SP-5",
+    "ru": "9x39 мм СП-5",
+    "uk": "9×39 мм СП-5"
+   }
+  },
+  "AArtifactWeirdBall": {
+   "icon": "s2/AArtifactWeirdBall.png",
+   "names": {
+    "en": "Weird Ball",
+    "ru": "Странный мяч",
+    "uk": "Дивний м’яч"
+   }
+  },
+  "AArtifactWeirdBolt": {
+   "icon": "s2/AArtifactWeirdBolt.png",
+   "names": {
+    "en": "Weird Bolt",
+    "ru": "Странный болт",
+    "uk": "Дивний болт"
+   }
+  },
+  "AArtifactWeirdFlower": {
+   "icon": "s2/AArtifactWeirdFlower.png",
+   "names": {
+    "en": "Weird Flower",
+    "ru": "Странный цветок",
+    "uk": "Дивна квітка"
+   }
+  },
+  "AArtifactWeirdFlower_": {
+   "icon": "s2/AArtifactWeirdFlower_.png",
+   "names": {
+    "ru": "Странный цветок"
+   }
+  },
+  "AArtifactWeirdKettle": {
+   "icon": "s2/AArtifactWeirdKettle.png",
+   "names": {
+    "en": "Weird Pot",
+    "ru": "Странный котелок",
+    "uk": "Дивний казанок"
+   }
+  },
+  "AArtifactWeirdMirror": {
+   "names": {
+    "en": "Weird Mirror",
+    "ru": "Странное зеркало"
+   }
+  },
+  "AArtifactWeirdNut": {
+   "icon": "s2/AArtifactWeirdNut.png",
+   "names": {
+    "en": "Weird Nut",
+    "ru": "Странная гайка",
+    "uk": "Дивна гайка"
+   }
+  },
+  "AArtifactWeirdWater": {
+   "icon": "s2/AArtifactWeirdWater.png",
+   "names": {
+    "en": "Weird Water",
+    "ru": "Странная вода",
+    "uk": "Дивна вода"
+   }
+  },
+  "AGA": {
+   "names": {
+    "ru": "Гаусс-кассета"
+   }
+  },
+  "AGAHEDP": {
+   "names": {
+    "en": "Gauss Cartridge"
+   }
+  },
+  "AHEDP": {
+   "names": {
+    "ru": "HEDP"
+   }
+  },
+  "ANCQ01_VadaHvorostPDA": {
+   "names": {
+    "ru": "КПК Вади Хвороста"
+   }
+  },
+  "ANCQ04_LokotPDA": {
+   "names": {
+    "ru": "КПК Локтя"
+   }
+  },
+  "ANCQ06_VadyaPDA": {
+   "names": {
+    "ru": "КПК новичка"
+   }
+  },
+  "ANCQ07_RabinaPDA": {
+   "names": {
+    "ru": "КПК с трупа Рябины"
+   }
+  },
+  "ANCQ08_NoteToHomyak": {
+   "names": {
+    "ru": "Записка Хомяку от Соловья"
+   }
+  },
+  "ANCQ10_NoteMedic": {
+   "names": {
+    "ru": "Старые записи"
+   }
+  },
+  "ANCQ12_Note": {
+   "names": {
+    "ru": "Докладная Майору Гармате"
+   }
+  },
+  "ANCQ13_PDAVladAsnyj": {
+   "names": {
+    "ru": "КПК Влада Ясного"
+   }
+  },
+  "ANCQ15_NoteRat": {
+   "names": {
+    "ru": "КПК Мити Груши"
+   }
+  },
+  "ANCQ16_PDALetyn": {
+   "names": {
+    "ru": "КПК Вади Летуна"
+   }
+  },
+  "ANCQ17_AboutVaranPDA": {
+   "names": {
+    "ru": "КПК Вити Булки"
+   }
+  },
+  "ANCQ20_Lost_PDA": {
+   "names": {
+    "ru": "КПК Вовки Дачника"
+   }
+  },
+  "ANCQ21_MemoryDiary": {
+   "names": {
+    "ru": "Воспоминания сталкера"
+   }
+  },
+  "ANCQ22_ClearSkyNote": {
+   "names": {
+    "ru": "Дневник лаборанта"
+   }
+  },
+  "ANCQ23_AtasPDA": {
+   "names": {
+    "ru": "КПК Коли Атаса"
+   }
+  },
+  "ANCQ24_VenyaNotes": {
+   "names": {
+    "ru": "Записка Вени"
+   }
+  },
+  "ANCQ_19_BanditDiary": {
+   "names": {
+    "ru": "Дневник бандита"
+   }
+  },
+  "ANC_18_IOUNote": {
+   "names": {
+    "ru": "Долговая расписка диггера"
+   }
+  },
+  "APG7V": {
+   "names": {
+    "en": "PG-7v",
+    "ru": "ПГ-7В"
+   }
+  },
+  "AVOG": {
+   "names": {
+    "en": "VOG-25",
+    "ru": "ВОГ-25"
+   }
+  },
+  "AlteredScarsToast": {
+   "icon": "s2/AlteredScarsToast.png",
+   "names": {
+    "en": "Altered Toast"
+   }
+  },
+  "Altered_Toast": {
+   "icon": "s2/Altered_Toast.png",
+   "names": {
+    "ru": "Измененная гренка"
+   }
+  },
+  "Anomaly_Scientific_Armor": {
+   "icon": "s2/Anomaly_Scientific_Armor.png",
+   "names": {
+    "ru": "ССП-99 «Эколог»"
+   }
+  },
+  "AntiRad": {
+   "icon": "s2/AntiRad.png",
+   "names": {
+    "en": "Anti-Radiation Drugs",
+    "ru": "Противорадиационные препараты"
+   }
+  },
+  "ArmUpg_backpack_01": {
+   "names": {
+    "ru": "Разгрузочный жилет"
+   }
+  },
+  "ArmUpg_backpack_01_a": {
+   "names": {
+    "ru": "Ременно-плечевая система"
+   }
+  },
+  "ArmUpg_backpack_01_b": {
+   "names": {
+    "ru": "Интеграция увеличенных подсумков"
+   }
+  },
+  "ArmUpg_backpack_02": {
+   "names": {
+    "ru": "Спинной каркас"
+   }
+  },
+  "ArmUpg_backpack_02_a": {
+   "names": {
+    "ru": "Туристический рюкзак"
+   }
+  },
+  "ArmUpg_backpack_02_b": {
+   "names": {
+    "ru": "Эшелонирование снаряжения"
+   }
+  },
+  "ArmUpg_bp_01": {
+   "names": {
+    "ru": "Кольчужные вставки"
+   }
+  },
+  "ArmUpg_bp_01_a": {
+   "names": {
+    "ru": "Резинотканевые демпферы"
+   }
+  },
+  "ArmUpg_bp_01_b": {
+   "names": {
+    "ru": "Соединения с нахлёстом"
+   }
+  },
+  "ArmUpg_bp_02": {
+   "names": {
+    "ru": "Арамидная подкладка"
+   }
+  },
+  "ArmUpg_bp_02_a": {
+   "names": {
+    "ru": "Боковые бронепластины"
+   }
+  },
+  "ArmUpg_bp_02_b": {
+   "names": {
+    "ru": "Антирикошет"
+   }
+  },
+  "ArmUpg_bp_03": {
+   "names": {
+    "ru": "Увеличенные бронепластины"
+   }
+  },
+  "ArmUpg_bp_04": {
+   "names": {
+    "ru": "Керамическая броня «Чешуя»"
+   }
+  },
+  "ArmUpg_chem_01": {
+   "names": {
+    "ru": "Силиконовые уплотнители"
+   }
+  },
+  "ArmUpg_chem_01_a": {
+   "names": {
+    "ru": "Эрзац ОЗК"
+   }
+  },
+  "ArmUpg_chem_02": {
+   "names": {
+    "ru": "Импрегнированная ткань"
+   }
+  },
+  "ArmUpg_chem_02_a": {
+   "names": {
+    "ru": "Аномальные фильтры"
+   }
+  },
+  "ArmUpg_container_01": {
+   "names": {
+    "ru": "Кустарный контейнер для артефакта"
+   }
+  },
+  "ArmUpg_container_01_a": {
+   "names": {
+    "ru": "Облегчённый контейнер"
+   }
+  },
+  "ArmUpg_container_01_b": {
+   "names": {
+    "ru": "Контейнер «Синевир»"
+   }
+  },
+  "ArmUpg_container_02": {
+   "names": {
+    "ru": "Дополнительный контейнер для артефакта"
+   }
+  },
+  "ArmUpg_container_radconsume_01": {
+   "names": {
+    "ru": "Свинцовый контейнер"
+   }
+  },
+  "ArmUpg_container_radconsume_02": {
+   "names": {
+    "ru": "Контейнер с рассеивателем"
+   }
+  },
+  "ArmUpg_container_radconsume_03": {
+   "names": {
+    "ru": "Контейнер «Выверт»"
+   }
+  },
+  "ArmUpg_durable_01": {
+   "names": {
+    "ru": "Синтетическая подкладка"
+   }
+  },
+  "ArmUpg_durable_01_a": {
+   "names": {
+    "ru": "Обувная нить"
+   }
+  },
+  "ArmUpg_durable_01_b": {
+   "names": {
+    "ru": "Прошивка слабых мест"
+   }
+  },
+  "ArmUpg_durable_02": {
+   "names": {
+    "ru": "Дублирующий предохранительный слой"
+   }
+  },
+  "ArmUpg_durable_02_a": {
+   "names": {
+    "ru": "Качественные молнии"
+   }
+  },
+  "ArmUpg_durable_02_b": {
+   "names": {
+    "ru": "Проклейка швов"
+   }
+  },
+  "ArmUpg_el_chem_fire_01": {
+   "names": {
+    "ru": "Внешняя фильтрующая система"
+   }
+  },
+  "ArmUpg_el_chem_fire_01_a": {
+   "names": {
+    "ru": "Графеновые вставки"
+   }
+  },
+  "ArmUpg_el_chem_fire_02": {
+   "names": {
+    "ru": "Термозащита из стекловолокна"
+   }
+  },
+  "ArmUpg_elecrt_chem_01": {
+   "names": {
+    "ru": "Полиэтиленовая герметичная подкладка"
+   }
+  },
+  "ArmUpg_elecrt_chem_01_a": {
+   "names": {
+    "ru": "Накладки из кожи"
+   }
+  },
+  "ArmUpg_elecrt_chem_02": {
+   "names": {
+    "ru": "Плексигласовый комбинезон со свинцовой сеткой"
+   }
+  },
+  "ArmUpg_elecrt_chem_02_a": {
+   "names": {
+    "ru": "Изоляция проводников"
+   }
+  },
+  "ArmUpg_electr_01": {
+   "names": {
+    "ru": "Подкладка с константаном"
+   }
+  },
+  "ArmUpg_electr_01_a": {
+   "names": {
+    "ru": "Имитация заземления"
+   }
+  },
+  "ArmUpg_electr_02": {
+   "names": {
+    "ru": "Вакуумный диэлектрик"
+   }
+  },
+  "ArmUpg_electr_02_a": {
+   "names": {
+    "ru": "Диэлектрические материалы"
+   }
+  },
+  "ArmUpg_exo_bp_01": {
+   "names": {
+    "ru": "Сегментная защита"
+   }
+  },
+  "ArmUpg_exo_bp_02": {
+   "names": {
+    "ru": "Цельнотитановые составляющие"
+   }
+  },
+  "ArmUpg_exo_dur_stam_01": {
+   "names": {
+    "ru": "Защита суставов"
+   }
+  },
+  "ArmUpg_exo_dur_stam_02": {
+   "names": {
+    "ru": "Облегчённый каркас из титана"
+   }
+  },
+  "ArmUpg_exo_durable_01": {
+   "names": {
+    "ru": "Углепластиковые детали"
+   }
+  },
+  "ArmUpg_exo_durable_02": {
+   "names": {
+    "ru": "Напыленный защитный слой"
+   }
+  },
+  "ArmUpg_exo_hands_01": {
+   "names": {
+    "ru": "Сервомоторы рук"
+   }
+  },
+  "ArmUpg_exo_sprint_01": {
+   "names": {
+    "ru": "Оснащение сервоприводов гидравлическими усилителям"
+   }
+  },
+  "ArmUpg_exo_sprint_stabilize_01": {
+   "names": {
+    "ru": "Аккумулятор повышенной ёмкости"
+   }
+  },
+  "ArmUpg_exo_stamina_01": {
+   "names": {
+    "ru": "Арамидный шлем"
+   }
+  },
+  "ArmUpg_exo_stamina_02": {
+   "names": {
+    "ru": "Охлаждающая система «Ионный ветер»"
+   }
+  },
+  "ArmUpg_fire_01": {
+   "names": {
+    "ru": "Асбестовый слой"
+   }
+  },
+  "ArmUpg_fire_01_a": {
+   "names": {
+    "ru": "Термостойкая пена"
+   }
+  },
+  "ArmUpg_fire_02": {
+   "names": {
+    "ru": "Никелевые термоаккумуляторы"
+   }
+  },
+  "ArmUpg_fire_02_a": {
+   "names": {
+    "ru": "Активное охлаждение"
+   }
+  },
+  "ArmUpg_fire_chem_01": {
+   "names": {
+    "ru": "Герметичный изолирующий слой"
+   }
+  },
+  "ArmUpg_fire_chem_01_a": {
+   "names": {
+    "ru": "Кустарное напыление"
+   }
+  },
+  "ArmUpg_fire_chem_01_b": {
+   "names": {
+    "ru": "Вставки из полиэфира"
+   }
+  },
+  "ArmUpg_fire_chem_02": {
+   "names": {
+    "ru": "Система выведения ядовитых веществ"
+   }
+  },
+  "ArmUpg_fire_chem_02_a": {
+   "names": {
+    "ru": "Латексные соединения"
+   }
+  },
+  "ArmUpg_fire_elecrt_01": {
+   "names": {
+    "ru": "Мета-арамидная пропитка костюма"
+   }
+  },
+  "ArmUpg_fire_elecrt_01_a": {
+   "names": {
+    "ru": "Карбоновые пластины"
+   }
+  },
+  "ArmUpg_fire_elecrt_02": {
+   "names": {
+    "ru": "Подкладка с диэлектрическим аэрогелем"
+   }
+  },
+  "ArmUpg_fire_elecrt_02_a": {
+   "names": {
+    "ru": "Система «Компенсаторика»"
+   }
+  },
+  "ArmUpg_pockets_01": {
+   "names": {
+    "ru": "Накладные карманы"
+   }
+  },
+  "ArmUpg_pockets_01_a": {
+   "names": {
+    "ru": "Подсумок «Административка»"
+   }
+  },
+  "ArmUpg_pockets_02": {
+   "names": {
+    "ru": "Увеличенный рюкзак"
+   }
+  },
+  "ArmUpg_psy_01": {
+   "names": {
+    "ru": "Экранирующее покрытие"
+   }
+  },
+  "ArmUpg_psy_02": {
+   "names": {
+    "ru": "Обруч «Пси-купол»"
+   }
+  },
+  "ArmUpg_rad_01": {
+   "names": {
+    "ru": "Активные фильтры"
+   }
+  },
+  "ArmUpg_rad_01_a": {
+   "names": {
+    "ru": "Дополнительный свинцовый слой"
+   }
+  },
+  "ArmUpg_rad_02": {
+   "names": {
+    "ru": "Генератор статических полей"
+   }
+  },
+  "ArmUpg_rad_02_a": {
+   "names": {
+    "ru": "«Полевой Радиопротектор»"
+   }
+  },
+  "ArmUpg_rad_03": {
+   "names": {
+    "ru": "Освинцовывание защитного костюма"
+   }
+  },
+  "ArmUpg_rad_container_01": {
+   "names": {
+    "ru": "Двухсекционный экранированный контейнер для артефактов"
+   }
+  },
+  "ArmUpg_rad_psy_01": {
+   "names": {
+    "ru": "Плексигласовые накладки с экранирующим покрытием"
+   }
+  },
+  "ArmUpg_rad_psy_01_a": {
+   "names": {
+    "ru": "Самодельная сфера"
+   }
+  },
+  "ArmUpg_rad_psy_02": {
+   "names": {
+    "ru": "Отводящие кабели"
+   }
+  },
+  "ArmUpg_stamina_01": {
+   "names": {
+    "ru": "Питьевая система «Верблюд»"
+   }
+  },
+  "ArmUpg_stamina_01_a": {
+   "names": {
+    "ru": "Комплект термобелья"
+   }
+  },
+  "ArmUpg_stamina_01_b": {
+   "names": {
+    "ru": "Клапаны для охлаждения"
+   }
+  },
+  "ArmUpg_stamina_02": {
+   "names": {
+    "ru": "Внутренняя система терморегуляции"
+   }
+  },
+  "ArmUpg_weight_01": {
+   "names": {
+    "ru": "Система креплений"
+   }
+  },
+  "ArmUpg_weight_01_a": {
+   "names": {
+    "ru": "Облегчённая фурнитура"
+   }
+  },
+  "ArmUpg_weight_01_b": {
+   "names": {
+    "ru": "Избавление от утеплителя"
+   }
+  },
+  "ArmUpg_weight_02": {
+   "names": {
+    "ru": "Облегчённые материалы"
+   }
+  },
+  "ArmUpg_weight_02_a": {
+   "names": {
+    "ru": "Избавление от стальных бронепластин"
+   }
+  },
+  "ArmUpg_weight_02_b": {
+   "names": {
+    "ru": "Интеграция рюкзака"
+   }
+  },
+  "ArmUpg_weight_03": {
+   "names": {
+    "ru": "Полиэтиленовые бронепластины"
+   }
+  },
+  "ArmyMedkit": {
+   "icon": "s2/ArmyMedkit.png",
+   "names": {
+    "en": "Army Medkit",
+    "ru": "Армейская аптечка"
+   }
+  },
+  "AzimutControlRoomKey": {
+   "names": {
+    "ru": "Ключ доступа от «Азимута»"
+   }
+  },
+  "Bandage": {
+   "icon": "s2/Bandage.png",
+   "names": {
+    "en": "Bandage",
+    "pl": "Bandaż",
+    "ru": "Бинт",
+    "uk": "Бинт"
+   }
+  },
+  "BasePDA": {
+   "names": {
+    "ru": "КПК"
+   }
+  },
+  "BasePDA_Bandits": {
+   "names": {
+    "ru": "Бандитский КПК"
+   }
+  },
+  "BasePDA_Duty": {
+   "names": {
+    "ru": "Долговский КПК"
+   }
+  },
+  "BasePDA_Freedom": {
+   "names": {
+    "ru": "Свободовский КПК"
+   }
+  },
+  "BasePDA_Mercs": {
+   "names": {
+    "ru": "КПК наёмника"
+   }
+  },
+  "BasePDA_Military": {
+   "names": {
+    "ru": "КПК МСОП"
+   }
+  },
+  "BasePDA_Monolith": {
+   "names": {
+    "ru": "М-КПК"
+   }
+  },
+  "BasePDA_MonolithBroken": {
+   "names": {
+    "ru": "Сломанный М-КПК"
+   }
+  },
+  "BasePDA_Neutrals": {
+   "names": {
+    "ru": "Сталкерский КПК"
+   }
+  },
+  "BasePDA_Spark": {
+   "names": {
+    "ru": "Искровский КПК"
+   }
+  },
+  "BasePDA_Ward": {
+   "names": {
+    "ru": "Вартовский КПК"
+   }
+  },
+  "BattleExoskeleton_Varta_Armor": {
+   "icon": "s2/BattleExoskeleton_Varta_Armor.png",
+   "names": {
+    "en": "Operator Exoskeleton",
+    "ru": "Экзоскелет «Оператор»",
+    "uk": "Екзоскелет «Оператор»"
+   }
+  },
+  "Battle_Dolg_Armor": {
+   "icon": "s2/Battle_Dolg_Armor.png",
+   "names": {
+    "en": "PSZ-5D Universal Protection",
+    "ru": "ПСЗ-5Д «Универсальная защита»",
+    "uk": "ПСЗ-5Д «Універсальний захист»"
+   }
+  },
+  "Battle_Dolg_End_Armor": {
+   "icon": "s2/Battle_Dolg_End_Armor.png",
+   "names": {
+    "en": "X7 Suit",
+    "ru": "Комбинезон Х7",
+    "uk": "Комбінезон Х7"
+   }
+  },
+  "Battle_Military_Helmet": {
+   "icon": "s2/Battle_Military_Helmet.png",
+   "names": {
+    "ru": "Баллистический шлем"
+   }
+  },
+  "Battle_Monolith_Armor": {
+   "icon": "s2/Battle_Monolith_Armor.png",
+   "names": {
+    "en": "Zircon Suit",
+    "ru": "Комбинезон «Циркон»",
+    "uk": "Комбінезон «Циркон»"
+   }
+  },
+  "Battle_Spark_Armor": {
+   "icon": "s2/Battle_Spark_Armor.png",
+   "names": {
+    "en": "PSZ-5I Hawk",
+    "ru": "ПСЗ-5И «Ястреб»",
+    "uk": "ПСЗ-5І «Яструб»"
+   }
+  },
+  "Battle_Svoboda_Armor": {
+   "icon": "s2/Battle_Svoboda_Armor.png",
+   "names": {
+    "en": "PSZ-5V Guardian of Freedom Suit",
+    "ru": "ПСЗ-5В «Страж свободы»",
+    "uk": "ПСЗ-5В «Страж волі»"
+   }
+  },
+  "Battle_Varta_Armor": {
+   "icon": "s2/Battle_Varta_Armor.png",
+   "names": {
+    "en": "PSZ-20W Convoy",
+    "ru": "ПСЗ-20W «Конвой»",
+    "uk": "ПСЗ-20W «Конвой»"
+   }
+  },
+  "Bear": {
+   "names": {
+    "en": "Bear",
+    "ru": "Детектор «Медведь»"
+   }
+  },
+  "Beer": {
+   "icon": "s2/Beer.png",
+   "names": {
+    "en": "Beer",
+    "ru": "Пиво"
+   }
+  },
+  "Blueprint_Gvintar_Upgrade_1": {
+   "icon": "s2/Blueprint_Gvintar_Upgrade_1.png",
+   "names": {
+    "en": "Blueprint: Return Mechanism Sleeve Tightener"
+   }
+  },
+  "Blueprint_Heavy_Svoboda_Armor_Upgrade_1": {
+   "icon": "s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_1.png",
+   "names": {
+    "en": "Blueprint: Lead Container"
+   }
+  },
+  "Blueprint_Heavy_Svoboda_Armor_Upgrade_2": {
+   "icon": "s2/Blueprint_Heavy_Svoboda_Armor_Upgrade_2.png",
+   "names": {
+    "en": "Blueprint: Camel Hydration System"
+   }
+  },
+  "Bolota": {
+   "icon": "s2/Bolota.png",
+   "names": {
+    "en": "Swamps",
+    "pl": "Wielkie Bagna",
+    "ru": "Болота"
+   }
+  },
+  "BordulinPDA": {
+   "names": {
+    "ru": "КПК Бородулина"
+   }
+  },
+  "Bread": {
+   "icon": "s2/Bread.png",
+   "names": {
+    "en": "Bread",
+    "pl": "Chleb",
+    "ru": "Батон",
+    "uk": "Хліб"
+   }
+  },
+  "CArtifactBouncyBall": {
+   "icon": "s2/CArtifactBouncyBall.png",
+   "names": {
+    "en": "Skipjack",
+    "ru": "Попрыгунчик"
+   }
+  },
+  "CArtifactBubble": {
+   "icon": "s2/CArtifactBubble.png",
+   "names": {
+    "en": "Bubble",
+    "pl": "Bąbel",
+    "ru": "Пузырь",
+    "uk": "Пузир"
+   }
+  },
+  "CArtifactBun": {
+   "icon": "s2/CArtifactBun.png",
+   "names": {
+    "en": "Kolobok",
+    "fr": "Kolobok",
+    "pl": "Kulebiak",
+    "ru": "Колобок",
+    "uk": "Колобок"
+   }
+  },
+  "CArtifactBung": {
+   "icon": "s2/CArtifactBung.png",
+   "names": {
+    "en": "Horn",
+    "ru": "Рог"
+   }
+  },
+  "CArtifactChunkMeat": {
+   "icon": "s2/CArtifactChunkMeat.png",
+   "names": {
+    "en": "Meat Chunk",
+    "pl": "Kotlet",
+    "ru": "Ломоть мяса",
+    "uk": "Скиба м'яса"
+   }
+  },
+  "CArtifactCottonWool": {
+   "icon": "s2/CArtifactCottonWool.png",
+   "names": {
+    "en": "Crust",
+    "ru": "Скорлупа"
+   }
+  },
+  "CArtifactCrystalThorn": {
+   "icon": "s2/CArtifactCrystalThorn.png",
+   "names": {
+    "en": "Crystal Thorn",
+    "fr": "Épine cristalline",
+    "pl": "Kryształowy Kolec",
+    "ru": "Кристальная колючка",
+    "uk": "Кристальна колючка"
+   }
+  },
+  "CArtifactDevilsMushroom": {
+   "icon": "s2/CArtifactDevilsMushroom.png",
+   "names": {
+    "en": "Devil's Mushroom",
+    "ru": "Чёртов гриб"
+   }
+  },
+  "CArtifactEchinus": {
+   "icon": "s2/CArtifactEchinus.png",
+   "names": {
+    "en": "Urchin",
+    "pl": "Jeżowiec",
+    "ru": "Морской ёж"
+   }
+  },
+  "CArtifactKryptonite": {
+   "icon": "s2/CArtifactKryptonite.png",
+   "names": {
+    "en": "Mold",
+    "ru": "Плесень"
+   }
+  },
+  "CArtifactLiquidStone": {
+   "icon": "s2/CArtifactLiquidStone.png",
+   "names": {
+    "en": "Liquid Rock",
+    "ru": "Жидкий камень"
+   }
+  },
+  "CArtifactMica": {
+   "icon": "s2/CArtifactMica.png",
+   "names": {
+    "en": "Mica",
+    "fr": "Gelée",
+    "pl": "Mika",
+    "ru": "Слюда",
+    "uk": "Слюда"
+   }
+  },
+  "CArtifactPellicle": {
+   "icon": "s2/CArtifactPellicle.png",
+   "names": {
+    "en": "Pellicle",
+    "pl": "Błona",
+    "ru": "Плёнка",
+    "uk": "Плівка"
+   }
+  },
+  "CArtifactPlasticine": {
+   "icon": "s2/CArtifactPlasticine.png",
+   "names": {
+    "en": "Ciliate",
+    "ru": "Инфузория"
+   }
+  },
+  "CArtifactRosin": {
+   "icon": "s2/CArtifactRosin.png",
+   "names": {
+    "en": "Tourist's Breakfast",
+    "pl": "Konserwa",
+    "ru": "Завтрак туриста",
+    "uk": "Консерви"
+   }
+  },
+  "CArtifactSlime": {
+   "icon": "s2/CArtifactSlime.png",
+   "names": {
+    "en": "Slime",
+    "fr": "Slime",
+    "pl": "Śluz",
+    "ru": "Слизь",
+    "uk": "Слиз"
+   }
+  },
+  "CArtifactSlug": {
+   "icon": "s2/CArtifactSlug.png",
+   "names": {
+    "en": "Slug",
+    "fr": "Limace",
+    "pl": "Ślimak",
+    "ru": "Слизняк",
+    "uk": "Слимак"
+   }
+  },
+  "CArtifactThorn": {
+   "icon": "s2/CArtifactThorn.png",
+   "names": {
+    "en": "Thorn",
+    "pl": "Kolec",
+    "ru": "Колючка"
+   }
+  },
+  "CannedFood": {
+   "icon": "s2/CannedFood.png",
+   "names": {
+    "en": "Canned Food",
+    "ru": "Консервы"
+   }
+  },
+  "ChemZavod": {
+   "names": {
+    "en": "Chemical Plant",
+    "uk": "Хімзавод"
+   }
+  },
+  "Cinnamon": {
+   "icon": "s2/Cinnamon.png",
+   "names": {
+    "en": "Vinca",
+    "pl": "Barwinek",
+    "ru": "«Барвинок»",
+    "uk": "Барвінок"
+   }
+  },
+  "ClickerAnomaly": {
+   "icon": "s2/ClickerAnomaly.png",
+   "names": {
+    "en": "Clicker",
+    "uk": "Хлопавка"
+   }
+  },
+  "Corpus": {
+   "icon": "s2/Corpus.png",
+   "names": {
+    "en": "Corps",
+    "uk": "Корпус"
+   }
+  },
+  "DLC00_Deluxe_Flashdrive_IV": {
+   "names": {
+    "ru": "Флешка Вениамина IV"
+   }
+  },
+  "DLC00_Deluxe_Flashdrive_V": {
+   "names": {
+    "ru": "Флешка/КПК Вениамина V"
+   }
+  },
+  "DLC00_JournalistPDA": {
+   "icon": "s2/DLC00_JournalistPDA.png",
+   "names": {
+    "en": "The Journalist's PDA",
+    "ru": "КПК Журналиста"
+   }
+  },
+  "DLC00_PreOrder_Flashdrive_I": {
+   "names": {
+    "ru": "Флешка Журналиста"
+   }
+  },
+  "DLC00_PreOrder_Flashdrive_II": {
+   "names": {
+    "ru": "Флешка Журналиста"
+   }
+  },
+  "DLC00_PreOrder_Flashdrive_III": {
+   "names": {
+    "ru": "Флешка Журналиста"
+   }
+  },
+  "Deafult_Military_Armor": {
+   "icon": "s2/Deafult_Military_Armor.png",
+   "names": {
+    "ru": "Бронежилет ПСЗ-7"
+   }
+  },
+  "Default_Military_Armor": {
+   "names": {
+    "ru": "Бронежилет ПСЗ-7"
+   }
+  },
+  "DetectorOko": {
+   "names": {
+    "ru": "Детектор «Око»"
+   }
+  },
+  "DevatyjPDA": {
+   "names": {
+    "ru": "КПК Девятого"
+   }
+  },
+  "DickyOstrov": {
+   "names": {
+    "en": "Wild Island",
+    "uk": "Дикий острів"
+   }
+  },
+  "DvupalovVodka": {
+   "names": {
+    "ru": "«Волшебная» водка"
+   }
+  },
+  "E02_MQ02_BS_PDA": {
+   "icon": "s2/E02_MQ02_BS_PDA.png",
+   "names": {
+    "en": "Message from Mug",
+    "ru": "КПК бандита"
+   }
+  },
+  "E02_MQ03_RebraKey": {
+   "names": {
+    "ru": "Ключ от дверного замка"
+   }
+  },
+  "E02_MQ03_RebraPDA_MSOP": {
+   "names": {
+    "ru": "КПК мсоповца"
+   }
+  },
+  "E02_MQ03_RebraSphereKey": {
+   "names": {
+    "ru": "Ключ-карта от коллекторов Сферы"
+   }
+  },
+  "E02_MQ03_RihterNorthKey": {
+   "names": {
+    "ru": "Ключ от КПП «Север»"
+   }
+  },
+  "E02_MQ03_VartaPDA": {
+   "names": {
+    "ru": "КПК вартовца"
+   }
+  },
+  "E02_MQ03_VartaSensors": {
+   "names": {
+    "ru": "Сенсоры «Варты»"
+   }
+  },
+  "E02_SQ01_HmuriyPDA": {
+   "names": {
+    "ru": "КПК Хмурого"
+   }
+  },
+  "E02_SQ01_RabinaPDA": {
+   "names": {
+    "ru": "КПК с трупа Рябины"
+   }
+  },
+  "E02_SQ01_ZorikPDA": {
+   "names": {
+    "ru": "КПК Жорика"
+   }
+  },
+  "E03_01_ChernozemPDA": {
+   "names": {
+    "ru": "КПК Чернозёма"
+   }
+  },
+  "E03_02_OldTechDocs_X18": {
+   "names": {
+    "ru": "Документация по «Изделию 81»"
+   }
+  },
+  "E03_05_NestorNote": {
+   "names": {
+    "ru": "Блокнот Нестора"
+   }
+  },
+  "E03_05_NestorPass": {
+   "names": {
+    "ru": "Ключ-карта от мастерской Кондёра"
+   }
+  },
+  "E03_MQ01_GoshaMogilaPDA": {
+   "names": {
+    "ru": "КПК Гоши Могилы"
+   }
+  },
+  "E03_MQ02_IskraPDA": {
+   "names": {
+    "ru": "КПК искровца"
+   }
+  },
+  "E03_MQ02_IsolatorKeys": {
+   "names": {
+    "ru": "Тяжёлый ключ"
+   }
+  },
+  "E03_MQ02_ZmeevikPDA": {
+   "names": {
+    "ru": "КПК Змеевика"
+   }
+  },
+  "E03_MQ04_Key": {
+   "names": {
+    "ru": "Металлический ключ"
+   }
+  },
+  "E03_MQ05_BanditPDA": {
+   "names": {
+    "ru": "КПК бандита Варана"
+   }
+  },
+  "E04_MQ02_BasementKey": {
+   "names": {
+    "ru": "Ключ от подвала Станции «Азимут»"
+   }
+  },
+  "E04_MQ02_PDAWithAudiolog": {
+   "names": {
+    "ru": "КПК майора Григорченко"
+   }
+  },
+  "E04_MQ02_Recorder": {
+   "names": {
+    "ru": "КПК с записью отчёта для НИИЧАЗа"
+   }
+  },
+  "E04_NoteDubnyjToBrodyagaItem": {
+   "names": {
+    "ru": "Записка для Бродяги"
+   }
+  },
+  "E04_Note_UnityNote": {
+   "names": {
+    "ru": "Лист из личного дневника"
+   }
+  },
+  "E04_SQ01_LodochkaContainer": {
+   "names": {
+    "ru": "Груз для «Полдня»"
+   }
+  },
+  "E04_SQ01_PDAStalker": {
+   "names": {
+    "ru": "КПК Карима Циклопа"
+   }
+  },
+  "E04_SQ02_ControlRoomKey": {
+   "names": {
+    "ru": "Ключ от рубки"
+   }
+  },
+  "E04_SQ02_KvaskaPDA": {
+   "names": {
+    "ru": "КПК Квашки"
+   }
+  },
+  "E05_MQ01_EchoReport": {
+   "names": {
+    "ru": "Отчёт о результатах наблюдения пси-излучений в регионе"
+   }
+  },
+  "E05_MQ01_ShterevDiary": {
+   "names": {
+    "ru": "Дневник Штерева"
+   }
+  },
+  "E05_MQ01_ShterevPDA": {
+   "names": {
+    "ru": "КПК Штерева"
+   }
+  },
+  "E05_MQ01_VartaSensors": {
+   "names": {
+    "ru": "Сенсоры «Варты»"
+   }
+  },
+  "E05_MQ02_KalanchaMap": {
+   "names": {
+    "ru": "Карта профессора Каланчи"
+   }
+  },
+  "E05_MQ02_ZveroboyPDA": {
+   "names": {
+    "ru": "КПК Зверобоя"
+   }
+  },
+  "E05_MQ03_KalanchaDocuments": {
+   "names": {
+    "ru": "Записи сеансов связи"
+   }
+  },
+  "E05_MQ03_LebedevAudiolog": {
+   "names": {
+    "ru": "КПК Лебедева"
+   }
+  },
+  "E05_MQ03_NimbleDiary": {
+   "names": {
+    "ru": "Записка от Шустрого"
+   }
+  },
+  "E05_MQ03_NimblePDA": {
+   "names": {
+    "ru": "КПК Шустрого"
+   }
+  },
+  "E05_SQ01_VartaPatrolRoute": {
+   "names": {
+    "ru": "Расписание патрулей"
+   }
+  },
+  "E05_SQ03_DocsAboutX11Equipment": {
+   "names": {
+    "ru": "Документы на имя сержанта Шаврука"
+   }
+  },
+  "E05_SQ03_PDASavruk": {
+   "names": {
+    "ru": "КПК сержанта Шаврука"
+   }
+  },
+  "E05_SQ03_Parts": {
+   "names": {
+    "ru": "Детали для пси-защиты"
+   }
+  },
+  "E05_SQ04_GunParts": {
+   "names": {
+    "ru": "Вартовское оружие и детали к нему"
+   }
+  },
+  "E05_SQ04_LapaPDA": {
+   "names": {
+    "ru": "КПК Артура Лапы"
+   }
+  },
+  "E06_MQ01_AgathaNote_Item": {
+   "names": {
+    "ru": "Записка на дорогой бумаге"
+   }
+  },
+  "E06_MQ01_Card": {
+   "names": {
+    "ru": "Зелёная ключ-карта"
+   }
+  },
+  "E06_MQ01_CryptoKey": {
+   "names": {
+    "ru": "Ключ от подсобки"
+   }
+  },
+  "E06_MQ01_DalinWindow_Item": {
+   "names": {
+    "ru": "Поздравление с днём рождения"
+   }
+  },
+  "E06_MQ01_ExperimentNote_Item": {
+   "names": {
+    "ru": "Рабочая переписка"
+   }
+  },
+  "E06_MQ01_SciMagazine_Item": {
+   "names": {
+    "ru": "Вырезка из научного журнала"
+   }
+  },
+  "E06_MQ01_ZombieNote_Item": {
+   "names": {
+    "ru": "Бирка подопытного"
+   }
+  },
+  "E06_MQ03_DalinData": {
+   "names": {
+    "ru": "Флеш-накопитель с архивом НИИЧАЗа"
+   }
+  },
+  "E07_EQ01_ZelenyjPDA": {
+   "names": {
+    "ru": "КПК Коли Зелёного"
+   }
+  },
+  "E07_MQ01_Fuse": {
+   "names": {
+    "ru": "Высоковольтный предохранитель"
+   }
+  },
+  "E07_MQ01_HorsPDA": {
+   "names": {
+    "ru": "КПК Хорса"
+   }
+  },
+  "E07_MQ01_SinajAudiolog": {
+   "names": {
+    "ru": "КПК Синяя"
+   }
+  },
+  "E07_MQ01_SkiperPDA": {
+   "names": {
+    "ru": "КПК Шкипера"
+   }
+  },
+  "E07_MQ01_TihiyDocuments": {
+   "names": {
+    "ru": "Бухгалтерские записи Тихого"
+   }
+  },
+  "E07_MQ02_PripoyKey": {
+   "names": {
+    "ru": "Ключ Припоя"
+   }
+  },
+  "E07_MQ02_SyhinOffice_Item": {
+   "names": {
+    "ru": "Приказ о переводе Сухина на Сферу"
+   }
+  },
+  "E07_MQ02_SyhinPDA_Item": {
+   "names": {
+    "ru": "КПК капитана Сухина"
+   }
+  },
+  "E07_MQ02_SyhinStash_Item": {
+   "names": {
+    "ru": "История болезни Сухина"
+   }
+  },
+  "E07_MQ03_ArchiveRecord": {
+   "names": {
+    "ru": "Диктофон с инвентарным номером"
+   }
+  },
+  "E07_MQ03_ControlEmitter": {
+   "names": {
+    "ru": "Контрольный Излучатель"
+   }
+  },
+  "E07_MQ03_SciDictaphone1": {
+   "names": {
+    "ru": "Диктофон неизвестного агента с Завода ЦМД «Луч», ч. 1"
+   }
+  },
+  "E07_MQ03_SciDictaphone2": {
+   "names": {
+    "ru": "Диктофон неизвестного агента с Завода ЦМД «Луч», ч. 2"
+   }
+  },
+  "E07_MQ03_SciDictaphone3": {
+   "names": {
+    "ru": "Диктофон неизвестного агента с Завода ЦМД «Луч», ч. 3"
+   }
+  },
+  "E07_PsyEmitter": {
+   "names": {
+    "ru": "Излучатель"
+   }
+  },
+  "E07_SQ01_LinzaPDA": {
+   "names": {
+    "ru": "КПК Линзы"
+   }
+  },
+  "E07_SQ01_MPDA_DadyaLenya": {
+   "names": {
+    "ru": "М-КПК Дяди Лёни"
+   }
+  },
+  "E07_SQ01_NoteForDadyaLenya": {
+   "names": {
+    "ru": "Записка для Дяди Лёни"
+   }
+  },
+  "E07_SQ01_SurgeryKit": {
+   "names": {
+    "ru": "Хирургический набор Николаича"
+   }
+  },
+  "E08_DvupolovRecorder_PrisonCell": {
+   "names": {
+    "ru": "Диктофон Двупалова"
+   }
+  },
+  "E08_EQ01_CollarBayun": {
+   "names": {
+    "ru": "Электронный ошейник №1"
+   }
+  },
+  "E08_EQ02_CollarSnork": {
+   "names": {
+    "ru": "Электронный ошейник №2"
+   }
+  },
+  "E08_EQ02_DenyaByvalyiPDA": {
+   "names": {
+    "ru": "КПК Бывалого"
+   }
+  },
+  "E08_EQ03_CollarBloodsucker": {
+   "names": {
+    "ru": "Электронный ошейник №3"
+   }
+  },
+  "E08_EQ03_KrikPDA": {
+   "names": {
+    "ru": "КПК Мамая"
+   }
+  },
+  "E08_MQ01_ActivationInstruction": {
+   "names": {
+    "ru": "Памятка по процедуре активации ЦВП «Зеркало»"
+   }
+  },
+  "E08_MQ01_DesiatovPlea": {
+   "names": {
+    "ru": "Заявление аспиранта Десятова"
+   }
+  },
+  "E08_MQ01_Desiatov_SumUp": {
+   "names": {
+    "ru": "Диктофон аспиранта Десятова"
+   }
+  },
+  "E08_MQ01_PhantomProtocol": {
+   "names": {
+    "ru": "Протокол действий при Наведённых иллюзиях"
+   }
+  },
+  "E08_MQ01_Razumovskij_Experiments": {
+   "names": {
+    "ru": "Наблюдения профессора Разумовского, ч. 1"
+   }
+  },
+  "E08_MQ01_Razumovskij_GoingMad": {
+   "names": {
+    "ru": "Наблюдения профессора Разумовского, ч. 2"
+   }
+  },
+  "E08_MQ01_TruePhantomProtocol": {
+   "names": {
+    "ru": "Настоящий протокол действий при Наведённых иллюзиях"
+   }
+  },
+  "E08_MQ01_TuningInstruction": {
+   "names": {
+    "ru": "Мануал по настройке связи с объектами Сети-Х"
+   }
+  },
+  "E08_MQ03_Audiolog_MutantsHowl_1": {
+   "icon": "s2/E08_MQ03_Audiolog_MutantsHowl_1.png",
+   "names": {
+    "en": "Recording of Professor Dvupalov’s Experiment from 5/21/2006"
+   }
+  },
+  "E08_MQ03_Audiolog_StrelokX5": {
+   "names": {
+    "en": "Recording from Strelok’s Stash beneath Ahroprom"
+   }
+  },
+  "E08_MQ03_CollarsTestsData": {
+   "names": {
+    "ru": "Отчёт об испытаниях"
+   }
+  },
+  "E08_MQ03_ConrolRoomKey": {
+   "names": {
+    "ru": "Ключ от рубки"
+   }
+  },
+  "E08_MQ03_DvupaloDairy": {
+   "names": {
+    "ru": "Дневник наблюдений профессора Двупалова"
+   }
+  },
+  "E08_MQ03_DvupalovRecorder_Mutants": {
+   "names": {
+    "ru": "Диктофон с записями экспериментов"
+   }
+  },
+  "E08_MQ03_KeycardLabX5": {
+   "names": {
+    "ru": "Ключ-карта от Х5"
+   }
+  },
+  "E08_MQ03_LetterForChubko": {
+   "names": {
+    "ru": "Письмо профессору Чубко"
+   }
+  },
+  "E08_MQ03_ListWarning": {
+   "names": {
+    "ru": "Скомканная должностная записка"
+   }
+  },
+  "E08_MQ03_ReceptionNote": {
+   "names": {
+    "ru": "Записка из регистратуры"
+   }
+  },
+  "E08_MQ03_SciArticle": {
+   "names": {
+    "ru": "Обрывок научной статьи"
+   }
+  },
+  "E08_MQ03_SherbaToDvupalov_Note": {
+   "names": {
+    "ru": "Записка для Двупалова"
+   }
+  },
+  "E08_MQ03_StrelokPDA": {
+   "names": {
+    "ru": "КПК Стрелка"
+   }
+  },
+  "E08_MQ03_SuppressorDocs": {
+   "names": {
+    "ru": "Чертёж Подавителя"
+   }
+  },
+  "E08_MQ04_Explosives": {
+   "names": {
+    "ru": "Взрывчатка для подрыва «Дуги»"
+   }
+  },
+  "E08_MQ04_UndergroundKeycard": {
+   "names": {
+    "ru": "Ключ-карта от одного из техпомещений «Дуги»"
+   }
+  },
+  "E08_MQ05_Audiolog_Faust4_FindDoctor": {
+   "names": {
+    "en": "Orders to Strider"
+   }
+  },
+  "E08_MQ05_Audiolog_FaustGerman1_Deal": {
+   "names": {
+    "en": "Recording of a Conversation between Faust and Hermann, pt. 1"
+   }
+  },
+  "E08_MQ05_Audiolog_FaustGerman2_SkifAlert": {
+   "names": {
+    "en": "Recording of a Conversation between Faust and Hermann, pt. 2"
+   }
+  },
+  "E08_MQ05_Audiolog_FaustGerman3_Skaner": {
+   "names": {
+    "en": "Recording of a Conversation between Faust and Hermann, pt. 3"
+   }
+  },
+  "E08_SQ01_Audiolog_KardanAndDvupalovAboutDevice": {
+   "icon": "s2/E08_SQ01_Audiolog_KardanAndDvupalovAboutDevice.png",
+   "names": {
+    "en": "Recording of Professor Dvupalov’s Conversation with Cardan, pt. 1"
+   }
+  },
+  "E08_SQ01_Audiolog_KardanCreatedDevice": {
+   "icon": "s2/E08_SQ01_Audiolog_KardanCreatedDevice.png",
+   "names": {
+    "en": "Recording of Professor Dvupalov’s Conversation with Cardan, pt. 2"
+   }
+  },
+  "E08_SQ01_KardanDvupalovFirstPDA": {
+   "names": {
+    "ru": "КПК Кардана"
+   }
+  },
+  "E08_SQ01_KardanDvupalovSecondPDA": {
+   "names": {
+    "ru": "Запасной КПК Кардана"
+   }
+  },
+  "E08_SQ01_KartezhnykPDA_Item": {
+   "names": {
+    "ru": "КПК Кепса"
+   }
+  },
+  "E10_MQ01_ArhipPDA_Item": {
+   "names": {
+    "ru": "КПК Архипа Лишайника"
+   }
+  },
+  "E10_MQ01_LeaderPDA_Item": {
+   "names": {
+    "ru": "КПК Волкодава"
+   }
+  },
+  "E10_MQ01_SiviyPDA_Item": {
+   "names": {
+    "ru": "КПК Сивого"
+   }
+  },
+  "E10_MQ01_TundraPDA_Item": {
+   "names": {
+    "ru": "КПК Тундры"
+   }
+  },
+  "E10_MQ01_VolkodavPDA_Item": {
+   "names": {
+    "ru": "КПК с координатами местонахождения Доктора"
+   }
+  },
+  "E10_MQ01_YarlPDA_Item": {
+   "names": {
+    "ru": "КПК Ярла"
+   }
+  },
+  "E10_MQ02_Monolith_Report": {
+   "names": {
+    "ru": "Записка с отчётом из госпиталя «Монолита»"
+   }
+  },
+  "E10_MQ02_OldPDA": {
+   "names": {
+    "ru": "Старый М-КПК монолитовца"
+   }
+  },
+  "E10_MQ02_PDABrodagaItem": {
+   "names": {
+    "ru": "М-КПК Бродяги"
+   }
+  },
+  "E10_MQ02_Regenerator": {
+   "names": {
+    "ru": "Регенератор"
+   }
+  },
+  "E11_MQ01_Cartridge": {
+   "names": {
+    "ru": "Картридж"
+   }
+  },
+  "E11_MQ01_DeciphererX3": {
+   "names": {
+    "ru": "Дешифратор"
+   }
+  },
+  "E11_MQ01_StalkerOasisPDA": {
+   "names": {
+    "ru": "КПК сталкера из Х3"
+   }
+  },
+  "E11_MQ01_Tracker": {
+   "names": {
+    "ru": "Маячок Тихого"
+   }
+  },
+  "E11_MQ02_2ndKaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова, ч. 2"
+   }
+  },
+  "E11_MQ02_3rdKaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова, ч. 3"
+   }
+  },
+  "E11_MQ02_Audiolog_ScarAndOzersky": {
+   "names": {
+    "ru": "Запись разговора Шрама и Озёрского"
+   }
+  },
+  "E11_MQ02_CodeToBunkerDoorNote": {
+   "names": {
+    "ru": "Указания для руководящего персонала Станции «Орбита»"
+   }
+  },
+  "E11_MQ02_Dialog_ScarAndOzersky": {
+   "icon": "s2/E11_MQ02_Dialog_ScarAndOzersky.png",
+   "names": {
+    "en": "Recording of a Conversation Between Scar and Ozersky"
+   }
+  },
+  "E11_MQ02_InstAntNote": {
+   "names": {
+    "ru": "Инструкция перезапуска антенны на «Орбите»"
+   }
+  },
+  "E11_MQ02_KaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова"
+   }
+  },
+  "E11_MQ02_KeyCardX15": {
+   "names": {
+    "ru": "Ключ-карта от Лаборатории Х15"
+   }
+  },
+  "E11_MQ03_PTSthreadNote_QIP": {
+   "names": {
+    "ru": "Отчёт проекта «НИТЬ»"
+   }
+  },
+  "E11_MQ04_DoorKey": {
+   "names": {
+    "ru": "Ключ от камеры"
+   }
+  },
+  "E11_MQ04_PDA_Chernozem": {
+   "names": {
+    "ru": "КПК Чернозёма"
+   }
+  },
+  "E11_MQ04_PDA_Nestor": {
+   "names": {
+    "ru": "КПК Нестора"
+   }
+  },
+  "E11_MQ04_Protocol78_Instruction": {
+   "names": {
+    "ru": "Отчёт по выполнению протокола 78-А"
+   }
+  },
+  "E12_MO01_DuhToRihterItem": {
+   "names": {
+    "ru": "Записка от Духа"
+   }
+  },
+  "E12_MO01_GroupsNoteItem": {
+   "names": {
+    "ru": "Список проходящих через Рубеж"
+   }
+  },
+  "E12_MO01_InstructionItem": {
+   "names": {
+    "ru": "Инструкция к устройству"
+   }
+  },
+  "E12_MO01_PDAOzerski": {
+   "names": {
+    "ru": "КПК профессора Озёрского"
+   }
+  },
+  "E12_MO01_PhotoIskra": {
+   "names": {
+    "ru": "Фотография с запиской"
+   }
+  },
+  "E12_MQ01_DuhStashKey": {
+   "names": {
+    "ru": "Ключ-карта от бункера Духа"
+   }
+  },
+  "E12_MQ01_PDADuh": {
+   "names": {
+    "ru": "КПК Духа"
+   }
+  },
+  "E12_MQ01_SkanerMItem": {
+   "names": {
+    "ru": "Сканер-М"
+   }
+  },
+  "E14_MQ01_Coordinates_Item": {
+   "names": {
+    "ru": "КПК с картой военных объектов Припяти"
+   }
+  },
+  "E14_MQ01_Helicopter_Item": {
+   "names": {
+    "ru": "Флешка из Прачечной"
+   }
+  },
+  "E14_MQ01_LaundromatDocs_Item": {
+   "names": {
+    "ru": "Документы из бывшего лагеря военных в Припяти"
+   }
+  },
+  "E14_MQ01_Prometey_Spark_Item": {
+   "names": {
+    "ru": "КПК мёртвого искровца из «Прометея»"
+   }
+  },
+  "E14_MQ01_Prometey_Varta_Item": {
+   "names": {
+    "ru": "КПК мёртвого вартовца из «Прометея»"
+   }
+  },
+  "E14_MQ01_SCAT7Flask_Item": {
+   "names": {
+    "ru": "Флешка с координатами входов в Фундамент"
+   }
+  },
+  "E14_MQ02_MobileBunkers": {
+   "names": {
+    "ru": "Ключ-карта от бункеров"
+   }
+  },
+  "E14_MQ02_Tunnels": {
+   "names": {
+    "ru": "Ключ-карта от входа в тоннели"
+   }
+  },
+  "E15_MQ03_CartridgeItem": {
+   "names": {
+    "ru": "Картридж"
+   }
+  },
+  "E15_MQ03_ProjectYItem": {
+   "names": {
+    "ru": "Бумаги из лаборатории Кайманова"
+   }
+  },
+  "E16_AgentsFile_Atchive": {
+   "names": {
+    "ru": "Архив досье на Агентов О-Сознания"
+   }
+  },
+  "E16_MQ01_PDA_Scar": {
+   "names": {
+    "ru": "КПК Шрама"
+   }
+  },
+  "E16_MQ02_MarshalPDA": {
+   "names": {
+    "ru": "КПК Маршала"
+   }
+  },
+  "E16_MQ03_4thKaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова, ч. 4"
+   }
+  },
+  "E16_MQ03_5thKaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова, ч. 5"
+   }
+  },
+  "E16_MQ03_6thKaymanovDiary": {
+   "names": {
+    "ru": "Дневник Кайманова, ч. 6"
+   }
+  },
+  "E16_MQ03_CaribbeanDoc": {
+   "names": {
+    "ru": "Отчёт по Карибскому эксперименту, 1995 г."
+   }
+  },
+  "E16_MQ03_CartridgeSkif": {
+   "names": {
+    "ru": "Картридж"
+   }
+  },
+  "E16_MQ03_Instruction": {
+   "names": {
+    "ru": "Инструкция запуска О-КТА"
+   }
+  },
+  "E16_MQ03_KeyKard_Granite": {
+   "names": {
+    "ru": "Ключ-карта отряда охраны «Гранит»"
+   }
+  },
+  "E16_MQ03_StrelokPDA": {
+   "names": {
+    "ru": "КПК Стрелка"
+   }
+  },
+  "EArtifactAtom": {
+   "icon": "s2/EArtifactAtom.png",
+   "names": {
+    "en": "Glare",
+    "ru": "Блик"
+   }
+  },
+  "EArtifactBattery": {
+   "icon": "s2/EArtifactBattery.png",
+   "names": {
+    "en": "Battery",
+    "fr": "Batterie",
+    "pl": "Bateria",
+    "ru": "Батарейка"
+   }
+  },
+  "EArtifactChocolate": {
+   "icon": "s2/EArtifactChocolate.png",
+   "names": {
+    "en": "Chocolate Bar",
+    "ru": "Шоколадка"
+   }
+  },
+  "EArtifactCloud": {
+   "icon": "s2/EArtifactCloud.png",
+   "names": {
+    "en": "Harp",
+    "ru": "Арфа"
+   }
+  },
+  "EArtifactCrystalGlass": {
+   "icon": "s2/EArtifactCrystalGlass.png",
+   "names": {
+    "en": "Crest",
+    "ru": "Гребень",
+    "uk": "Гребінь"
+   }
+  },
+  "EArtifactDope": {
+   "icon": "s2/EArtifactDope.png",
+   "names": {
+    "en": "Thunderberry",
+    "ru": "Грозовая ягода"
+   }
+  },
+  "EArtifactDummy": {
+   "icon": "s2/EArtifactDummy.png",
+   "names": {
+    "en": "Shell",
+    "pl": "Muszla",
+    "ru": "Пустышка"
+   }
+  },
+  "EArtifactFlash": {
+   "icon": "s2/EArtifactFlash.png",
+   "names": {
+    "en": "Flash",
+    "fr": "Flash",
+    "pl": "Błysk",
+    "ru": "Вспышка"
+   }
+  },
+  "EArtifactJellyFish": {
+   "icon": "s2/EArtifactJellyFish.png",
+   "names": {
+    "en": "Sapphire",
+    "ru": "Сапфир"
+   }
+  },
+  "EArtifactMoonlight": {
+   "icon": "s2/EArtifactMoonlight.png",
+   "names": {
+    "en": "Moonlight",
+    "pl": "Blask Księżyca",
+    "ru": "Лунный свет"
+   }
+  },
+  "EArtifactRazor": {
+   "icon": "s2/EArtifactRazor.png",
+   "names": {
+    "en": "Starfish",
+    "ru": "Морская звезда"
+   }
+  },
+  "EArtifactSnowflake": {
+   "icon": "s2/EArtifactSnowflake.png",
+   "names": {
+    "en": "Snowflake",
+    "pl": "Śnieżynka",
+    "ru": "Снежинка",
+    "uk": "Сніжинка"
+   }
+  },
+  "EArtifactSoul": {
+   "icon": "s2/EArtifactSoul.png",
+   "names": {
+    "en": "Soul",
+    "pl": "Dusza",
+    "ru": "Душа",
+    "uk": "Душа"
+   }
+  },
+  "EArtifactSparkler": {
+   "icon": "s2/EArtifactSparkler.png",
+   "names": {
+    "en": "Sparkler",
+    "pl": "Świecidełko",
+    "ru": "Бенгальский огонь"
+   }
+  },
+  "EArtifactThunderHedgehog": {
+   "icon": "s2/EArtifactThunderHedgehog.png",
+   "names": {
+    "en": "Lantern",
+    "ru": "Фонарь"
+   }
+  },
+  "EArtifactTow": {
+   "icon": "s2/EArtifactTow.png",
+   "names": {
+    "en": "Shop Class",
+    "ru": "Урок труда"
+   }
+  },
+  "EArtifactWorm": {
+   "icon": "s2/EArtifactWorm.png",
+   "names": {
+    "en": "Rat King",
+    "ru": "Крысиный король"
+   }
+  },
+  "EN_BuckLaunch_1": {
+   "names": {
+    "en": "Hoemaker-L",
+    "ru": "Holemaker-L"
+   }
+  },
+  "EN_ColimScope_1": {
+   "names": {
+    "en": "Collimator Sight",
+    "ru": "Коллиматорный прицел"
+   }
+  },
+  "EN_GLaunch_1": {
+   "names": {
+    "en": "Two-O-Three Underbarrel Grenade Launcher",
+    "ru": "Подствольный гранатомёт Two-oh-three"
+   }
+  },
+  "EN_GLaunch_2": {
+   "names": {
+    "ru": "Подствольный гранатомёт для GP37"
+   }
+  },
+  "EN_GoloScope_1": {
+   "names": {
+    "en": "Holographic Sight",
+    "ru": "Голографический прицел"
+   }
+  },
+  "EN_Silen_1": {
+   "names": {
+    "en": "Tactical Pistol Silencer",
+    "ru": "Пистолетный тактический глушитель"
+   }
+  },
+  "EN_Silen_2": {
+   "names": {
+    "en": "Pistol Silencer",
+    "ru": "Пистолетный глушитель"
+   }
+  },
+  "EN_Silen_3": {
+   "names": {
+    "en": "Assault Rifle Silencer",
+    "ru": "Штурмовой глушитель"
+   }
+  },
+  "EN_Silen_4": {
+   "names": {
+    "en": "Sniper Rifle Silencer",
+    "ru": "Снайперский глушитель"
+   }
+  },
+  "EN_Silencer_1": {
+   "names": {
+    "en": "Tactical Pistol Silencer"
+   }
+  },
+  "EN_X2Scope_1": {
+   "names": {
+    "en": "RNBW 2x Scope",
+    "ru": "Прицел RNBW 2Х"
+   }
+  },
+  "EN_X3Scope_1": {
+   "names": {
+    "en": "SUSAT 3X Scope"
+   }
+  },
+  "EN_X4Scope_1": {
+   "names": {
+    "en": "ACOG 4x Scope",
+    "ru": "Прицел ACOG 4Х"
+   }
+  },
+  "EN_X8Scope_1": {
+   "names": {
+    "en": "Storm Falcon 8x Scope",
+    "ru": "Прицел Storm Falcon 8Х"
+   }
+  },
+  "EQ08_FreshBread": {
+   "names": {
+    "ru": "Свежий хлеб"
+   }
+  },
+  "EQ109_MarikTopotPDA": {
+   "names": {
+    "ru": "КПК Марика Топота"
+   }
+  },
+  "EQ109_VitekLunaPDA": {
+   "names": {
+    "ru": "КПК Витька Луны"
+   }
+  },
+  "EQ10_PastuhPDA": {
+   "names": {
+    "ru": "КПК Витьки Пастуха"
+   }
+  },
+  "EQ110_DokaPDA": {
+   "names": {
+    "ru": "КПК Димы Доки"
+   }
+  },
+  "EQ110_HermitPDA": {
+   "names": {
+    "ru": "Записка Отшельника"
+   }
+  },
+  "EQ111_KorkaPDA": {
+   "names": {
+    "ru": "КПК Вовы Корки"
+   }
+  },
+  "EQ118_DeadIskraPDA": {
+   "names": {
+    "ru": "КПК мёртвого искровца"
+   }
+  },
+  "EQ11_NortonPDA": {
+   "names": {
+    "ru": "КПК Нортона"
+   }
+  },
+  "EQ13_FilimonPDA": {
+   "names": {
+    "ru": "КПК Филимона"
+   }
+  },
+  "EQ13_MihaPDA": {
+   "names": {
+    "ru": "КПК Михи Ковбоя"
+   }
+  },
+  "EQ140_IluhaVorobejPDA": {
+   "names": {
+    "ru": "КПК Илюхи Воробья"
+   }
+  },
+  "EQ141_TurgaPDA": {
+   "names": {
+    "ru": "КПК Коли Турги"
+   }
+  },
+  "EQ143_KolubPDA": {
+   "names": {
+    "ru": "КПК Колумба"
+   }
+  },
+  "EQ144_ArtemPodvodnikPDA": {
+   "names": {
+    "ru": "КПК Артёма Подводника"
+   }
+  },
+  "EQ144_GlazgoPDA": {
+   "names": {
+    "ru": "КПК Глазго"
+   }
+  },
+  "EQ144_KucyjPDA": {
+   "names": {
+    "ru": "КПК Куцего"
+   }
+  },
+  "EQ145KostaKonusNote": {
+   "names": {
+    "ru": "Наблюдение за патрулями «Дуги»"
+   }
+  },
+  "EQ146_MonolithPDA": {
+   "names": {
+    "ru": "КПК Светлого"
+   }
+  },
+  "EQ148_KeyFromControllerHall": {
+   "names": {
+    "ru": "Ключ от актового зала"
+   }
+  },
+  "EQ148_KostasPDA": {
+   "names": {
+    "ru": "КПК солдата Костаса"
+   }
+  },
+  "EQ150_NoteOtshelnik": {
+   "names": {
+    "ru": "Записи Отшельника"
+   }
+  },
+  "EQ155_BromPDA": {
+   "names": {
+    "ru": "КПК Брома"
+   }
+  },
+  "EQ155_CollarController": {
+   "names": {
+    "ru": "Ошейник контролёра"
+   }
+  },
+  "EQ156_CaseBones": {
+   "names": {
+    "ru": "Чемоданчик с костями"
+   }
+  },
+  "EQ156_MorozPDA": {
+   "names": {
+    "ru": "КПК Жени Мороза"
+   }
+  },
+  "EQ161_kudravyjPDA": {
+   "names": {
+    "ru": "КПК искровца Кудрявого"
+   }
+  },
+  "EQ163_PripoyFuneralPaperNote": {
+   "names": {
+    "ru": "Записка с могилы Панаса"
+   }
+  },
+  "EQ165_TrachukPDA": {
+   "names": {
+    "ru": "КПК доцента Трачука"
+   }
+  },
+  "EQ165_USBTrachuk": {
+   "names": {
+    "ru": "Флешка с данными"
+   }
+  },
+  "EQ166_ValerianPDA": {
+   "names": {
+    "ru": "КПК Отца Валерьяна"
+   }
+  },
+  "EQ167_NoteOtshelnik": {
+   "names": {
+    "ru": "Записи Отшельника"
+   }
+  },
+  "EQ16_FaraPDA": {
+   "icon": "s2/EQ16_FaraPDA.png",
+   "names": {
+    "en": "Notes on Headlight’s PDA",
+    "ru": "КПК Фары"
+   }
+  },
+  "EQ26_EmptyFlashDrive": {
+   "names": {
+    "ru": "Пустая флешка"
+   }
+  },
+  "EQ26_FlashDriveWithData": {
+   "names": {
+    "ru": "Флешка с данными"
+   }
+  },
+  "EQ26_LevsaPDA": {
+   "names": {
+    "ru": "КПК Левши"
+   }
+  },
+  "EQ26_LevsaPDA_Alternative": {
+   "names": {
+    "ru": "КПК Левши"
+   }
+  },
+  "EQ29_TradeNote_Physical": {
+   "names": {
+    "ru": "Условия бартера"
+   }
+  },
+  "EQ30_DobryakPDA": {
+   "names": {
+    "ru": "КПК Азата Добряка"
+   }
+  },
+  "EQ30_ReshkaPDA": {
+   "names": {
+    "ru": "КПК Лёвы Решки"
+   }
+  },
+  "EQ30_TitunPDA": {
+   "names": {
+    "ru": "КПК Кирюхи Титуна"
+   }
+  },
+  "EQ35_LegendAdvice": {
+   "names": {
+    "ru": "Совет от Легенды"
+   }
+  },
+  "EQ35_LehaLegendPDA": {
+   "names": {
+    "ru": "КПК Лёхи Легенды"
+   }
+  },
+  "EQ35_VolanNoteSheet": {
+   "names": {
+    "ru": "Записка для Легенды"
+   }
+  },
+  "EQ36_KucherPDA": {
+   "names": {
+    "ru": "КПК Гены Кучера"
+   }
+  },
+  "EQ37_GromNote": {
+   "names": {
+    "ru": "Записка капитана Громова"
+   }
+  },
+  "EQ38_Instruction": {
+   "names": {
+    "ru": "Записка с инструкциями"
+   }
+  },
+  "EQ38_ThanksNote": {
+   "names": {
+    "ru": "Записка из схрона с энергетиками"
+   }
+  },
+  "EQ48_GiverPaper": {
+   "names": {
+    "ru": "Старая записка"
+   }
+  },
+  "EQ51_TemaJetPDA": {
+   "names": {
+    "ru": "КПК Рядового Тимченко"
+   }
+  },
+  "EQ52_PuzirPDA": {
+   "icon": "s2/EQ52_PuzirPDA.png",
+   "names": {
+    "en": "Shah’s Threats to Bubbs",
+    "ru": "КПК Пузыря"
+   }
+  },
+  "EQ58_TimurMolcanovPDA": {
+   "names": {
+    "ru": "КПК Гудвина"
+   }
+  },
+  "EQ60_PDAVovchik": {
+   "names": {
+    "ru": "КПК Вовчика Колдыбы"
+   }
+  },
+  "EQ64_MakisPDA": {
+   "names": {
+    "ru": "КПК Мякиша"
+   }
+  },
+  "EQ65AK74": {
+   "names": {
+    "ru": "Тишина"
+   }
+  },
+  "EQ65LosPDA": {
+   "names": {
+    "ru": "КПК Лёхи Лося"
+   }
+  },
+  "EQ65PiavkaPDA": {
+   "names": {
+    "ru": "КПК Стёпы Пиявки"
+   }
+  },
+  "EQ67UraKotPDA": {
+   "names": {
+    "ru": "КПК Юры Кота"
+   }
+  },
+  "EQ68_KubrakPDA": {
+   "names": {
+    "ru": "КПК солдата Кубрака"
+   }
+  },
+  "EQ70_DeadBodyPda": {
+   "names": {
+    "ru": "КПК сталкера, убитого мутантами"
+   }
+  },
+  "EQ73_EdikBaskaPDA": {
+   "names": {
+    "ru": "КПК Эдика Башки"
+   }
+  },
+  "EQ74_JitnichenkoPDA": {
+   "names": {
+    "ru": "КПК аспиранта Житниченко"
+   }
+  },
+  "EQ75AK74": {
+   "names": {
+    "ru": "Floater"
+   }
+  },
+  "EQ82_konserva": {
+   "names": {
+    "ru": "Протухшие консервы"
+   }
+  },
+  "EQ84_LotPDA": {
+   "names": {
+    "ru": "КПК Васьки Лота"
+   }
+  },
+  "EQ85_MelPDA": {
+   "names": {
+    "ru": "КПК Стёпы Тактика"
+   }
+  },
+  "EQ92_TunnelPDA": {
+   "names": {
+    "ru": "КПК Кирюхи Драйва"
+   }
+  },
+  "Echo": {
+   "names": {
+    "en": "Echo",
+    "ru": "Детектор «Отклик»"
+   }
+  },
+  "EchoE01": {
+   "names": {
+    "ru": "Детектор «Отклик»"
+   }
+  },
+  "EcoMedkit": {
+   "icon": "s2/EcoMedkit.png",
+   "names": {
+    "en": "Scientific Medkit",
+    "ru": "Научная аптечка"
+   }
+  },
+  "Electrocollar": {
+   "names": {
+    "ru": "Электронный ошейник"
+   }
+  },
+  "Empty": {
+   "names": {
+    "ru": "Пустышки"
+   }
+  },
+  "Energetic": {
+   "icon": "s2/Energetic.png",
+   "names": {
+    "en": "Non Stop Energy Drink",
+    "ru": "Энергетик NON STOP"
+   }
+  },
+  "Energetic_Limited": {
+   "names": {
+    "ru": "Энергетик NON STOP Limited Edition"
+   }
+  },
+  "Exoskeleton_Dolg_Armor": {
+   "icon": "s2/Exoskeleton_Dolg_Armor.png",
+   "names": {
+    "en": "Cuirass Exoskeleton",
+    "ru": "Экзоскелет «Панцирь»",
+    "uk": "Екзоскелет «Панцир»"
+   }
+  },
+  "Exoskeleton_Mercenaries_Armor": {
+   "icon": "s2/Exoskeleton_Mercenaries_Armor.png",
+   "names": {
+    "en": "Brummbar Exoskeleton",
+    "ru": "Экзоскелет «Брумбар»",
+    "uk": "Екзоскелет «Брумбар»"
+   }
+  },
+  "Exoskeleton_Monolith_Armor": {
+   "icon": "s2/Exoskeleton_Monolith_Armor.png",
+   "names": {
+    "en": "Diamond Exoskeleton",
+    "ru": "Экзоскелет «Алмаз»",
+    "uk": "Екзоскелет «Алмаз»"
+   }
+  },
+  "Exoskeleton_Neutral_Armor": {
+   "icon": "s2/Exoskeleton_Neutral_Armor.png",
+   "names": {
+    "en": "|image = Exoskeletoncop.jpg",
+    "pl": "Egzoszkielet",
+    "ru": "Экзоскелет",
+    "uk": "Екзоскелет"
+   }
+  },
+  "Exoskeleton_Svoboda_Armor": {
+   "icon": "s2/Exoskeleton_Svoboda_Armor.png",
+   "names": {
+    "en": "Liberty Exoskeleton",
+    "ru": "Экзоскелет «Воля»",
+    "uk": "Екзоскелет «Воля»"
+   }
+  },
+  "FArtifactBakedBolts": {
+   "icon": "s2/FArtifactBakedBolts.png",
+   "names": {
+    "en": "Flaw",
+    "ru": "Брак"
+   }
+  },
+  "FArtifactBurntHunk": {
+   "icon": "s2/FArtifactBurntHunk.png",
+   "names": {
+    "en": "Spinner",
+    "ru": "Вертушка"
+   }
+  },
+  "FArtifactCandle": {
+   "icon": "s2/FArtifactCandle.png",
+   "names": {
+    "en": "Petal",
+    "ru": "Лепесток"
+   }
+  },
+  "FArtifactCore": {
+   "icon": "s2/FArtifactCore.png",
+   "names": {
+    "en": "Torch",
+    "ru": "Факел"
+   }
+  },
+  "FArtifactCrystal": {
+   "icon": "s2/FArtifactCrystal.png",
+   "names": {
+    "en": "Crystal",
+    "fr": "Crystal",
+    "pl": "Kryształ",
+    "ru": "Кристалл",
+    "uk": "Кристал"
+   }
+  },
+  "FArtifactDeadSponge": {
+   "icon": "s2/FArtifactDeadSponge.png",
+   "names": {
+    "en": "Dead Sponge",
+    "ru": "Мёртвая губка"
+   }
+  },
+  "FArtifactDrops": {
+   "icon": "s2/FArtifactDrops.png",
+   "names": {
+    "en": "Droplets",
+    "fr": "Gouttelettes",
+    "pl": "Kropelki",
+    "ru": "Капли",
+    "uk": "Краплі"
+   }
+  },
+  "FArtifactEye": {
+   "icon": "s2/FArtifactEye.png",
+   "names": {
+    "en": "Eye",
+    "pl": "Oko",
+    "ru": "Глаз",
+    "uk": "Око"
+   }
+  },
+  "FArtifactFireBall": {
+   "icon": "s2/FArtifactFireBall.png",
+   "names": {
+    "en": "Fireball",
+    "fr": "Bolide",
+    "pl": "Kula Ognista",
+    "ru": "Огненный шар"
+   }
+  },
+  "FArtifactFireworks": {
+   "icon": "s2/FArtifactFireworks.png",
+   "names": {
+    "en": "Meat Lighter",
+    "ru": "Мясная зажигалка"
+   }
+  },
+  "FArtifactGlass": {
+   "icon": "s2/FArtifactGlass.png",
+   "names": {
+    "en": "Cavity",
+    "ru": "Полость"
+   }
+  },
+  "FArtifactHellishHedgehog": {
+   "icon": "s2/FArtifactHellishHedgehog.png",
+   "names": {
+    "en": "Magma",
+    "ru": "Магма"
+   }
+  },
+  "FArtifactMomsBeads": {
+   "icon": "s2/FArtifactMomsBeads.png",
+   "names": {
+    "en": "Mama's Beads",
+    "pl": "Korale Mamy",
+    "ru": "Мамины бусы",
+    "uk": "Мамине намисто"
+   }
+  },
+  "FArtifactPlasma": {
+   "icon": "s2/FArtifactPlasma.png",
+   "names": {
+    "en": "Plasma",
+    "ru": "Плазма"
+   }
+  },
+  "FArtifactResin": {
+   "icon": "s2/FArtifactResin.png",
+   "names": {
+    "en": "Lyre",
+    "ru": "Лира"
+   }
+  },
+  "FArtifactRingOmnipotence": {
+   "icon": "s2/FArtifactRingOmnipotence.png",
+   "names": {
+    "en": "Hypercube",
+    "ru": "Гиперкуб"
+   }
+  },
+  "FArtifactSteak": {
+   "icon": "s2/FArtifactSteak.png",
+   "names": {
+    "en": "Steak",
+    "ru": "Бифштекс"
+   }
+  },
+  "FaustData": {
+   "names": {
+    "ru": "Кулон Фауста"
+   }
+  },
+  "FaustPDA": {
+   "names": {
+    "ru": "М-КПК Фауста"
+   }
+  },
+  "FireBallAnomaly": {
+   "icon": "s2/FireBallAnomaly.png",
+   "names": {
+    "en": "Fireball",
+    "fr": "Bolide",
+    "pl": "Kula Ognista",
+    "ru": "Огненный шар"
+   }
+  },
+  "FlycatcherAnomaly": {
+   "icon": "s2/FlycatcherAnomaly.png",
+   "names": {
+    "en": "Flycatcher"
+   }
+  },
+  "FreshBread": {
+   "names": {
+    "ru": "Свежий хлеб"
+   }
+  },
+  "GArtifactBloodStone": {
+   "icon": "s2/GArtifactBloodStone.png",
+   "names": {
+    "en": "Stone Blood",
+    "pl": "Kamienna Krew",
+    "ru": "Кровь камня"
+   }
+  },
+  "GArtifactBud": {
+   "icon": "s2/GArtifactBud.png",
+   "names": {
+    "en": "Flower Bud",
+    "ru": "Бутон"
+   }
+  },
+  "GArtifactCompass": {
+   "icon": "s2/GArtifactCompass.png",
+   "names": {
+    "en": "Compass",
+    "fr": "Boussole",
+    "pl": "Kompas",
+    "ru": "Компас",
+    "uk": "Компас"
+   }
+  },
+  "GArtifactGoldFish": {
+   "icon": "s2/GArtifactGoldFish.png",
+   "names": {
+    "en": "Goldfish",
+    "fr": "Cyprin",
+    "pl": "Złota Rybka",
+    "ru": "Золотая рыбка"
+   }
+  },
+  "GArtifactGraphiteBlock": {
+   "icon": "s2/GArtifactGraphiteBlock.png",
+   "names": {
+    "en": "Crown",
+    "ru": "Корона"
+   }
+  },
+  "GArtifactGravy": {
+   "icon": "s2/GArtifactGravy.png",
+   "names": {
+    "en": "Gravi",
+    "fr": "Gravi",
+    "pl": "Grawi",
+    "ru": "Грави",
+    "uk": "Граві"
+   }
+  },
+  "GArtifactHedgehog": {
+   "icon": "s2/GArtifactHedgehog.png",
+   "names": {
+    "en": "Flytrap",
+    "ru": "Мухоловка"
+   }
+  },
+  "GArtifactLandSlug": {
+   "icon": "s2/GArtifactLandSlug.png",
+   "names": {
+    "en": "Jellyfish",
+    "fr": "Méduse",
+    "pl": "Meduza",
+    "ru": "Медуза",
+    "uk": "Медуза"
+   }
+  },
+  "GArtifactNightStar": {
+   "icon": "s2/GArtifactNightStar.png",
+   "names": {
+    "en": "Night Star",
+    "pl": "Gwiazda Wieczorna",
+    "ru": "Ночная звезда",
+    "uk": "Нічна зірка"
+   }
+  },
+  "GArtifactPlane": {
+   "icon": "s2/GArtifactPlane.png",
+   "names": {
+    "en": "Pebble",
+    "ru": "Галька"
+   }
+  },
+  "GArtifactRubiksCube": {
+   "icon": "s2/GArtifactRubiksCube.png",
+   "names": {
+    "en": "Magic Cube",
+    "ru": "Кубик-рубик"
+   }
+  },
+  "GArtifactSplitStone": {
+   "icon": "s2/GArtifactSplitStone.png",
+   "names": {
+    "en": "Broken Rock",
+    "ru": "Битый камень"
+   }
+  },
+  "GArtifactSponge": {
+   "icon": "s2/GArtifactSponge.png",
+   "names": {
+    "en": "Whirlwind",
+    "ru": "Вихрь"
+   }
+  },
+  "GArtifactSpring": {
+   "icon": "s2/GArtifactSpring.png",
+   "names": {
+    "en": "Spring",
+    "pl": "Sprężyna",
+    "ru": "Пружина",
+    "uk": "Пружина"
+   }
+  },
+  "GArtifactStoneDrop": {
+   "icon": "s2/GArtifactStoneDrop.png",
+   "names": {
+    "en": "Stone Heart",
+    "ru": "Каменное сердце"
+   }
+  },
+  "GArtifactTrunk": {
+   "icon": "s2/GArtifactTrunk.png",
+   "names": {
+    "en": "Rosin",
+    "ru": "Канифоль"
+   }
+  },
+  "GArtifactWrenched": {
+   "icon": "s2/GArtifactWrenched.png",
+   "names": {
+    "en": "Wrenched",
+    "pl": "Skrętak",
+    "ru": "Выверт",
+    "uk": "Виверт"
+   }
+  },
+  "Gilka": {
+   "names": {
+    "en": "Hilka",
+    "ru": "Детектор «Лоза»"
+   }
+  },
+  "GrenadeF1": {
+   "icon": "s2/GrenadeF1.png",
+   "names": {
+    "en": "F-1 Grenade",
+    "ru": "Граната Ф-1"
+   }
+  },
+  "GrenadeRGD5": {
+   "icon": "s2/GrenadeRGD5.png",
+   "names": {
+    "en": "RGD-5 Grenade",
+    "ru": "РГД-5"
+   }
+  },
+  "Guitar": {
+   "names": {
+    "ru": "Гитара"
+   }
+  },
+  "GunAK74_Korshunov_ST": {
+   "names": {
+    "en": "AKM-74S (Korshunov)",
+    "ru": "АКМ-74С"
+   }
+  },
+  "GunAK74_MagIncreased": {
+   "names": {
+    "en": "High-Capacity AKM-74 Magazine",
+    "ru": "Увеличенный магазин для АКМ-74"
+   }
+  },
+  "GunAK74_ST": {
+   "icon": "s2/GunAK74_ST.png",
+   "names": {
+    "en": "AKM-74S",
+    "fr": "AKM-74",
+    "pl": "AKm 74",
+    "ru": "АКМ-74С",
+    "uk": "АКМ-74"
+   }
+  },
+  "GunAK74_Strelok_ST": {
+   "names": {
+    "en": "AKM-74S (Strelok)",
+    "ru": "АКМ-74С"
+   }
+  },
+  "GunAK74_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunAK74_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunAK74_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunAK74_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunAK74_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunAK74_Upgrade_Body_2": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunAK74_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunAK74_Upgrade_Stock_2": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunAK74_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunAKU_PP": {
+   "icon": "s2/GunAKU_PP.png",
+   "names": {
+    "en": "AKM-74U",
+    "fr": "AKM-74",
+    "pl": "AKM-74",
+    "ru": "АКМ-74У"
+   }
+  },
+  "GunAKU_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunAKU_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunAKU_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunAKU_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunAKU_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunAKU_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunAKU_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunAKU_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunAKU_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunAKU_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunAKU_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunAK_MagPaired": {
+   "names": {
+    "en": "Coupled AKM-74 Magazines",
+    "ru": "Спаренный магазин для АКМ-74"
+   }
+  },
+  "GunAPB_HG": {
+   "icon": "s2/GunAPB_HG.png",
+   "names": {
+    "en": "APSB",
+    "ru": "АПБС",
+    "uk": "АПБС"
+   }
+  },
+  "GunAPB_MagIncreased": {
+   "names": {
+    "en": "High-Capacity APSB Magazine",
+    "ru": "Увеличенный магазин для АПСБ"
+   }
+  },
+  "GunAPB_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunAPB_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunAPB_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunAPB_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunAPB_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunAPB_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunAPB_Upgrade_Barrel_3_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunAPB_Upgrade_Barrel_3_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunAPB_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunAPB_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunAPB_Upgrade_Body_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunAPB_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunAPB_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunAPB_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunAPB_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunArevPrecise_AR": {
+   "icon": "s2/GunArevPrecise_AR.png",
+   "names": {
+    "en": "| hoc_ammo1=s2_5.56_fmj"
+   },
+   "variant_of": "ARev"
+  },
+  "GunArev_ST": {
+   "icon": "s2/GunArev_ST.png",
+   "names": {
+    "en": "AR416",
+    "uk": "AR416"
+   }
+  },
+  "GunBucket_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Buket S-2 Magazine",
+    "ru": "Увеличенный магазин для «Букет С-2»"
+   }
+  },
+  "GunBucket_PP": {
+   "icon": "s2/GunBucket_PP.png",
+   "names": {
+    "en": "Buket S-2",
+    "ru": "«Букет С-2»",
+    "uk": "Плювачка"
+   },
+   "variant_of": "Buket S-2"
+  },
+  "GunBucket_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunBucket_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunBucket_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunBucket_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunBucket_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunBucket_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunBucket_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunBucket_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunBucket_Upgrade_Body_2": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunBucket_Upgrade_Body_3": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunBucket_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Пазы под пальцы"
+   }
+  },
+  "GunBucket_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunBucket_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunD12_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Saiga D-12 Magazine",
+    "ru": "Увеличенный магазин для «Сайга Д-12»"
+   }
+  },
+  "GunD12_MagLarge": {
+   "names": {
+    "en": "Saiga D-12 Drum Magazine",
+    "ru": "Барабанный магазин для «Сайга Д-12»"
+   }
+  },
+  "GunD12_MagPaired": {
+   "names": {
+    "en": "Paired Saiga D-12 Magazine",
+    "ru": "Спаренный магазин для «Сайга Д-12»"
+   }
+  },
+  "GunD12_SG": {
+   "icon": "s2/GunD12_SG.png",
+   "names": {
+    "en": "Saiga D-12",
+    "ru": "«Сайга Д-12»",
+    "uk": "Сайга Д-12"
+   }
+  },
+  "GunD12_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunD12_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunD12_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunD12_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunD12_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunD12_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunD12_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunD12_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Нарезной ствол"
+   }
+  },
+  "GunD12_Upgrade_Barrel_3_1": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "GunD12_Upgrade_Barrel_3_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunD12_Upgrade_Body_1": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunD12_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunD12_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunD12_Upgrade_Grip_1_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunD12_Upgrade_Grip_1_2": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunD12_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunD12_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunD12_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunD12_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunD12_Upgrade_Handguard_2": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "GunD12_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Полимерный приклад"
+   }
+  },
+  "GunD12_Upgrade_Stock_2": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunD12_Upgrade_Stock_3_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunD12_Upgrade_Stock_3_2": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunDnipro_MagPaired": {
+   "names": {
+    "en": "Coupled Dnipro Magazines",
+    "ru": "Спаренный магазин для «Днипро»"
+   }
+  },
+  "GunDnipro_ST": {
+   "icon": "s2/GunDnipro_ST.png",
+   "names": {
+    "en": "Dnipro",
+    "ru": "«Днипро»",
+    "uk": "Дніпро"
+   }
+  },
+  "GunDnipro_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunDnipro_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunDnipro_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunDnipro_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunDnipro_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunDnipro_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunDnipro_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunDnipro_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunDnipro_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunDnipro_Upgrade_Body_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunDnipro_Upgrade_Body_2": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "GunDnipro_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunDnipro_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunDnipro_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "GunDnipro_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunDnipro_Upgrade_Handguard_3": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunDnipro_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunDnipro_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunDnipro_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunDnipro_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunFora230_PP": {
+   "icon": "s2/GunFora230_PP.png",
+   "names": {
+    "en": "|hoc_ammo1=s2_9x19_fmj"
+   }
+  },
+  "GunFora_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Fora-221 and Kharod Magazine",
+    "ru": "Увеличенный магазин для «Фора-221» и Kharod"
+   }
+  },
+  "GunFora_ST": {
+   "icon": "s2/GunFora_ST.png",
+   "names": {
+    "en": "Fora-221",
+    "ru": "«Фора-221»",
+    "uk": "Фора-221"
+   }
+  },
+  "GunFora_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunFora_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunFora_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunFora_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunFora_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Хромирование ствола"
+   }
+  },
+  "GunFora_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunFora_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Титановый ствол"
+   }
+  },
+  "GunFora_Upgrade_Body_1": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunFora_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "GunFora_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunFora_Upgrade_Body_3_1": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunFora_Upgrade_Body_3_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunFora_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunFora_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunFora_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunG37_ST": {
+   "icon": "s2/GunG37_ST.png",
+   "names": {
+    "en": "GP37",
+    "fr": "GP37",
+    "pl": "GP 37",
+    "ru": "GP37",
+    "uk": "ГП37"
+   }
+  },
+  "GunG37_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunG37_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunG37_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunG37_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunG37_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunG37_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Хромирование ствола"
+   }
+  },
+  "GunG37_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunG37_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunG37_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunG37_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunG37_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunG37_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunG37_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunG37_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunG37_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunG37_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunGP37_MagLarge": {
+   "names": {
+    "en": "GP37 Drum Magazine",
+    "ru": "Барабанный магазин для GP37"
+   }
+  },
+  "GunGP37_MagPaired": {
+   "names": {
+    "en": "High-Capacity GP37 Magazine",
+    "ru": "Увеличенный магазин для GP37"
+   }
+  },
+  "GunGP3A_DMR": {
+   "icon": "s2/GunGP3A_DMR.png",
+   "names": {
+    "en": "|hoc_ammo1=s2_7.62x51_fmj"
+   }
+  },
+  "GunGauss_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Gauss Magazine",
+    "ru": "Увеличенный гаусс-магазин"
+   }
+  },
+  "GunGauss_SP": {
+   "icon": "s2/GunGauss_SP.png",
+   "names": {
+    "en": "Gauss Rifle",
+    "fr": "Fusil Gauss",
+    "pl": "Karabin Gaussa",
+    "ru": "Гаусс-пушка",
+    "uk": "Гаус-пушка"
+   }
+  },
+  "GunGauss_Scar_SP": {
+   "names": {
+    "en": "EM-1",
+    "ru": "ЭМ-1"
+   }
+  },
+  "GunGrim_MagIncreased": {
+   "names": {
+    "ru": "Увеличенный магазин для «Гром С-14»"
+   }
+  },
+  "GunGrim_MagLarge": {
+   "names": {
+    "ru": "Барабанный магазин для «Гром С-14»"
+   }
+  },
+  "GunGrim_ST": {
+   "icon": "s2/GunGrim_ST.png",
+   "names": {
+    "en": "Grom S-14",
+    "pl": "Tunder S14",
+    "ru": "«Гром С-14»",
+    "uk": "З14"
+   }
+  },
+  "GunGrim_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunGrim_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunGrim_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunGrim_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunGrim_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunGrim_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunGrim_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunGrim_Upgrade_Body_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunGrim_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunGrim_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunGrim_Upgrade_Body_3_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunGrim_Upgrade_Body_3_2": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunGrim_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunGrim_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunGrim_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunGrim_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunGrim_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Полимерный приклад"
+   }
+  },
+  "GunGrim_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunGrim_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunGvintar_MagIncreased": {
+   "names": {
+    "en": "High-Capacity VS Vintar Magazine",
+    "ru": "Увеличенный магазин для ВС «Винтарь»"
+   }
+  },
+  "GunGvintar_ST": {
+   "icon": "s2/GunGvintar_ST.png",
+   "names": {
+    "en": "VS Vintar",
+    "fr": "Vintar BC",
+    "pl": "Wintar BC",
+    "ru": "СВ «Винтарь»",
+    "uk": "Гвинтар-ВС"
+   }
+  },
+  "GunGvintar_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunGvintar_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunGvintar_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunGvintar_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunGvintar_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunGvintar_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunGvintar_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunGvintar_Upgrade_Body_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunGvintar_Upgrade_Body_3": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunGvintar_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunGvintar_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunGvintar_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunGvintar_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunIntegral_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Integral-A Magazine",
+    "ru": "Увеличенный магазин для Integral-A",
+    "uk": "Збільшений магазин для Integral-A"
+   }
+  },
+  "GunIntegral_PP": {
+   "icon": "s2/GunIntegral_PP.png",
+   "names": {
+    "en": "Integral-A",
+    "ru": "Integral-A",
+    "uk": "Integral-A"
+   }
+  },
+  "GunIntegral_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunIntegral_Upgrade_Attachment_FrontExtension": {
+   "names": {
+    "ru": "Компенсаторная насадка для ствольной коробки"
+   }
+  },
+  "GunIntegral_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunIntegral_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunIntegral_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunIntegral_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunIntegral_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunIntegral_Upgrade_Barrel_3_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunIntegral_Upgrade_Barrel_3_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunIntegral_Upgrade_Body_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunIntegral_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunIntegral_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunIntegral_Upgrade_Body_3": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "GunIntegral_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunIntegral_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunIntegral_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunKharod_MagPaired": {
+   "names": {
+    "en": "Paired Kharod Magazine",
+    "ru": "Спаренный магазин для Kharod"
+   }
+  },
+  "GunKharod_ST": {
+   "icon": "s2/GunKharod_ST.png",
+   "names": {
+    "en": "Kharod",
+    "ru": "Kharod",
+    "uk": "Kharod"
+   }
+  },
+  "GunKharod_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunKharod_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunKharod_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunKharod_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunKharod_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunKharod_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunKharod_Upgrade_Barrel_3_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunKharod_Upgrade_Barrel_3_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunKharod_Upgrade_Body_1": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "GunKharod_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunKharod_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunKharod_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunKharod_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "GunKharod_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunKharod_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunKharod_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunKharod_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunKharod_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunKharod_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunKora_HG": {
+   "icon": "s2/GunKora_HG.png",
+   "names": {
+    "en": "Kora-919",
+    "pl": "Kora-919",
+    "ru": "Кора-919"
+   }
+  },
+  "GunLavina_MagIncreased": {
+   "names": {
+    "en": "High-Capacity AS Lavina Magazine",
+    "ru": "Увеличенный магазин для СА «Лавина»"
+   }
+  },
+  "GunLavina_ST": {
+   "icon": "s2/GunLavina_ST.png",
+   "names": {
+    "en": "AS Lavina",
+    "fr": "СА \"Лавина\"",
+    "pl": "SA Lawina",
+    "ru": "СА «Лавина»",
+    "uk": "СА «ЛАВИНА»"
+   }
+  },
+  "GunLavina_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunLavina_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunLavina_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunLavina_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunLavina_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunLavina_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunLavina_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunLavina_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunLavina_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunLavina_Upgrade_Body_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunLavina_Upgrade_Body_3": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunLavina_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunLavina_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunLavina_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunLavina_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunLavina_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunLavina_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunLavina_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunM10_HG": {
+   "icon": "s2/GunM10_HG.png",
+   "names": {
+    "en": "M10 Gordon",
+    "ru": "M10 Gordon",
+    "uk": "M10 Gordon"
+   }
+  },
+  "GunM10_MagIncreased": {
+   "names": {
+    "en": "High-Capacity M10 Magazine",
+    "ru": "Увеличенный магазин для М10",
+    "uk": "Збільшений магазин для M10"
+   }
+  },
+  "GunM10_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunM10_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunM10_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunM10_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunM10_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunM10_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunM10_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunM10_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunM16_MagIncreased": {
+   "names": {
+    "en": "High-Capacity AR416 System Magazine",
+    "ru": "Увеличенный магазин для системы AR416"
+   }
+  },
+  "GunM16_ST": {
+   "icon": "s2/GunM16_ST.png",
+   "names": {
+    "en": "AR416",
+    "ru": "AR416",
+    "uk": "AR416"
+   }
+  },
+  "GunM16_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunM16_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunM16_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunM16_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunM16_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunM16_Upgrade_Body_1": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunM16_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunM16_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunM16_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunM701_SP": {
+   "icon": "s2/GunM701_SP.png",
+   "names": {
+    "en": "M701 Super",
+    "ru": "M701 Super",
+    "uk": "M701 Super"
+   }
+  },
+  "GunM701_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunM701_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunM701_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunM701_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunM701_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunM701_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunM701_Upgrade_Body_1": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunM701_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunM701_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunM701_Upgrade_Body_3_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunM701_Upgrade_Body_3_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunM701_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunM701_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunM701_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunM701_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunM860_SG": {
+   "icon": "s2/GunM860_SG.png",
+   "names": {
+    "en": "M860 Cracker",
+    "ru": "M860 Cracker",
+    "uk": "M860 Cracker"
+   }
+  },
+  "GunM860_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunM860_Upgrade_Attachment_Mag": {
+   "names": {
+    "ru": "Магазинное питание"
+   }
+  },
+  "GunM860_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "GunM860_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Нарезной ствол"
+   }
+  },
+  "GunM860_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunM860_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunM860_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunM860_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunM860_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunM860_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunMark_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Mark I Magazine",
+    "ru": "Увеличенный магазин для Mark I"
+   }
+  },
+  "GunMark_SP": {
+   "names": {
+    "en": "Mark I EMR",
+    "ru": "Mark I EMR"
+   }
+  },
+  "GunMark_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunMark_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunMark_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunMark_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunMark_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunMark_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunMark_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunMark_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunMark_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunMark_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Замена спускового механизма"
+   }
+  },
+  "GunMark_Upgrade_Grip_1_1": {
+   "names": {
+    "ru": "Пазы под пальцы"
+   }
+  },
+  "GunMark_Upgrade_Grip_1_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunMark_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunMark_Upgrade_Grip_3_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunMark_Upgrade_Grip_3_2": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunMosina_SP": {
+   "names": {
+    "ru": "Трёхлинейка"
+   }
+  },
+  "GunNightStalker_HG": {
+   "icon": "s2/GunNightStalker_HG.png",
+   "names": {
+    "en": "Night Stalker",
+    "uk": "Night Stalker"
+   },
+   "variant_of": "Kora-919"
+  },
+  "GunObrez_SG": {
+   "icon": "s2/GunObrez_SG.png",
+   "names": {
+    "en": "Boomstick",
+    "pl": "Obrzyn",
+    "ru": "Обрез",
+    "uk": "Обріз"
+   }
+  },
+  "GunObrez_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "GunObrez_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunObrez_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunObrez_Upgrade_Grip_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunObrez_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunPKP_Korshunov_MG": {
+   "names": {
+    "en": "Beast",
+    "pl": "Bestia",
+    "ru": "Зверь",
+    "uk": "Звір"
+   }
+  },
+  "GunPKP_MG": {
+   "icon": "s2/GunPKP_MG.png",
+   "names": {
+    "en": "RPM-74",
+    "pl": "RP-74",
+    "ru": "РПМ-74",
+    "uk": "РП-74"
+   }
+  },
+  "GunPKP_MagIncreased": {
+   "names": {
+    "en": "Large RP-74 Ammo Box",
+    "ru": "Увеличенный короб для РП-74М"
+   }
+  },
+  "GunPKP_MagLarge": {
+   "names": {
+    "en": "Tank-Mounted RP-74 Ammo Box",
+    "ru": "Танковый короб для РП-74М"
+   }
+  },
+  "GunPKP_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunPKP_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunPKP_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunPKP_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Титановый ствол"
+   }
+  },
+  "GunPKP_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Радиатор ствола"
+   }
+  },
+  "GunPKP_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunPKP_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "GunPKP_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "GunPKP_Upgrade_Body_2": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "GunPKP_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunPKP_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunPKP_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunPKP_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunPKP_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Полимерный приклад"
+   }
+  },
+  "GunPKP_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunPKP_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunPM_HG": {
+   "icon": "s2/GunPM_HG.png",
+   "names": {
+    "en": "PTM",
+    "fr": "Eliminator",
+    "pl": "PMm",
+    "ru": "ПТМ",
+    "uk": "ПМм"
+   }
+  },
+  "GunPM_MagIncreased": {
+   "names": {
+    "en": "High-Capacity PTM Magazine",
+    "ru": "Увеличенный магазин для ПТМ",
+    "uk": "Збільшений магазин для ПТМ"
+   }
+  },
+  "GunPM_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunPM_Upgrade_Barrel_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunPM_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunRPD_MG": {
+   "names": {
+    "ru": "РПО-44"
+   }
+  },
+  "GunRPD_MagIncreased": {
+   "names": {
+    "ru": "Увеличенный короб для РПО-44"
+   }
+  },
+  "GunRPD_MagLarge": {
+   "names": {
+    "ru": "Короб большой ёмкости для РПО-44"
+   }
+  },
+  "GunRam2_SG": {
+   "icon": "s2/GunRam2_SG.png",
+   "names": {
+    "en": "Ram-2",
+    "ru": "Ram-2",
+    "uk": "Ram-2"
+   }
+  },
+  "GunRam2_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunRam2_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunRam2_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunRam2_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunRam2_Upgrade_Body_2": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunRam2_Upgrade_Handguard_1_1": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "GunRam2_Upgrade_Handguard_1_2": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunRam2_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunRam2_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunRam2_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunRam2_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunRam2_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunRam2_Upgrade_Stock_3_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunRam2_Upgrade_Stock_3_2": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunRhino_HG": {
+   "icon": "s2/GunRhino_HG.png",
+   "names": {
+    "en": "Rhino",
+    "ru": "Rhino",
+    "uk": "Rhino"
+   }
+  },
+  "GunRhino_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunRhino_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunRhino_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunRhino_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunRhino_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunRhino_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunRhino_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunRhino_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Переделка под дробь"
+   }
+  },
+  "GunRhino_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunRhino_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunRhino_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunRhino_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunRhino_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunRpg7_GL": {
+   "icon": "s2/GunRpg7_GL.png",
+   "names": {
+    "en": "RPG-7U",
+    "pl": "RPG-7u",
+    "ru": "РПГ-7у",
+    "uk": "РПГ-7у"
+   }
+  },
+  "GunSKP_DMR": {
+   "icon": "s2/GunSKP_DMR.png",
+   "names": {
+    "en": "|hoc_ammo1=s2_7.62x54_fmj"
+   }
+  },
+  "GunSPSA_SG": {
+   "icon": "s2/GunSPSA_SG.png",
+   "names": {
+    "en": "SPSA-14",
+    "pl": "SPSA-14",
+    "ru": "SPSA-14",
+    "uk": "СПСА-14"
+   }
+  },
+  "GunSPSA_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunSPSA_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunSPSA_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunSPSA_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunSPSA_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunSPSA_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "GunSPSA_Upgrade_Barrel_3_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunSPSA_Upgrade_Barrel_3_2": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "GunSPSA_Upgrade_Body_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunSPSA_Upgrade_Body_2_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunSPSA_Upgrade_Body_2_2": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunSPSA_Upgrade_Body_3_1": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunSPSA_Upgrade_Body_3_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunSPSA_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunSPSA_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunSPSA_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunSPSA_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Полимерный приклад"
+   }
+  },
+  "GunSVDM_SP": {
+   "icon": "s2/GunSVDM_SP.png",
+   "names": {
+    "en": "SVDM-2",
+    "fr": "SVDm-2",
+    "pl": "SWDm-2",
+    "ru": "СВДМ-2",
+    "uk": "СВДм-2"
+   }
+  },
+  "GunSVDM_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunSVDM_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunSVDM_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunSVDM_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunSVDM_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunSVDM_Upgrade_Body_1_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunSVDM_Upgrade_Body_1_2": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunSVDM_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunSVDM_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunSVDM_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunSVU_MagIncreased": {
+   "names": {
+    "en": "High-Capacity SVU-MK S-3 Magazine",
+    "ru": "Увеличенный магазин для СВУ-МК С-3"
+   }
+  },
+  "GunSVU_SP": {
+   "icon": "s2/GunSVU_SP.png",
+   "names": {
+    "en": "SVU-MK S-3",
+    "fr": "SVUmk-2",
+    "pl": "SWUmk-2",
+    "ru": "СВУ-МК С-3",
+    "uk": "СВУмк-2"
+   }
+  },
+  "GunSVU_Sniper_Duga_SP": {
+   "names": {
+    "en": "SVU-MK S-3 (Duga)"
+   }
+  },
+  "GunSVU_Upgrade_Attachment_Grip": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "GunSVU_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunSVU_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunSVU_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunSVU_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunSVU_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunSVU_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunSVU_Upgrade_Grip_1_1": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "GunSVU_Upgrade_Grip_1_2": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunSVU_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Пазы под пальцы"
+   }
+  },
+  "GunSVU_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunSVU_Upgrade_Grip_3_1": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunSVU_Upgrade_Grip_3_2": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunSVU_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunSVU_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "GunSVU_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "GunSVU_Upgrade_Handguard_3": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunSVU_Upgrade_Stock_1_1": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "GunSVU_Upgrade_Stock_1_2": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunSVU_Upgrade_Stock_2_1": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "GunSVU_Upgrade_Stock_2_2": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunSVU_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunTOZ_SG": {
+   "icon": "s2/GunTOZ_SG.png",
+   "names": {
+    "en": "Toz-34",
+    "pl": "Strzelba myśliwska",
+    "ru": "ТОЗ-34"
+   }
+  },
+  "GunTOZ_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunTOZ_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Нарезной ствол"
+   }
+  },
+  "GunTOZ_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunTOZ_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunTOZ_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunTOZ_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunTOZ_Upgrade_Stock_1": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "GunTOZ_Upgrade_Stock_2": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "GunTOZ_Upgrade_Stock_3": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "GunThreeLine_SP": {
+   "names": {
+    "en": "Three-Line Rifle",
+    "uk": "Трилінійка"
+   }
+  },
+  "GunUDP_Deadeye_HG": {
+   "icon": "s2/GunUDP_Deadeye_HG.png",
+   "names": {
+    "en": "Deadeye",
+    "uk": "Хибна сліпота"
+   },
+   "variant_of": "UDP Compact"
+  },
+  "GunUDP_HG": {
+   "icon": "s2/GunUDP_HG.png",
+   "names": {
+    "en": "UDP Compact",
+    "pl": "UDP Compact",
+    "ru": "UDP Compact",
+    "uk": "УДП «Компакт»"
+   }
+  },
+  "GunUDP_MagIncreased": {
+   "names": {
+    "en": "High-Capacity UDP Magazine",
+    "ru": "Увеличенный магазин для UDP",
+    "uk": "Збільшений магазин для UDP"
+   }
+  },
+  "GunUDP_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunUDP_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunUDP_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunUDP_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunUDP_Upgrade_Body_1": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "GunUDP_Upgrade_Body_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunViper_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Viper-5 Magazine",
+    "ru": "Увеличенный магазин для Viper-5"
+   }
+  },
+  "GunViper_PP": {
+   "icon": "s2/GunViper_PP.png",
+   "names": {
+    "en": "Viper-5",
+    "ru": "Viper-5"
+   }
+  },
+  "GunViper_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunViper_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunViper_Upgrade_Barrel_1_1": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "GunViper_Upgrade_Barrel_1_2": {
+   "names": {
+    "ru": "Хромирование ствола"
+   }
+  },
+  "GunViper_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunViper_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "GunViper_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunViper_Upgrade_Body_1": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunViper_Upgrade_Body_2": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunViper_Upgrade_Body_3_1": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "GunViper_Upgrade_Body_3_2": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunVulkan_MagPaired": {
+   "names": {
+    "ru": "Спаренный магазин для «Днипро»"
+   }
+  },
+  "GunZubr_MagIncreased": {
+   "names": {
+    "en": "High-Capacity Zubr-16 Magazine",
+    "ru": "Увеличенный магазин для «Зубр-19»"
+   }
+  },
+  "GunZubr_PP": {
+   "icon": "s2/GunZubr_PP.png",
+   "names": {
+    "en": "Zubr-19",
+    "ru": "«Зубр-19»",
+    "uk": "Зубр-19"
+   }
+  },
+  "GunZubr_Upgrade_Attachment_AutMuz": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "GunZubr_Upgrade_Attachment_Laser": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "GunZubr_Upgrade_Attachment_Rail": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "GunZubr_Upgrade_Attachment_SinMuz": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "GunZubr_Upgrade_Barrel_1": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "GunZubr_Upgrade_Barrel_2_1": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "GunZubr_Upgrade_Barrel_2_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "GunZubr_Upgrade_Barrel_3": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "GunZubr_Upgrade_Body_1": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "GunZubr_Upgrade_Body_2": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "GunZubr_Upgrade_Grip_1": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "GunZubr_Upgrade_Grip_2_1": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "GunZubr_Upgrade_Grip_2_2": {
+   "names": {
+    "ru": "Пазы под пальцы"
+   }
+  },
+  "GunZubr_Upgrade_Grip_3": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "GunZubr_Upgrade_Handguard_1": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "GunZubr_Upgrade_Handguard_2_1": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "GunZubr_Upgrade_Handguard_2_2": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "Gun_Cavalier_SR": {
+   "icon": "s2/Gun_Cavalier_SR.png",
+   "names": {
+    "en": "Cavalier",
+    "ru": "«Кавалерист»"
+   }
+  },
+  "Gun_Combatant_AR": {
+   "icon": "s2/Gun_Combatant_AR.png",
+   "names": {
+    "en": "Combatant",
+    "ru": "«Комбатант»",
+    "uk": "Комбатант"
+   },
+   "variant_of": "AKM-74S"
+  },
+  "Gun_Deadeye_HG": {
+   "icon": "s2/Gun_Deadeye_HG.png",
+   "names": {
+    "en": "Deadeye",
+    "ru": "Ложная слепота",
+    "uk": "Хибна сліпота"
+   }
+  },
+  "Gun_Decider_AR": {
+   "icon": "s2/Gun_Decider_AR.png",
+   "names": {
+    "en": "Decider",
+    "ru": "«Решала»",
+    "uk": "Рішала"
+   },
+   "variant_of": "Fora-221"
+  },
+  "Gun_Dragunka_SR": {
+   "icon": "s2/Gun_Dragunka_SR.png",
+   "names": {
+    "ru": "«Драгунка» Гонты"
+   }
+  },
+  "Gun_Drowned_AR": {
+   "icon": "s2/Gun_Drowned_AR.png",
+   "names": {
+    "en": "Drowned",
+    "ru": "«Утопленник»",
+    "uk": "Потопельник"
+   },
+   "variant_of": "AKM-74S"
+  },
+  "Gun_EM1_SR": {
+   "names": {
+    "ru": "ЭМ-1"
+   }
+  },
+  "Gun_Encourage_HG": {
+   "names": {
+    "en": "Encourage",
+    "ru": "«Наставник»"
+   }
+  },
+  "Gun_FDensity_MG": {
+   "names": {
+    "ru": "«Рой»"
+   }
+  },
+  "Gun_GStreet_HG": {
+   "icon": "s2/Gun_GStreet_HG.png",
+   "names": {
+    "en": "Gangster",
+    "ru": "«Гангстер»"
+   }
+  },
+  "Gun_Gabion_AR": {
+   "names": {
+    "en": "SA-U Gabion",
+    "ru": "СА-У «Габион»"
+   }
+  },
+  "Gun_Krivenko_HG": {
+   "names": {
+    "en": "Gambit",
+    "ru": "«Гамбит»"
+   }
+  },
+  "Gun_Logarithm_SMG": {
+   "icon": "s2/Gun_Logarithm_SMG.png",
+   "names": {
+    "en": "Riemann",
+    "ru": "«Риман»",
+    "uk": "Ріман"
+   }
+  },
+  "Gun_Lummox_AR": {
+   "icon": "s2/Gun_Lummox_AR.png",
+   "names": {
+    "en": "Valik Lummox’s AKM-74S",
+    "ru": "АКМ-74С Гриши Валенка",
+    "uk": "АКМ-74С Гріші Валяна"
+   },
+   "variant_of": "AKM-74S"
+  },
+  "Gun_Lynx_SR": {
+   "icon": "s2/Gun_Lynx_SR.png",
+   "names": {
+    "en": "Lynx",
+    "pl": "Ryś",
+    "ru": "«Рысь»",
+    "uk": "Рись"
+   }
+  },
+  "Gun_Margach_SG": {
+   "icon": "s2/Gun_Margach_SG.png",
+   "names": {
+    "en": "Margach D-12MT",
+    "ru": "«Маргач Д-12МТ»"
+   }
+  },
+  "Gun_Merc_AR": {
+   "names": {
+    "en": "Merc",
+    "ru": "«Наёмник»"
+   }
+  },
+  "Gun_ModelCompact_HG": {
+   "names": {
+    "ru": "Model Compact-Special"
+   }
+  },
+  "Gun_ModelSpecial_HG": {
+   "icon": "s2/Gun_ModelSpecial_HG.png",
+   "names": {
+    "en": "Model Competitor",
+    "ru": "Model Competitor"
+   }
+  },
+  "Gun_Novator_AR": {
+   "icon": "s2/Gun_Novator_AR.png",
+   "names": {
+    "en": "Lullaby",
+    "ru": "«Колыбельная»"
+   }
+  },
+  "Gun_Partner_SR": {
+   "icon": "s2/Gun_Partner_SR.png",
+   "names": {
+    "en": "Partner",
+    "ru": "«Напарник»"
+   }
+  },
+  "Gun_PistolMonolith_HG": {
+   "icon": "s2/Gun_PistolMonolith_HG.png",
+   "names": {
+    "en": "PTM Monolith",
+    "ru": "ПТМ «Монолит»",
+    "uk": "ПТМ «Моноліт»"
+   },
+   "variant_of": "PTM"
+  },
+  "Gun_Predator_SG": {
+   "icon": "s2/Gun_Predator_SG.png",
+   "names": {
+    "en": "Predator",
+    "pl": "Drapieżca",
+    "ru": "«Хищник»",
+    "uk": "Хижак"
+   },
+   "variant_of": "Chaser 13"
+  },
+  "Gun_ProjectY_HG": {
+   "names": {
+    "en": "Labyrinth IV",
+    "ru": "«Лабиринт IV»"
+   }
+  },
+  "Gun_Rail_SG": {
+   "names": {
+    "en": "Reyka",
+    "ru": "«Рельс»"
+   }
+  },
+  "Gun_RatKiller_SMG": {
+   "icon": "s2/Gun_RatKiller_SMG.png",
+   "names": {
+    "en": "Rat Killer",
+    "ru": "«Крысобой»",
+    "uk": "Зубр-19"
+   },
+   "variant_of": "Zubr-19"
+  },
+  "Gun_Redemption_MG": {
+   "names": {
+    "ru": "«Обещание»"
+   }
+  },
+  "Gun_RifleMonolith_AR": {
+   "icon": "s2/Gun_RifleMonolith_AR.png",
+   "names": {
+    "en": "AR416 Monolith",
+    "ru": "AR416 «Монолит»",
+    "uk": "AR416 «Моноліт»"
+   },
+   "variant_of": "AR416"
+  },
+  "Gun_S15_AR": {
+   "names": {
+    "en": "Grom S-15",
+    "ru": "«Гром-С15»"
+   }
+  },
+  "Gun_SMGMonolith_SMG": {
+   "icon": "s2/Gun_SMGMonolith_SMG.png",
+   "names": {
+    "en": "Viper-5 Monolith",
+    "ru": "Viper «Монолит»"
+   }
+  },
+  "Gun_SOFMOD_AR": {
+   "icon": "s2/Gun_SOFMOD_AR.png",
+   "names": {
+    "en": "SOFMOD",
+    "ru": "SOFMOD",
+    "uk": "SOFMOD"
+   },
+   "variant_of": "AR416"
+  },
+  "Gun_Sbanger_HG": {
+   "names": {
+    "ru": "«Тихарь»"
+   }
+  },
+  "Gun_Shakh_SMG": {
+   "icon": "s2/Gun_Shakh_SMG.png",
+   "names": {
+    "en": "Shah's Mate",
+    "ru": "«Шах и мат»",
+    "uk": "Шах і мат"
+   }
+  },
+  "Gun_Sharpshooter_AR": {
+   "icon": "s2/Gun_Sharpshooter_AR.png",
+   "names": {
+    "en": "Clusterfuck",
+    "ru": "«Попадос»",
+    "uk": "Попадос"
+   },
+   "variant_of": "AR416"
+  },
+  "Gun_ShotgunMonolith_SG": {
+   "icon": "s2/Gun_ShotgunMonolith_SG.png",
+   "names": {
+    "en": "M860 Monolith",
+    "ru": "M860 «Монолит»",
+    "uk": "M860 «Моноліт»"
+   },
+   "variant_of": "M860 Cracker"
+  },
+  "Gun_Silence_SMG": {
+   "icon": "s2/Gun_Silence_SMG.png",
+   "names": {
+    "en": "Special",
+    "pl": "Specjalne Akm 74",
+    "ru": "«Спецназ»",
+    "uk": "АКМ-74"
+   },
+   "variant_of": "AKM-74"
+  },
+  "Gun_SkifGun_HG": {
+   "icon": "s2/Gun_SkifGun_HG.png",
+   "names": {
+    "en": "Skif's Pistol",
+    "ru": "Пистолет Скифа",
+    "uk": "Пістолет Скіфа"
+   }
+  },
+  "Gun_Sledgehammer_SG": {
+   "icon": "s2/Gun_Sledgehammer_SG.png",
+   "names": {
+    "en": "Sledgehammer",
+    "ru": "Кувалда",
+    "uk": "Кувалда"
+   },
+   "variant_of": "SPSA-14"
+  },
+  "Gun_Sotnyk_AR": {
+   "icon": "s2/Gun_Sotnyk_AR.png",
+   "names": {
+    "en": "Sotnyk",
+    "ru": "«Сотник»"
+   }
+  },
+  "Gun_Spitfire_SMG": {
+   "icon": "s2/Gun_Spitfire_SMG.png",
+   "names": {
+    "en": "Spitfire",
+    "pl": "Specjalne Akm 74",
+    "ru": "«Скорострел»",
+    "uk": "Швидкостріл"
+   }
+  },
+  "Gun_Spitter_SMG": {
+   "icon": "s2/Gun_Spitter_SMG.png",
+   "names": {
+    "en": "Spitter",
+    "ru": "«Плевалка»",
+    "uk": "Плювачка"
+   }
+  },
+  "Gun_Star_HG": {
+   "names": {
+    "en": "PTM (Silenced)",
+    "ru": "ПТМ"
+   }
+  },
+  "Gun_Tank_MG": {
+   "icon": "s2/Gun_Tank_MG.png",
+   "names": {
+    "en": "Glutton",
+    "ru": "«Обжора»"
+   }
+  },
+  "Gun_Texas_SG": {
+   "icon": "s2/Gun_Texas_SG.png",
+   "names": {
+    "en": "Texan",
+    "ru": "«Техасец»",
+    "uk": "Техаска"
+   }
+  },
+  "Gun_Trophy_AR": {
+   "icon": "s2/Gun_Trophy_AR.png",
+   "names": {
+    "en": "Trophy",
+    "ru": "«Трофей»"
+   },
+   "variant_of": "AS Lavina"
+  },
+  "Gun_Unknown_AR": {
+   "icon": "s2/Gun_Unknown_AR.png",
+   "names": {
+    "en": "Unknown Stalker's AR416",
+    "ru": "AR416 неизвестного сталкера",
+    "uk": "AR416 невідомого сталкера"
+   },
+   "variant_of": "AR416"
+  },
+  "Gun_Veteran_AR": {
+   "icon": "s2/Gun_Veteran_AR.png",
+   "names": {
+    "en": "Veteran",
+    "ru": "«Ветеран»",
+    "uk": "Ветеран"
+   },
+   "variant_of": "VS Vintar"
+  },
+  "Gun_Whip_SR": {
+   "icon": "s2/Gun_Whip_SR.png",
+   "names": {
+    "en": "Whip",
+    "ru": "«Плётка»"
+   }
+  },
+  "Gun_Zvirolov_SR": {
+   "icon": "s2/Gun_Zvirolov_SR.png",
+   "names": {
+    "en": "Hunter",
+    "pl": "Łowca",
+    "ru": "«Зверолов»",
+    "uk": "Мисливець"
+   }
+  },
+  "Heavy2_Military_Armor": {
+   "icon": "s2/Heavy2_Military_Armor.png",
+   "names": {
+    "ru": "Бронекостюм «Берилл-5М»"
+   }
+  },
+  "HeavyAnomaly_Monolith_Armor": {
+   "icon": "s2/HeavyAnomaly_Monolith_Armor.png",
+   "names": {
+    "ru": "Комбинезон «Корунд»"
+   }
+  },
+  "HeavyAnomaly_SIRCA_Armor": {
+   "icon": "s2/HeavyAnomaly_SIRCA_Armor.png",
+   "names": {
+    "en": "SSP-100M SIRCAA",
+    "ru": "ССП-100М НИИЧАЗ",
+    "uk": "ССП-100М НДІЧАЗ"
+   },
+   "variant_of": "SSP-100 Discovery"
+  },
+  "HeavyAnomaly_Scientific_Armor": {
+   "icon": "s2/HeavyAnomaly_Scientific_Armor.png",
+   "names": {
+    "en": "SSP-100 Discovery",
+    "ru": "ССП-100 «Открытие»",
+    "uk": "ССП-100 «Відкриття»"
+   }
+  },
+  "HeavyAnomaly_Spark_Armor": {
+   "icon": "s2/HeavyAnomaly_Spark_Armor.png",
+   "names": {
+    "en": "SSP-100I Survey",
+    "ru": "ССП-100И «Поиск»",
+    "uk": "ССП-100І «Пошук»"
+   }
+  },
+  "HeavyBattle_Spark_Armor": {
+   "icon": "s2/HeavyBattle_Spark_Armor.png",
+   "names": {
+    "en": "PSZ-9I Falcon",
+    "ru": "ПСЗ-9И «Сокол»",
+    "uk": "ПСЗ-9І «Сокіл»"
+   }
+  },
+  "HeavyExoskeleton_Dolg_Armor": {
+   "icon": "s2/HeavyExoskeleton_Dolg_Armor.png",
+   "names": {
+    "en": "Shield of Duty Exosuit",
+    "ru": "Экзокостюм «Щит \"Долга\"»",
+    "uk": "Екзокостюм «Щит \"Долгу\"»"
+   }
+  },
+  "HeavyExoskeleton_Monolith_Armor": {
+   "icon": "s2/HeavyExoskeleton_Monolith_Armor.png",
+   "names": {
+    "en": "Ruby Exosuit",
+    "ru": "Экзокостюм «Рубин»",
+    "uk": "Екзокостюм «Рубін»"
+   }
+  },
+  "HeavyExoskeleton_Svoboda_Armor": {
+   "icon": "s2/HeavyExoskeleton_Svoboda_Armor.png",
+   "names": {
+    "en": "Bulwark Exosuit",
+    "ru": "Экзокостюм «Оплот»",
+    "uk": "Екзокостюм «Оплот»"
+   }
+  },
+  "HeavyExoskeleton_Varta_Armor": {
+   "icon": "s2/HeavyExoskeleton_Varta_Armor.png",
+   "names": {
+    "en": "PSZ-21W Shturm",
+    "ru": "ПСЗ-21W «Штурм»",
+    "uk": "ПСЗ-21W «Штурм»"
+   }
+  },
+  "Heavy_Dolg_Armor": {
+   "icon": "s2/Heavy_Dolg_Armor.png",
+   "names": {
+    "en": "PSZ-9D Duty Armor",
+    "ru": "ПСЗ-9Д «Броня \"Долга\"»",
+    "uk": "ПСЗ-9Д «Броня \"Долгу\"»"
+   }
+  },
+  "Heavy_Duty_Helmet": {
+   "icon": "s2/Heavy_Duty_Helmet.png",
+   "names": {
+    "en": "Sphere M20 Helmet",
+    "ru": "Шлем «Сфера-М20»"
+   }
+  },
+  "Heavy_Mercenaries_Armor": {
+   "icon": "s2/Heavy_Mercenaries_Armor.png",
+   "names": {
+    "en": "PSZ-9N Wolfhound",
+    "ru": "ПСЗ-9Н «Волкодав»",
+    "uk": "ПСЗ-9Н «Вовкодав»"
+   }
+  },
+  "Heavy_Military_Helmet": {
+   "icon": "s2/Heavy_Military_Helmet.png",
+   "names": {
+    "ru": "Тактический шлем"
+   }
+  },
+  "Heavy_Svoboda_Armor": {
+   "icon": "s2/Heavy_Svoboda_Armor.png",
+   "names": {
+    "en": "PSZ-12V Bulat",
+    "ru": "ПСЗ-12В «Булат»",
+    "uk": "ПСЗ-12В «Булат»"
+   }
+  },
+  "Heavy_Svoboda_Helmet": {
+   "icon": "s2/Heavy_Svoboda_Helmet.png",
+   "names": {
+    "ru": "Шлем «Маска-1»"
+   }
+  },
+  "Heavy_Varta_Helmet": {
+   "icon": "s2/Heavy_Varta_Helmet.png",
+   "names": {
+    "en": "Aeroprotection Gas Mask",
+    "ru": "Противогаз «Аэрозащита»",
+    "uk": "Протигаз «Аерозахист»"
+   }
+  },
+  "Hercules": {
+   "icon": "s2/Hercules.png",
+   "names": {
+    "en": "Hercules",
+    "pl": "Herkules",
+    "ru": "«Геркулес»",
+    "uk": "Геркулес"
+   }
+  },
+  "Himzavod_Hub_Note_1Item": {
+   "names": {
+    "ru": "Секретный отчёт"
+   }
+  },
+  "Himzavod_Hub_Note_2Item": {
+   "names": {
+    "ru": "Записка техника Химзавода"
+   }
+  },
+  "IKAR_PikmanPDA": {
+   "names": {
+    "ru": "КПК сержанта Пикмана"
+   }
+  },
+  "Icon": {
+   "names": {
+    "ru": "Икона"
+   }
+  },
+  "Ikar": {
+   "names": {
+    "en": "Icarus",
+    "uk": "Ікар"
+   }
+  },
+  "Inductor": {
+   "names": {
+    "ru": "Индуктор"
+   }
+  },
+  "Jacket_Bandit_Armor": {
+   "icon": "s2/Jacket_Bandit_Armor.png",
+   "names": {
+    "en": "Bandit Jacket",
+    "pl": "Kurtka Bandytów",
+    "ru": "Бандитская косуха",
+    "uk": "Бандитська куртка"
+   }
+  },
+  "Jemmy_Neutral_Armor": {
+   "icon": "s2/Jemmy_Neutral_Armor.png",
+   "names": {
+    "ru": "Куртка новичка"
+   }
+  },
+  "KeshaPDA": {
+   "names": {
+    "ru": "Kesha PDA"
+   }
+  },
+  "Kordon": {
+   "names": {
+    "en": "Cordon",
+    "fr": "Cordon",
+    "pl": "Kordon",
+    "ru": "Кордон",
+    "uk": "Кордон"
+   }
+  },
+  "KozimkovPDA": {
+   "names": {
+    "ru": "КПК лейтенанта Козимкова"
+   }
+  },
+  "KuziaPDA": {
+   "names": {
+    "ru": "КПК бандита Кузи"
+   }
+  },
+  "LavaLampAnomaly": {
+   "icon": "s2/LavaLampAnomaly.png",
+   "names": {
+    "en": "Lava Lamp"
+   }
+  },
+  "LeshiyPDA": {
+   "names": {
+    "ru": "КПК Лешего"
+   }
+  },
+  "Light_Bandit_Helmet": {
+   "icon": "s2/Light_Bandit_Helmet.png",
+   "names": {
+    "ru": "Противогаз ПГ-4 «Тиски»"
+   }
+  },
+  "Light_Duty_Helmet": {
+   "icon": "s2/Light_Duty_Helmet.png",
+   "names": {
+    "ru": "Противогаз «Аврора»"
+   }
+  },
+  "Light_Mercenaries_Armor": {
+   "icon": "s2/Light_Mercenaries_Armor.png",
+   "names": {
+    "ru": "Комбинезон наёмника"
+   }
+  },
+  "Light_Mercenaries_Helmet": {
+   "icon": "s2/Light_Mercenaries_Helmet.png",
+   "names": {
+    "ru": "Противогаз ПА-7"
+   }
+  },
+  "Light_Military_Helmet": {
+   "icon": "s2/Light_Military_Helmet.png",
+   "names": {
+    "ru": "Противогаз ПА-10"
+   }
+  },
+  "Light_Neutral_Helmet": {
+   "icon": "s2/Light_Neutral_Helmet.png",
+   "names": {
+    "ru": "Противогаз «Оптик»"
+   }
+  },
+  "MaksSubbotaPDA": {
+   "names": {
+    "ru": "КПК Макса Субботы"
+   }
+  },
+  "Malahit": {
+   "icon": "s2/Malahit.png",
+   "names": {
+    "en": "Malachite",
+    "uk": "Малахіт"
+   }
+  },
+  "MalahitElevatorKey": {
+   "names": {
+    "ru": "Ключ от лифта в НТЦ «Малахит»"
+   }
+  },
+  "Malahit_Hub_NoteCV": {
+   "names": {
+    "ru": "Письменный ответ на запрос о сотрудничестве"
+   }
+  },
+  "Malahit_KeyCard": {
+   "names": {
+    "ru": "Пропуск в «Малахит»"
+   }
+  },
+  "Malahit_PDADorojnuk": {
+   "names": {
+    "ru": "КПК Виктории Дорожнюк"
+   }
+  },
+  "Malahit_PDAKuprienko": {
+   "names": {
+    "ru": "КПК Куприенко"
+   }
+  },
+  "Medkit": {
+   "icon": "s2/Medkit.png",
+   "names": {
+    "en": "Medkit",
+    "ru": "Аптечка"
+   }
+  },
+  "Middle_Bandit_Armor": {
+   "icon": "s2/Middle_Bandit_Armor.png",
+   "names": {
+    "en": "Marauder Suit",
+    "ru": "Комбинезон «Мародёр»",
+    "uk": "Комбінезон «Мародер»"
+   }
+  },
+  "Milk": {
+   "icon": "s2/Milk.png",
+   "names": {
+    "en": "Condensed Milk",
+    "ru": "Сгущённое молоко",
+    "uk": "Згущене молоко"
+   }
+  },
+  "MonolithDryRation": {
+   "icon": "s2/MonolithDryRation.png",
+   "names": {
+    "en": "Monolith MRE"
+   }
+  },
+  "MuhaPDA": {
+   "names": {
+    "ru": "КПК Миши Мухи"
+   }
+  },
+  "NVG_Gen1": {
+   "icon": "s2/NVG_Gen1.png",
+   "names": {
+    "en": "NVG Gen 1"
+   }
+  },
+  "NVG_Gen2": {
+   "icon": "s2/NVG_Gen2.png",
+   "names": {
+    "en": "NVG Gen 2"
+   }
+  },
+  "NVG_Gen3A": {
+   "icon": "s2/NVG_Gen3A.png",
+   "names": {
+    "en": "NVG Gen 3"
+   }
+  },
+  "Nasos_Neutral_Armor": {
+   "icon": "s2/Nasos_Neutral_Armor.png",
+   "names": {
+    "en": "OZK Explorer's Suit",
+    "ru": "ОЗК «Исследователь»",
+    "uk": "ЗЗК «Дослідник»"
+   }
+  },
+  "NegodaPDA": {
+   "names": {
+    "ru": "КПК доктора Негоды"
+   }
+  },
+  "NestorUSB": {
+   "names": {
+    "ru": "Флешка Нестора"
+   }
+  },
+  "Newbee_Neutral_Armor": {
+   "icon": "s2/Newbee_Neutral_Armor.png",
+   "names": {
+    "en": "Debut Suit",
+    "ru": "Комбинезон «Дебют»",
+    "uk": "Комбінезон «Дебют»"
+   }
+  },
+  "NoonBase_Hub_PancyrPDA": {
+   "names": {
+    "ru": "КПК Панциря"
+   }
+  },
+  "NoonBase_Hub_RoslyPDA": {
+   "names": {
+    "ru": "КПК Рослого"
+   }
+  },
+  "NoonBase_Hub_VectorPDA": {
+   "names": {
+    "ru": "КПК Вектора"
+   }
+  },
+  "NoonBase_Hub_ZavhozPDA": {
+   "names": {
+    "ru": "КПК Завхоза"
+   }
+  },
+  "Note_Cemzavod_Note_Eger_Alensky": {
+   "names": {
+    "ru": "КПК доктора Аленского"
+   }
+  },
+  "Note_Cemzavod_Note_VoroninDecree": {
+   "names": {
+    "ru": "Приказ генерала Воронина"
+   }
+  },
+  "Note_Cemzavod_Note_Zulus": {
+   "names": {
+    "ru": "Записка на листе бумаги"
+   }
+  },
+  "Note_Engergetik_Telegraf": {
+   "names": {
+    "ru": "КПК проводника"
+   }
+  },
+  "Note_Himzavod_Hub_Note_AgathaToKorsh": {
+   "names": {
+    "ru": "Записка с ароматом духов"
+   }
+  },
+  "Note_Himzavod_Hub_Note_LevaFan": {
+   "names": {
+    "ru": "Сломанный КПК"
+   }
+  },
+  "Note_Himzavod_Hub_Note_ScientistsWhining": {
+   "names": {
+    "ru": "КПК профессора Струмило"
+   }
+  },
+  "Note_IKAR_Hub_Note_BigLandChat": {
+   "names": {
+    "ru": "КПК солдата Щербаня"
+   }
+  },
+  "Note_Ikar_Note_Batalov_Desperate": {
+   "names": {
+    "ru": "Рапорт доктора Баталова"
+   }
+  },
+  "Note_RookieVillage_Hub_Note_Agent": {
+   "names": {
+    "ru": "Докторский КПК"
+   }
+  },
+  "Note_RookieVillage_Hub_Note_Oasis": {
+   "names": {
+    "ru": "Брошенный КПК"
+   }
+  },
+  "Note_Rostok_Hub_MessageNote": {
+   "names": {
+    "ru": "Забытый КПК свободовца"
+   }
+  },
+  "Note_Shevchenko_Hub_BeardSpartacus": {
+   "names": {
+    "ru": "Старый КПК"
+   }
+  },
+  "Note_Shevchenko_Hub_RepairNote": {
+   "names": {
+    "ru": "Записка на пожелтевшем листе"
+   }
+  },
+  "Note_YanovDeggyToNor": {
+   "names": {
+    "ru": "Послание на листе бумаги"
+   }
+  },
+  "Note_Zalesie_ConderPDANote": {
+   "names": {
+    "ru": "КПК Чапы Хмурого"
+   }
+  },
+  "PDA_Skif_Background": {
+   "icon": "s2/PDA_Skif_Background.png",
+   "names": {
+    "en": "Skif's Diary"
+   }
+  },
+  "PSYBlocker": {
+   "icon": "s2/PSYBlocker.png",
+   "names": {
+    "en": "Psi-Block",
+    "ru": "Пси-блокада"
+   }
+  },
+  "PillowAnomaly": {
+   "icon": "s2/PillowAnomaly.png",
+   "names": {
+    "en": "Pillow"
+   }
+  },
+  "PomorPDA": {
+   "names": {
+    "ru": "КПК Помора"
+   }
+  },
+  "PripoyPDA": {
+   "names": {
+    "ru": "КПК Припоя"
+   }
+  },
+  "ProjectControllerDocs": {
+   "names": {
+    "ru": "Документы по Проекту «Контролёр»"
+   }
+  },
+  "Prypat_NoteItem1": {
+   "names": {
+    "ru": "Записка Дегтярёву"
+   }
+  },
+  "Prypat_NoteItem2": {
+   "names": {
+    "ru": "Записка от некоего Д."
+   }
+  },
+  "PsyAnomaly": {
+   "icon": "s2/PsyAnomaly.png",
+   "names": {
+    "en": "Psi-anomaly"
+   }
+  },
+  "QuestArtifactCrystalThorn": {
+   "names": {
+    "ru": "Кристальная колючка"
+   }
+  },
+  "QuestArtifactHeartOfChornobyl": {
+   "names": {
+    "ru": "Сердце Чернобыля"
+   }
+  },
+  "QuestArtifactHeartofChornobyl": {
+   "icon": "s2/QuestArtifactHeartofChornobyl.png",
+   "names": {
+    "ru": "Сердце Чернобыля"
+   }
+  },
+  "QuestItem_Folder_Blue": {
+   "names": {
+    "ru": "Папка с документами"
+   }
+  },
+  "QuestItem_Fuse_Low": {
+   "names": {
+    "ru": "Предохранитель"
+   }
+  },
+  "QuestItem_Fuse_Mid": {
+   "names": {
+    "ru": "Предохранитель среднего тока"
+   }
+  },
+  "QuestItem_KeyCard_Blue": {
+   "names": {
+    "ru": "Синяя ключ-карта"
+   }
+  },
+  "QuestItem_KeyCard_Green": {
+   "names": {
+    "ru": "Зелёная ключ-карта"
+   }
+  },
+  "QuestItem_KeyCard_Red": {
+   "names": {
+    "ru": "Красная ключ-карта"
+   }
+  },
+  "QuestItem_KeyCard_Yellow": {
+   "names": {
+    "ru": "Жёлтая ключ-карта"
+   }
+  },
+  "QuestItem_Key_Chest": {
+   "names": {
+    "ru": "Ключ от старого замка"
+   }
+  },
+  "QuestItem_Key_DoorNew": {
+   "names": {
+    "ru": "Ключ"
+   }
+  },
+  "QuestItem_Key_DoorOld": {
+   "names": {
+    "ru": "Ключ от дверного замка"
+   }
+  },
+  "QuestItem_Key_Padlock": {
+   "names": {
+    "ru": "Старый ключ"
+   }
+  },
+  "QuestItem_Notepad_Leather": {
+   "names": {
+    "ru": "Записная книжка"
+   }
+  },
+  "QuestItem_Notepad_Officer": {
+   "names": {
+    "ru": "Офицерская сумка"
+   }
+  },
+  "QuestItem_Notepad_OldDiary": {
+   "names": {
+    "ru": "Старый дневник"
+   }
+  },
+  "QuestItem_Notepad_Paper": {
+   "names": {
+    "ru": "Блокнот"
+   }
+  },
+  "QuestItem_Recorder_Base": {
+   "names": {
+    "ru": "Диктофон"
+   }
+  },
+  "QuestItem_USB_Damaged_Black": {
+   "names": {
+    "ru": "Потрёпанная флешка"
+   }
+  },
+  "QuestItem_USB_Damaged_Blue": {
+   "names": {
+    "ru": "Потрёпанная флешка"
+   }
+  },
+  "QuestItem_USB_Damaged_Burnt": {
+   "names": {
+    "ru": "Оплавленная флешка"
+   }
+  },
+  "QuestItem_USB_Damaged_White": {
+   "names": {
+    "ru": "Потрёпанная флешка"
+   }
+  },
+  "QuestItem_USB_Modern_Black": {
+   "names": {
+    "ru": "Современная флешка"
+   }
+  },
+  "QuestItem_USB_Modern_Darkblue": {
+   "names": {
+    "ru": "Современная флешка"
+   }
+  },
+  "QuestItem_USB_Modern_White": {
+   "names": {
+    "ru": "Современная флешка"
+   }
+  },
+  "QuestItem_USB_Stalker_Big": {
+   "names": {
+    "ru": "Флешка"
+   }
+  },
+  "QuestItem_USB_Stalker_Blue": {
+   "names": {
+    "ru": "Флешка"
+   }
+  },
+  "QuestItem_USB_Stalker_Red": {
+   "names": {
+    "ru": "Флешка"
+   }
+  },
+  "QuestItem_USB_Upgrade": {
+   "names": {
+    "ru": "Флешка с чертежами"
+   }
+  },
+  "RSQ01_NewbiePDA": {
+   "names": {
+    "ru": "КПК пропавшего сталкера"
+   }
+  },
+  "RSQ01_NewbiePDA2": {
+   "names": {
+    "ru": "Почти не использованный КПК"
+   }
+  },
+  "RSQ01_NewbiePDA3": {
+   "names": {
+    "ru": "КПК пропавшего новичка"
+   }
+  },
+  "RSQ01_NewbiePDA4": {
+   "names": {
+    "ru": "КПК неизвестного сталкера"
+   }
+  },
+  "RSQ01_WarlockPackage": {
+   "names": {
+    "ru": "Посылка для Колдуна"
+   }
+  },
+  "RSQ04_C05_FuelCan": {
+   "names": {
+    "ru": "Канистра с техническим спиртом"
+   }
+  },
+  "RSQ04_C10_GlavarPDA": {
+   "names": {
+    "ru": "КПК главаря"
+   }
+  },
+  "RSQ05_C01_FlashDrive": {
+   "names": {
+    "ru": "Невзрачный кейc"
+   }
+  },
+  "RSQ05_C10_IItemPDA1": {
+   "names": {
+    "ru": "КПК одного из агентов Сыча"
+   }
+  },
+  "RSQ05_C10_ItemNotes3": {
+   "names": {
+    "ru": "Испачканная записка"
+   }
+  },
+  "RSQ05_C10_ItemNotes4": {
+   "names": {
+    "ru": "Обрывок документа"
+   }
+  },
+  "RSQ05_C10_ItemPDA2": {
+   "names": {
+    "ru": "Секретный КПК одного из агентов Сыча"
+   }
+  },
+  "RSQ06_C04_Goods": {
+   "names": {
+    "ru": "Украденные товары"
+   }
+  },
+  "RSQ07_C09_ContainerItem": {
+   "names": {
+    "ru": "Заизолированный контейнер"
+   }
+  },
+  "RSQ07_Item": {
+   "names": {
+    "ru": "Посылка для курьера"
+   }
+  },
+  "RSQ08_Item": {
+   "names": {
+    "ru": "Чемодан с очень ценным грузом"
+   }
+  },
+  "RSQ08_Item2": {
+   "names": {
+    "ru": "Драгоценная флешка"
+   }
+  },
+  "RSQ09_Item": {
+   "names": {
+    "ru": "Чемодан с важным грузом"
+   }
+  },
+  "RSQ10_Item": {
+   "names": {
+    "ru": "Чемодан с инструментами"
+   }
+  },
+  "RU_ColimScope_1": {
+   "names": {
+    "en": "Open Collimator Sight",
+    "ru": "Панорамный коллиматор"
+   }
+  },
+  "RU_ColimScope_2": {
+   "names": {
+    "en": "Assault Rifle Collimator"
+   }
+  },
+  "RU_GLaunch_1": {
+   "names": {
+    "en": "GP-25",
+    "ru": "ГП-25"
+   }
+  },
+  "RU_Silen_1": {
+   "names": {
+    "en": "Pistol Suppressor",
+    "ru": "Пистолетный ПБС"
+   }
+  },
+  "RU_Silen_2": {
+   "names": {
+    "en": "Assault Rifle Suppressor",
+    "ru": "Автоматный ПБС"
+   }
+  },
+  "RU_Silen_3": {
+   "names": {
+    "en": "Sniper Rifle Suppressor",
+    "ru": "Снайперский ПБС"
+   }
+  },
+  "RU_X2Scope_1": {
+   "names": {
+    "en": "PAO 2X Scope",
+    "ru": "Прицел ПАО 2Х"
+   }
+  },
+  "RU_X4Scope_1": {
+   "names": {
+    "en": "PSO 4X Scope",
+    "ru": "Прицел ПСО 4Х"
+   }
+  },
+  "RU_X8Scope_1": {
+   "names": {
+    "en": "POS 8x Scope",
+    "ru": "Прицел ПОС 8Х"
+   }
+  },
+  "RazorAnomaly": {
+   "icon": "s2/RazorAnomaly.png",
+   "names": {
+    "en": "Razor",
+    "uk": "Осколки"
+   }
+  },
+  "RichtersPlayer": {
+   "icon": "s2/RichtersPlayer.png",
+   "names": {
+    "en": "Richter's Player",
+    "ru": "Плеер Рихтера",
+    "uk": "Плеєр Ріхтера"
+   }
+  },
+  "Rook_Dolg_Armor": {
+   "icon": "s2/Rook_Dolg_Armor.png",
+   "names": {
+    "en": "Recruit Suit",
+    "ru": "Комбинезон «Рекрут»",
+    "uk": "Комбінезон «Рекрут»"
+   }
+  },
+  "Rook_Svoboda_Armor": {
+   "icon": "s2/Rook_Svoboda_Armor.png",
+   "names": {
+    "ru": "Комбинезон «Ветер свободы»"
+   }
+  },
+  "RookieVillage_MassandraPDA": {
+   "names": {
+    "ru": "КПК Серёги Массандры"
+   }
+  },
+  "RookieVillage_WolfPDA": {
+   "names": {
+    "ru": "Старый КПК Волка"
+   }
+  },
+  "RooseveltPDA": {
+   "names": {
+    "ru": "КПК Рузвельта"
+   }
+  },
+  "Rostok_NoteAgreementItem": {
+   "names": {
+    "ru": "Договор Миклухи на бумаге"
+   }
+  },
+  "Rostok_NoteToShevchenkoItem": {
+   "names": {
+    "ru": "Список товаров для Бороды"
+   }
+  },
+  "Rostok_NoteToSultanskItem": {
+   "names": {
+    "ru": "Список товаров для Калины"
+   }
+  },
+  "Rostok_PDAPolovin": {
+   "names": {
+    "ru": "КПК с тела сержанта Половина"
+   }
+  },
+  "Rostok_PDA_Doctor": {
+   "names": {
+    "ru": "КПК Кирилла Антоновича"
+   }
+  },
+  "Rostok_PDA_Lost": {
+   "names": {
+    "ru": "КПК Дани Мува"
+   }
+  },
+  "Rostok_YarikChillPDA": {
+   "names": {
+    "ru": "КПК Ярика Чилла"
+   }
+  },
+  "SEQ01_BanditPDA": {
+   "names": {
+    "ru": "КПК неизвестного бандита"
+   }
+  },
+  "SEQ02_StalkerPDA": {
+   "names": {
+    "ru": "КПК разгневанного сталкера"
+   }
+  },
+  "SEQ04_ScientistPDA": {
+   "names": {
+    "ru": "КПК неизвестного учёного"
+   }
+  },
+  "SEQ05_StalkerPDA": {
+   "names": {
+    "ru": "Слегка повреждённый КПК"
+   }
+  },
+  "SEQ06_StalkerPDA": {
+   "names": {
+    "ru": "КПК неизвестного сталкера"
+   }
+  },
+  "SEQ08_StalkerPDA": {
+   "names": {
+    "ru": "Поцарапанный КПК"
+   }
+  },
+  "SEQ09_StalkerPDA": {
+   "names": {
+    "ru": "Окровавленный КПК"
+   }
+  },
+  "SEQ10_StalkerPDA": {
+   "names": {
+    "ru": "КПК неизвестного корпусовца"
+   }
+  },
+  "SEVA_Dolg_Armor": {
+   "icon": "s2/SEVA_Dolg_Armor.png",
+   "names": {
+    "en": "SEVA-D Suit",
+    "ru": "Комбинезон «СЕВА-Д»",
+    "uk": "Комбінезон «СЕВА-Д»"
+   }
+  },
+  "SEVA_Monolith_Armor": {
+   "icon": "s2/SEVA_Monolith_Armor.png",
+   "names": {
+    "en": "Wanderer Suit",
+    "ru": "Комбинезон «Странник»",
+    "uk": "Комбінезон «Мандрівник»"
+   },
+   "variant_of": "SEVA suit"
+  },
+  "SEVA_Neutral_Armor": {
+   "icon": "s2/SEVA_Neutral_Armor.png",
+   "names": {
+    "ru": "Комбинезон «СЕВА»"
+   }
+  },
+  "SEVA_Spark_Armor": {
+   "icon": "s2/SEVA_Spark_Armor.png",
+   "names": {
+    "en": "SEVA-I Suit",
+    "ru": "Комбинезон «СЕВА-И»",
+    "uk": "Комбінезон «СЕВА-І»"
+   }
+  },
+  "SEVA_Svoboda_Armor": {
+   "icon": "s2/SEVA_Svoboda_Armor.png",
+   "names": {
+    "en": "SEVA-V Suit",
+    "ru": "Комбинезон «СЕВА-В»",
+    "uk": "Комбінезон «СЕВА-В»"
+   }
+  },
+  "SQ01_GunAK74_ST": {
+   "names": {
+    "ru": "АКМ-74С Гриши Валенка"
+   }
+  },
+  "SQ01_ValenokPDA": {
+   "names": {
+    "ru": "КПК Гриши Валенка"
+   }
+  },
+  "SQ02_GunM16_ST": {
+   "names": {
+    "ru": "AR416 неизвестного сталкера"
+   }
+  },
+  "SQ02_PomorKey": {
+   "names": {
+    "ru": "Ключ Помора"
+   }
+  },
+  "SQ04_SoloveiPDA": {
+   "names": {
+    "ru": "КПК Соловья"
+   }
+  },
+  "SQ05_GuronsGoods": {
+   "names": {
+    "ru": "Груз для «Своры»"
+   }
+  },
+  "SQ06_CargoNote": {
+   "names": {
+    "ru": "Транзитная накладная. Приложение 2"
+   }
+  },
+  "SQ06_MSOPAudiolog": {
+   "names": {
+    "ru": "Диктофон с записью допроса сталкера по прозвищу Торф"
+   }
+  },
+  "SQ06_PDA_ZombieScientist": {
+   "names": {
+    "ru": "КПК Вадима Брагина"
+   }
+  },
+  "SQ06_PsiLamp": {
+   "names": {
+    "ru": "Компактная пси-установка"
+   }
+  },
+  "SQ06_PsiLampDestroyed": {
+   "names": {
+    "ru": "Разбитая компактная пси-установка"
+   }
+  },
+  "SQ103_PersonalCorrespondance_Text": {
+   "icon": "s2/SQ103_PersonalCorrespondance_Text.png",
+   "names": {
+    "en": "Mavka's chat with Lukash."
+   }
+  },
+  "SQ10_BunchOfKeysSPO": {
+   "names": {
+    "ru": "Связка ключей"
+   }
+  },
+  "SQ10_DubniyPDA": {
+   "names": {
+    "ru": "КПК Дубного"
+   }
+  },
+  "SQ10_HogPDA": {
+   "names": {
+    "ru": "КПК Хога"
+   }
+  },
+  "SQ10_JumperPDA": {
+   "names": {
+    "ru": "КПК Джампера"
+   }
+  },
+  "SQ10_SeverNoteDubniy": {
+   "names": {
+    "ru": "Записка в кабинете Севера"
+   }
+  },
+  "SQ10_TihijMonolithStashNote": {
+   "names": {
+    "ru": "Записка из монолитовского тайника"
+   }
+  },
+  "SQ13_PDA_Budnik": {
+   "names": {
+    "ru": "КПК лейтенанта Будника"
+   }
+  },
+  "SQ13_Soul": {
+   "names": {
+    "ru": "Душа"
+   }
+  },
+  "SQ18_KamysPDA": {
+   "names": {
+    "ru": "КПК Худрука"
+   }
+  },
+  "SQ18_KamysPaperNote": {
+   "names": {
+    "ru": "Записка для Худрука"
+   }
+  },
+  "SQ47_DavidAkopan_PDA": {
+   "names": {
+    "ru": "КПК Давида Акопяна"
+   }
+  },
+  "SQ47_LevaBorzoj_PDA": {
+   "names": {
+    "ru": "КПК Сани Бодряка"
+   }
+  },
+  "SQ50_SultanSuitcase": {
+   "names": {
+    "ru": "Кейс Султана"
+   }
+  },
+  "SQ86_GenijAK74": {
+   "names": {
+    "ru": "«Решала»"
+   }
+  },
+  "SQ86_SashkaBitokPDA": {
+   "names": {
+    "ru": "КПК Сашки Битка"
+   }
+  },
+  "SQ87_AdikPedalKey": {
+   "names": {
+    "ru": "Ключ Адика Педали"
+   }
+  },
+  "SQ87_AdikPedalPDA": {
+   "names": {
+    "ru": "Adik Pedal’s PDA"
+   }
+  },
+  "SQ87_ZenaGlybaPDA": {
+   "names": {
+    "ru": "КПК Жени Глыбы"
+   }
+  },
+  "SQ87_ZenaGlybaPDA_Alternative": {
+   "names": {
+    "ru": "КПК Жени Глыбы"
+   }
+  },
+  "SQ87_ZenaGlybaPDA_Alternative_SkifLeave": {
+   "names": {
+    "ru": "КПК Жени Глыбы"
+   }
+  },
+  "SQ88_GrebenNote": {
+   "names": {
+    "ru": "КПК Гребня"
+   }
+  },
+  "SQ88_KuvaldaDiary": {
+   "names": {
+    "ru": "Дневник Кувалды"
+   }
+  },
+  "SQ88_MacekPDA": {
+   "names": {
+    "ru": "КПК солдата Мачека"
+   }
+  },
+  "SQ88_NimbleToBeardReport": {
+   "names": {
+    "ru": "Отчет от Шустрого"
+   }
+  },
+  "SQ89_ZhgutPDA": {
+   "names": {
+    "ru": "КПК Жгута"
+   }
+  },
+  "SQ90_FreedomPDA": {
+   "names": {
+    "ru": "КПК свободовца"
+   }
+  },
+  "SQ90_GribPDA": {
+   "names": {
+    "ru": "КПК Гриба"
+   }
+  },
+  "SQ90_KeyFromTunnels": {
+   "names": {
+    "ru": "Ключ от тоннелей в Рыжем лесу"
+   }
+  },
+  "SQ90_ParikPDA": {
+   "names": {
+    "ru": "КПК Парика"
+   }
+  },
+  "SQ90_PseudoGiantCollar": {
+   "names": {
+    "ru": "Ошейник псевдогиганта"
+   }
+  },
+  "SQ90_SefPDA": {
+   "names": {
+    "ru": "КПК Шефа"
+   }
+  },
+  "SQ90_ToropygaPDA": {
+   "names": {
+    "ru": "КПК Торопыги"
+   }
+  },
+  "SQ92_MangustPDA": {
+   "names": {
+    "ru": "КПК Ярика Мангуста"
+   }
+  },
+  "SQ92_VolkovPDA": {
+   "names": {
+    "ru": "КПК сержанта Волкова"
+   }
+  },
+  "SQ95_KirkaPDAAudiolog": {
+   "names": {
+    "en": "Recording of a Conversation from Pickaxe's PDA"
+   }
+  },
+  "SS_PGO7Scope": {
+   "names": {
+    "ru": "Прицел ПГ-7у"
+   }
+  },
+  "Sausage": {
+   "icon": "s2/Sausage.png",
+   "names": {
+    "en": "Sausage",
+    "ru": "Колбаса"
+   }
+  },
+  "Scanner": {
+   "names": {
+    "ru": "Сканер «ТОПАЗ»"
+   }
+  },
+  "ShahPDA": {
+   "names": {
+    "ru": "КПК Шаха"
+   }
+  },
+  "Shevchenko_Camp_BorodaPDA": {
+   "names": {
+    "ru": "КПК Бороды"
+   }
+  },
+  "Shevchenko_NoteBorodaItem": {
+   "names": {
+    "ru": "Список снаряжения для «Шевченко»"
+   }
+  },
+  "Shevchenko_NoteDiaryItem": {
+   "names": {
+    "ru": "Лист из дневника проводника"
+   }
+  },
+  "SkifGun": {
+   "names": {
+    "ru": "Пистолет Скифа"
+   }
+  },
+  "SkinJacket_Bandit_Armor": {
+   "names": {
+    "ru": "Бандитская куртка"
+   }
+  },
+  "SkinJacket_Bandit_Armor_Armor": {
+   "icon": "s2/SkinJacket_Bandit_Armor_Armor.png",
+   "names": {
+    "ru": "Бандитская куртка"
+   }
+  },
+  "SoapBubbleAnomaly": {
+   "icon": "s2/SoapBubbleAnomaly.png",
+   "names": {
+    "en": "Soap Bubble"
+   }
+  },
+  "SpoiledCannedFood": {
+   "icon": "s2/SpoiledCannedFood.png",
+   "names": {
+    "en": "Spoiled Canned Food",
+    "ru": "Протухшие консервы"
+   }
+  },
+  "SteamAnomaly": {
+   "icon": "s2/SteamAnomaly.png",
+   "names": {
+    "en": "Steam"
+   }
+  },
+  "StrangePDA": {
+   "names": {
+    "ru": "Необычный КПК"
+   }
+  },
+  "Sultansk_Hub_PDADeadBody": {
+   "names": {
+    "ru": "КПК мёртвого сталкера на Кордоне"
+   }
+  },
+  "Sultansk_NoteAgreementItem": {
+   "names": {
+    "ru": "Документ Султана"
+   }
+  },
+  "Sultansk_NoteKalinaDebtItem": {
+   "names": {
+    "ru": "Расписка для Сони Калины"
+   }
+  },
+  "Sultansk_NoteKalinaItem": {
+   "names": {
+    "ru": "Лист из ежедневника Сони Калины"
+   }
+  },
+  "Sultansk_NoteKalinaListItem": {
+   "names": {
+    "ru": "Лист со списком дел"
+   }
+  },
+  "Sultansk_NoteKalinaSituationItem": {
+   "names": {
+    "ru": "Личные заметки Сони Калины"
+   }
+  },
+  "Sultansk_NotePartyItem": {
+   "names": {
+    "ru": "Список продуктов"
+   }
+  },
+  "Sultansk_NoteZlotarItem": {
+   "names": {
+    "ru": "Записка от Злотара"
+   }
+  },
+  "Sultansk_PDAChilik": {
+   "names": {
+    "ru": "КПК Вити Чилика"
+   }
+  },
+  "Sultansk_PDAKalinaItem": {
+   "names": {
+    "ru": "КПК Сони Калины"
+   }
+  },
+  "Sultansk_PDARyhlyi": {
+   "names": {
+    "ru": "КПК Валика Рыхлого"
+   }
+  },
+  "Sultansk_PDASultan": {
+   "names": {
+    "ru": "КПК Султана"
+   }
+  },
+  "Sultansk_PDASych": {
+   "names": {
+    "ru": "КПК Сыча"
+   }
+  },
+  "SuppressorUpgrade": {
+   "names": {
+    "ru": "Подавитель"
+   }
+  },
+  "Terricon_Hub_KisaPDA": {
+   "names": {
+    "ru": "КПК Кисы"
+   }
+  },
+  "Terricon_Hub_MertvakPDA": {
+   "names": {
+    "ru": "КПК Мертвяка"
+   }
+  },
+  "Terricon_Hub_ZoraPalitraPDA": {
+   "names": {
+    "ru": "КПК Жоры Палитры"
+   }
+  },
+  "Terricon_NoteListItem": {
+   "names": {
+    "ru": "Клочок бумаги со списком"
+   }
+  },
+  "Terricon_PDAAboutFriend": {
+   "names": {
+    "ru": "Забытый КПК"
+   }
+  },
+  "TestEQ_MoosePDA": {
+   "names": {
+    "ru": "The Moose's PDA"
+   }
+  },
+  "UltraLight_Mercenaries_Armor": {
+   "icon": "s2/UltraLight_Mercenaries_Armor.png",
+   "names": {
+    "en": "Mercenary's Light Suit",
+    "ru": "Облегчённый комбинезон наёмника",
+    "uk": "Полегшений комбінезон найманця"
+   },
+   "variant_of": "Merc suit"
+  },
+  "Upgr_Body_08": {
+   "names": {
+    "ru": "Крепление для подствольных модулей"
+   }
+  },
+  "Upgr_body_01": {
+   "names": {
+    "ru": "Ударопрочные антикоррозионные детали"
+   }
+  },
+  "Upgr_body_02": {
+   "names": {
+    "ru": "Защитное напыление на возвратный механизм"
+   }
+  },
+  "Upgr_body_03": {
+   "names": {
+    "ru": "Автоматический двухпозиционный газовый регулятор"
+   }
+  },
+  "Upgr_body_04": {
+   "names": {
+    "ru": "Переделка под калибр [указать калибр]"
+   }
+  },
+  "Upgr_body_05": {
+   "names": {
+    "ru": "Крепление оптики"
+   }
+  },
+  "Upgr_body_06": {
+   "names": {
+    "ru": "Замена фрезерованных деталей штампованными"
+   }
+  },
+  "Upgr_body_07": {
+   "names": {
+    "ru": "Подгонка боевых упоров затвора"
+   }
+  },
+  "Upgr_gunstock_01": {
+   "names": {
+    "ru": "Полимерный приклад"
+   }
+  },
+  "Upgr_gunstock_02": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "Upgr_gunstock_03": {
+   "names": {
+    "ru": "Увеличенный упор"
+   }
+  },
+  "Upgr_gunstock_04": {
+   "names": {
+    "ru": "Ребаланс приклада"
+   }
+  },
+  "Upgr_gunstock_05": {
+   "names": {
+    "ru": "Каучуковый тыльник приклада"
+   }
+  },
+  "Upgr_gunstock_06": {
+   "names": {
+    "ru": "Упор для щеки"
+   }
+  },
+  "Upgr_handguard_01": {
+   "names": {
+    "ru": "Эргономичная форма"
+   }
+  },
+  "Upgr_handguard_02": {
+   "names": {
+    "ru": "Тактическая рукоять"
+   }
+  },
+  "Upgr_handguard_03": {
+   "names": {
+    "ru": "ЛЦУ"
+   }
+  },
+  "Upgr_handguard_04": {
+   "names": {
+    "ru": "Прорезиненное покрытие"
+   }
+  },
+  "Upgr_handguard_05": {
+   "names": {
+    "ru": "Анатомическая подгонка"
+   }
+  },
+  "Upgr_handguard_06": {
+   "names": {
+    "ru": "Полимерные детали"
+   }
+  },
+  "Upgr_handguard_07": {
+   "names": {
+    "ru": "Установка балансира"
+   }
+  },
+  "Upgr_handguard_08": {
+   "names": {
+    "ru": "Угловая рукоять"
+   }
+  },
+  "Upgr_handle_01": {
+   "names": {
+    "ru": "Полимерная рукоятка"
+   }
+  },
+  "Upgr_handle_02": {
+   "names": {
+    "ru": "Балансировка рукоятки"
+   }
+  },
+  "Upgr_handle_03": {
+   "names": {
+    "ru": "Кистевой упор"
+   }
+  },
+  "Upgr_handle_04": {
+   "names": {
+    "ru": "Прорезиненный слой"
+   }
+  },
+  "Upgr_handle_05": {
+   "names": {
+    "ru": "Пазы под пальцы"
+   }
+  },
+  "Upgr_handle_06": {
+   "names": {
+    "ru": "Индивидуальная подгонка"
+   }
+  },
+  "Upgr_stvol_01": {
+   "names": {
+    "ru": "Пламегаситель"
+   }
+  },
+  "Upgr_stvol_02": {
+   "names": {
+    "ru": "Дульный тормоз"
+   }
+  },
+  "Upgr_stvol_03": {
+   "names": {
+    "ru": "Сверхпрочные термостойкие сплавы"
+   }
+  },
+  "Upgr_stvol_04": {
+   "names": {
+    "ru": "Радиатор ствола"
+   }
+  },
+  "Upgr_stvol_05": {
+   "names": {
+    "ru": "Установка запирателя ствола"
+   }
+  },
+  "Upgr_stvol_06": {
+   "names": {
+    "ru": "Уплотнитель муфты возвратного механизма"
+   }
+  },
+  "Upgr_stvol_07": {
+   "names": {
+    "ru": "Изменение геометрии газблока"
+   }
+  },
+  "Upgr_stvol_08": {
+   "names": {
+    "ru": "Лужение внутренней поверхности ствола"
+   }
+  },
+  "Upgr_stvol_09": {
+   "names": {
+    "ru": "Дополнительный нарез в стволе"
+   }
+  },
+  "Upgr_stvol_10": {
+   "names": {
+    "ru": "Титановый ствол"
+   }
+  },
+  "Upgr_stvol_11": {
+   "names": {
+    "ru": "Хромирование ствола"
+   }
+  },
+  "Upgr_stvol_12": {
+   "names": {
+    "ru": "Чок"
+   }
+  },
+  "Upgr_stvol_13": {
+   "names": {
+    "ru": "Нарезной ствол"
+   }
+  },
+  "Upgr_unic_APB": {
+   "names": {
+    "ru": "Рамочный приклад"
+   }
+  },
+  "Upgr_unic_Bull": {
+   "names": {
+    "ru": "Переделка под дробь"
+   }
+  },
+  "Upgr_unic_Bull_01": {
+   "names": {
+    "ru": "Удлинённый ствол"
+   }
+  },
+  "Upgr_unic_DP12": {
+   "names": {
+    "ru": "Спаренный боёк"
+   }
+  },
+  "Upgr_unic_Gauss": {
+   "names": {
+    "ru": "Регулируемый дальномерный прицел"
+   }
+  },
+  "Upgr_unic_IWI": {
+   "names": {
+    "ru": "Калибр 5.45"
+   }
+  },
+  "Upgr_unic_M14": {
+   "names": {
+    "ru": "Замена спускового механизма"
+   }
+  },
+  "Upgr_unic_MP5": {
+   "names": {
+    "ru": "Калибр .45"
+   }
+  },
+  "Upgr_unic_Maluk": {
+   "names": {
+    "ru": "Калибр 7.62x39"
+   }
+  },
+  "Upgr_unic_PKP": {
+   "names": {
+    "ru": "Крепление коллиматора"
+   }
+  },
+  "Upgr_unic_R700": {
+   "names": {
+    "ru": "Регулируемый дальномерный прицел"
+   }
+  },
+  "Upgr_unic_Rem": {
+   "names": {
+    "ru": "Магазинное питание"
+   }
+  },
+  "Upgr_unic_Sayga": {
+   "names": {
+    "ru": "Замена спускового механизма"
+   }
+  },
+  "Upgr_unic_Tar": {
+   "names": {
+    "ru": "Калибр 5.56"
+   }
+  },
+  "Upgr_unic_Vector": {
+   "names": {
+    "ru": "Компенсаторная насадка для ствольной коробки"
+   }
+  },
+  "VaranPDA": {
+   "names": {
+    "ru": "КПК Варана"
+   }
+  },
+  "VartaDogtag": {
+   "names": {
+    "ru": "Жетон бойца «Варты»"
+   }
+  },
+  "Veles": {
+   "names": {
+    "en": "Veles",
+    "ru": "Детектор «Велес»"
+   }
+  },
+  "Vodka": {
+   "icon": "s2/Vodka.png",
+   "names": {
+    "en": "Cossacks Vodka",
+    "ru": "Водка «Казаки»"
+   }
+  },
+  "VortexDudePDA": {
+   "names": {
+    "ru": "КПК упавшего с неба сталкера"
+   }
+  },
+  "Water": {
+   "icon": "s2/Water.png",
+   "names": {
+    "en": "Water",
+    "ru": "Вода"
+   }
+  },
+  "X7_Armor": {
+   "names": {
+    "ru": "Комбинезон Х7"
+   }
+  },
+  "YanovDeggyToNor": {
+   "icon": "s2/YanovDeggyToNor.png",
+   "names": {
+    "en": "A radio transmission researcher's dossier"
+   }
+  },
+  "Yanov_Hub_Audiolog_Garpia": {
+   "names": {
+    "en": "Recording of Harpy’s Private Conversation with Degtyarev"
+   }
+  },
+  "Yanov_Hub_Audiolog_Nor": {
+   "icon": "s2/Yanov_Hub_Audiolog_Nor.png",
+   "names": {
+    "en": "Call to Nor from an Old Friend"
+   }
+  },
+  "Yanov_KostaBanduraPDA": {
+   "names": {
+    "ru": "КПК Кости Бандуры"
+   }
+  },
+  "Yanov_NoteHana": {
+   "names": {
+    "ru": "Список запланированных покупок торговца с Янова"
+   }
+  },
+  "Yanov_NoteOrder": {
+   "names": {
+    "ru": "Разрешение на пропуск в Припять"
+   }
+  },
+  "Yanov_Note_ToDoListItem": {
+   "names": {
+    "ru": "Лист бумаги с перечнем"
+   }
+  },
+  "Yanov_PDA_Garpia": {
+   "names": {
+    "ru": "КПК Гарпии"
+   }
+  },
+  "Yanov_PDA_Nor": {
+   "names": {
+    "ru": "КПК Нора"
+   }
+  },
+  "Yanov_SenaDymPDA": {
+   "names": {
+    "ru": "КПК Сени Дыма"
+   }
+  },
+  "Zalesie_BatyaPDA": {
+   "names": {
+    "ru": "КПК Бати"
+   }
+  },
+  "Zalesie_HomakNote": {
+   "names": {
+    "ru": "Записка для Хомяка"
+   }
+  },
+  "Zalesie_HomakPDA": {
+   "names": {
+    "ru": "КПК Хомяка"
+   }
+  },
+  "Zalesie_KoldunNote": {
+   "names": {
+    "ru": "Записка для Колдуна"
+   }
+  },
+  "Zalesie_KoldunPDA": {
+   "names": {
+    "ru": "КПК Колдуна"
+   }
+  },
+  "Zalesie_LenaPDA": {
+   "names": {
+    "ru": "КПК Дяди Лёни"
+   }
+  },
+  "Zalesie_LinzaPDANoteItem": {
+   "names": {
+    "ru": "Записка для Дяди Лёни"
+   }
+  },
+  "Zalesie_NoteFromNikolaich": {
+   "names": {
+    "ru": "Записи Николаича"
+   }
+  },
+  "ZheleznyLes": {
+   "icon": "s2/ZheleznyLes.png",
+   "names": {
+    "en": "Iron Forest",
+    "uk": "Залізний ліс"
+   }
+  },
+  "ZhukovskyPDA": {
+   "names": {
+    "ru": "КПК рядового Павлюка"
+   }
+  },
+  "Zorya_Neutral_Armor": {
+   "icon": "s2/Zorya_Neutral_Armor.png",
+   "names": {
+    "ru": "Комбинезон «Заря»"
+   }
+  },
+  "Zorya_Tourist_Armor": {
+   "icon": "s2/Zorya_Tourist_Armor.png",
+   "names": {
+    "ru": "Комбинезон туриста"
+   }
+  },
+  "e01_mq01_ssp_memo": {
+   "names": {
+    "ru": "Памятка бойца МСОП"
+   }
+  },
+  "krivenko_flashdrive_05_05": {
+   "names": {
+    "ru": "Флешка Кривенко"
+   }
+  },
+  "krivenko_full_flashdrive_05_05": {
+   "names": {
+    "ru": "Флешка Кривенко с данными"
+   }
+  },
+  "myriflepack_GunKora_HG": {
+   "names": {
+    "ru": "Kora-1911"
+   }
+  },
+  "myriflepack_GunKora_MagIncreased": {
+   "names": {
+    "ru": "Увеличенный магазин для Kora-1911"
+   }
+  },
+  "myriflepack_Gun_NightStalker_HG": {
+   "names": {
+    "ru": "Night Stalker"
+   }
+  },
+  "nvgpack_Gun_Dragunka_SR": {
+   "names": {
+    "ru": "«Драгунка» Гонты"
+   }
+  },
+  "psilamp_part_05_05": {
+   "names": {
+    "ru": "Фрагмент пси-маяка"
+   }
+  },
+  "sid_items_E02_SQ01_banditPDA": {
+   "names": {
+    "ru": "КПК Глушака"
+   }
+  }
+ },
+ "schema_version": 2,
+ "source": "Russian names: the game's string table as published by the Russian S.T.A.L.K.E.R. Wiki; English names, icons and variants: S.T.A.L.K.E.R. Wiki (stalker.fandom.com, CC BY-SA 3.0), stalker2.wiki.fextralife.com and data/s2_sources.json. Names and icons only."
+}

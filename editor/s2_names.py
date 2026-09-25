@@ -13,6 +13,7 @@ import re
 
 from .i18n import tr
 from .official_names import official_name
+from .s2_items import s2_official_name
 
 # Consumables, grenades and a few unique weapons whose names are certain.
 _EXACT: dict[str, str] = {
@@ -281,7 +282,11 @@ def _blueprint(sid: str) -> str | None:
     match = re.fullmatch(r"Blueprint_(.+?)(?:_Upgrade)?_(\d+)", sid, re.IGNORECASE)
     if match is None:
         return None
-    return f"{tr('Чертёж')}: {_words(match.group(1))}" + tr(" · ур. {0}", match.group(2))
+    weapon = next(
+        (name for name in (s2_official_name(f"Gun{match.group(1)}_{suffix}") for suffix in ("ST", "HG", "PP", "SG", "SP", "MG", "AR")) if name),
+        None,
+    )
+    return f"{tr('Чертёж')}: {weapon or _words(match.group(1))}" + tr(" · ур. {0}", match.group(2))
 
 
 def s2_readable_name(sid: str | None, *, kind_code: int | None = None) -> str | None:
@@ -290,6 +295,9 @@ def s2_readable_name(sid: str | None, *, kind_code: int | None = None) -> str | 
     value = str(sid or "").strip()
     if not value:
         return None
+    official = s2_official_name(value)
+    if official:
+        return official
     twin = _TRILOGY_TWINS.get(value.casefold())
     if twin is not None:
         official = official_name("stalker-cop", "items", twin)
