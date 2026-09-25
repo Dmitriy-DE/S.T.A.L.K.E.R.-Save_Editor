@@ -229,6 +229,12 @@ def collect() -> dict[str, dict]:
             item.setdefault("image_url", image)
     for code, english in sources["english_names"].items():
         entry(code)["names"].setdefault("en", english)
+    # Researched gap fills: only where nothing better is known.
+    for code, (english, image) in sources.get("gap_fills", {}).items():
+        item = entry(code)
+        item["names"].setdefault("en", english)
+        if image:
+            item.setdefault("image_url", image)
     by_name = {_norm(name): url for name, url in sources["images_by_name"].items()}
     for item in items.values():
         english = item["names"].get("en")
@@ -272,7 +278,7 @@ def _store_icon(raw: bytes, target: Path) -> bool:
     width, height = _MAX_ICON
     if image.width() > width or image.height() > height:
         image = image.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    return image.save(str(target), b"PNG")
+    return image.save(str(target), "PNG")  # type: ignore[call-overload]  # PySide6 stub wants bytes, runtime wants str
 
 
 def download_icons(items: dict[str, dict]) -> None:

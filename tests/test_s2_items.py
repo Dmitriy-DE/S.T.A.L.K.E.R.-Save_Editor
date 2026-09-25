@@ -76,6 +76,6 @@ def test_coverage_floor_on_real_save_sids():
     sids = json.loads((s2_items.ITEMS_PATH.parents[1] / "data" / "s2_sid_sample.json").read_text(encoding="utf-8"))["sids"]
     stats, _gaps = s2_coverage.coverage(sids)
     # Floors only go up; raise them as gaps are filled (docs/roadmap KB-4).
-    assert stats["weapon"]["en"] >= 92 and stats["weapon"]["icon"] >= 84
-    assert stats["ammo"]["en"] == stats["ammo"]["total"]
-    assert stats["item"]["en"] >= 60 and stats["item"]["icon"] >= 55
+    for kind in ("weapon", "ammo"):
+        assert stats[kind]["en"] == stats[kind]["icon"] == stats[kind]["total"]
+    assert stats["item"]["en"] == stats["item"]["total"] and stats["item"]["icon"] >= 73
