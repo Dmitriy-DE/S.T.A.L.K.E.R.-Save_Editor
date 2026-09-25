@@ -92,6 +92,15 @@ def _resolve() -> str:
     return saved or system_language()
 
 
+def resolve_language(code: str | None) -> str:
+    """The language a restart would use if ``code`` were the saved choice."""
+
+    forced = _normalise(os.environ.get("STALKER_EDITOR_LANG"))
+    if forced:
+        return forced
+    return _normalise(code) or system_language()
+
+
 def current_language() -> str:
     global _current
     if _current is None:
@@ -123,6 +132,21 @@ def _format(text: str, args: tuple[object, ...]) -> str:
         return text.format(*args)
     except (IndexError, KeyError, ValueError):
         return text
+
+
+def tr_in(code: str | None, text: str, *args: object) -> str:
+    """Translate ``text`` into a specific language, not the active one.
+
+    Used where the interface speaks the language the user has just picked,
+    e.g. the restart prompt after changing the interface language.
+    """
+
+    target = _normalise(code) or current_language()
+    if target != SOURCE_LANGUAGE:
+        value = _catalog(target).get(text)
+        if isinstance(value, str) and value:
+            text = value
+    return _format(text, args)
 
 
 def tr(text: str, *args: object) -> str:
@@ -280,10 +304,12 @@ __all__ = [
     "LANGUAGES",
     "LOCALES_DIR",
     "current_language",
+    "resolve_language",
     "set_language",
     "source_text",
     "system_language",
     "tr",
+    "tr_in",
     "tr_item",
     "trn",
     "xray_text_codes",
