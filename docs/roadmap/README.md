@@ -148,7 +148,7 @@ Write-возможность получает `experimental` только с L5-
 | RL-1 | Уровни L1–L5 в процессе и шаблоне PR | Claude | S | — | — | 2 | todo |
 | RL-2 | Runtime-гейт в CI: собранное приложение и web | Codex | M | RL-1 | L3 | 2 | todo |
 | RL-3 | «Проверить окружение» (Environment Doctor) | Claude → Codex | M | — | L4 | 2 | todo |
-| RL-4 | Capability truth: docs генерируются из реестра | Codex | S | ST-6 | L2 | 1 | todo → Codex |
+| RL-4 | Capability truth: docs генерируются из реестра | Codex | S | ST-6 | L2 | 1 | review |
 | RL-5 | Локальная лаборатория корпуса сейвов | Claude → Codex | M | — | L2 | 2 | todo |
 | RL-6 | Отпечаток сборки игры → capability | Claude | M | RL-5 | L2 | 3 | todo |
 | RL-7 | Черновик правок и undo/redo | Codex | M | — | L3 | 3 | todo |

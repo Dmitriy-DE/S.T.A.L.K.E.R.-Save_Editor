@@ -69,18 +69,22 @@ read-only instead of being guessed.
 
 ## Game support
 
-| Game | Editable | Experimental* |
-|---|---|---|
-| **S.T.A.L.K.E.R. 2: Heart of Chornobyl** | money | weapon and armour condition where the exact owned-row anchor is present; Steam Cloud round-trip |
-| **Call of Pripyat** | money, stacks, catalogue item add/remove | condition, placement, upgrades, faction relations, player faction |
-| **Clear Sky** | money, stacks, catalogue item add/remove | condition, placement, upgrades, faction relations, player faction |
-| **Shadow of Chornobyl** | money, stacks, catalogue item add/remove | condition, placement, faction relations, player faction |
-| **Enhanced Editions** | — detected and shown read-only until format evidence exists | |
-| **Mods / unknown formats** | — refused (fail closed) | |
+<!-- BEGIN CAPABILITIES -->
+| Release | edit_money | edit_stacks | move_items | add_items | remove_items | edit_durability | edit_upgrades | edit_relations | edit_player_faction | edit_placement | equipment_durability | equipment_upgrades | equipment_placement | equipment_add | equipment_remove |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| S.T.A.L.K.E.R. 2: Heart of Chornobyl | experimental | research | unsupported | unsupported | unsupported | experimental | unsupported | unsupported | unsupported | unsupported | experimental | research | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Shadow of Chernobyl | verified | verified | unsupported | verified | verified | experimental | unsupported | experimental | experimental | experimental | experimental | unsupported | experimental | experimental | experimental |
+| S.T.A.L.K.E.R.: Clear Sky | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
+| S.T.A.L.K.E.R.: Call of Pripyat | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
+| S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+<!-- END CAPABILITIES -->
 
-<sub>* Written and verified by parser round-trip; in-game acceptance is still
-being confirmed ([#97](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/issues/97)).
-S.T.A.L.K.E.R. 2 stacks, modules, devices and upgrades are shown read-only.</sub>
+<sub>Cells show the declared maturity from the format and equipment registries:
+`unsupported`, `research`, `experimental` or `verified`. `verified` reflects
+accepted game evidence; `experimental` does not imply that the game accepted an
+edited save. Mods and unknown formats remain fail-closed.</sub>
 
 Item names and icons come from the installed game or a bundled metadata
 snapshot. For S.T.A.L.K.E.R. 2, point **Settings → Paths** at a Zone Kit or
