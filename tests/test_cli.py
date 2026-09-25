@@ -208,7 +208,7 @@ def test_xray_cli_stages_equipment_durability_and_placement(
             "--durability",
             "0x3456=0.75",
             "--placement",
-            "0x3456=slot:4",
+            "0x3456=slot:3",
             "-o",
             str(output),
             "--backup-dir",
@@ -223,4 +223,4 @@ def test_xray_cli_stages_equipment_durability_and_placement(
     item = inspect_xray(output.read_bytes(), COP_FORMAT).inventory[0]
     assert item.condition == pytest.approx(0.75)
     assert item.placement_type == "slot"
-    assert item.placement_slot == 4
+    assert item.placement_slot == 3

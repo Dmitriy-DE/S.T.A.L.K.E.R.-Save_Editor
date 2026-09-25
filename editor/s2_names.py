@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 
 from .i18n import tr
+from .official_names import official_name
 
 # Consumables, grenades and a few unique weapons whose names are certain.
 _EXACT: dict[str, str] = {
@@ -263,15 +264,43 @@ def _armor(sid: str) -> str | None:
     return f"{label} · {tr(faction) if faction else _words(match.group(2))}"
 
 
+# S2 devices that share their official name with the trilogy: the
+# Enhanced Edition snapshot has those names in 13 languages.
+_TRILOGY_TWINS = {
+    "echo": "detector_simple",
+    "bear": "detector_advanced",
+    "veles": "detector_elite",
+    "binoculars_01": "wpn_binoc",
+    "binoculars_02": "wpn_binoc",
+    "binoculars_03": "wpn_binoc",
+    "binoculars_npc": "wpn_binoc",
+}
+
+
+def _blueprint(sid: str) -> str | None:
+    match = re.fullmatch(r"Blueprint_(.+?)(?:_Upgrade)?_(\d+)", sid, re.IGNORECASE)
+    if match is None:
+        return None
+    return f"{tr('Чертёж')}: {_words(match.group(1))}" + tr(" · ур. {0}", match.group(2))
+
+
 def s2_readable_name(sid: str | None, *, kind_code: int | None = None) -> str | None:
     """Return a readable label for an S2 SID, or ``None`` for an empty SID."""
 
     value = str(sid or "").strip()
     if not value:
         return None
+    twin = _TRILOGY_TWINS.get(value.casefold())
+    if twin is not None:
+        official = official_name("stalker-cop", "items", twin)
+        if official:
+            return official
     exact = _EXACT.get(value.casefold())
     if exact is not None:
         return tr(exact)
+    blueprint = _blueprint(value)
+    if blueprint is not None:
+        return blueprint
     for resolver in (_armor_upgrade, _weapon_upgrade, _round, _artifact, _armor):
         label = resolver(value)
         if label:

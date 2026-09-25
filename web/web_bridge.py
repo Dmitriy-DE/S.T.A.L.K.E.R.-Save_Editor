@@ -24,6 +24,7 @@ from editor.i18n import tr
 from editor.item_names import item_label
 from editor.models import EditPlan, SourceRef
 from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
+from editor.xray_slots import placement_label, placement_targets
 
 
 def _to_js_bytes(payload: bytes) -> Any:
@@ -391,6 +392,21 @@ def analyze(data: bytes, name: str) -> str:
                     "placement_type": item.placement_type,
                     "placement_slot": item.placement_slot,
                     "placement_base_slot": item.placement_base_slot,
+                    "placement_label": placement_label(
+                        item.placement_type, item.placement_slot, format_.release_id
+                    )
+                    if item.placement_type is not None
+                    else None,
+                    "placement_targets": [
+                        [
+                            target_type,
+                            target_slot,
+                            placement_label(target_type, target_slot, format_.release_id),
+                        ]
+                        for target_type, target_slot in placement_targets(
+                            item.type_key, item.placement_base_slot, format_.release_id
+                        )
+                    ],
                     "placement_editable": bool(item.placement_editable),
                     "remove_editable": bool(
                         format_.capabilities.remove_items and item.remove_editable

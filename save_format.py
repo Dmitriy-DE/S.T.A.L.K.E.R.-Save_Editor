@@ -37,7 +37,11 @@ BLOCK_SIZE = 0x40000
 UNCOMPRESSED_BLOCK_HEADER = b"\xCC\x06"
 GRID_RECORD_SIZE = 8
 GRID_WIDTH = 8
-KNOWN_KIND_CODES = frozenset({0, 1, 2, 4, 5, 7, 8})
+KNOWN_KIND_CODES = frozenset({0, 1, 2, 4, 5, 6, 7, 8, 10, 11})
+# Actor-owned S2 records kept outside the backpack grid that are not worn
+# weapons/armour/artifacts: detectors (6), blueprints/quest data (8),
+# night vision (10) and binoculars (11).  Listed read-only.
+S2_CARRIED_KIND_CODES = frozenset({6, 8, 10, 11})
 EDITABLE_STACK_KIND_CODES = frozenset({4, 5, 7, 8})
 SINGLE_STACK_KIND_CODES = frozenset({4, 5, 7})
 
@@ -126,7 +130,7 @@ class InventoryItem:
     remove_reason: str | None = None
     # Name-table/catalog records never become InventoryItem rows. This
     # provenance identifies which owned storage observation produced a row.
-    observation_source: Literal["actor_inventory", "grid", "equipped"] = (
+    observation_source: Literal["actor_inventory", "grid", "equipped", "carried"] = (
         "actor_inventory"
     )
 
@@ -281,8 +285,11 @@ def _category_name(kind: int) -> str:
         2: "Артефакт",
         4: "Расходник",
         5: "Патроны",
+        6: "Детектор",
         7: "Гранаты",
         8: "Разное",
+        10: "ПНВ",
+        11: "Бинокль",
     }.get(kind, f"Тип {kind}")
 
 
@@ -676,11 +683,15 @@ def _inventory_details(
         if len(candidates) != 1:
             continue
         rec_off, count, total_weight, kind = candidates[0]
-        if kind not in S2_EQUIPMENT_KIND_CODES or not has_s2_equipment_shape(
-            raw,
-            handle=handle,
-            record_offset=rec_off,
-            kind_code=kind,
+        carried = kind in S2_CARRIED_KIND_CODES
+        if not carried and (
+            kind not in S2_EQUIPMENT_KIND_CODES
+            or not has_s2_equipment_shape(
+                raw,
+                handle=handle,
+                record_offset=rec_off,
+                kind_code=kind,
+            )
         ):
             continue
         type_key_bytes = raw[rec_off + 8 : rec_off + 11]
@@ -740,13 +751,13 @@ def _inventory_details(
                 type_key=type_key_bytes.hex(),
                 editable_count=False,
                 display_name=display_name,
-                position_label="экипировано",
+                position_label="у персонажа" if carried else "экипировано",
                 size_label="неизвестно",
                 count_max=1_000_000,
                 condition=condition,
                 condition_editable=condition_editable,
                 storage="equipped",
-                observation_source="equipped",
+                observation_source="carried" if carried else "equipped",
                 modules=modules,
                 upgrades=upgrades,
             )

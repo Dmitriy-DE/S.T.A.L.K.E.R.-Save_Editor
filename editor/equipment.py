@@ -34,7 +34,7 @@ EquipmentLocation = Literal["equipped", "inventory", "belt", "unknown"]
 DeviceSubtype = Literal["nvg", "binocular", "detector", "other", "unknown"]
 EquipmentProvenance = Literal["owned", "unknown"]
 ObservationState = Literal["installed", "available", "applicable", "unknown"]
-EquipmentObservationSource = Literal["actor_inventory", "grid", "equipped"]
+EquipmentObservationSource = Literal["actor_inventory", "grid", "equipped", "carried"]
 SupportMaturity = CapabilityMaturity
 FeatureSupport = CapabilitySupport
 
@@ -167,6 +167,8 @@ def _s2_name_category(name: str | None) -> EquipmentCategory | None:
     if not name:
         return None
     normalized = re.sub(r"\s+", "_", name.strip()).casefold()
+    if normalized.startswith("blueprint_"):
+        return "other"  # upgrade blueprints are documents, not modules
     if normalized.startswith(("nvg_", "binocular", "binoculars")):
         return "device"
     # S2 serializes armour upgrades/perks as separate rows with names such as
@@ -226,8 +228,17 @@ _S2_KIND_CATEGORIES: dict[int, EquipmentCategory] = {
     2: "artifact",
     4: "consumable",
     5: "ammo",
+    6: "device",
     7: "ammo",
+    10: "device",
+    11: "device",
 }
+_S2_DEVICE_KINDS: dict[int, DeviceSubtype] = {6: "detector", 10: "nvg", 11: "binocular"}
+
+
+def _looks_like_s2_key(key: str | None) -> bool:
+    value = str(key or "")
+    return len(value) == 6 and all(ch in "0123456789abcdef" for ch in value.casefold())
 _S2_QUEST_ITEM_RE = re.compile(r"pda|keycard|keys?(?:_|$)|doc\d*$|chevron|dogtag|journal|note|map$")
 
 
@@ -304,6 +315,11 @@ def _device_subtype_for_item(
 ) -> DeviceSubtype:
     """Resolve a device subtype from owned-row/name metadata only."""
 
+    # S2 serializes devices with their own kind codes (6 detector, 10 night
+    # vision, 11 binoculars); detector SIDs are bare names such as "Veles".
+    s2_kind = _S2_DEVICE_KINDS.get(item.kind_code) if _looks_like_s2_key(item.type_key) else None
+    if s2_kind is not None:
+        return s2_kind
     candidates = (
         item.display_name,
         definition.display_name if definition is not None else None,

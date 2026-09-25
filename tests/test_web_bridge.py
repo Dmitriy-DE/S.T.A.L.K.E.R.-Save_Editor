@@ -226,12 +226,12 @@ def test_web_bridge_prepares_xray_inventory_placement() -> None:
             "[]",
             "null",
             "[]",
-            json.dumps([[0x3456, "slot", 4]]),
+            json.dumps([[0x3456, "slot", 3]]),
         )
     )
 
     assert result["placements"] == [
-        ["0x00003456", ["slot", 2], ["slot", 4]]
+        ["0x00003456", ["slot", 2], ["slot", 3]]
     ]
 
 

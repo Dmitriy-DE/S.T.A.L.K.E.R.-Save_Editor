@@ -30,6 +30,7 @@ from editor.equipment import category_label
 from editor.i18n import tr
 from editor.official_names import official_name
 from editor.s2_names import s2_readable_name
+from editor.xray_slots import placement_label, placement_targets
 from save_format import InventoryItem
 
 from .formatting import count_ru
@@ -43,6 +44,7 @@ _SOURCE_LABELS = {
     "actor_inventory": tr("инвентарь игрока"),
     "grid": tr("инвентарь"),
     "equipped": tr("экипировка"),
+    "carried": tr("у персонажа"),
 }
 
 
@@ -59,9 +61,9 @@ def _detail_pixmap(icon: QIcon) -> QPixmap:
     )
 
 
-def _placement_text(placement_type: str | None, slot: int | None) -> str:
-    if placement_type == "slot":
-        return tr("Слот {0}", slot) if slot is not None else tr("Слот")
+def _placement_text(placement_type: str | None, slot: int | None, release_id: str | None = None) -> str:
+    if placement_type in {"slot", "belt", "ruck"}:
+        return placement_label(placement_type, slot, release_id)
     return _PLACEMENT_LABELS.get(str(placement_type), "—")
 
 
@@ -414,11 +416,17 @@ class ItemDetailView(QWidget):
         )
         self.placement_combo.blockSignals(True)
         self.placement_combo.clear()
-        # Exactly the values the X-Ray place codec accepts.
-        self.placement_combo.addItem(tr("Рюкзак"), ("ruck", None))
-        self.placement_combo.addItem(tr("Пояс"), ("belt", None))
-        for slot in range(1, 14):
-            self.placement_combo.addItem(tr("Слот {0}", slot), ("slot", slot))
+        # Only where the game itself puts this item: the backpack, the belt
+        # for artefacts and the item's own base slot (stored by the game).
+        release_id = getattr(self, "_release_id", None)
+        targets = list(placement_targets(item.type_key, item.placement_base_slot, release_id))
+        current_target = (str(effective_placement[0]), effective_placement[1])
+        if item.placement_type is not None and current_target not in targets:
+            targets.append(current_target)  # show what the save holds today
+        for placement_type, slot in targets:
+            self.placement_combo.addItem(
+                placement_label(placement_type, slot, release_id), (placement_type, slot)
+            )
         for index in range(self.placement_combo.count()):
             if tuple(self.placement_combo.itemData(index)) == tuple(effective_placement):
                 self.placement_combo.setCurrentIndex(index)
@@ -463,7 +471,7 @@ class ItemDetailView(QWidget):
         if has_placement:
             facts.append(
                 tr("Размещение: ")
-                + _placement_text(item.placement_type, item.placement_slot)
+                + _placement_text(item.placement_type, item.placement_slot, getattr(self, "_release_id", None))
             )
         if grouped:
             facts.append(tr("Одинаковых предметов: {0}", self._group_size))
