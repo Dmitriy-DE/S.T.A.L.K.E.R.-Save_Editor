@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import ItemCatalog, UpgradeCatalog
 from editor.equipment import EquipmentItem, equipment_items
+from editor.i18n import tr
 from editor.releases import is_xray_original_release
 from save_format import InventoryItem
 
@@ -45,22 +46,22 @@ from .xray_assets import XRayIconResolver, donor_resolver_for, fit_icon
 # always equipped in X-Ray and would crowd out armour and firearms.
 _LOADOUT_PRIORITY = {"weapon": 0, "armor": 1, "helmet": 2, "device": 4}
 _DEVICE_CARD_TITLES = {
-    "detector": "ДЕТЕКТОР",
-    "binocular": "БИНОКЛЬ",
-    "nvg": "ПНВ",
+    "detector": tr("ДЕТЕКТОР"),
+    "binocular": tr("БИНОКЛЬ"),
+    "nvg": tr("ПНВ"),
 }
 _LOW_PRIORITY_KEYS = ("wpn_knife", "device_pda", "device_torch", "wpn_binoc")
 _CATEGORY_TABS = (
-    ("ВСЕ", "Все"),
-    ("ОРУЖИЕ", "weapon"),
-    ("БОЕПРИПАСЫ", "ammo"),
-    ("СНАРЯЖЕНИЕ", "armor"),
-    ("РАСХОДНИКИ", "consumable"),
-    ("АРТЕФАКТЫ", "artifact"),
-    ("КЛЮЧИ", "quest"),
-    ("ПРОЧЕЕ", "other"),
+    (tr("ВСЕ"), tr("Все")),
+    (tr("ОРУЖИЕ"), "weapon"),
+    (tr("БОЕПРИПАСЫ"), "ammo"),
+    (tr("СНАРЯЖЕНИЕ"), "armor"),
+    (tr("РАСХОДНИКИ"), "consumable"),
+    (tr("АРТЕФАКТЫ"), "artifact"),
+    (tr("КЛЮЧИ"), "quest"),
+    (tr("ПРОЧЕЕ"), "other"),
 )
-_COMPACT_CATEGORY_LABELS = ("ВСЕ", "ОРУЖ.", "ПАТР.", "СНАР.", "РАСХ.", "АРТ.", "КЛЮЧИ", "ПРОЧ.")
+_COMPACT_CATEGORY_LABELS = (tr("ВСЕ"), tr("ОРУЖ."), tr("ПАТР."), tr("СНАР."), tr("РАСХ."), tr("АРТ."), tr("КЛЮЧИ"), tr("ПРОЧ."))
 
 
 class ConditionBarDelegate(QStyledItemDelegate):
@@ -189,7 +190,7 @@ class EditorView(QWidget):
         root.setSpacing(7)
         header = QHBoxLayout()
         header.setSpacing(0)
-        self.back_button = action_button("←  К СПИСКУ СОХРАНЕНИЙ", self)
+        self.back_button = action_button(tr("←  К СПИСКУ СОХРАНЕНИЙ"), self)
         self.back_button.setFixedSize(222, 33)
         self.back_button.clicked.connect(self.back_requested)
         header.addWidget(self.back_button)
@@ -200,17 +201,17 @@ class EditorView(QWidget):
         self.breadcrumb_separator.setFixedSize(1, 38)
         header.addWidget(self.breadcrumb_separator)
         header.addSpacing(40)
-        self.breadcrumb = QLabel("Сохранение не открыто", self)
+        self.breadcrumb = QLabel(tr("Сохранение не открыто"), self)
         self.breadcrumb.setObjectName("editorBreadcrumb")
         header.addWidget(self.breadcrumb, 1)
-        self.discard_button = action_button("ОТМЕНИТЬ ВСЕ ИЗМЕНЕНИЯ", self)
+        self.discard_button = action_button(tr("ОТМЕНИТЬ ВСЕ ИЗМЕНЕНИЯ"), self)
         self.discard_button.setObjectName("editorDiscardButton")
         self.discard_button.setFixedHeight(28)
         self.discard_button.setVisible(False)
         self.discard_button.clicked.connect(self.discard_requested)
         header.addWidget(self.discard_button)
         header.addSpacing(8)
-        self.header_status = status_chip("НЕТ ОТКРЫТОГО СОХРАНЕНИЯ", self, tone="neutral")
+        self.header_status = status_chip(tr("НЕТ ОТКРЫТОГО СОХРАНЕНИЯ"), self, tone="neutral")
         self.header_status.setFixedHeight(28)
         header.addWidget(self.header_status)
         root.addLayout(header)
@@ -221,8 +222,8 @@ class EditorView(QWidget):
         status_layout = QVBoxLayout(self.status_column)
         status_layout.setContentsMargins(14, 8, 12, 8)
         status_layout.setSpacing(6)
-        status_layout.addWidget(section_header("СТАТУС СОХРАНЕНИЯ", parent=self.status_column))
-        self.money_label = QLabel("ДЕНЬГИ  — ₽", self.status_column)
+        status_layout.addWidget(section_header(tr("СТАТУС СОХРАНЕНИЯ"), parent=self.status_column))
+        self.money_label = QLabel(tr("ДЕНЬГИ  — ₽"), self.status_column)
         self.money_label.setObjectName("editorMetric")
         self.money_label.setVisible(False)
         money_controls = QHBoxLayout()
@@ -233,7 +234,7 @@ class EditorView(QWidget):
         self.money_icon.setPixmap(
             QIcon(str(_SHELL_ICONS / "currency.svg")).pixmap(QSize(24, 24))
         )
-        self.money_icon.setAccessibleName("Деньги")
+        self.money_icon.setAccessibleName(tr("Деньги"))
         money_controls.addWidget(self.money_icon)
         self.money_spin = QSpinBox(self.status_column)
         self.money_spin.setRange(0, 2_000_000_000)
@@ -260,15 +261,15 @@ class EditorView(QWidget):
         self.weight_icon.setPixmap(
             QIcon(str(_SHELL_ICONS / "weight.svg")).pixmap(QSize(24, 24))
         )
-        self.weight_icon.setAccessibleName("Вес")
+        self.weight_icon.setAccessibleName(tr("Вес"))
         weight_controls.addWidget(self.weight_icon)
-        self.weight_label = QLabel("— кг", self.status_column)
+        self.weight_label = QLabel(tr("— кг"), self.status_column)
         self.weight_label.setObjectName("editorMetric")
         weight_controls.addWidget(self.weight_label, 1)
         status_layout.addLayout(weight_controls)
-        self.source_label = self._add_info_row(status_layout, "Источник", "library")
-        self.integrity_label = self._add_info_row(status_layout, "Проверка", "verified")
-        self.capability_label = self._add_info_row(status_layout, "Статус", "equipment")
+        self.source_label = self._add_info_row(status_layout, tr("Источник"), "library")
+        self.integrity_label = self._add_info_row(status_layout, tr("Проверка"), "verified")
+        self.capability_label = self._add_info_row(status_layout, tr("Статус"), "equipment")
         status_layout.addSpacing(12)
         self.equipment_scroll = QScrollArea(self.status_column)
         self.equipment_scroll.setObjectName("equipmentScroll")
@@ -282,28 +283,28 @@ class EditorView(QWidget):
         equipment_content_layout.setContentsMargins(0, 0, 4, 0)
         equipment_content_layout.setSpacing(6)
         self.equipment_section_header = section_header(
-            "ЭКИПИРОВКА", parent=self.equipment_content
+            tr("ЭКИПИРОВКА"), parent=self.equipment_content
         )
         self.equipment_section_header.setFixedHeight(31)
         equipment_content_layout.addWidget(self.equipment_section_header)
         self.equipment_list = QVBoxLayout()
         self.equipment_list.setSpacing(4)
         equipment_content_layout.addLayout(self.equipment_list)
-        self.artifact_heading = QLabel("АРТЕФАКТЫ", self.equipment_content)
+        self.artifact_heading = QLabel(tr("АРТЕФАКТЫ"), self.equipment_content)
         self.artifact_heading.setObjectName("editorInfo")
         equipment_content_layout.addWidget(self.artifact_heading)
         self.artifact_list = QHBoxLayout()
         self.artifact_list.setSpacing(5)
         equipment_content_layout.addLayout(self.artifact_list)
-        self.repair_all_button = action_button("ПОЧИНИТЬ ВСЁ ДО 100%", self.equipment_content)
+        self.repair_all_button = action_button(tr("ПОЧИНИТЬ ВСЁ ДО 100%"), self.equipment_content)
         self.repair_all_button.setObjectName("repairAllButton")
         self.repair_all_button.setToolTip(
-            "Подготовить ремонт всего повреждённого снаряжения, для которого запись подтверждена"
+            tr("Подготовить ремонт всего повреждённого снаряжения, для которого запись подтверждена")
         )
         self.repair_all_button.setVisible(False)
         self.repair_all_button.clicked.connect(self.repair_all_requested)
         equipment_content_layout.addWidget(self.repair_all_button)
-        self.character_button = action_button("ПЕРСОНАЖ И ГРУППИРОВКИ", self.equipment_content)
+        self.character_button = action_button(tr("ПЕРСОНАЖ И ГРУППИРОВКИ"), self.equipment_content)
         self.character_button.clicked.connect(self.character_requested)
         self.character_button.setVisible(False)
         equipment_content_layout.addWidget(self.character_button)
@@ -320,12 +321,12 @@ class EditorView(QWidget):
         inventory_controls = QVBoxLayout()
         inventory_controls.setSpacing(8)
         inventory_header = QHBoxLayout()
-        inventory_header.addWidget(section_header("ИНВЕНТАРЬ", parent=self.inventory_column), 1)
-        self.item_count_label = QLabel("Элементов: 0", self.inventory_column)
+        inventory_header.addWidget(section_header(tr("ИНВЕНТАРЬ"), parent=self.inventory_column), 1)
+        self.item_count_label = QLabel(tr("Предметов: 0"), self.inventory_column)
         inventory_header.addWidget(self.item_count_label)
-        self.add_button = action_button("+ ДОБАВИТЬ", self.inventory_column)
+        self.add_button = action_button(tr("+ ДОБАВИТЬ"), self.inventory_column)
         self.add_button.setObjectName("inventoryAddButton")
-        self.add_button.setToolTip("Добавить предмет из каталога выбранной игры")
+        self.add_button.setToolTip(tr("Добавить предмет из каталога выбранной игры"))
         self.add_button.setVisible(False)
         self.add_button.clicked.connect(self.add_requested)
         inventory_header.addWidget(self.add_button)
@@ -333,7 +334,7 @@ class EditorView(QWidget):
         self.search_edit = QLineEdit(self.inventory_column)
         self.search_edit.setObjectName("referenceSearch")
         self.search_edit.setMinimumHeight(39)
-        self.search_edit.setPlaceholderText("Поиск предметов…")
+        self.search_edit.setPlaceholderText(tr("Поиск предметов…"))
         self.search_edit.textChanged.connect(self.model.set_search)
         inventory_controls.addWidget(self.search_edit)
         categories = QHBoxLayout()
@@ -519,16 +520,16 @@ class EditorView(QWidget):
         )
         self.model.set_items(self._items)
         self.model.sort(InventoryTableModel.POSITION_COLUMN)
-        self.item_count_label.setText(f"Элементов: {len(self._items)}")
+        self.item_count_label.setText(tr("Предметов: {0}", len(self._items)))
         self.breadcrumb.setText(f"{snapshot.format_title}  ›  {snapshot.path.name}")
-        self.header_status.setText("РЕДАКТИРУЕМЫЙ" if any(snapshot.capabilities.support(name).writable for name in ("edit_money", "edit_stacks", "edit_durability")) else "ТОЛЬКО ПРОСМОТР")
-        self.header_status.setProperty("tone", "success" if self.header_status.text() == "РЕДАКТИРУЕМЫЙ" else "neutral")
+        self.header_status.setText(tr("МОЖНО ИЗМЕНЯТЬ") if any(snapshot.capabilities.support(name).writable for name in ("edit_money", "edit_stacks", "edit_durability")) else tr("ТОЛЬКО ЧТЕНИЕ"))
+        self.header_status.setProperty("tone", "success" if self.header_status.text() == "МОЖНО ИЗМЕНЯТЬ" else "neutral")
         self.header_status.style().unpolish(self.header_status)
         self.header_status.style().polish(self.header_status)
         self._currency = currency_suffix(release_id)
         self.money_spin.setSuffix(f" {self._currency}")
         money = human_money(snapshot.info.money) if snapshot.info.money is not None else "—"
-        self.money_label.setText(f"ДЕНЬГИ  {money} {self._currency}")
+        self.money_label.setText(tr("ДЕНЬГИ  {0} {1}", money, self._currency))
         self.money_spin.blockSignals(True)
         self.money_spin.setValue(int(snapshot.info.money or 0))
         self.money_spin.blockSignals(False)
@@ -540,10 +541,10 @@ class EditorView(QWidget):
         self.money_spin.setEnabled(money_writable)
         self.money_clear_button.setEnabled(False)
         weight = sum(item.total_weight or 0.0 for item in self._items) if all(item.total_weight is not None for item in self._items) else None
-        self.weight_label.setText(f"{weight:.1f} кг" if weight is not None else "— кг")
-        self.source_label.setText("Steam Cloud" if snapshot.source_kind == "cloud" else "Локальный")
+        self.weight_label.setText(tr("{0:.1f} кг", weight) if weight is not None else tr("— кг"))
+        self.source_label.setText("Steam Cloud" if snapshot.source_kind == "cloud" else tr("Локальный"))
         self.integrity_label.setText(
-            "Файл проверен" if snapshot.info.crc_ok else "Файл повреждён или изменён"
+            tr("Файл проверен") if snapshot.info.crc_ok else tr("Файл повреждён или изменён")
         )
         self.integrity_label.setToolTip("")
         self.integrity_label.setProperty(
@@ -552,9 +553,9 @@ class EditorView(QWidget):
         self.integrity_label.style().unpolish(self.integrity_label)
         self.integrity_label.style().polish(self.integrity_label)
         self.capability_label.setText(
-            "Редактируемый"
-            if self.header_status.text() == "РЕДАКТИРУЕМЫЙ"
-            else "Только просмотр"
+            tr("Можно изменять")
+            if self.header_status.text() == tr("МОЖНО ИЗМЕНЯТЬ")
+            else tr("Только чтение")
         )
         self._render_equipment_summary()
         self.character_button.setVisible(is_xray_original_release(release_id.casefold()))
@@ -594,12 +595,12 @@ class EditorView(QWidget):
 
     def _card_title(self, row: EquipmentItem) -> str:
         if row.category == "weapon":
-            return "ОРУЖИЕ"
+            return tr("ОРУЖИЕ")
         if row.category == "armor":
-            return "БРОНЯ"
+            return tr("БРОНЯ")
         if row.category == "helmet":
-            return "ШЛЕМ"
-        return _DEVICE_CARD_TITLES.get(str(row.device_subtype), "УСТРОЙСТВО")
+            return tr("ШЛЕМ")
+        return _DEVICE_CARD_TITLES.get(str(row.device_subtype), tr("УСТРОЙСТВО"))
 
     def _render_equipment_summary(self) -> None:
         while self.equipment_list.count():
@@ -611,14 +612,14 @@ class EditorView(QWidget):
         rows, equipped = self._loadout_rows()
         heading = self.equipment_section_header.findChild(QLabel, "sectionHeading")
         if heading is not None:
-            heading.setText("ЭКИПИРОВКА" if equipped or not rows else "СНАРЯЖЕНИЕ")
+            heading.setText(tr("ЭКИПИРОВКА") if equipped or not rows else tr("СНАРЯЖЕНИЕ"))
         self.equipment_section_header.setToolTip(
             ""
             if equipped
-            else "В сохранении не отмечено, что надето; показано снаряжение из инвентаря."
+            else tr("В сохранении не отмечено, что надето; показано снаряжение из инвентаря.")
         )
         if not rows:
-            empty = QLabel("Оружие и броня в сохранении не найдены.", self.equipment_content)
+            empty = QLabel(tr("Оружие и броня в сохранении не найдены."), self.equipment_content)
             empty.setObjectName("editorInfo")
             empty.setWordWrap(True)
             self.equipment_list.addWidget(empty)
@@ -633,7 +634,7 @@ class EditorView(QWidget):
                 name = (
                     self._name_for_handle(equipment.handle)
                     or equipment.name
-                    or "Неизвестный предмет"
+                    or tr("Неизвестный предмет")
                 )
                 button = QToolButton(row_host)
                 button.setText("")
@@ -676,11 +677,11 @@ class EditorView(QWidget):
                 )
                 button.setMinimumHeight(120)
                 condition = (
-                    f" · состояние {round(equipment.condition * 100)}%"
+                    tr(" · состояние {0}%", round(equipment.condition * 100))
                     if equipment.condition is not None
                     else ""
                 )
-                button.setToolTip(f"{name}{condition}\nНажми, чтобы выбрать предмет в инвентаре")
+                button.setToolTip(tr("{0}{1}\nНажми, чтобы выбрать предмет в инвентаре", name, condition))
                 button.clicked.connect(
                     lambda _checked=False, handle=equipment.handle: self._select_everywhere(handle)
                 )
@@ -699,9 +700,9 @@ class EditorView(QWidget):
             if widget is not None:
                 widget.hide()
                 widget.deleteLater()
-        self.artifact_heading.setText("АРТЕФАКТЫ НА ПОЯСЕ" if artifacts else "НА ПОЯСЕ НЕТ АРТЕФАКТОВ")
+        self.artifact_heading.setText(tr("АРТЕФАКТЫ НА ПОЯСЕ") if artifacts else tr("НА ПОЯСЕ НЕТ АРТЕФАКТОВ"))
         for artifact in artifacts:
-            name = self._name_for_handle(artifact.handle) or artifact.name or "Артефакт"
+            name = self._name_for_handle(artifact.handle) or artifact.name or tr("Артефакт")
             artifact_button = QPushButton(self.equipment_content)
             artifact_button.setObjectName("artifactSlot")
             artifact_button.setIcon(
@@ -734,7 +735,7 @@ class EditorView(QWidget):
 
         if handle not in {item.handle for item in self.model.visible_items()}:
             self.search_edit.clear()
-            self._set_category("Все")
+            self._set_category(tr("Все"))
         self.select_handle(handle)
 
     def icon_for_definition(self, definition) -> QIcon:
@@ -845,7 +846,7 @@ class EditorView(QWidget):
     def set_money_draft(self, value: int | None) -> None:
         if value is None:
             return
-        self.money_label.setText(f"ДЕНЬГИ  {human_money(value)} {self._currency}")
+        self.money_label.setText(tr("ДЕНЬГИ  {0} {1}", human_money(value), self._currency))
         self.money_spin.blockSignals(True)
         self.money_spin.setValue(value)
         self.money_spin.blockSignals(False)

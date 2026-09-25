@@ -27,6 +27,7 @@ from .catalog import (
     UpgradeDefinition,
 )
 from .catalog_bundle import CatalogBundleError, load_catalog_file
+from .i18n import xray_text_codes
 from .releases import ReleaseDescriptor
 from .xray_container import lzo1x_decompress
 from .xray_factions import factions_from_sections
@@ -340,14 +341,13 @@ def _parse_slots(value: str | None) -> tuple[str, ...]:
 
 # The editor UI is Russian.  Multi-language installs ship text/rus next to
 # text/eng; preferring English left Call of Pripyat names in English.
-_LANGUAGE_PREFERENCE = (("rus", "ru"), ("eng", "en"))
 
 
 def _preferred_language(entries, name_of):
     """Keep only the string tables of the most preferred language present."""
 
     entries = tuple(entries)
-    for codes in _LANGUAGE_PREFERENCE:
+    for codes in xray_text_codes():
         chosen = tuple(
             entry
             for entry in entries

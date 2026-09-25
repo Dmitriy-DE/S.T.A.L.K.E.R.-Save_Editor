@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
 from editor.releases import is_xray_original_release, release_by_id
 
 from .style_components import (
@@ -57,8 +58,8 @@ class CharacterView(QWidget):
         root.setContentsMargins(0, 20, 0, 0)
         root.setSpacing(10)
         heading = QHBoxLayout()
-        heading.addWidget(QLabel("ПЕРСОНАЖ И ГРУППИРОВКИ (X-RAY)", self))
-        self.status_chip = status_chip("ТОЛЬКО X-RAY", self, tone="neutral")
+        heading.addWidget(QLabel(tr("ПЕРСОНАЖ И ГРУППИРОВКИ (X-RAY)"), self))
+        self.status_chip = status_chip(tr("ТОЛЬКО X-RAY"), self, tone="neutral")
         heading.addStretch(1)
         heading.addWidget(self.status_chip)
         root.addLayout(heading)
@@ -79,17 +80,17 @@ class CharacterView(QWidget):
         profile = panel(self, object_name="characterProfilePanel")
         profile_layout = QVBoxLayout(profile)
         profile_layout.setContentsMargins(12, 12, 12, 12)
-        profile_layout.addWidget(section_header("ПЕРСОНАЖ", "ДАННЫЕ ИГРОКА", profile))
-        self.profile_label = QLabel("Сохранение не проанализировано", profile)
+        profile_layout.addWidget(section_header(tr("ПЕРСОНАЖ"), tr("ДАННЫЕ ИГРОКА"), profile))
+        self.profile_label = QLabel(tr("Сохранение не проанализировано"), profile)
         self.profile_label.setObjectName("characterProfileLabel")
         self.profile_label.setWordWrap(True)
         profile_layout.addWidget(self.profile_label)
-        self.player_faction_label = QLabel("Группировка: неизвестно", profile)
+        self.player_faction_label = QLabel(tr("Группировка: неизвестно"), profile)
         profile_layout.addWidget(self.player_faction_label)
         self.player_faction_combo = QComboBox(profile)
         self.player_faction_combo.setEnabled(False)
         profile_layout.addWidget(self.player_faction_combo)
-        self.player_faction_button = action_button("ИЗМЕНИТЬ", profile)
+        self.player_faction_button = action_button(tr("ИЗМЕНИТЬ"), profile)
         self.player_faction_button.setEnabled(False)
         self.player_faction_button.clicked.connect(self._stage_player_faction)
         profile_layout.addWidget(self.player_faction_button)
@@ -101,10 +102,10 @@ class CharacterView(QWidget):
         relations = panel(self, object_name="characterRelationsPanel")
         relations_layout = QVBoxLayout(relations)
         relations_layout.setContentsMargins(12, 12, 12, 12)
-        relations_layout.addWidget(section_header("ОТНОШЕНИЕ К ГРУППИРОВКАМ", "ОТНОШЕНИЯ", relations))
+        relations_layout.addWidget(section_header(tr("ОТНОШЕНИЕ К ГРУППИРОВКАМ"), tr("ОТНОШЕНИЯ"), relations))
         self.faction_table = QTableWidget(0, 4, relations)
         self.faction_table.setObjectName("characterFactionTable")
-        self.faction_table.setHorizontalHeaderLabels(("ГРУППИРОВКА", "ТЕКУЩЕЕ", "НОВОЕ", "СТАТУС"))
+        self.faction_table.setHorizontalHeaderLabels((tr("ГРУППИРОВКА"), tr("ТЕКУЩЕЕ"), tr("НОВОЕ"), tr("СТАТУС")))
         self.faction_table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.faction_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.faction_table.setShowGrid(False)
@@ -114,8 +115,7 @@ class CharacterView(QWidget):
             self.faction_table.horizontalHeader().setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         relations_layout.addWidget(self.faction_table, 1)
         self.warning_label = QLabel(
-            "Изменение отношений — экспериментальная функция. "
-            "Перед сохранением будет создана резервная копия.",
+            tr("Изменение отношений — экспериментальная функция. Перед сохранением будет создана резервная копия."),
             relations,
         )
         self.warning_label.setObjectName("characterWarning")
@@ -132,10 +132,10 @@ class CharacterView(QWidget):
         root.addLayout(body, 1)
 
         footer = QHBoxLayout()
-        self.back_button = action_button("НАЗАД К РЕДАКТОРУ", self)
+        self.back_button = action_button(tr("НАЗАД К РЕДАКТОРУ"), self)
         self.back_button.clicked.connect(self.back_requested)
         footer.addWidget(self.back_button)
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), self)
         self.details_button.setObjectName("characterTechnicalDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._show_technical_details)
@@ -160,19 +160,14 @@ class CharacterView(QWidget):
         )
         info = snapshot.info
         self.profile_label.setText(
-            f"Версия: {getattr(snapshot, 'format_title', None) or 'Неизвестная версия'}\n"
-            f"Файл: {snapshot.path.name}\n"
-            f"Проверка: {'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён'}"
+            tr("Версия: {0}\nФайл: {1}\nПроверка: {2}", getattr(snapshot, 'format_title', None) or 'Неизвестная версия', snapshot.path.name, 'Файл проверен' if info.crc_ok else 'Файл повреждён или изменён')
         )
         self.profile_label.setToolTip("")
         self._technical_detail_text = technical_details(
-            f"Идентификатор версии: {release}\n"
-            f"Путь к файлу: {snapshot.path}\n"
-            f"SHA-256: {info.sha256}\n"
-            f"CRC: {'PASS' if info.crc_ok else 'FAIL'}"
+            tr("Идентификатор версии: {0}\nПуть к файлу: {1}\nSHA-256: {2}\nCRC: {3}", release, snapshot.path, info.sha256, 'PASS' if info.crc_ok else 'FAIL')
         )
         self.details_button.setVisible(True)
-        self.status_chip.setText("РЕДАКТИРУЕМЫЙ" if self.editable else "ТОЛЬКО ПРОСМОТР")
+        self.status_chip.setText(tr("МОЖНО ИЗМЕНЯТЬ") if self.editable else tr("ТОЛЬКО ЧТЕНИЕ"))
         self._render_factions()
 
     def set_diagnostic_details(self, value: object) -> None:
@@ -188,11 +183,11 @@ class CharacterView(QWidget):
 
     @staticmethod
     def _faction_label(faction) -> str:
-        name = faction.display_name or f"Группировка {faction.numeric_id}"
+        name = faction.display_name or tr("Группировка {0}", faction.numeric_id)
         # Clear Sky and SoC keep separate "actor_*" communities for the player;
         # without a marker they read as duplicates ("Бандит", "Бандит").
         if faction.key == "actor" or faction.key.startswith("actor_"):
-            return f"{name} (игрок)"
+            return tr("{0} (игрок)", name)
         return name
 
     def _render_factions(self) -> None:
@@ -200,14 +195,14 @@ class CharacterView(QWidget):
         self.faction_table.setRowCount(0)
         self.player_faction_combo.clear()
         if snapshot is None or snapshot.game_catalog is None:
-            self.player_faction_label.setText("Группировка: неизвестно")
+            self.player_faction_label.setText(tr("Группировка: неизвестно"))
             self.player_faction_combo.setEnabled(False)
             self.player_faction_button.setEnabled(False)
             self.faction_table.insertRow(0)
             self.faction_table.setItem(
                 0,
                 0,
-                QTableWidgetItem("Данные о группировках недоступны для этого сохранения."),
+                QTableWidgetItem(tr("Данные о группировках недоступны для этого сохранения.")),
             )
             return
         catalog = snapshot.game_catalog.factions
@@ -234,7 +229,7 @@ class CharacterView(QWidget):
                 spin.setValue(staged)
                 self.faction_table.setCellWidget(row, 2, spin)
                 stage_button = action_button(
-                    "ИЗМЕНЕНО" if faction.key in self._staged else "ИЗМЕНИТЬ",
+                    tr("ИЗМЕНЕНО") if faction.key in self._staged else tr("ИЗМЕНИТЬ"),
                     self.faction_table,
                 )
                 stage_button.clicked.connect(
@@ -245,7 +240,7 @@ class CharacterView(QWidget):
                 self.faction_table.setCellWidget(row, 3, stage_button)
             else:
                 self.faction_table.setItem(row, 2, QTableWidgetItem(str(staged)))
-                self.faction_table.setItem(row, 3, QTableWidgetItem("Только просмотр"))
+                self.faction_table.setItem(row, 3, QTableWidgetItem(tr("Только чтение")))
         current_player = next(
             (
                 faction
@@ -255,9 +250,9 @@ class CharacterView(QWidget):
             None,
         )
         self.player_faction_label.setText(
-            f"Группировка игрока: {self._faction_label(current_player)}"
+            tr("Группировка игрока: {0}", self._faction_label(current_player))
             if current_player is not None
-            else "Группировка игрока: не определена"
+            else tr("Группировка игрока: не определена")
         )
         self.player_faction_combo.blockSignals(True)
         for faction in definitions:

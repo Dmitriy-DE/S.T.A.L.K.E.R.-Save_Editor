@@ -8,6 +8,8 @@ import platform
 import sys
 from pathlib import Path
 
+from editor.i18n import tr
+
 
 def diagnostic_main(argv: list[str] | None = None) -> int:
     """Print a dependency/path report without opening a desktop window."""
@@ -66,7 +68,7 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
             packed = compress(raw, encoder=encoder, level=5)
             round_trip = decompress(packed, len(raw), decoder=decoder)
             if round_trip != raw:
-                raise CodecError("Kraken encoder smoke round-trip изменил raw payload")
+                raise CodecError(tr("Kraken encoder smoke round-trip изменил raw payload"))
         except CodecError as exc:
             report.update({"encoder": "error", "encoder_error": str(exc)})
             print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -97,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         index = arguments.index("--steam-native-op")
         return run_cli_op(arguments[index + 1 :])
     if "--help" in arguments or "-h" in arguments:
-        print("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений.")
+        print(tr("Использование: SaveEditor [--help]\nОткройте Qt окно редактора локальных сохранений."))
         return 0
     from editor.diagnostics import configure_logging
 
@@ -106,10 +108,10 @@ def main(argv: list[str] | None = None) -> int:
         from PySide6.QtWidgets import QApplication
     except ImportError as exc:
         print(
-            "Qt UI не установлен. Выполните: python -m pip install -r requirements.txt",
+            tr("Qt UI не установлен. Выполните: python -m pip install -r requirements.txt"),
             file=sys.stderr,
         )
-        print(f"Детали: {exc}", file=sys.stderr)
+        print(tr("Детали: {0}", exc), file=sys.stderr)
         return 2
 
     from editor.service import EditorService
@@ -133,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             continue
         break
+    from .effects import install_click_sounds
+
+    install_click_sounds(app)
     window = MainWindow(EditorService())
     window.show()
     return app.exec()

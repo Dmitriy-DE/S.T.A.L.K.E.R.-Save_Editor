@@ -65,10 +65,10 @@ def install_decoder(call: Any) -> None:
 
 def _human_size(size: int) -> str:
     if size < 1024:
-        return f"{size} B"
+        return f"{size} Б"
     if size < 1024 * 1024:
-        return f"{size / 1024:.1f} KB"
-    return f"{size / (1024 * 1024):.2f} MB"
+        return f"{size / 1024:.1f} КБ"
+    return f"{size / (1024 * 1024):.2f} МБ"
 
 
 def _metadata_rows(

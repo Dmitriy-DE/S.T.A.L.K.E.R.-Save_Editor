@@ -54,9 +54,9 @@ def test_enhanced_edition_library_candidate_is_read_only(qtbot, tmp_path: Path) 
     status_cell = view.save_table.cellWidget(0, 4)
     assert status_cell is not None
     labels = [label.text() for label in status_cell.findChildren(QLabel)]
-    assert "Только просмотр" in labels
-    assert "Экспериментальный" in labels
-    assert "Редактируемый" not in labels
+    assert "Только чтение" in labels
+    assert "Экспериментально" in labels
+    assert "Можно изменять" not in labels
 
 
 @pytest.mark.parametrize("release_id", ("stalker-soc", "stalker-cs", "stalker-cop"))
@@ -160,7 +160,7 @@ def test_settings_category_rail_has_the_canonical_zone_illustration(qtbot) -> No
     assert not zone._texture.isNull()
     note = zone.findChild(QLabel, "settingsZoneDecorationText")
     assert note is not None
-    assert note.text() == "ОДНИ СОХРАНЯЮТ\nИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ."
+    assert note.text() == "ЗОНА НЕ ПРОЩАЕТ\nОШИБОК.\nРЕЗЕРВНАЯ КОПИЯ\nПРОЩАЕТ."
 
 
 def test_settings_shortcuts_open_backup_log_copy_and_preserve_update_action(
@@ -512,16 +512,16 @@ def test_footer_actions_are_real_shortcuts(qtbot) -> None:
     qtbot.wait(20)
 
     window._show_reference_library()
-    assert {action.key for action in window.app_shell.footer_actions} >= {"Enter", "I", "R", "F"}
+    assert {action.key for action in window.app_shell.footer_actions} >= {"Enter", "Ctrl+O", "F5", "Ctrl+F"}
     assert all(action.shortcut is not None for action in window.app_shell.footer_actions)
-    filter_action = next(action for action in window.app_shell.footer_actions if action.key == "F")
+    filter_action = next(action for action in window.app_shell.footer_actions if action.key == "Ctrl+F")
     filter_action.shortcut.activated.emit()
-    assert filter_action.shortcut.key().toString() == "F"
+    assert filter_action.shortcut.key().toString() == "Ctrl+F"
     assert filter_action.callback.__self__ is window.library_view.search_edit
     assert filter_action.callback.__name__ == "setFocus"
 
     window._show_settings()
-    next(action for action in window.app_shell.footer_actions if action.key == "D").shortcut.activated.emit()
+    next(action for action in window.app_shell.footer_actions if action.key == "Ctrl+D").shortcut.activated.emit()
     assert window.settings_reference_view.category_buttons[0].isChecked()
 
 

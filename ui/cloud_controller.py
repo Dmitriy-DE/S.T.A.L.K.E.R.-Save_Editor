@@ -15,6 +15,7 @@ from editor.capabilities import FormatCapabilities
 from editor.catalog import GameCatalog, ItemCatalog
 from editor.cloud_capabilities import CloudWriteCapability, cloud_write_capability
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
+from editor.i18n import tr
 from editor.models import CloudReceipt, PreparedEdit
 from editor.platforms import backup_dirs
 from editor.service import EditorService
@@ -154,12 +155,12 @@ class CloudOperationWorker(QThread):
                 # A helper is optional: the native worker needs no AppImage.
                 # The factory tries native first and only needs the helper path
                 # for its fallback, so pass it through even when absent.
-                self.progress.emit("Steam Cloud: подключение…")
+                self.progress.emit(tr("Steam Cloud: подключение…"))
                 transport = self.worker_factory(self.helper_path)
                 self.transport = transport
                 created_transport = True
                 if self.isInterruptionRequested():
-                    raise SaveError("Steam Cloud operation отменена")
+                    raise SaveError(tr("Steam Cloud operation отменена"))
                 setter = getattr(transport, "set_file_filter", None)
                 if callable(setter):
                     setter(self.profile.accepts)
@@ -172,13 +173,13 @@ class CloudOperationWorker(QThread):
                 return
 
             if transport is None:
-                raise SaveError("Steam Cloud не подключён; сначала нажми «Подключить и обновить»")
+                raise SaveError(tr("Steam Cloud не подключён; сначала нажми «Подключить и обновить»"))
 
             if self.mode == "analyze":
                 cloud_file = self.cloud_file
                 if cloud_file is None:
-                    raise SaveError("Cloud save не выбран")
-                self.progress.emit(f"Cloud: скачивание {cloud_file.name}…")
+                    raise SaveError(tr("Cloud save не выбран"))
+                self.progress.emit(tr("Cloud: скачивание {0}…", cloud_file.name))
                 reader = getattr(transport, "read_cloud_file", None)
                 if callable(reader):
                     data = bytes(reader(cloud_file))
@@ -199,8 +200,7 @@ class CloudOperationWorker(QThread):
                     )
                 if result.release_id != self.profile.release_id:
                     raise SaveError(
-                        f"Cloud save распознан как {result.release_id!r}, "
-                        f"а выбран профиль {self.profile.release_id!r}"
+                        tr("Cloud save распознан как {0!r}, а выбран профиль {1!r}", result.release_id, self.profile.release_id)
                     )
                 self.completed.emit(
                     CloudSnapshot(
@@ -222,9 +222,9 @@ class CloudOperationWorker(QThread):
 
             if self.mode == "upload":
                 if self.prepared is None or self.backup_dir is None:
-                    raise SaveError("Для cloud upload нужна проверенная копия")
+                    raise SaveError(tr("Для cloud upload нужна проверенная копия"))
                 prepared = self.prepared
-                self.progress.emit("Cloud: fresh read и SHA…")
+                self.progress.emit(tr("Cloud: fresh read и SHA…"))
 
                 def report_stage(stage: str) -> None:
                     LOGGER.info(
@@ -256,7 +256,7 @@ class CloudOperationWorker(QThread):
                 )
                 return
 
-            raise SaveError(f"Неизвестный cloud operation: {self.mode}")
+            raise SaveError(tr("Неизвестный cloud operation: {0}", self.mode))
         except FormatDetectionError as exc:
             LOGGER.exception("cloud operation failed mode=%s path=%s", self.mode, operation_path)
             self.failed.emit(self._diagnostic_message(exc))
@@ -372,7 +372,7 @@ class CloudController(QObject):
         self._reconciliation_status = "idle"
         self._reconcile_after_finish = False
         self._reconcile_analyze_after_finish = False
-        self.status_text = "Steam Cloud: не подключено"
+        self.status_text = tr("Steam Cloud: не подключено")
         self.result_text = ""
         self.error_text = ""
 
@@ -433,7 +433,7 @@ class CloudController(QObject):
 
         if not self.is_busy:
             return False
-        self._set_status("Steam Cloud: дождись завершения текущей операции")
+        self._set_status(tr("Steam Cloud: дождись завершения текущей операции"))
         return True
 
     def _start_worker(self, worker: CloudOperationWorker) -> None:
@@ -457,7 +457,7 @@ class CloudController(QObject):
         helper = self._resolve_helper()
         self._close_transport()
         self.clear_error()
-        self._set_status("Steam Cloud: подключение…")
+        self._set_status(tr("Steam Cloud: подключение…"))
         worker = CloudOperationWorker(
             self.service,
             mode="list",
@@ -477,11 +477,11 @@ class CloudController(QObject):
 
     def start_steam_web(self) -> None:
         if self.is_busy:
-            self._set_status("Steam Cloud: дождись завершения текущей операции")
+            self._set_status(tr("Steam Cloud: дождись завершения текущей операции"))
             return
         self._debug_succeeded = False
         self._set_status(
-            "Steam Cloud web: закрываю Steam и запускаю его с debug-портом…"
+            tr("Steam Cloud web: закрываю Steam и запускаю его с debug-портом…")
         )
         worker = SteamWebEnableWorker(self)
         worker.completed.connect(self._on_steam_web_ready)
@@ -500,7 +500,7 @@ class CloudController(QObject):
         """
 
         if self._reconciliation_receipt is None:
-            self._set_status("Steam Cloud: нет незавершённой reconciliation")
+            self._set_status(tr("Steam Cloud: нет незавершённой reconciliation"))
             return
         self._reconcile_after_finish = True
         self._reconciliation_status = "refreshing"
@@ -519,17 +519,15 @@ class CloudController(QObject):
         succeeded = self._debug_succeeded
         self._debug_thread = None
         if succeeded:
-            self._set_status("Steam Cloud web включён; обновляю список…")
+            self._set_status(tr("Steam Cloud web включён; обновляю список…"))
             QTimer.singleShot(0, self.start_connect)
         elif not self.error_text:
-            self._set_status("Steam Cloud web не включён")
+            self._set_status(tr("Steam Cloud web не включён"))
 
     def _warn_if_still_connecting(self) -> None:
         if self.is_busy and self.transport is None:
             self._set_status(
-                "Steam Cloud: всё ещё подключаюсь… Проверь, что клиент Steam "
-                "запущен и вошёл в аккаунт. Список появится, как только Steam "
-                "ответит; можно закрыть вкладку и вернуться позже."
+                tr("Steam Cloud: всё ещё подключаюсь… Проверь, что клиент Steam запущен и вошёл в аккаунт. Список появится, как только Steam ответит; можно закрыть вкладку и вернуться позже.")
             )
 
     def selected_file(self) -> CloudFile | None:
@@ -545,7 +543,7 @@ class CloudController(QObject):
         self,
         files: tuple[CloudFile, ...] | list[CloudFile],
         *,
-        status: str = "Steam Cloud: демосписок · 4 файла",
+        status: str = tr("Steam Cloud: демосписок · 4 файла"),
     ) -> None:
         """Publish deterministic read-only rows for the visual-review harness.
 
@@ -555,13 +553,13 @@ class CloudController(QObject):
         """
 
         if self.is_busy:
-            raise RuntimeError("нельзя заменить cloud review fixture во время операции")
+            raise RuntimeError(tr("нельзя заменить cloud review fixture во время операции"))
         self._files = tuple(files)
         self._selected_file = self._files[0] if self._files else None
         self._snapshot = None
         self._prepared = None
         self._set_status(status)
-        self._set_result("Демо-данные списка; запись в Cloud не выполнялась")
+        self._set_result(tr("Демо-данные списка; запись в Cloud не выполнялась"))
         self._on_selection_changed()
         self.files_ready.emit(self._files)
 
@@ -571,11 +569,11 @@ class CloudController(QObject):
         cloud_file = self.selected_file()
         if cloud_file is None:
             self._on_failed(
-                f"Сначала выбери сохранение из профиля {self.profile.title}"
+                tr("Сначала выбери сохранение из профиля {0}", self.profile.title)
             )
             return
         if self.transport is None:
-            self._on_failed("Steam Cloud не подключён; запись не выполнялась")
+            self._on_failed(tr("Steam Cloud не подключён; запись не выполнялась"))
             return
         self.clear_error()
         worker = CloudOperationWorker(
@@ -600,12 +598,12 @@ class CloudController(QObject):
         selected = self.selected_file()
         source = prepared.plan.source
         if source.kind != "cloud" or selected is None or source.locator != selected.name:
-            self._set_result("Проверка не относится к выбранному cloud Data path; upload запрещён")
+            self._set_result(tr("Проверка не относится к выбранному cloud Data path; upload запрещён"))
             self.upload_available_changed.emit(False)
             return
         self._prepared = prepared
         self._set_result(
-            f"Проверка Cloud готова для {selected.name}; SHA {prepared.output_sha256[:12]}…"
+            tr("Проверка Cloud готова для {0}; SHA {1}…", selected.name, prepared.output_sha256[:12])
         )
         self._refresh_upload_state()
 
@@ -626,8 +624,7 @@ class CloudController(QObject):
         self.upload_available_changed.emit(can_upload)
         if self._prepared is not None and not capability.writable:
             self._set_result(
-                "Проверка Cloud готова, но upload отключён: "
-                f"{capability.reason}. WriteFile не запускался."
+                tr("Проверка Cloud готова, но upload отключён: {0}. WriteFile не запускался.", capability.reason)
             )
         return capability
 
@@ -636,26 +633,26 @@ class CloudController(QObject):
             return
         if self._reconciliation_receipt is not None:
             self._on_failed(
-                "Cloud upload заблокирован до reconciliation; повторный WriteFile не выполнялся"
+                tr("Cloud upload заблокирован до reconciliation; повторный WriteFile не выполнялся")
             )
             return
         selected = self.selected_file()
         prepared = self._prepared
         if self.transport is None:
-            self._on_failed("Steam Cloud не подключён; upload не выполнялся")
+            self._on_failed(tr("Steam Cloud не подключён; upload не выполнялся"))
             return
         capability = cloud_write_capability(self.transport)
         if not capability.writable:
             self._on_failed(
-                f"Upload недоступен: {capability.reason}; WriteFile не запускался"
+                tr("Upload недоступен: {0}; WriteFile не запускался", capability.reason)
             )
             self._refresh_upload_state()
             return
         if prepared is None or selected is None:
-            self._on_failed("Сначала выбери cloud slot и выполни проверку")
+            self._on_failed(tr("Сначала выбери cloud slot и выполни проверку"))
             return
         if prepared.plan.source.kind != "cloud" or prepared.plan.source.locator != selected.name:
-            self._on_failed("Выбранный cloud slot не совпадает с проверкой; WriteFile не выполнялся")
+            self._on_failed(tr("Выбранный cloud slot не совпадает с проверкой; WriteFile не выполнялся"))
             return
         self.clear_error()
         worker = CloudOperationWorker(
@@ -700,24 +697,23 @@ class CloudController(QObject):
         self._on_selection_changed(preserve_prepared=reconciling)
         hint = str(getattr(self.transport, "status_hint", "") or "").strip()
         status_prefix = (
-            "Steam Cloud: найдено в Steam cache"
+            tr("Steam Cloud: найдено в Steam cache")
             if "Steam cache" in hint
-            else "Steam Cloud: подключено"
+            else tr("Steam Cloud: подключено")
         )
         if self._files:
             status = f"{status_prefix} · {len(self._files)} · {self.profile.save_label}"
         else:
-            status = f"{status_prefix} · 0 · {self.profile.save_label} (список пуст)"
+            status = tr("{0} · 0 · {1} (список пуст)", status_prefix, self.profile.save_label)
         if hint:
             status += f" · {hint}"
         if hidden_editor_artifacts:
             status += (
-                f" · скрыто {hidden_editor_artifacts} старых editor-файлов "
-                "(-edited.sav)"
+                tr(" · скрыто {0} старых editor-файлов (-edited.sav)", hidden_editor_artifacts)
             )
         capability = cloud_write_capability(self.transport)
         if not capability.writable:
-            status += f" · только чтение: {capability.reason}"
+            status += tr(" · только чтение: {0}", capability.reason)
         self._set_status(status)
         reconciliation_target = self._reconciliation_target
         reconciliation_selected = (
@@ -738,14 +734,13 @@ class CloudController(QObject):
         if self._reconciliation_receipt is not None:
             if reconciliation_selected is None:
                 message = (
-                    f"Cloud reconciliation не нашла удалённый слот: "
-                    f"{reconciliation_target or '—'}"
+                    tr("Cloud reconciliation не нашла удалённый слот: {0}", reconciliation_target or '—')
                 )
                 self._reconciliation_status = "uncertain"
                 self._set_error(message)
                 self.reconciliation_failed.emit(message)
                 return
-            self._set_status("Cloud: список обновлён; проверяю удалённые bytes…")
+            self._set_status(tr("Cloud: список обновлён; проверяю удалённые bytes…"))
             # The list worker is still busy while this callback runs.  Defer
             # the read-back until its finished signal, otherwise the busy guard
             # reports a misleading missing-selection error.
@@ -770,7 +765,7 @@ class CloudController(QObject):
         self._on_selection_changed()
         self.clear_error()
         self._set_status(
-            f"Steam Cloud: выбран профиль {profile.title}; нажми «Обновить список»"
+            tr("Steam Cloud: выбран профиль {0}; нажми «Обновить список»", profile.title)
         )
 
     def _on_snapshot_ready(self, snapshot: CloudSnapshot) -> None:
@@ -783,14 +778,13 @@ class CloudController(QObject):
                 self._reconciliation_status = "verified"
                 self._prepared = None
                 self._set_result(
-                    f"Cloud reconciliation verified / подтверждена: {snapshot.name}; SHA совпал."
+                    tr("Cloud reconciliation verified / подтверждена: {0}; SHA совпал.", snapshot.name)
                 )
                 self._set_status("Cloud: reconciliation verified")
                 self.reconciliation_ready.emit(snapshot)
             else:
                 message = (
-                    f"Cloud reconciliation не подтверждена: SHA remote {snapshot.info.sha256[:12]}… "
-                    f"не совпал с receipt {receipt.output_sha256[:12]}…."
+                    tr("Cloud reconciliation не подтверждена: SHA remote {0}… не совпал с receipt {1}….", snapshot.info.sha256[:12], receipt.output_sha256[:12])
                 )
                 self._reconciliation_status = "uncertain"
                 self._set_error(message)
@@ -801,7 +795,7 @@ class CloudController(QObject):
             f"Cloud snapshot: {snapshot.name}; CRC={'OK' if snapshot.info.crc_ok else 'FAIL'}; "
             f"SHA256 {snapshot.info.sha256}"
         )
-        self._set_status("Cloud save скачан и проанализирован; изменения ещё не подготовлены")
+        self._set_status(tr("Cloud save скачан и проанализирован; изменения ещё не подготовлены"))
         self.snapshot_ready.emit(snapshot)
 
     def _on_upload_ready(self, receipt: CloudReceipt) -> None:
@@ -816,22 +810,17 @@ class CloudController(QObject):
         self._reconciliation_status = "pending"
         self._reconcile_after_finish = receipt.status == "verified"
         self.upload_available_changed.emit(False)
-        size_text = f"; размер {output_size} B" if output_size is not None else ""
+        size_text = tr("; размер {0} B", output_size) if output_size is not None else ""
         if receipt.status == "verified":
             self._set_result(
-                "Cloud verified: persisted=true и read-back SHA совпали. "
-                f"Target: {receipt.remote_path}{size_text}. "
-                f"Original backup: {receipt.backup_path}; recovery: {receipt.recovery_path}"
+                tr("Cloud verified: persisted=true и read-back SHA совпали. Target: {0}{1}. Original backup: {2}; recovery: {3}", receipt.remote_path, size_text, receipt.backup_path, receipt.recovery_path)
             )
             self._set_status("Cloud: verified")
         else:
             self._set_result(
-                "Cloud uncertain: WriteFile уже отправлен, но результат не подтверждён. "
-                f"Target: {receipt.remote_path}{size_text}. Причина: {receipt.reason}. "
-                f"Original backup: {receipt.backup_path}; "
-                f"recovery: {receipt.recovery_path}. Повторный WriteFile запрещён."
+                tr("Cloud uncertain: WriteFile уже отправлен, но результат не подтверждён. Target: {0}{1}. Причина: {2}. Original backup: {3}; recovery: {4}. Повторный WriteFile запрещён.", receipt.remote_path, size_text, receipt.reason, receipt.backup_path, receipt.recovery_path)
             )
-            self._set_status("Cloud: uncertain — требуется reconciliation")
+            self._set_status(tr("Cloud: uncertain — требуется reconciliation"))
         self.upload_ready.emit(receipt)
 
     def _on_selection_changed(self, *, preserve_prepared: bool = False) -> None:
@@ -845,7 +834,7 @@ class CloudController(QObject):
         self.operation_progress.emit(message)
 
     def _on_failed(self, message: str) -> None:
-        self._set_status("Cloud operation не выполнена; WriteFile мог не запускаться")
+        self._set_status(tr("Cloud operation не выполнена; WriteFile мог не запускаться"))
         self._set_error(message)
         self.operation_failed.emit(message)
 
@@ -866,7 +855,7 @@ class CloudController(QObject):
             self.start_connect()
             return
         self.set_busy(False)
-        self.operation_progress.emit("Cloud operation завершена")
+        self.operation_progress.emit(tr("Cloud operation завершена"))
 
     def set_busy(self, busy: bool) -> None:
         if not busy:
@@ -886,7 +875,7 @@ class CloudController(QObject):
 
     def set_error(self, message: str) -> None:
         self._set_error(message)
-        self._set_status("Cloud operation остановлена")
+        self._set_status(tr("Cloud operation остановлена"))
 
     def stop_worker(self, timeout_ms: int) -> bool:
         """Cancel the cloud thread and prove it stopped before widget teardown."""

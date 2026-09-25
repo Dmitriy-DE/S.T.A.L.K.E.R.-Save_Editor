@@ -11,6 +11,7 @@ from typing import TypeAlias
 from PySide6.QtCore import QObject, QThread, Signal
 
 from editor.formats import SaveFormat, detect, detect_fast
+from editor.i18n import tr
 from editor.platforms import save_search_paths
 from editor.releases import official_releases, release_by_id
 
@@ -34,7 +35,7 @@ def _modified_text(modified_ns: int) -> str:
             "%Y-%m-%d %H:%M:%S"
         )
     except (OverflowError, OSError, ValueError):
-        return "неизвестно"
+        return tr("неизвестно")
 
 
 @dataclass(frozen=True)
@@ -69,7 +70,7 @@ class SaveSlot:
     def game_title(self) -> str:
         """Return the content-detected title, or an honest unknown marker."""
 
-        return self.format_title or "Игра не определена"
+        return self.format_title or tr("Игра не определена")
 
     @property
     def status_text(self) -> str:
@@ -79,10 +80,10 @@ class SaveSlot:
             title = self.format_title or self.format_id
             return f"{title} [{self.format_id}]"
         if self.detection_error:
-            return f"Ошибка чтения: {self.detection_error}"
+            return tr("Ошибка чтения: {0}", self.detection_error)
         if self.unsupported_reason is not None:
             return self.unsupported_reason.message
-        return "Не распознано ни одним форматом"
+        return tr("Не распознано ни одним форматом")
 
 
 @dataclass(frozen=True)
@@ -142,8 +143,7 @@ def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
         return UnsupportedSaveReason(
             code="unsupported_release",
             message=(
-                "Найден официальный сейв Enhanced Edition, но его формат "
-                "ещё не подтверждён и не поддерживается"
+                tr("Найден официальный сейв Enhanced Edition, но его формат ещё не подтверждён и не поддерживается")
             ),
         )
     if descriptor is not None and descriptor.family == "stalker2":
@@ -152,14 +152,12 @@ def _unknown_format_reason(candidate_release_id: str) -> UnsupportedSaveReason:
         return UnsupportedSaveReason(
             code="unknown_format",
             message=(
-                "Формат не распознан. Если это сохранение старой версии игры "
-                "(конец 2024 года), загрузите его в S.T.A.L.K.E.R. 2 и сохраните "
-                "заново — после этого редактор его откроет."
+                tr("Формат не распознан. Если это сохранение старой версии игры (конец 2024 года), загрузите его в S.T.A.L.K.E.R. 2 и сохраните заново — после этого редактор его откроет.")
             ),
         )
     return UnsupportedSaveReason(
         code="unknown_format",
-        message="Не распознано зарегистрированным форматом",
+        message=tr("Не распознано зарегистрированным форматом"),
     )
 
 
@@ -248,7 +246,7 @@ def discover_save_slots(
                                 else (
                                     UnsupportedSaveReason(
                                         code=cached[6] or "detection_error",
-                                        message=f"Ошибка проверки: {cached[5]}",
+                                        message=tr("Ошибка проверки: {0}", cached[5]),
                                     )
                                     if cached[5]
                                     else _unknown_format_reason(candidate_release_id)
@@ -280,7 +278,7 @@ def discover_save_slots(
                             candidate_release_id=candidate_release_id,
                             unsupported_reason=UnsupportedSaveReason(
                                 code="read_error",
-                                message=f"Ошибка чтения: {type(exc).__name__}: {exc}",
+                                message=tr("Ошибка чтения: {0}: {1}", type(exc).__name__, exc),
                             ),
                         )
                     )
@@ -309,7 +307,7 @@ def discover_save_slots(
                             candidate_release_id=candidate_release_id,
                             unsupported_reason=UnsupportedSaveReason(
                                 code="detection_error",
-                                message=f"Ошибка проверки: {type(exc).__name__}: {exc}",
+                                message=tr("Ошибка проверки: {0}: {1}", type(exc).__name__, exc),
                             ),
                         )
                     )

@@ -325,6 +325,13 @@ def _reference_stylesheet(c: dict[str, str]) -> str:
         font-size: 18px;
     }}
     QPushButton#windowControl:hover {{ color: {c['text']}; border-color: {c['border']}; }}
+    QPushButton#soundToggle, QPushButton#motionToggle {{
+        background: transparent;
+        border: 1px solid transparent;
+        padding: 0;
+    }}
+    QPushButton#soundToggle:hover, QPushButton#motionToggle:hover {{ border-color: {c['border']}; }}
+    QPushButton#soundToggle:!checked, QPushButton#motionToggle:!checked {{ background: rgba(0, 0, 0, 0.35); }}
     QFrame#referenceFooter {{
         background: #090B0A;
         border-top: 1px solid {c['border']};

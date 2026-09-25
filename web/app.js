@@ -316,7 +316,7 @@ function renderReferenceItemDetail(item) {
   el("reference-item-detail").textContent = `Позиция: ${placementLabel(item.placement_type, item.placement_slot)}. Это значение нельзя изменить.`;
   el("reference-item-detail").title = "";
   const writable = Boolean(item.editable || item.condition_editable || item.placement_editable || item.upgrade_editable || item.remove_editable);
-  el("reference-item-gate").textContent = writable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
+  el("reference-item-gate").textContent = writable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ЧТЕНИЕ";
   el("reference-item-gate").className = `reference-chip ${writable ? "success" : "warning"}`;
   reset.disabled = !referenceItemStaged(item);
 
@@ -506,8 +506,8 @@ function renderReferenceEditor(s) {
     condition.textContent = formatCondition(state.durability.get(item.handle) ?? item.condition);
     row.append(condition);
     const support = document.createElement("td");
-    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ПРОСМОТР";
-    support.className = support.textContent === "ТОЛЬКО ПРОСМОТР" ? "muted" : "";
+    support.textContent = item.condition_editable || item.editable || item.placement_editable || item.upgrade_editable ? "МОЖНО ИЗМЕНИТЬ" : "ТОЛЬКО ЧТЕНИЕ";
+    support.className = support.textContent === "ТОЛЬКО ЧТЕНИЕ" ? "muted" : "";
     row.append(support);
     const action = document.createElement("td");
     action.textContent = item.remove_editable ? "…" : "—";
@@ -516,7 +516,7 @@ function renderReferenceEditor(s) {
   }) : [Object.assign(document.createElement("tr"), {
     innerHTML: '<td colspan="8" class="reference-empty">Предметов не найдено.</td>',
   })]));
-  el("reference-item-count").textContent = `Элементов: ${s.inventory_count ?? items.length}`;
+  el("reference-item-count").textContent = `Предметов: ${s.inventory_count ?? items.length}`;
   const selected = (s.inventory ?? []).find((item) => item.handle === state.referenceSelectedHandle) ?? items[0] ?? null;
   if (selected && state.referenceSelectedHandle === null) state.referenceSelectedHandle = selected.handle;
   renderReferenceItemDetail(selected);
@@ -636,7 +636,7 @@ function renderReferenceSnapshot(s) {
   el("reference-weight").textContent = "ВЕС  — кг";
   el("reference-source").innerHTML = "Источник<br>Локальный файл";
   el("reference-integrity").innerHTML = `${BROWSER_UI_COPY.integrity}<br>${integrityLabel(s)}`;
-  el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Редактируемый" : "Только просмотр"}`;
+  el("reference-editor-capability").innerHTML = `Статус<br>${editable ? "Можно изменять" : "Только чтение"}`;
   el("reference-equipment-summary").textContent = `${s.equipment_count ?? 0} объектов оборудования · неподтверждённые данные нельзя изменить`;
   renderReferenceEditor(s);
   renderReferenceCharacter(s);

@@ -45,7 +45,7 @@ export function integrityLabel(info) {
 }
 
 export function capabilityLabel(editable) {
-  return editable ? "РЕДАКТИРУЕМЫЙ" : "ТОЛЬКО ПРОСМОТР";
+  return editable ? "МОЖНО ИЗМЕНЯТЬ" : "ТОЛЬКО ЧТЕНИЕ";
 }
 
 export function errorCopy(kind = "generic") {

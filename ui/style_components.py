@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
+
 _SHELL_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "s2_shell"
 _SHELL_ICONS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "shell_icons"
 
@@ -148,7 +150,7 @@ def reference_game_rail(
     layout = QVBoxLayout(rail)
     layout.setContentsMargins(12, 12, 12, 12)
     layout.setSpacing(8)
-    layout.addWidget(QLabel("ИГРЫ", rail), 0)
+    layout.addWidget(QLabel(tr("ИГРЫ"), rail), 0)
     rule = QFrame(rail)
     rule.setFrameShape(QFrame.Shape.HLine)
     rule.setObjectName("railRule")
@@ -158,7 +160,7 @@ def reference_game_rail(
     games.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
     games.setIconSize(QSize(22, 22))
     entries = (
-        ("ВСЕ ИГРЫ", "Локальные сохранения", "all"),
+        (tr("ВСЕ ИГРЫ"), tr("Локальные сохранения"), "all"),
         ("S.T.A.L.K.E.R. 2", "Heart of Chornobyl", "stalker2"),
         ("Call of Pripyat", "X-Ray original", "cop"),
         ("Clear Sky", "X-Ray original", "clear_sky"),
@@ -191,7 +193,7 @@ def reference_game_rail(
     zone_layout = QVBoxLayout(zone)
     zone_layout.setContentsMargins(12, 20, 12, 12)
     zone_layout.addStretch(1)
-    note = QLabel("ОДНИ СОХРАНЯЮТ ИГРЫ.\nМЫ СОХРАНЯЕМ\nИСТОРИИ.", zone)
+    note = QLabel(tr("ЗОНА НЕ ПРОЩАЕТ ОШИБОК.\nРЕЗЕРВНАЯ КОПИЯ\nПРОЩАЕТ."), zone)
     note.setObjectName("zoneDecorationText")
     note.setWordWrap(True)
     zone_layout.addWidget(note)

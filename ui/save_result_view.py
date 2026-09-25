@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.i18n import tr
+
 from .style_components import action_button, panel, status_chip
 from .technical_details_dialog import TechnicalDetailsDialog
 from .ux_copy import (
@@ -55,7 +57,7 @@ class SaveResultView(QWidget):
         self.heading_label = QLabel(SAVE_SUCCESS.title, self)
         heading.addWidget(self.heading_label)
         heading.addStretch(1)
-        self.status_chip = status_chip("СОХРАНЕНИЕ ПРОВЕРЕНО", self, tone="success")
+        self.status_chip = status_chip(tr("СОХРАНЕНИЕ ПРОВЕРЕНО"), self, tone="success")
         heading.addWidget(self.status_chip)
         root.addLayout(heading)
         self.subtitle = QLabel(SAVE_SUCCESS.message, self)
@@ -67,7 +69,7 @@ class SaveResultView(QWidget):
         receipt_layout.setContentsMargins(14, 14, 14, 14)
         self.receipt_table = QTableWidget(0, 2, receipt_panel)
         self.receipt_table.setObjectName("resultReceiptTable")
-        self.receipt_table.setHorizontalHeaderLabels(("ПРОВЕРКА", "РЕЗУЛЬТАТ"))
+        self.receipt_table.setHorizontalHeaderLabels((tr("ПРОВЕРКА"), tr("РЕЗУЛЬТАТ")))
         self.receipt_table.verticalHeader().setVisible(False)
         self.receipt_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.receipt_table.setShowGrid(False)
@@ -85,7 +87,7 @@ class SaveResultView(QWidget):
         self.reconcile_button.clicked.connect(self.reconcile_requested)
         root.addWidget(self.reconcile_button)
         actions = QHBoxLayout()
-        self.details_button = action_button("ТЕХНИЧЕСКИЕ ДЕТАЛИ", self)
+        self.details_button = action_button(tr("ТЕХНИЧЕСКИЕ ДЕТАЛИ"), self)
         self.details_button.setObjectName("technicalDetailsButton")
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._show_technical_details)
@@ -94,11 +96,11 @@ class SaveResultView(QWidget):
         self.editor_button.clicked.connect(self.back_to_editor_requested)
         actions.addWidget(self.editor_button)
         self.history_button = action_button(
-            (SAVE_SUCCESS.secondary_action or "История").upper(), self
+            (SAVE_SUCCESS.secondary_action or tr("История")).upper(), self
         )
         self.history_button.clicked.connect(self.history_requested)
         actions.addWidget(self.history_button)
-        self.library_button = action_button("ОТКРЫТЬ БИБЛИОТЕКУ", self)
+        self.library_button = action_button(tr("ОТКРЫТЬ БИБЛИОТЕКУ"), self)
         self.library_button.clicked.connect(self.library_requested)
         actions.addWidget(self.library_button)
         root.addLayout(actions)
@@ -124,7 +126,7 @@ class SaveResultView(QWidget):
         is_uncertain = receipt_status == "uncertain"
         self.reconcile_button.setVisible(is_cloud and is_uncertain)
         if is_cloud:
-            chip_text = "STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ" if is_uncertain else "СОХРАНЕНИЕ ПРОВЕРЕНО"
+            chip_text = tr("STEAM НЕ ПОДТВЕРДИЛ ЗАПИСЬ") if is_uncertain else tr("СОХРАНЕНИЕ ПРОВЕРЕНО")
             chip_tone = "warning" if is_uncertain else "success"
             heading = (
                 ERROR_COPY["cloud_uncertain"].title
@@ -137,12 +139,12 @@ class SaveResultView(QWidget):
                 else CLOUD_COPY["uploaded"]
             )
         elif hasattr(receipt, "safety_backup_path"):
-            chip_text = "ВОССТАНОВЛЕНО"
+            chip_text = tr("ВОССТАНОВЛЕНО")
             chip_tone = "success"
-            heading = "ВОССТАНОВЛЕНИЕ ЗАВЕРШЕНО"
-            subtitle = "Резервная копия восстановлена и проверена."
+            heading = tr("ВОССТАНОВЛЕНИЕ ЗАВЕРШЕНО")
+            subtitle = tr("Резервная копия восстановлена и проверена.")
         else:
-            chip_text = "СОХРАНЕНИЕ ПРОВЕРЕНО"
+            chip_text = tr("СОХРАНЕНИЕ ПРОВЕРЕНО")
             chip_tone = "success"
             heading = SAVE_SUCCESS.title
             subtitle = SAVE_SUCCESS.message
@@ -158,15 +160,15 @@ class SaveResultView(QWidget):
         remote_path = getattr(receipt, "remote_path", None)
         if output_path is not None:
             full_path = str(output_path)
-            detail_lines.append(f"Путь сохранения: {full_path}")
+            detail_lines.append(tr("Путь сохранения: {0}", full_path))
         if remote_path is not None:
             full_remote_path = str(remote_path)
-            detail_lines.append(f"Путь Steam Cloud: {full_remote_path}")
+            detail_lines.append(tr("Путь Steam Cloud: {0}", full_remote_path))
         for name, attribute in (
-            ("Резервная копия", "backup_path"),
-            ("Файл восстановления", "recovery_path"),
-            ("Защитная копия", "safety_backup_path"),
-            ("Техническая причина", "reason"),
+            (tr("Резервная копия"), "backup_path"),
+            (tr("Файл восстановления"), "recovery_path"),
+            (tr("Защитная копия"), "safety_backup_path"),
+            (tr("Техническая причина"), "reason"),
         ):
             value = getattr(receipt, attribute, None)
             if value is not None:
@@ -174,31 +176,31 @@ class SaveResultView(QWidget):
                 detail_lines.append(f"{name}: {full_value}")
         digest = getattr(receipt, "output_sha256", None)
         if digest:
-            detail_lines.append(f"SHA-256 результата: {digest}")
+            detail_lines.append(tr("SHA-256 результата: {0}", digest))
         if is_cloud:
-            detail_lines.append(f"Статус Steam Cloud: {receipt_status}")
+            detail_lines.append(tr("Статус Steam Cloud: {0}", receipt_status))
             detail_lines.append(
-                f"Steam подтвердил запись: {getattr(receipt, 'persisted', None)}"
+                tr("Steam подтвердил запись: {0}", getattr(receipt, 'persisted', None))
             )
         if is_uncertain:
-            rows.append(("Состояние", "Steam не подтвердил запись"))
+            rows.append((tr("Состояние"), tr("Steam не подтвердил запись")))
         elif hasattr(receipt, "safety_backup_path"):
-            rows.extend((("Восстановление", "Завершено"), ("Проверка", "Успешно")))
+            rows.extend(((tr("Восстановление"), tr("Завершено")), (tr("Проверка"), tr("Успешно"))))
         else:
             if change_count is not None:
                 remainder = change_count % 100
                 if 11 <= remainder <= 14:
-                    noun = "параметров"
+                    noun = tr("параметров")
                 elif change_count % 10 == 1:
-                    noun = "параметр"
+                    noun = tr("параметр")
                 elif 2 <= change_count % 10 <= 4:
-                    noun = "параметра"
+                    noun = tr("параметра")
                 else:
-                    noun = "параметров"
-                rows.append(("Изменено", f"{change_count} {noun}"))
+                    noun = tr("параметров")
+                rows.append((tr("Изменено"), f"{change_count} {noun}"))
             if getattr(receipt, "backup_path", None) is not None:
-                rows.append(("Резервная копия", "Создана"))
-            rows.append(("Проверка", "Успешно"))
+                rows.append((tr("Резервная копия"), tr("Создана")))
+            rows.append((tr("Проверка"), tr("Успешно")))
         self.receipt_table.setRowCount(len(rows))
         for row, (name, display_value) in enumerate(rows):
             self.receipt_table.setItem(row, 0, QTableWidgetItem(str(name)))
@@ -229,7 +231,7 @@ class SaveResultView(QWidget):
 
         self.editor_button.setEnabled(ready)
         if not ready:
-            self.editor_button.setToolTip(message or "Ожидается проверка записанного состояния")
+            self.editor_button.setToolTip(message or tr("Ожидается проверка записанного состояния"))
         else:
             self.editor_button.setToolTip("")
         if message:

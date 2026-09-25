@@ -169,7 +169,7 @@ def test_cloud_review_table_uses_populated_canonical_height_rows(qtbot) -> None:
     assert table.rowCount() == 8
     assert table.rowHeight(0) == 58
     assert table.item(7, 0).text() == "slot_008.sav"
-    assert table.item(0, 1).text() == "15.1 MB"
+    assert table.item(0, 1).text() == "15.1 МБ"
 
 
 @pytest.mark.parametrize(

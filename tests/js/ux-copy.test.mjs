@@ -18,8 +18,8 @@ test("browser integrity copy hides CRC terminology", () => {
 });
 
 test("browser capabilities and errors use plain language", () => {
-  assert.equal(capabilityLabel(true), "РЕДАКТИРУЕМЫЙ");
-  assert.equal(capabilityLabel(false), "ТОЛЬКО ПРОСМОТР");
+  assert.equal(capabilityLabel(true), "МОЖНО ИЗМЕНЯТЬ");
+  assert.equal(capabilityLabel(false), "ТОЛЬКО ЧТЕНИЕ");
   assert.equal(errorCopy("open"), "Файл повреждён, не поддерживается или изменён другой программой.");
   assert.equal(
     errorCopy("verify"),

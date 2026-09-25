@@ -8,6 +8,7 @@ from PySide6.QtCore import QThread, Signal
 
 from editor.catalog import GameCatalog, ItemCatalog
 from editor.formats import FormatDetectionError
+from editor.i18n import tr
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 
@@ -48,7 +49,7 @@ class OperationWorker(QThread):
     def run(self) -> None:
         try:
             if self.mode == "preview":
-                self.progress.emit("Подготовка выходного файла: проверка SHA и round-trip…")
+                self.progress.emit(tr("Подготовка выходного файла: проверка SHA и round-trip…"))
                 prepared = self.service.prepare(
                     self.data,
                     self.plan,
@@ -57,13 +58,13 @@ class OperationWorker(QThread):
                     game_catalog=self.game_catalog,
                 )
                 if not isinstance(prepared, PreparedEdit):
-                    raise TypeError("EditorService.prepare вернул не PreparedEdit")
+                    raise TypeError(tr("EditorService.prepare вернул не PreparedEdit"))
                 self.preview_ready.emit(prepared)
                 return
             if self.mode == "apply":
                 if self.source_path is None or self.output_path is None or self.backup_dir is None:
-                    raise ValueError("Для apply нужны source, output и backup paths")
-                self.progress.emit("Создание backup, запись и read-back SHA…")
+                    raise ValueError(tr("Для apply нужны source, output и backup paths"))
+                self.progress.emit(tr("Создание backup, запись и read-back SHA…"))
                 receipt = self.service.export_local(
                     self.source_path,
                     self.output_path,
@@ -74,9 +75,9 @@ class OperationWorker(QThread):
                 return
             if self.mode == "replace":
                 if self.source_path is None or self.backup_dir is None:
-                    raise ValueError("Для replace нужны source и backup paths")
+                    raise ValueError(tr("Для replace нужны source и backup paths"))
                 self.progress.emit(
-                    "Создание backup и атомарная замена исходного слота…"
+                    tr("Создание backup и атомарная замена исходного слота…")
                 )
                 receipt = self.service.replace_local(
                     self.source_path,
@@ -85,7 +86,7 @@ class OperationWorker(QThread):
                 )
                 self.apply_ready.emit(receipt)
                 return
-            raise ValueError(f"Неизвестный режим операции: {self.mode}")
+            raise ValueError(tr("Неизвестный режим операции: {0}", self.mode))
         except FormatDetectionError as exc:
             self.failed.emit(str(exc))
         except Exception as exc:
@@ -98,7 +99,7 @@ class OperationWorker(QThread):
         # stale-preview invariant.
         prepared = getattr(self, "_prepared", None)
         if not isinstance(prepared, PreparedEdit):
-            raise ValueError("Для apply отсутствует PreparedEdit")
+            raise ValueError(tr("Для apply отсутствует PreparedEdit"))
         return prepared
 
     def set_prepared(self, prepared: PreparedEdit) -> None:

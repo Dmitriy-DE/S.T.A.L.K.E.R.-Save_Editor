@@ -35,6 +35,8 @@ def pytest_configure(config: pytest.Config) -> None:
         target = profile / key.casefold()
         target.mkdir(parents=True, exist_ok=True)
         os.environ[key] = str(target)
+    # Assertions use the Russian source strings; never follow the host locale.
+    os.environ["STALKER_EDITOR_LANG"] = "ru"
 
 
 @pytest.fixture(autouse=True)
