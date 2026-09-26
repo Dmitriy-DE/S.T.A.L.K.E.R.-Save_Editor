@@ -1,0 +1,2499 @@
+{
+  "samples": [
+    {
+      "error_type": null,
+      "format": "stalker-cop",
+      "mutations": {
+        "money_plus_one": {
+          "error_type": null,
+          "plan": {
+            "money": 1235,
+            "stacks": []
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "helmet",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": [],
+                "upgrades": [],
+                "upgrades_editable": true
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 30,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": []
+              }
+            ],
+            "money": 1235,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        },
+        "stack_delta": {
+          "error_type": null,
+          "plan": {
+            "money": null,
+            "stacks": [
+              {
+                "count": 31,
+                "handle": 4660
+              }
+            ]
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "helmet",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": [],
+                "upgrades": [],
+                "upgrades_editable": true
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 31,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": []
+              }
+            ],
+            "money": 1234,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        }
+      },
+      "parse_status": "ok",
+      "release": "stalker-cop",
+      "sha256": "e3f2e1e838d7edad6909f0e40c6b1db977a283749c9990012e5d982601a117e1",
+      "state": {
+        "capabilities": {
+          "catalog": true,
+          "equipment": {
+            "add": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural add writer requires game load/re-save evidence."
+            },
+            "categories": [
+              "weapon",
+              "armor",
+              "module",
+              "device",
+              "consumable",
+              "ammo",
+              "artifact",
+              "quest",
+              "helmet",
+              "other"
+            ],
+            "device_subtypes": [
+              "detector",
+              "other",
+              "unknown"
+            ],
+            "durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence."
+            },
+            "icon_source": "official X-Ray game resources",
+            "placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence."
+            },
+            "remove": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+            },
+            "upgrades": {
+              "maturity": "experimental",
+              "reason": "m_upgrades vector requires game load/re-save evidence."
+            }
+          },
+          "mutations": {
+            "add_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_money": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_player_faction": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_relations": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_stacks": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_upgrades": {
+              "maturity": "experimental",
+              "reason": "m_upgrades vector requires game load/re-save evidence.",
+              "writable": true
+            },
+            "move_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "remove_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            }
+          },
+          "read_inventory": true
+        },
+        "character": {
+          "faction_relations": [],
+          "health": 1.000000,
+          "name": null,
+          "player_faction_editable": true,
+          "player_faction_index": -1,
+          "rank": -1,
+          "reputation": -1
+        },
+        "equipment": [
+          {
+            "category": "ammo",
+            "condition": null,
+            "condition_editable": false,
+            "damaged": false,
+            "device_subtype": null,
+            "durability": {
+              "maturity": "unsupported",
+              "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+            },
+            "durability_editable": false,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "icon_texture": null,
+            "icon_x": null,
+            "icon_y": null,
+            "location": "unknown",
+            "module_states": null,
+            "modules": null,
+            "name": "ammo_9x39_pab9",
+            "observation_source": "actor_inventory",
+            "provenance": "owned",
+            "serializer_family": "ammo",
+            "type_key": "ammo_9x39_pab9",
+            "upgrade_states": [],
+            "upgrades": [],
+            "upgrades_editable": true
+          }
+        ],
+        "integrity": {
+          "crc_ok": null,
+          "crc_present": false,
+          "name": "X-Ray LZO/container"
+        },
+        "items": [
+          {
+            "condition": null,
+            "count": 30,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "placement": {
+              "base_slot": null,
+              "cells": [],
+              "height": null,
+              "slot": null,
+              "storage": null,
+              "type": null,
+              "width": null,
+              "x": null,
+              "y": null
+            },
+            "sid_or_section": "ammo_9x39_pab9",
+            "type_key": "ammo_9x39_pab9",
+            "upgrades": []
+          }
+        ],
+        "money": 1234,
+        "time": {
+          "game_time": 123456,
+          "level_name": null,
+          "normal_time_factor": 1.000000,
+          "time_factor": 10.000000
+        },
+        "warnings": [
+          "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+          "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+        ]
+      },
+      "versions": {
+        "container": 6,
+        "format": 128
+      }
+    },
+    {
+      "error_type": null,
+      "format": "stalker-cs",
+      "mutations": {
+        "money_plus_one": {
+          "error_type": null,
+          "plan": {
+            "money": 1235,
+            "stacks": []
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 30,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": null
+              }
+            ],
+            "money": 1235,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        },
+        "stack_delta": {
+          "error_type": null,
+          "plan": {
+            "money": null,
+            "stacks": [
+              {
+                "count": 31,
+                "handle": 4660
+              }
+            ]
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "experimental",
+                  "reason": "m_upgrades vector requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 31,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": null
+              }
+            ],
+            "money": 1234,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        }
+      },
+      "parse_status": "ok",
+      "release": "stalker-cs",
+      "sha256": "c31777310ac26c8547d9affa5f5c04810a4d0e728072fb83ecb07fc3ac7ca3af",
+      "state": {
+        "capabilities": {
+          "catalog": true,
+          "equipment": {
+            "add": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural add writer requires game load/re-save evidence."
+            },
+            "categories": [
+              "weapon",
+              "armor",
+              "module",
+              "device",
+              "consumable",
+              "ammo",
+              "artifact",
+              "quest",
+              "other"
+            ],
+            "device_subtypes": [
+              "detector",
+              "other",
+              "unknown"
+            ],
+            "durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence."
+            },
+            "icon_source": "official X-Ray game resources",
+            "placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence."
+            },
+            "remove": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+            },
+            "upgrades": {
+              "maturity": "experimental",
+              "reason": "m_upgrades vector requires game load/re-save evidence."
+            }
+          },
+          "mutations": {
+            "add_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_money": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_player_faction": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_relations": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_stacks": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_upgrades": {
+              "maturity": "experimental",
+              "reason": "m_upgrades vector requires game load/re-save evidence.",
+              "writable": true
+            },
+            "move_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "remove_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            }
+          },
+          "read_inventory": true
+        },
+        "character": {
+          "faction_relations": [],
+          "health": 1.000000,
+          "name": null,
+          "player_faction_editable": true,
+          "player_faction_index": -1,
+          "rank": -1,
+          "reputation": -1
+        },
+        "equipment": [
+          {
+            "category": "ammo",
+            "condition": null,
+            "condition_editable": false,
+            "damaged": false,
+            "device_subtype": null,
+            "durability": {
+              "maturity": "unsupported",
+              "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+            },
+            "durability_editable": false,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "icon_texture": null,
+            "icon_x": null,
+            "icon_y": null,
+            "location": "unknown",
+            "module_states": null,
+            "modules": null,
+            "name": "ammo_9x39_pab9",
+            "observation_source": "actor_inventory",
+            "provenance": "owned",
+            "serializer_family": "ammo",
+            "type_key": "ammo_9x39_pab9",
+            "upgrade_states": null,
+            "upgrades": null,
+            "upgrades_editable": false
+          }
+        ],
+        "integrity": {
+          "crc_ok": null,
+          "crc_present": false,
+          "name": "X-Ray LZO/container"
+        },
+        "items": [
+          {
+            "condition": null,
+            "count": 30,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "placement": {
+              "base_slot": null,
+              "cells": [],
+              "height": null,
+              "slot": null,
+              "storage": null,
+              "type": null,
+              "width": null,
+              "x": null,
+              "y": null
+            },
+            "sid_or_section": "ammo_9x39_pab9",
+            "type_key": "ammo_9x39_pab9",
+            "upgrades": null
+          }
+        ],
+        "money": 1234,
+        "time": {
+          "game_time": 123456,
+          "level_name": null,
+          "normal_time_factor": 1.000000,
+          "time_factor": 10.000000
+        },
+        "warnings": [
+          "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+          "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+        ]
+      },
+      "versions": {
+        "container": 5,
+        "format": 122
+      }
+    },
+    {
+      "error_type": null,
+      "format": "stalker-soc",
+      "mutations": {
+        "money_plus_one": {
+          "error_type": null,
+          "plan": {
+            "money": 1235,
+            "stacks": []
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "unsupported",
+                  "reason": "SoC upgrade writer is not confirmed."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 30,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": null
+              }
+            ],
+            "money": 1235,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        },
+        "stack_delta": {
+          "error_type": null,
+          "plan": {
+            "money": null,
+            "stacks": [
+              {
+                "count": 31,
+                "handle": 4660
+              }
+            ]
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": null,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural add writer requires game load/re-save evidence."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence."
+                },
+                "icon_source": "official X-Ray game resources",
+                "placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence."
+                },
+                "remove": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+                },
+                "upgrades": {
+                  "maturity": "unsupported",
+                  "reason": "SoC upgrade writer is not confirmed."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray condition writer requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "experimental",
+                  "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+                  "writable": true
+                },
+                "edit_player_faction": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_relations": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_stacks": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_upgrades": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "verified",
+                  "reason": null,
+                  "writable": true
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": 1.000000,
+              "name": null,
+              "player_faction_editable": true,
+              "player_faction_index": -1,
+              "rank": -1,
+              "reputation": -1
+            },
+            "equipment": [
+              {
+                "category": "ammo",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "unknown",
+                "module_states": null,
+                "modules": null,
+                "name": "ammo_9x39_pab9",
+                "observation_source": "actor_inventory",
+                "provenance": "owned",
+                "serializer_family": "ammo",
+                "type_key": "ammo_9x39_pab9",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": null,
+              "crc_present": false,
+              "name": "X-Ray LZO/container"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 31,
+                "handle": 4660,
+                "handle_hex": "0x00001234",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [],
+                  "height": null,
+                  "slot": null,
+                  "storage": null,
+                  "type": null,
+                  "width": null,
+                  "x": null,
+                  "y": null
+                },
+                "sid_or_section": "ammo_9x39_pab9",
+                "type_key": "ammo_9x39_pab9",
+                "upgrades": null
+              }
+            ],
+            "money": 1234,
+            "time": {
+              "game_time": 123456,
+              "level_name": null,
+              "normal_time_factor": 1.000000,
+              "time_factor": 10.000000
+            },
+            "warnings": [
+              "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+              "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+            ]
+          }
+        }
+      },
+      "parse_status": "ok",
+      "release": "stalker-soc",
+      "sha256": "b324b556aef58e7699b9bd154ccb927dc8e95893b11022a99dfc70c4435fd2e5",
+      "state": {
+        "capabilities": {
+          "catalog": true,
+          "equipment": {
+            "add": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural add writer requires game load/re-save evidence."
+            },
+            "categories": [
+              "weapon",
+              "armor",
+              "module",
+              "device",
+              "consumable",
+              "ammo",
+              "artifact",
+              "quest",
+              "other"
+            ],
+            "device_subtypes": [
+              "detector",
+              "other",
+              "unknown"
+            ],
+            "durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence."
+            },
+            "icon_source": "official X-Ray game resources",
+            "placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence."
+            },
+            "remove": {
+              "maturity": "experimental",
+              "reason": "X-Ray structural remove writer requires game load/re-save evidence."
+            },
+            "upgrades": {
+              "maturity": "unsupported",
+              "reason": "SoC upgrade writer is not confirmed."
+            }
+          },
+          "mutations": {
+            "add_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_durability": {
+              "maturity": "experimental",
+              "reason": "X-Ray condition writer requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_money": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_placement": {
+              "maturity": "experimental",
+              "reason": "X-Ray placement anchor requires game load/re-save evidence.",
+              "writable": true
+            },
+            "edit_player_faction": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_relations": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_stacks": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            },
+            "edit_upgrades": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "move_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "remove_items": {
+              "maturity": "verified",
+              "reason": null,
+              "writable": true
+            }
+          },
+          "read_inventory": true
+        },
+        "character": {
+          "faction_relations": [],
+          "health": 1.000000,
+          "name": null,
+          "player_faction_editable": true,
+          "player_faction_index": -1,
+          "rank": -1,
+          "reputation": -1
+        },
+        "equipment": [
+          {
+            "category": "ammo",
+            "condition": null,
+            "condition_editable": false,
+            "damaged": false,
+            "device_subtype": null,
+            "durability": {
+              "maturity": "unsupported",
+              "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+            },
+            "durability_editable": false,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "icon_texture": null,
+            "icon_x": null,
+            "icon_y": null,
+            "location": "unknown",
+            "module_states": null,
+            "modules": null,
+            "name": "ammo_9x39_pab9",
+            "observation_source": "actor_inventory",
+            "provenance": "owned",
+            "serializer_family": "ammo",
+            "type_key": "ammo_9x39_pab9",
+            "upgrade_states": null,
+            "upgrades": null,
+            "upgrades_editable": false
+          }
+        ],
+        "integrity": {
+          "crc_ok": null,
+          "crc_present": false,
+          "name": "X-Ray LZO/container"
+        },
+        "items": [
+          {
+            "condition": null,
+            "count": 30,
+            "handle": 4660,
+            "handle_hex": "0x00001234",
+            "placement": {
+              "base_slot": null,
+              "cells": [],
+              "height": null,
+              "slot": null,
+              "storage": null,
+              "type": null,
+              "width": null,
+              "x": null,
+              "y": null
+            },
+            "sid_or_section": "ammo_9x39_pab9",
+            "type_key": "ammo_9x39_pab9",
+            "upgrades": null
+          }
+        ],
+        "money": 1234,
+        "time": {
+          "game_time": 123456,
+          "level_name": null,
+          "normal_time_factor": 1.000000,
+          "time_factor": 10.000000
+        },
+        "warnings": [
+          "X-Ray: relation registry не разобран, goodwill только read-only: X-Ray relation registry: InfoPortions count=1768383858 слишком велик",
+          "X-Ray: названия и категории предметов показаны по serialized section key; перевод, вес, размер и точная UI-сетка не извлечены"
+        ]
+      },
+      "versions": {
+        "container": 3,
+        "format": 118
+      }
+    },
+    {
+      "error_type": null,
+      "format": "stalker2",
+      "mutations": {
+        "money_plus_one": {
+          "error_type": null,
+          "plan": {
+            "money": 101,
+            "stacks": []
+          },
+          "result": "passed",
+          "safety_checks": {
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": true,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "unsupported",
+                  "reason": "S2 add/clone constructor is not confirmed."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "helmet",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "nvg",
+                  "binocular",
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet."
+                },
+                "icon_source": "official loose CFG/localization; selected Zone Kit/Workshop is presentation-only",
+                "placement": {
+                  "maturity": "unsupported",
+                  "reason": "S2 placement serialization is not confirmed."
+                },
+                "remove": {
+                  "maturity": "unsupported",
+                  "reason": "S2 safe remove/reference graph is not confirmed."
+                },
+                "upgrades": {
+                  "maturity": "research",
+                  "reason": "S2 module/upgrade vectors are observed but installed/current state is not proven."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_player_faction": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_relations": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_stacks": {
+                  "maturity": "research",
+                  "reason": "S2 stack writer не подтверждён.",
+                  "writable": false
+                },
+                "edit_upgrades": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": null,
+              "name": null,
+              "player_faction_editable": false,
+              "player_faction_index": null,
+              "rank": null,
+              "reputation": null
+            },
+            "equipment": [
+              {
+                "category": "consumable",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 805306369,
+                "handle_hex": "0x30000001",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "inventory",
+                "module_states": null,
+                "modules": null,
+                "name": "Неизвестный предмет · 0x30000001",
+                "observation_source": "grid",
+                "provenance": "owned",
+                "serializer_family": null,
+                "type_key": "010203",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              },
+              {
+                "category": "other",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 805306370,
+                "handle_hex": "0x30000002",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "inventory",
+                "module_states": null,
+                "modules": null,
+                "name": "Неизвестный предмет · 0x30000002",
+                "observation_source": "grid",
+                "provenance": "owned",
+                "serializer_family": null,
+                "type_key": "040506",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": true,
+              "crc_present": true,
+              "name": "CRC-32"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 2,
+                "handle": 805306369,
+                "handle_hex": "0x30000001",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "height": 1,
+                  "slot": null,
+                  "storage": "inventory",
+                  "type": null,
+                  "width": 1,
+                  "x": 0,
+                  "y": 0
+                },
+                "sid_or_section": "010203",
+                "type_key": "010203",
+                "upgrades": null
+              },
+              {
+                "condition": null,
+                "count": 1,
+                "handle": 805306370,
+                "handle_hex": "0x30000002",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [
+                    [
+                      1,
+                      0
+                    ]
+                  ],
+                  "height": 1,
+                  "slot": null,
+                  "storage": "inventory",
+                  "type": null,
+                  "width": 1,
+                  "x": 1,
+                  "y": 0
+                },
+                "sid_or_section": "040506",
+                "type_key": "040506",
+                "upgrades": null
+              }
+            ],
+            "money": 101,
+            "time": {
+              "game_time": null,
+              "level_name": null,
+              "normal_time_factor": null,
+              "time_factor": null
+            },
+            "warnings": [
+              "Handle 0x30000004: неизвестный orphan object kind=99, только read-only"
+            ]
+          }
+        },
+        "stack_delta": {
+          "error_type": "SaveError",
+          "plan": {
+            "money": null,
+            "stacks": [
+              {
+                "count": 3,
+                "handle": 805306369
+              }
+            ]
+          },
+          "result": "blocked",
+          "safety_checks": {
+            "capability_allows": false,
+            "capability_gate_rejected": true,
+            "crc_ok": null,
+            "mutation_visible_after_reparse": false,
+            "output_sha256_matches": false,
+            "reparse_succeeded": false,
+            "source_sha256_matches": true,
+            "source_unchanged": true
+          },
+          "state_after": {
+            "capabilities": {
+              "catalog": true,
+              "equipment": {
+                "add": {
+                  "maturity": "unsupported",
+                  "reason": "S2 add/clone constructor is not confirmed."
+                },
+                "categories": [
+                  "weapon",
+                  "armor",
+                  "helmet",
+                  "module",
+                  "device",
+                  "consumable",
+                  "ammo",
+                  "artifact",
+                  "quest",
+                  "other"
+                ],
+                "device_subtypes": [
+                  "nvg",
+                  "binocular",
+                  "detector",
+                  "other",
+                  "unknown"
+                ],
+                "durability": {
+                  "maturity": "experimental",
+                  "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet."
+                },
+                "icon_source": "official loose CFG/localization; selected Zone Kit/Workshop is presentation-only",
+                "placement": {
+                  "maturity": "unsupported",
+                  "reason": "S2 placement serialization is not confirmed."
+                },
+                "remove": {
+                  "maturity": "unsupported",
+                  "reason": "S2 safe remove/reference graph is not confirmed."
+                },
+                "upgrades": {
+                  "maturity": "research",
+                  "reason": "S2 module/upgrade vectors are observed but installed/current state is not proven."
+                }
+              },
+              "mutations": {
+                "add_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_durability": {
+                  "maturity": "experimental",
+                  "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet.",
+                  "writable": true
+                },
+                "edit_money": {
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
+                },
+                "edit_placement": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_player_faction": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_relations": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "edit_stacks": {
+                  "maturity": "research",
+                  "reason": "S2 stack writer не подтверждён.",
+                  "writable": false
+                },
+                "edit_upgrades": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "move_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                },
+                "remove_items": {
+                  "maturity": "unsupported",
+                  "reason": null,
+                  "writable": false
+                }
+              },
+              "read_inventory": true
+            },
+            "character": {
+              "faction_relations": [],
+              "health": null,
+              "name": null,
+              "player_faction_editable": false,
+              "player_faction_index": null,
+              "rank": null,
+              "reputation": null
+            },
+            "equipment": [
+              {
+                "category": "consumable",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 805306369,
+                "handle_hex": "0x30000001",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "inventory",
+                "module_states": null,
+                "modules": null,
+                "name": "Неизвестный предмет · 0x30000001",
+                "observation_source": "grid",
+                "provenance": "owned",
+                "serializer_family": null,
+                "type_key": "010203",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              },
+              {
+                "category": "other",
+                "condition": null,
+                "condition_editable": false,
+                "damaged": false,
+                "device_subtype": null,
+                "durability": {
+                  "maturity": "unsupported",
+                  "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+                },
+                "durability_editable": false,
+                "handle": 805306370,
+                "handle_hex": "0x30000002",
+                "icon_texture": null,
+                "icon_x": null,
+                "icon_y": null,
+                "location": "inventory",
+                "module_states": null,
+                "modules": null,
+                "name": "Неизвестный предмет · 0x30000002",
+                "observation_source": "grid",
+                "provenance": "owned",
+                "serializer_family": null,
+                "type_key": "040506",
+                "upgrade_states": null,
+                "upgrades": null,
+                "upgrades_editable": false
+              }
+            ],
+            "integrity": {
+              "crc_ok": true,
+              "crc_present": true,
+              "name": "CRC-32"
+            },
+            "items": [
+              {
+                "condition": null,
+                "count": 2,
+                "handle": 805306369,
+                "handle_hex": "0x30000001",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "height": 1,
+                  "slot": null,
+                  "storage": "inventory",
+                  "type": null,
+                  "width": 1,
+                  "x": 0,
+                  "y": 0
+                },
+                "sid_or_section": "010203",
+                "type_key": "010203",
+                "upgrades": null
+              },
+              {
+                "condition": null,
+                "count": 1,
+                "handle": 805306370,
+                "handle_hex": "0x30000002",
+                "placement": {
+                  "base_slot": null,
+                  "cells": [
+                    [
+                      1,
+                      0
+                    ]
+                  ],
+                  "height": 1,
+                  "slot": null,
+                  "storage": "inventory",
+                  "type": null,
+                  "width": 1,
+                  "x": 1,
+                  "y": 0
+                },
+                "sid_or_section": "040506",
+                "type_key": "040506",
+                "upgrades": null
+              }
+            ],
+            "money": 100,
+            "time": {
+              "game_time": null,
+              "level_name": null,
+              "normal_time_factor": null,
+              "time_factor": null
+            },
+            "warnings": [
+              "Handle 0x30000004: неизвестный orphan object kind=99, только read-only"
+            ]
+          }
+        }
+      },
+      "parse_status": "ok",
+      "release": "stalker2",
+      "sha256": "2fe435d0909e812c362c7577e5adaaef1390e22ea06a46571510530caae92408",
+      "state": {
+        "capabilities": {
+          "catalog": true,
+          "equipment": {
+            "add": {
+              "maturity": "unsupported",
+              "reason": "S2 add/clone constructor is not confirmed."
+            },
+            "categories": [
+              "weapon",
+              "armor",
+              "helmet",
+              "module",
+              "device",
+              "consumable",
+              "ammo",
+              "artifact",
+              "quest",
+              "other"
+            ],
+            "device_subtypes": [
+              "nvg",
+              "binocular",
+              "detector",
+              "other",
+              "unknown"
+            ],
+            "durability": {
+              "maturity": "experimental",
+              "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet."
+            },
+            "icon_source": "official loose CFG/localization; selected Zone Kit/Workshop is presentation-only",
+            "placement": {
+              "maturity": "unsupported",
+              "reason": "S2 placement serialization is not confirmed."
+            },
+            "remove": {
+              "maturity": "unsupported",
+              "reason": "S2 safe remove/reference graph is not confirmed."
+            },
+            "upgrades": {
+              "maturity": "research",
+              "reason": "S2 module/upgrade vectors are observed but installed/current state is not proven."
+            }
+          },
+          "mutations": {
+            "add_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "edit_durability": {
+              "maturity": "experimental",
+              "reason": "S2 weapon/armor condition anchor is source-backed; game load/re-save is not accepted yet.",
+              "writable": true
+            },
+            "edit_money": {
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
+            },
+            "edit_placement": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "edit_player_faction": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "edit_relations": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "edit_stacks": {
+              "maturity": "research",
+              "reason": "S2 stack writer не подтверждён.",
+              "writable": false
+            },
+            "edit_upgrades": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "move_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            },
+            "remove_items": {
+              "maturity": "unsupported",
+              "reason": null,
+              "writable": false
+            }
+          },
+          "read_inventory": true
+        },
+        "character": {
+          "faction_relations": [],
+          "health": null,
+          "name": null,
+          "player_faction_editable": false,
+          "player_faction_index": null,
+          "rank": null,
+          "reputation": null
+        },
+        "equipment": [
+          {
+            "category": "consumable",
+            "condition": null,
+            "condition_editable": false,
+            "damaged": false,
+            "device_subtype": null,
+            "durability": {
+              "maturity": "unsupported",
+              "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+            },
+            "durability_editable": false,
+            "handle": 805306369,
+            "handle_hex": "0x30000001",
+            "icon_texture": null,
+            "icon_x": null,
+            "icon_y": null,
+            "location": "inventory",
+            "module_states": null,
+            "modules": null,
+            "name": "Неизвестный предмет · 0x30000001",
+            "observation_source": "grid",
+            "provenance": "owned",
+            "serializer_family": null,
+            "type_key": "010203",
+            "upgrade_states": null,
+            "upgrades": null,
+            "upgrades_editable": false
+          },
+          {
+            "category": "other",
+            "condition": null,
+            "condition_editable": false,
+            "damaged": false,
+            "device_subtype": null,
+            "durability": {
+              "maturity": "unsupported",
+              "reason": "В сейве нет подтверждённого поля прочности для этого предмета."
+            },
+            "durability_editable": false,
+            "handle": 805306370,
+            "handle_hex": "0x30000002",
+            "icon_texture": null,
+            "icon_x": null,
+            "icon_y": null,
+            "location": "inventory",
+            "module_states": null,
+            "modules": null,
+            "name": "Неизвестный предмет · 0x30000002",
+            "observation_source": "grid",
+            "provenance": "owned",
+            "serializer_family": null,
+            "type_key": "040506",
+            "upgrade_states": null,
+            "upgrades": null,
+            "upgrades_editable": false
+          }
+        ],
+        "integrity": {
+          "crc_ok": true,
+          "crc_present": true,
+          "name": "CRC-32"
+        },
+        "items": [
+          {
+            "condition": null,
+            "count": 2,
+            "handle": 805306369,
+            "handle_hex": "0x30000001",
+            "placement": {
+              "base_slot": null,
+              "cells": [
+                [
+                  0,
+                  0
+                ]
+              ],
+              "height": 1,
+              "slot": null,
+              "storage": "inventory",
+              "type": null,
+              "width": 1,
+              "x": 0,
+              "y": 0
+            },
+            "sid_or_section": "010203",
+            "type_key": "010203",
+            "upgrades": null
+          },
+          {
+            "condition": null,
+            "count": 1,
+            "handle": 805306370,
+            "handle_hex": "0x30000002",
+            "placement": {
+              "base_slot": null,
+              "cells": [
+                [
+                  1,
+                  0
+                ]
+              ],
+              "height": 1,
+              "slot": null,
+              "storage": "inventory",
+              "type": null,
+              "width": 1,
+              "x": 1,
+              "y": 0
+            },
+            "sid_or_section": "040506",
+            "type_key": "040506",
+            "upgrades": null
+          }
+        ],
+        "money": 100,
+        "time": {
+          "game_time": null,
+          "level_name": null,
+          "normal_time_factor": null,
+          "time_factor": null
+        },
+        "warnings": [
+          "Handle 0x30000004: неизвестный orphan object kind=99, только read-only"
+        ]
+      },
+      "versions": {
+        "container": null,
+        "format": null
+      }
+    }
+  ],
+  "schema_version": 1
+}
