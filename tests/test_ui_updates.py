@@ -182,3 +182,22 @@ def test_main_window_manual_check_uses_injected_client(qtbot, tmp_path: Path) ->
     qtbot.waitUntil(lambda: window._update_dialog is not None, timeout=1_000)
     assert window._update_dialog.status_label.text()
     assert window.settings_reference_view.copy_diagnostics_button.text() == "СКОПИРОВАТЬ ДИАГНОСТИКУ"
+
+
+@pytest.mark.parametrize(
+    ("code", "text"),
+    [(126, "отменена"), (100, "не удалась")],
+)
+def test_linux_install_result_is_reported_and_editor_stays(qtbot, tmp_path, code, text) -> None:
+    from editor.i18n import source_text
+
+    dialog = UpdateDialog(UpdateCheckResult("current"), installation=_installation(tmp_path))
+    qtbot.addWidget(dialog)
+
+    class _Process:
+        def poll(self):
+            return code
+
+    dialog._watch_installer(_Process())
+    qtbot.waitUntil(lambda: text in source_text(dialog.status_label.text()), timeout=3000)
+    assert dialog.restart_button.isEnabled()

@@ -681,6 +681,7 @@
  "Облачные сохранения и проверенная запись": "Partidas en la nube y escritura verificada",
  "Обновить": "Actualizar",
  "Обновление Save Editor": "Actualización de Save Editor",
+ "Обновление установлено. Перезапускаю редактор…": "Actualización instalada. Reiniciando el editor…",
  "Обновления": "Actualizaciones",
  "Образ открыт. Закрой Save Editor, перетащи приложение из образа в папку «Программы» и подтверди замену. Затем запусти редактор снова. Установленная версия не подтверждена.": "La imagen de disco está abierta. Cierra Save Editor, arrastra la aplicación desde la imagen a Aplicaciones y confirma el reemplazo. Después, vuelve a iniciar el editor. La versión instalada no se ha confirmado.",
  "Объединено одинаковых предметов: {0}": "Objetos idénticos agrupados: {0}",
@@ -1153,11 +1154,15 @@
  "Уникальный вариант: {0}": "Variante única de: {0}",
  "Уровень": "Nivel",
  "Успешно": "Correcto",
+ "Устанавливается… Подтверди пароль в системном окне и не закрывай редактор.": "Instalando… Confirma la contraseña en la ventana del sistema y no cierres el editor.",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Instala el juego desde Steam para usar Steam Cloud nativo.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Instala el juego para comprobar sus archivos de audio.",
  "Установите системную команду, если она нужна этому способу установки.": "Instala este comando del sistema si este tipo de instalación lo requiere.",
  "Установка": "Instalación",
  "Установка игры не найдена": "Instalación del juego no encontrada",
  "Установка не найдена": "Instalación no encontrada",
+ "Установка не удалась (код {0}). Редактор остаётся на текущей версии.": "La instalación falló (código {0}). El editor sigue en la versión actual.",
+ "Установка отменена: пароль не подтверждён. Можно попробовать ещё раз.": "Instalación cancelada: la contraseña no se confirmó. Puedes intentarlo de nuevo.",
  "Установленных игр не найдено.": "No se encontraron juegos instalados.",
  "Установлено: {0}": "Instalado: {0}",
  "Установщик запущен; подтверди обновление в системе. Приложение закрывается.": "El instalador se ha iniciado; confirma la actualización en el sistema. La aplicación se cierra.",
@@ -1332,6 +1337,5 @@
  "●  НЕ НАЙДЕНО": "●  NO ENCONTRADO",
  "● БУДЕТ СОЗДАНО": "● SE CREARÁ",
  "● ГОТОВО": "● LISTO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOYAR EL PROYECTO",
- "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Instala el juego desde Steam para usar Steam Cloud nativo."
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOYAR EL PROYECTO"
 }

@@ -682,6 +682,7 @@
  "Облачные сохранения и проверенная запись": "Pozice v cloudu a ověřený zápis",
  "Обновить": "Obnovit",
  "Обновление Save Editor": "Aktualizace Save Editoru",
+ "Обновление установлено. Перезапускаю редактор…": "Aktualizace nainstalována. Restartuji editor…",
  "Обновления": "Aktualizace",
  "Образ открыт. Закрой Save Editor, перетащи приложение из образа в папку «Программы» и подтверди замену. Затем запусти редактор снова. Установленная версия не подтверждена.": "Obraz disku je otevřený. Ukonči Save Editor, přetáhni aplikaci z obrazu do složky Aplikace a potvrď nahrazení. Potom editor znovu spusť. Nainstalovaná verze nebyla potvrzena.",
  "Объединено одинаковых предметов: {0}": "Seskupené stejné předměty: {0}",
@@ -1154,11 +1155,15 @@
  "Уникальный вариант: {0}": "Unikátní varianta: {0}",
  "Уровень": "Úroveň",
  "Успешно": "Úspěch",
+ "Устанавливается… Подтверди пароль в системном окне и не закрывай редактор.": "Instaluje se… Potvrď heslo v systémovém okně a nezavírej editor.",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Nainstalujte hru ze Steamu, abyste mohli používat nativní Steam Cloud.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Nainstalujte hru pro kontrolu jejích zvukových souborů.",
  "Установите системную команду, если она нужна этому способу установки.": "Nainstalujte systémový příkaz, pokud je pro tento způsob instalace vyžadován.",
  "Установка": "Instalace",
  "Установка игры не найдена": "Instalace hry nebyla nalezena",
  "Установка не найдена": "Instalace nebyla nalezena",
+ "Установка не удалась (код {0}). Редактор остаётся на текущей версии.": "Instalace selhala (kód {0}). Editor zůstává na aktuální verzi.",
+ "Установка отменена: пароль не подтверждён. Можно попробовать ещё раз.": "Instalace zrušena: heslo nebylo potvrzeno. Můžeš to zkusit znovu.",
  "Установленных игр не найдено.": "Nebyly nalezeny žádné nainstalované hry.",
  "Установлено: {0}": "Nainstalováno: {0}",
  "Установщик запущен; подтверди обновление в системе. Приложение закрывается.": "Instalátor je spuštěn; potvrď aktualizaci v systému. Aplikace se zavírá.",
@@ -1336,6 +1341,5 @@
  "●  НЕ НАЙДЕНО": "●  NENALEZENO",
  "● БУДЕТ СОЗДАНО": "● BUDE VYTVOŘENA",
  "● ГОТОВО": "● PŘIPRAVENO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT",
- "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Nainstalujte hru ze Steamu, abyste mohli používat nativní Steam Cloud."
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT"
 }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -411,7 +412,7 @@ def launch_update(command: list[str]) -> subprocess.Popen[bytes]:
 
 
 # $0 pkexec, $1 apt-get, $2 package, $3 editor to start afterwards.
-PKEXEC_HANDOFF_SCRIPT = '"$0" "$1" install -y "$2" && { [ -z "$3" ] || "$3" >/dev/null 2>&1 & }'
+PKEXEC_HANDOFF_SCRIPT = '"$0" "$1" install -y "$2" && { rm -f "$2"; [ -z "$3" ] || "$3" >/dev/null 2>&1 & }'
 
 
 def build_installer_command(
@@ -454,6 +455,30 @@ def build_installer_command(
     if xdg_open:
         return [xdg_open, str(archive)]
     raise ManifestError("Linux package manager handoff is unavailable (pkexec/xdg-open missing)")
+
+
+# pkexec reports a dismissed or failed password prompt with these codes.
+PKEXEC_CANCELLED_CODES = frozenset({126, 127})
+_STALE_DOWNLOAD = re.compile(r"^SaveEditor-update-\d+-.+")
+
+
+def remove_stale_downloads(directory: Path | None = None) -> int:
+    """Delete downloads named by the old per-process scheme (before 0.7.4)."""
+
+    folder = Path(directory or tempfile.gettempdir())
+    removed = 0
+    try:
+        entries = list(folder.iterdir())
+    except OSError:
+        return 0
+    for entry in entries:
+        if _STALE_DOWNLOAD.match(entry.name) and entry.is_file():
+            try:
+                entry.unlink()
+                removed += 1
+            except OSError:
+                pass
+    return removed
 
 
 def launch_installer(

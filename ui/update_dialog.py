@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 from editor.i18n import tr
 from editor.update_manifest import ArtifactSpec, ManifestError
 from editor.updater import (
+    PKEXEC_CANCELLED_CODES,
     InstallationInfo,
     UpdateCheckResult,
     build_update_command,
@@ -211,7 +212,7 @@ class UpdateDialog(QDialog):
         if artifact.kind in {"package", "installer", "disk-image"}:
             LOGGER.info("update installer handoff start kind=%s file=%s", artifact.kind, artifact.file)
             try:
-                launch_installer(archive, self.installation, kind=artifact.kind)
+                process = launch_installer(archive, self.installation, kind=artifact.kind)
             except (OSError, ValueError, ManifestError) as exc:
                 LOGGER.exception("update installer handoff rejected kind=%s", artifact.kind)
                 message = (
@@ -229,6 +230,12 @@ class UpdateDialog(QDialog):
                             "Образ открыт. Закрой Save Editor, перетащи приложение из образа в папку «Программы» и подтверди замену. Затем запусти редактор снова. Установленная версия не подтверждена."
                         )
                     )
+                elif artifact.kind == "package" and platform.system().casefold() == "linux":
+                    # apt runs silently behind the password prompt: stay open
+                    # and report its result instead of vanishing.
+                    self.restart_button.setEnabled(False)
+                    self.status_label.setText(tr("Устанавливается… Подтверди пароль в системном окне и не закрывай редактор."))
+                    self._watch_installer(process)
                 else:
                     self.status_label.setText(
                         tr("Установщик запущен; подтверди обновление в системе. Приложение закрывается.")
@@ -256,6 +263,32 @@ class UpdateDialog(QDialog):
         application = QApplication.instance()
         if application is not None:
             application.quit()
+
+    def _watch_installer(self, process: Any) -> None:
+        timer = QTimer(self)
+        timer.setInterval(500)
+
+        def poll() -> None:
+            code = process.poll()
+            if code is None:
+                return
+            timer.stop()
+            LOGGER.info("update installer finished code=%s", code)
+            if code == 0:
+                self.status_label.setText(tr("Обновление установлено. Перезапускаю редактор…"))
+                application = QApplication.instance()
+                if application is not None:
+                    QTimer.singleShot(1500, application.quit)
+                return
+            self.restart_button.setEnabled(True)
+            if code in PKEXEC_CANCELLED_CODES:
+                self.status_label.setText(tr("Установка отменена: пароль не подтверждён. Можно попробовать ещё раз."))
+            else:
+                self.status_label.setText(tr("Установка не удалась (код {0}). Редактор остаётся на текущей версии.", code))
+
+        timer.timeout.connect(poll)
+        timer.start()
+        self._installer_timer = timer
 
     def _set_technical_details(self, value: object) -> None:
         self._technical_detail_text = technical_details(value)
