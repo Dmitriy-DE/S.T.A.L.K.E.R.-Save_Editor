@@ -209,6 +209,7 @@ class MainWindow(QMainWindow):
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
         self.staged_adds: dict[str, int] = {}
+        self.staged_stash_takes: set[int] = set()
         self.staged_detach: dict[int, bool] = {}
         self.staged_durability: dict[int, float] = {}
         self.staged_faction_relations: dict[str, int] = {}
@@ -417,6 +418,7 @@ class MainWindow(QMainWindow):
         self.editor_view.reset_requested.connect(self._reset_editor_item)
         self.editor_view.upgrades_stage_requested.connect(self._stage_item_upgrades)
         self.editor_view.add_requested.connect(self._show_add_item_dialog)
+        self.editor_view.stash_requested.connect(self._show_stash_dialog)
         self.editor_view.repair_all_requested.connect(
             lambda: self._stage_equipment_bulk_repair("damaged", 100.0)
         )
@@ -619,6 +621,8 @@ class MainWindow(QMainWindow):
         for item_key, quantity in sorted(self.staged_adds.items()):
             definition = self.snapshot.catalog.resolve(item_key) if self.snapshot.catalog else None
             rows.append((self._definition_name(definition) or tr("Предмет"), tr("нет"), tr("добавить × {0}", quantity)))
+        for handle in sorted(self.staged_stash_takes):
+            rows.append((self._stash_item_name(handle), tr("в тайнике"), tr("в рюкзак")))
         for key, value in sorted(self.staged_faction_relations.items()):
             faction = (
                 self.snapshot.game_catalog.factions.resolve(key)
@@ -1156,6 +1160,7 @@ class MainWindow(QMainWindow):
         info = snapshot.info
         for mapping in (
             self.staged_counts,
+            self.staged_stash_takes,
             self.staged_adds,
             self.staged_detach,
             self.staged_durability,
@@ -1358,6 +1363,31 @@ class MainWindow(QMainWindow):
         dialog.setObjectName("addItemDialog")
         dialog.accepted.connect(lambda: self._accept_add_item_dialog(dialog))
         dialog.open()
+
+    def _stash_item_name(self, handle: int) -> str:
+        info = self.snapshot.info if self.snapshot is not None else None
+        for stash in getattr(info, "stashes", ()):
+            for item_handle, key, count in stash.items:
+                if item_handle == handle:
+                    return self._catalog_name(key) + (f" × {count}" if count > 1 else "")
+        return tr("Предмет")
+
+    def _show_stash_dialog(self) -> None:
+        if self.snapshot is None or not getattr(self.snapshot.info, "stashes", ()):
+            return
+        from .stash_dialog import StashDialog
+
+        dialog = StashDialog(
+            self.snapshot.info.stashes,
+            self,
+            name_for=self._catalog_name,
+            taken=self.staged_stash_takes,
+        )
+        if dialog.exec() != StashDialog.DialogCode.Accepted:
+            return
+        self.staged_stash_takes = set(dialog.selection())
+        self._render_changes()
+        self._invalidate_preview(tr("изменились предметы из тайников"))
 
     def _accept_add_item_dialog(self, dialog: AddItemDialog) -> None:
         selection = dialog.selection()
@@ -1604,6 +1634,7 @@ class MainWindow(QMainWindow):
 
         for mapping in (
             self.staged_counts,
+            self.staged_stash_takes,
             self.staged_adds,
             self.staged_detach,
             self.staged_durability,
@@ -1647,6 +1678,7 @@ class MainWindow(QMainWindow):
             self.staged_money is not None
             or self.staged_counts
             or self.staged_adds
+            or self.staged_stash_takes
             or self.staged_detach
             or self.staged_durability
             or self.staged_faction_relations
@@ -1659,6 +1691,7 @@ class MainWindow(QMainWindow):
         return (
             len(self.staged_counts)
             + len(self.staged_adds)
+            + len(self.staged_stash_takes)
             + len(self.staged_detach)
             + len(self.staged_durability)
             + len(self.staged_faction_relations)
@@ -1861,6 +1894,7 @@ class MainWindow(QMainWindow):
             self.staged_counts = dict(plan.stacks)
             self.staged_detach = dict(plan.detach)
             self.staged_adds = {key: quantity for key, quantity, _ in plan.adds}
+            self.staged_stash_takes = set(plan.stash_takes)
             self.staged_durability = dict(plan.durability)
             self.staged_faction_relations = dict(plan.faction_relations)
             self.staged_player_faction = plan.player_faction
@@ -1934,6 +1968,7 @@ class MainWindow(QMainWindow):
                 (item_key, quantity, "inventory")
                 for item_key, quantity in sorted(self.staged_adds.items())
             ),
+            stash_takes=tuple(sorted(self.staged_stash_takes)),
             durability=tuple(sorted(self.staged_durability.items())),
             faction_relations=tuple(sorted(self.staged_faction_relations.items())),
             player_faction=self.staged_player_faction,

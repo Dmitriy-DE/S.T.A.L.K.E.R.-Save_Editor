@@ -210,6 +210,16 @@ class SaveInfo:
     actor_rank: int | None = None
     actor_reputation: int | None = None
     actor_name: str | None = None
+    stashes: tuple[StashInfo, ...] = ()
+
+
+@dataclass(frozen=True)
+class StashInfo:
+    """One stash and what lies in it: (handle, item key, count) per item."""
+
+    name: str
+    level: str | None
+    items: tuple[tuple[int, str, int], ...]
 
 
 @dataclass(frozen=True)

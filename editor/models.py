@@ -52,6 +52,8 @@ class EditPlan:
     player_faction: str | None = None
     upgrades: tuple[tuple[int, tuple[str, ...]], ...] = ()
     placements: tuple[tuple[int, str, int | None], ...] = ()
+    # Items taken from a level stash (inventory box) into the backpack.
+    stash_takes: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -184,6 +186,12 @@ class EditPlan:
         object.__setattr__(self, "player_faction", player_faction)
         object.__setattr__(self, "upgrades", upgrades)
         object.__setattr__(self, "placements", placements)
+        stash_takes = tuple(int(handle) for handle in self.stash_takes)
+        if len(set(stash_takes)) != len(stash_takes):
+            raise ValueError("Duplicate stash item in edit plan")
+        if set(stash_takes) & removed:
+            raise ValueError("Edit plan takes an item from a stash that it also removes")
+        object.__setattr__(self, "stash_takes", stash_takes)
 
 
 @dataclass(frozen=True)

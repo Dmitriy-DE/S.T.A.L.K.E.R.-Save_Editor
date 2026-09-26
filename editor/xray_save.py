@@ -20,7 +20,7 @@ import struct
 from dataclasses import dataclass, replace
 from typing import Literal
 
-from save_format import InventoryItem, SaveInfo
+from save_format import InventoryItem, SaveInfo, StashInfo
 
 from .catalog import (
     FactionCatalog,
@@ -1343,6 +1343,14 @@ def inspect_xray(
         actor_health=parsed.actor_health,
         actor_rank=parsed.actor_rank,
         actor_reputation=parsed.actor_reputation,
+        stashes=tuple(
+            StashInfo(
+                stash.name,
+                stash.level,
+                tuple((item.object_id, item.name, max(1, int(item.count or 1))) for item in stash.items),
+            )
+            for stash in (xray_stashes(parsed) if with_inventory else ())
+        ),
         actor_name=parsed.actor_name,
     )
 
@@ -2059,7 +2067,13 @@ def _apply_xray_structural_edits(
     return working
 
 
-def _reset_added_item_state(data: bytes, spec: XRayFormatSpec, object_id: int) -> bytes:
+def _reset_added_item_state(
+    data: bytes,
+    spec: XRayFormatSpec,
+    object_id: int,
+    *,
+    keep_upgrades: bool = False,
+) -> bytes:
     """A clone must not inherit the template's worn slot or upgrades.
 
     The template can be the outfit the player wears: copying its place put the
@@ -2069,7 +2083,7 @@ def _reset_added_item_state(data: bytes, spec: XRayFormatSpec, object_id: int) -
 
     current = parse_xray(data, spec, with_inventory=True)
     obj = current.object_by_id(object_id)
-    if obj.upgrades:
+    if obj.upgrades and not keep_upgrades:
         data = _replace_object_record(current, obj, _upgrade_record(current, obj, ()))
         current = parse_xray(data, spec, with_inventory=True)
         obj = current.object_by_id(object_id)
@@ -2095,6 +2109,77 @@ def _reset_added_item_state(data: bytes, spec: XRayFormatSpec, object_id: int) -
 
 
 _U8_PLACES = frozenset({1, 2, 3})
+
+
+# --- Stashes: inventory boxes on the levels (S2-STASH for the trilogy) ------
+# Items in a box are ordinary objects whose parent is an ``inventory_box``;
+# Clear Sky and Call of Pripyat have one box per place, not one shared stash.
+STASH_SECTION = "inventory_box"
+LEVEL_PREFIXES = {
+    "esc": "Кордон", "gar": "Свалка", "mar": "Болота", "val": "Тёмная долина",
+    "agr": "Агропром", "red": "Рыжий лес", "yan": "Янтарь", "mil": "Армейские склады",
+    "lim": "Лиманск", "hos": "Госпиталь", "bar": "Бар", "ros": "Дикая территория",
+    "zat": "Затон", "jup": "Юпитер", "pri": "Припять", "l01": "Кордон", "l02": "Свалка",
+    "l03": "Агропром", "l04": "Тёмная долина", "l05": "Бар", "l06": "Дикая территория",
+    "l07": "Армейские склады", "l08": "Янтарь", "l10": "Рыжий лес", "l11": "Припять",
+}
+
+
+@dataclass(frozen=True)
+class XRayStash:
+    object_id: int
+    name: str
+    level: str | None
+    items: tuple[XRayObject, ...]
+
+
+def _object_name_replace(parsed: XRaySave, obj: XRayObject) -> str:
+    reader = _Reader(parsed.spawn_bytes(obj), label="SPAWN name")
+    reader.u16()
+    reader.zstring()
+    return reader.zstring()
+
+
+def xray_stashes(parsed: XRaySave) -> tuple[XRayStash, ...]:
+    """Non-empty inventory boxes with their items, grouped by level prefix."""
+
+    children: dict[int, list[XRayObject]] = {}
+    for obj in parsed.objects:
+        children.setdefault(obj.parent_id, []).append(obj)
+    result = []
+    for obj in parsed.objects:
+        if obj.name != STASH_SECTION or not children.get(obj.object_id):
+            continue
+        name = _object_name_replace(parsed, obj)
+        result.append(
+            XRayStash(obj.object_id, name, LEVEL_PREFIXES.get(name.split("_", 1)[0]), tuple(children[obj.object_id]))
+        )
+    return tuple(sorted(result, key=lambda stash: (stash.level is None, stash.level or "", stash.name)))
+
+
+def take_from_stash(data: bytes, spec: XRayFormatSpec, object_id: int) -> bytes:
+    """Give the player an item lying in an inventory box, as the game does.
+
+    Only the parent changes (box → actor) and the item goes to the backpack;
+    its condition and upgrades stay.
+    """
+
+    current = parse_xray(data, spec, with_inventory=True)
+    obj = current.object_by_id(object_id)
+    box = current.object_by_id(obj.parent_id) if obj.parent_id != 0xFFFF else None
+    if box is None or box.name != STASH_SECTION:
+        raise _fail(f"object 0x{object_id:04X} не лежит в тайнике")
+    spawn = _patch_spawn_identity(
+        current.spawn_bytes(obj), name=obj.name, object_id=obj.object_id, parent_id=current.actor_id
+    )
+    update = current.update_bytes(obj)
+    record = struct.pack("<H", len(spawn)) + spawn + struct.pack("<H", len(update)) + update
+    data = _replace_object_record(current, obj, record)
+    data = _reset_added_item_state(data, spec, object_id, keep_upgrades=True)
+    moved = parse_xray(data, spec, with_inventory=True).object_by_id(object_id)
+    if moved.parent_id != current.actor_id:
+        raise _fail(f"object 0x{object_id:04X}: перенос в инвентарь не подтвердился")
+    return data
 _U8_PLACE_RUCK = 3
 
 
@@ -2137,6 +2222,8 @@ def prepare_xray(
             spec,
             faction_catalog,
         )
+    for handle in plan.stash_takes:
+        working_data = take_from_stash(working_data, spec, handle)
     if plan.detach or plan.adds:
         working_data = _apply_xray_structural_edits(
             working_data,

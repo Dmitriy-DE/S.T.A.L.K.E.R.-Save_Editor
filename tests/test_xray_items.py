@@ -92,3 +92,39 @@ def test_added_clone_never_keeps_the_templates_worn_slot() -> None:
     fixed = parse_xray(_reset_added_item_state(data, CS_FORMAT, 0x2345), CS_FORMAT, with_inventory=True)
     obj = fixed.object_by_id(0x2345)
     assert fixed.container.raw[obj.client_data_offset + 1] == 3  # backpack
+
+
+def test_items_in_a_level_stash_move_to_the_backpack_with_their_state() -> None:
+    import struct
+
+    from test_xray_save import _base_item_state, _chunk, _object_record, _spawn, _state_base
+
+    from editor.xray_container import lzo1x_compress
+    from editor.xray_save import COP_FORMAT, parse_xray, take_from_stash, xray_stashes
+
+    version, outer = 128, 6
+    actor = _spawn("actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0))
+    box = _spawn("inventory_box", 0x10, 0xFFFF, version, _base_item_state(version), struct.pack("<H", 0) + b"\x00", name_replace="zat_actor_stash")
+    item = _spawn("bandage_existing", 0x2345, 0x10, version, _base_item_state(version), struct.pack("<H", 0) + b"\x00")
+    objects = struct.pack("<I", 3) + b"".join(
+        _object_record(spawn, struct.pack("<H", 0) + (b"\x00" if index else b""))
+        for index, spawn in enumerate((actor, box, item))
+    )
+    raw = b"".join((
+        _chunk(0, struct.pack("<I", outer)),
+        _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
+        _chunk(1, b"\x00" * 8),
+        _chunk(2, objects),
+        _chunk(9, b"registry"),
+    ))
+    data = struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
+
+    parsed = parse_xray(data, COP_FORMAT, with_inventory=True)
+    (stash,) = xray_stashes(parsed)
+    assert (stash.name, stash.level, [i.object_id for i in stash.items]) == ("zat_actor_stash", "Затон", [0x2345])
+
+    moved = parse_xray(take_from_stash(data, COP_FORMAT, 0x2345), COP_FORMAT, with_inventory=True)
+    assert moved.object_by_id(0x2345).parent_id == moved.actor_id
+    assert xray_stashes(moved) == ()
+    with pytest.raises(Exception, match="не лежит в тайнике"):
+        take_from_stash(data, COP_FORMAT, 0x0)
