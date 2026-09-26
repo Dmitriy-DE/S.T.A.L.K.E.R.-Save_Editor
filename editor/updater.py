@@ -184,6 +184,14 @@ class UpdateClient:
 
         destination = Path(destination).expanduser().resolve()
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.is_file():
+            # A verified copy from an earlier attempt is reused instead of
+            # downloading the same release again.
+            try:
+                artifact.verify(destination)
+                return destination
+            except ManifestError:
+                destination.unlink(missing_ok=True)
         descriptor, temporary_name = tempfile.mkstemp(
             prefix=f".{destination.name}.", suffix=".part", dir=destination.parent
         )

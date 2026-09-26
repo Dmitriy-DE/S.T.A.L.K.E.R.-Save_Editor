@@ -46,6 +46,9 @@ LANGUAGES = {"ru": "ru", "uk": "uk", "de": "de", "fr": "fr", "it": "it", "es": "
 _LOCALIZATION_PARTS = 5
 _STRING = re.compile(r'^\s*(?:\["([^"]+)"\]|([A-Za-z0-9_]+))\s*=\s*"((?:[^"\\]|\\.)*)"', re.MULTILINE)
 _NAME_KEY = re.compile(r"^sid_(?:items|questItemprototypes|upgrades)_(.+)_name$")
+_DESCRIPTION_KEY = re.compile(r"^sid_(?:items|questItemprototypes)_(.+)_description$")
+# Only quotes the wiki attributes to the game itself count as descriptions.
+_GAME_QUOTE = re.compile(r"\{\{\s*quote\s*\|([^|}]+)\|[^}]*(?:Heart of Chornobyl|\bHoC\b)[^}]*\}\}", re.IGNORECASE)
 _FIELD = r"^\s*\|\s*(?:{name})\s*=\s*(.*?)\s*$"
 _FILE = re.compile(r"(?:File|Файл|Image|Изображение):\s*([^|\]]+)", re.IGNORECASE)
 _S2 = re.compile(r"\{\{\s*GameIcon\s*\|\s*s2\b|\{\{\s*HoC\b|Heart of Chornobyl|hoc_code", re.IGNORECASE)
@@ -145,10 +148,11 @@ def _unescape(value: str) -> str:
     return re.sub(r"\\(.)", lambda m: escapes.get(m.group(1), m.group(1)), value)
 
 
-def official_russian() -> dict[str, str]:
-    """SID → the game's own Russian name (items, quest items, upgrades)."""
+def official_russian() -> tuple[dict[str, str], dict[str, str]]:
+    """SID → the game's own Russian name and description."""
 
     names: dict[str, str] = {}
+    descriptions: dict[str, str] = {}
     for part in range(1, _LOCALIZATION_PARTS + 1):
         title = f"Module:S2Localization/data/ru/part{part}"
         for page in _batches("/ru", [title], prop="revisions", rvprop="content", rvslots="main"):
@@ -158,7 +162,20 @@ def official_russian() -> dict[str, str]:
                 value = _unescape(match.group(3)).strip()
                 if sid and value and value.casefold() != "test":
                     names.setdefault(sid.group(1), value)
-    return names
+                described = _DESCRIPTION_KEY.match(key)
+                if described and value and value.casefold() != "test":
+                    descriptions.setdefault(described.group(1), _clean_text(value))
+    return names, descriptions
+
+
+def _clean_text(value: str) -> str:
+    """Game markup (<br>, <notebold>, $J1L2) → plain text with line breaks."""
+
+    value = re.sub(r"\$J\d+L\d+", "", value)
+    value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+    value = re.sub(r"<[^>]+>", "", value)
+    value = value.replace("\r\n", "\n")
+    return re.sub(r"\n{3,}", "\n\n", value).strip()
 
 
 def collect() -> dict[str, dict]:
@@ -168,8 +185,12 @@ def collect() -> dict[str, dict]:
     def entry(code: str) -> dict:
         return items.setdefault(code, {"names": {}})
 
-    for code, name in official_russian().items():
+    russian_names, russian_descriptions = official_russian()
+    for code, name in russian_names.items():
         entry(code)["names"]["ru"] = name
+    for code, text in russian_descriptions.items():
+        if code in items:
+            items[code].setdefault("descriptions", {})["ru"] = text
     print(f"{len(items)} official Russian names", file=sys.stderr)
 
     # Russian wiki: ``techname`` holds the SID, ``icon`` the inventory icon.
@@ -212,6 +233,9 @@ def collect() -> dict[str, dict]:
             icon = _file(_field(text, "hoc_icon", "icon")) or _file(_field(text, "hoc_image", "image"))
             if icon:
                 item.setdefault("en_icon", icon)
+            quote = _GAME_QUOTE.search(text)
+            if quote:
+                item.setdefault("descriptions", {})["en"] = _clean_text(_plain(quote.group(1)) or "")
             unique = _UNIQUE.search(text)
             if unique:
                 item["variant_of"] = _plain_title(unique.group(1))

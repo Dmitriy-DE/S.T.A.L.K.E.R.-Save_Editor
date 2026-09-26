@@ -94,6 +94,17 @@ def s2_official_name(sid: str | None, language: str | None = None) -> str | None
     return names.get(code) or names.get("en")
 
 
+def s2_description(sid: str | None, language: str | None = None) -> str | None:
+    """Official in-game description, by the same rule as the name."""
+
+    entry = s2_entry(sid)
+    if not entry:
+        return None
+    texts = entry.get("descriptions") or {}
+    code = language or current_language()
+    return texts.get(code) or texts.get("en")
+
+
 def s2_icon_name(sid: str | None) -> str | None:
     entry = s2_entry(sid)
     return entry.get("icon") if entry else None
@@ -108,6 +119,7 @@ __all__ = [
     "ITEMS_PATH",
     "canonical_sid",
     "install",
+    "s2_description",
     "s2_entry",
     "s2_icon_name",
     "s2_official_name",
