@@ -1,9 +1,9 @@
-// Quiet synthesised interface sounds and screen fades for the web build;
-// mirrors ui/effects.py. Both switches persist per browser.
+import { GameAudio, normalizeFamily } from "./game_audio.js";
 import { currentLanguage, LANGUAGES, savedLanguage, setSavedLanguage, t } from "./i18n.js";
 
 const KEYS = { sound: "se-sound", motion: "se-motion" };
 const state = { sound: true, motion: true, theme: "soc", context: null };
+export const gameAudio = new GameAudio();
 
 function read(key, fallback) {
   try {
@@ -31,19 +31,15 @@ const TONES = {
 const PITCH = { soc: 1, clear_sky: 0.92, cop: 1.08 };
 
 export function soundTheme(release) {
-  const value = String(release ?? "").toLowerCase();
-  if (value.startsWith("stalker2")) return "stalker2";
-  if (value.includes("cop")) return "cop";
-  if (value.includes("cs") || value.includes("clear")) return "clear_sky";
-  return "soc";
+  return normalizeFamily(release);
 }
 
 export function setSoundTheme(release) {
   state.theme = soundTheme(release);
+  gameAudio.setFamily(state.theme);
 }
 
-export function play(event) {
-  if (!state.sound) return;
+function playTone(event) {
   const AudioContext = globalThis.AudioContext ?? globalThis.webkitAudioContext;
   if (!AudioContext) return;
   try {
@@ -70,6 +66,14 @@ export function play(event) {
       at += seconds;
     }
   } catch { /* sound is decoration only */ }
+}
+
+export function play(event) {
+  if (!state.sound) return;
+  if (gameAudio.playEvent(event)) {
+    return;
+  }
+  playTone(event);
 }
 
 export function fadeIn(element) {
@@ -100,6 +104,7 @@ function apply() {
 
 export function setSound(enabled) {
   state.sound = Boolean(enabled);
+  gameAudio.setSoundEnabled(state.sound);
   write(KEYS.sound, state.sound);
   apply();
   play("click");
@@ -115,6 +120,8 @@ export function initEffects() {
   const reduced = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   state.sound = read(KEYS.sound, true);
   state.motion = read(KEYS.motion, !reduced);
+  gameAudio.setSoundEnabled(state.sound);
+  gameAudio.setFamily(state.theme);
   const doc = globalThis.document;
   if (!doc) return;
   doc.getElementById("sound-toggle")?.addEventListener("click", () => setSound(!state.sound));
@@ -135,7 +142,15 @@ export function initEffects() {
       if ((select.value || null) !== currentLanguage()) globalThis.location?.reload();
     });
   }
+  let lastHover = null;
+  doc.addEventListener("mouseover", (event) => {
+    const el = event.target?.closest?.("button, .reference-game, .reference-nav-button, .reference-footer-action, #reference-save-table tr");
+    if (!el || el === lastHover || el.disabled) return;
+    lastHover = el;
+    play("hover");
+  });
   doc.addEventListener("click", (event) => {
+    gameAudio.handleUserInteraction();
     const button = event.target?.closest?.("button");
     if (!button || button.disabled || button.classList.contains("effect-toggle")) return;
     play(button.classList.contains("reference-nav-button") ? "tab" : "click");

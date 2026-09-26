@@ -3,7 +3,7 @@
 // operations deliberately remain desktop-only.
 
 import { installCatalogs, loadCoreResources } from "./bootstrap.js";
-import { fadeIn, play, setSoundTheme } from "./effects.js";
+import { fadeIn, play, setSoundTheme, soundTheme } from "./effects.js";
 import { catalogSource, currentLanguage, t, tn } from "./i18n.js";
 import {
   BROWSER_UI_COPY,
@@ -614,6 +614,13 @@ function renderReferenceCharacter(s) {
 
 function renderReferenceSnapshot(s) {
   el("reference-game-count").textContent = t("1 сохранение");
+  const railGame = s.release_id ?? s.format_id;
+  if (railGame) {
+    const theme = soundTheme(railGame);
+    document.querySelectorAll(".reference-game").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.referenceGame === theme);
+    });
+  }
   el("reference-preview-name").textContent = s.name;
   const previewMeta = el("reference-preview-meta");
   previewMeta.replaceChildren();
@@ -922,6 +929,17 @@ for (const [index, button] of [...document.querySelectorAll(".reference-settings
   if (icon && settingsCategoryIcons[index]) {
     icon.src = `assets/ui/shell_icons/${settingsCategoryIcons[index]}.svg`;
   }
+}
+
+for (const button of document.querySelectorAll(".reference-game")) {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".reference-game").forEach((b) => b.classList.remove("is-active"));
+    button.classList.add("is-active");
+    const game = button.dataset.referenceGame;
+    if (game && game !== "all") {
+      setSoundTheme(game);
+    }
+  });
 }
 
 renderFooterActions();
