@@ -4,18 +4,24 @@ from __future__ import annotations
 
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
     QLabel,
     QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
 )
 
 from editor.diagnostics import (
+    Check,
     clear_crash_report,
     collect_log_bundle,
     export_log_bundle,
+    format_report,
+    run_checks,
     submit_logs,
 )
 from editor.i18n import tr
@@ -32,8 +38,9 @@ class DiagnosticsWorker(QThread):
 
     def run(self) -> None:
         try:
-            self.previewed.emit(len(collect_log_bundle()))
-            self.completed.emit(submit_logs())
+            environment_report = format_report(run_checks())
+            self.previewed.emit(len(collect_log_bundle(environment_report=environment_report)))
+            self.completed.emit(submit_logs(environment_report=environment_report))
         except Exception as exc:  # pragma: no cover - defensive thread boundary
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -53,6 +60,114 @@ class DiagnosticsExportWorker(QThread):
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
 
+class EnvironmentCheckWorker(QThread):
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def run(self) -> None:
+        try:
+            self.completed.emit(run_checks())
+        except Exception as exc:  # pragma: no cover - defensive thread boundary
+            self.failed.emit(type(exc).__name__)
+
+
+class EnvironmentDoctorDialog(QDialog):
+    """Show grouped environment checks and let the user copy the same report."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName("environmentDoctorDialog")
+        self.setWindowTitle(tr("Проверка окружения"))
+        self.resize(1050, 680)
+        self.setModal(True)
+        self._checks: tuple[Check, ...] = ()
+        self._report_text = ""
+        self._worker: EnvironmentCheckWorker | None = None
+
+        layout = QVBoxLayout(self)
+        self.status_label = QLabel(tr("Проверяю окружение…"), self)
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
+        self.table = QTreeWidget(self)
+        self.table.setObjectName("environmentDoctorTable")
+        self.table.setColumnCount(4)
+        self.table.setHeaderLabels(
+            [tr("Проверка"), tr("Статус"), tr("Подробности"), tr("Совет")]
+        )
+        self.table.setAlternatingRowColors(True)
+        self.table.setRootIsDecorated(True)
+        self.table.setWordWrap(True)
+        self.table.header().setStretchLastSection(True)
+        for column, width in enumerate((350, 125, 260, 270)):
+            self.table.setColumnWidth(column, width)
+        layout.addWidget(self.table, 1)
+
+        self.copy_report_button = QPushButton(tr("Скопировать отчёт"), self)
+        self.copy_report_button.setObjectName("environmentDoctorCopyReport")
+        self.copy_report_button.setEnabled(False)
+        self.copy_report_button.clicked.connect(self._copy_report)
+        layout.addWidget(self.copy_report_button)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, parent=self)
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText(tr("Закрыть"))
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        self._start_checks()
+
+    def _start_checks(self) -> None:
+        worker = EnvironmentCheckWorker(self)
+        worker.completed.connect(self._show_results)
+        worker.failed.connect(self._show_failure)
+        worker.finished.connect(lambda: self._clear_worker(worker))
+        worker.finished.connect(worker.deleteLater)
+        self._worker = worker
+        worker.start()
+
+    def _clear_worker(self, worker: EnvironmentCheckWorker) -> None:
+        if self._worker is worker:
+            self._worker = None
+
+    def _show_results(self, value: object) -> None:
+        checks = tuple(item for item in value if isinstance(item, Check)) if isinstance(value, list) else ()
+        self._checks = checks
+        self._report_text = format_report(checks)
+        groups: dict[str, QTreeWidgetItem] = {}
+        status_names = {
+            "ok": tr("ОК"),
+            "warn": tr("Предупреждение"),
+            "fail": tr("Ошибка"),
+        }
+        for check in checks:
+            group = groups.get(check.group)
+            if group is None:
+                group = QTreeWidgetItem(self.table, [check.group])
+                group.setExpanded(True)
+                groups[check.group] = group
+            row = QTreeWidgetItem(
+                group,
+                [
+                    check.name,
+                    status_names[check.status],
+                    check.detail,
+                    check.hint,
+                ],
+            )
+            for column in range(4):
+                row.setToolTip(column, row.text(column))
+        self.status_label.setText(tr("Проверок выполнено: {0}", len(checks)))
+        self.copy_report_button.setEnabled(bool(checks))
+
+    def _show_failure(self, error_type: str) -> None:
+        self.status_label.setText(tr("Не удалось выполнить проверки: {0}", error_type))
+
+    def _copy_report(self) -> None:
+        system_clipboard = QApplication.clipboard()
+        if system_clipboard is None:
+            self.status_label.setText(tr("Буфер обмена недоступен"))
+            return
+        system_clipboard.setText(self._report_text)
+        self.status_label.setText(tr("Отчёт скопирован"))
+
+
 class DiagnosticsDialog(QDialog):
     """Let the user send bounded local logs and show the opaque report id."""
 
@@ -69,7 +184,7 @@ class DiagnosticsDialog(QDialog):
 
         layout = QVBoxLayout(self)
         description = QLabel(
-            tr("Отправятся только обезличенные технические журналы ограниченного размера. Сохранения и их содержимое не отправляются.")
+            tr("Отправятся обезличенные журналы и отчёт проверки окружения. Сохранения и их содержимое не отправляются.")
         )
         description.setWordWrap(True)
         if after_crash:
@@ -81,7 +196,7 @@ class DiagnosticsDialog(QDialog):
             layout.addWidget(crash_note)
         layout.addWidget(description)
         self.preview_label = QLabel(
-            tr("Перед отправкой будет подготовлен архив обезличенных журналов.")
+            tr("Перед отправкой будут подготовлены журналы и отчёт проверки окружения.")
         )
         self.preview_label.setWordWrap(True)
         layout.addWidget(self.preview_label)
@@ -96,7 +211,7 @@ class DiagnosticsDialog(QDialog):
         self.details_button.setVisible(False)
         self.details_button.clicked.connect(self._toggle_details)
         layout.addWidget(self.details_button)
-        self.send_button = QPushButton(tr("Отправить журналы"))
+        self.send_button = QPushButton(tr("Отправить журналы и отчёт"))
         self.send_button.clicked.connect(self._send)
         layout.addWidget(self.send_button)
         self.export_button = QPushButton(tr("Экспортировать обезличенные журналы"))
@@ -151,7 +266,7 @@ class DiagnosticsDialog(QDialog):
             self._export_worker = None
 
     def _on_previewed(self, size: int) -> None:
-        self.preview_label.setText(tr("Обезличенный архив подготовлен ({0}).", human_size(size)))
+        self.preview_label.setText(tr("Обезличенный отчёт подготовлен ({0}).", human_size(size)))
 
     def done(self, result: int) -> None:
         if self._after_crash:
@@ -197,4 +312,10 @@ class DiagnosticsDialog(QDialog):
         self._details_dialog.open()
 
 
-__all__ = ["DiagnosticsDialog", "DiagnosticsExportWorker", "DiagnosticsWorker"]
+__all__ = [
+    "DiagnosticsDialog",
+    "DiagnosticsExportWorker",
+    "DiagnosticsWorker",
+    "EnvironmentCheckWorker",
+    "EnvironmentDoctorDialog",
+]

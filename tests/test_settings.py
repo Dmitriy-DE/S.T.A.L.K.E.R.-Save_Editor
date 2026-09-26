@@ -156,6 +156,14 @@ def test_settings_view_explains_missing_path_and_can_persist_selection(
     assert loaded.catalog_root("stalker2") == selected
 
 
+def test_settings_view_emits_environment_check_request(qtbot, tmp_path: Path) -> None:
+    view = SettingsView(PathSettings(), settings_path=tmp_path / "settings.json")
+    qtbot.addWidget(view)
+
+    with qtbot.waitSignal(view.environment_check_requested, timeout=1_000):
+        view.environment_check_button.click()
+
+
 def test_main_window_discovers_from_loaded_manual_save_root(
     qtbot, synthetic_save: bytes, tmp_path: Path
 ) -> None:

@@ -95,6 +95,7 @@ class SettingsView(QWidget):
     backup_folder_requested = Signal()
     journal_requested = Signal()
     copy_diagnostics_requested = Signal()
+    environment_check_requested = Signal()
     support_requested = Signal()
     restart_requested = Signal()
     report_requested = Signal()
@@ -547,20 +548,29 @@ class SettingsView(QWidget):
         self.diagnostics_action_button = action_button(tr("ОТКРЫТЬ ЖУРНАЛ ОШИБОК"), self.diagnostics_panel)
         self.copy_diagnostics_button = action_button(tr("СКОПИРОВАТЬ ДИАГНОСТИКУ"), self.diagnostics_panel)
         self.report_button = action_button(tr("ОТПРАВИТЬ ОТЧЁТ"), self.diagnostics_panel, kind="primary")
+        self.environment_check_button = action_button(
+            tr("Проверить окружение"), self.diagnostics_panel
+        )
         self.report_button.setToolTip(
-            tr("Отправить разработчику короткий обезличенный журнал. Сохранения не отправляются.")
+            tr("Отправить обезличенные журналы и отчёт окружения. Сохранения не отправляются.")
         )
         self.diagnostics_action_button.clicked.connect(self.journal_requested)
         self.copy_diagnostics_button.clicked.connect(self.copy_diagnostics_requested)
         self.report_button.clicked.connect(self.report_requested)
+        self.environment_check_button.clicked.connect(self.environment_check_requested)
         self.report_button.setMinimumHeight(40)
+        self.environment_check_button.setMinimumHeight(40)
         actions = QHBoxLayout()
         actions.setSpacing(8)
         actions.addWidget(self.backup_folder_button, 1)
         actions.addWidget(self.diagnostics_action_button, 1)
         actions.addWidget(self.copy_diagnostics_button, 1)
         layout.addLayout(actions)
-        layout.addWidget(self.report_button)
+        report_actions = QHBoxLayout()
+        report_actions.setSpacing(8)
+        report_actions.addWidget(self.report_button, 1)
+        report_actions.addWidget(self.environment_check_button, 1)
+        layout.addLayout(report_actions)
         note = QLabel(
             tr("Диагностика не нужна для обычного использования, но полезна для отчётов об ошибках."),
             self.diagnostics_panel,

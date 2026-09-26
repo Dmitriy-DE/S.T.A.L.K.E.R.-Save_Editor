@@ -11,7 +11,7 @@ import pytest
 pytest.importorskip("PySide6")
 pytest.importorskip("pytestqt")
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from editor.capabilities import CapabilitySupport, FormatCapabilities
 from editor.cloud_capabilities import CloudWriteCapability
@@ -189,9 +189,16 @@ def test_diagnostics_dialog_previews_before_sending_and_reports_success(
     qtbot, monkeypatch
 ) -> None:
     started = threading.Event()
+    from editor.diagnostics import Check
 
-    def fake_submit_logs() -> str:
+    monkeypatch.setattr(
+        "ui.diagnostics_dialog.run_checks",
+        lambda: [Check("Steam", "Клиент Steam", "ok", "Steam запущен", "")],
+    )
+
+    def fake_submit_logs(*, environment_report: str) -> str:
         started.set()
+        assert "Steam" in environment_report
         return "report-123"
 
     monkeypatch.setattr("ui.diagnostics_dialog.submit_logs", fake_submit_logs)
@@ -202,8 +209,58 @@ def test_diagnostics_dialog_previews_before_sending_and_reports_success(
 
     assert started.wait(2)
     qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
-    assert "Обезличенный архив подготовлен" in dialog.preview_label.text()
+    assert "Обезличенный отчёт подготовлен" in dialog.preview_label.text()
     assert "report-123" in dialog.status_label.text()
+
+
+def test_environment_doctor_groups_results_and_copies_report(qtbot, monkeypatch) -> None:
+    from editor.diagnostics import Check
+    from ui.diagnostics_dialog import EnvironmentDoctorDialog
+
+    monkeypatch.setattr(
+        "ui.diagnostics_dialog.run_checks",
+        lambda: [
+            Check("Steam", "Клиент Steam", "ok", "Steam запущен", ""),
+            Check("Steam", "libsteam_api", "warn", "Библиотека не найдена", "Установите игру."),
+        ],
+    )
+    dialog = EnvironmentDoctorDialog()
+    qtbot.addWidget(dialog)
+    qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
+
+    assert dialog.table.topLevelItemCount() == 1
+    assert dialog.table.topLevelItem(0).text(0) == "Steam"
+    assert dialog.table.topLevelItem(0).childCount() == 2
+    assert dialog.copy_report_button.isEnabled()
+    dialog.copy_report_button.click()
+    assert "Клиент Steam" in QApplication.clipboard().text()
+
+
+def test_environment_doctor_keeps_details_readable_and_available_on_hover(
+    qtbot, monkeypatch
+) -> None:
+    from PySide6.QtWidgets import QDialogButtonBox
+
+    from editor.diagnostics import Check
+    from ui.diagnostics_dialog import EnvironmentDoctorDialog
+
+    detail = "The environment check found a missing synthetic dependency."
+    hint = "Install the synthetic dependency and run the check again."
+    monkeypatch.setattr(
+        "ui.diagnostics_dialog.run_checks",
+        lambda: [Check("Data", "Synthetic check", "warn", detail, hint)],
+    )
+    dialog = EnvironmentDoctorDialog()
+    qtbot.addWidget(dialog)
+    qtbot.waitUntil(lambda: dialog._worker is None, timeout=SIGNAL_TIMEOUT_MS)
+
+    row = dialog.table.topLevelItem(0).child(0)
+    assert dialog.table.columnWidth(2) >= 220
+    assert row.toolTip(2) == detail
+    assert row.toolTip(3) == hint
+    button_box = dialog.findChild(QDialogButtonBox)
+    assert button_box is not None
+    assert button_box.button(QDialogButtonBox.StandardButton.Close).text() == "Закрыть"
 
 
 def test_diagnostics_dialog_exports_in_a_worker_and_keeps_send_available(
