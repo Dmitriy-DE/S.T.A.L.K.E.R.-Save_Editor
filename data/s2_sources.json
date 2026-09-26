@@ -547,7 +547,7 @@
   ],
   "VartaDogtag": [
    "Ward Badge",
-   null
+   "https://static.wikia.nocookie.net/stalker/images/4/45/Icon_HoC_item_T_inv_VartaDogtag.png/revision/latest?cb=20241124222926&path-prefix=ru"
   ],
   "Veles": [
    "Veles Detector",
@@ -572,6 +572,10 @@
   "RU_X4Scope_1": [
    "PSO 4x Scope",
    "https://static.wikia.nocookie.net/stalker/images/f/f4/T_inv_icon_ru_x4scope_1.png/revision/latest"
+  ],
+  "SQ10_BunchOfKeysSPO": [
+   "Bunch of Keys (Waste Processing Station)",
+   "https://static.wikia.nocookie.net/stalker/images/b/b3/Icon_HoC_item_T_inv_BunchOfKeysSPO.png/revision/latest?cb=20241124222816&path-prefix=ru"
   ]
  },
  "images_by_name": {
