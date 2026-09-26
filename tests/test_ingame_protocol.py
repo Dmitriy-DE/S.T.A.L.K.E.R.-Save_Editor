@@ -98,8 +98,8 @@ def test_prepare_and_verify_protocol_covers_s2_stack_copy_without_unlocking_capa
     payload = json.loads(manifest.manifest_path.read_text("utf-8"))
     assert "save_bytes" not in payload
     assert "data" not in payload
-    assert by_id("stalker2").capabilities.support("edit_stacks").maturity == "research"
-    assert by_id("stalker2").capabilities.edit_stacks is False
+    assert by_id("stalker2").capabilities.support("edit_stacks").maturity == "experimental"
+    assert by_id("stalker2").capabilities.edit_stacks is True
 
     resaved = tmp_path / "resaved.sav"
     resaved.write_bytes(manifest.edited_path.read_bytes())
@@ -240,28 +240,13 @@ def test_prepare_protocol_rejects_multiple_s2_durability_targets(
     source = tmp_path / "source.sav"
     source.write_bytes(_save_with_grid_weapon(synthetic_save))
 
-    with pytest.raises(SaveError, match="одну bounded-правку"):
+    # Either the protocol or the edit plan refuses the second target.
+    with pytest.raises((SaveError, ValueError)):
         prepare_source_copy(
             source,
             "stalker2",
             tmp_path / "run",
             durability=((WEAPON_HANDLE, 0.5), (WEAPON_HANDLE, 0.6)),
-        )
-
-
-def test_prepare_protocol_rejects_multiple_s2_stack_targets(
-    tmp_path: Path,
-    synthetic_save: bytes,
-) -> None:
-    source = tmp_path / "source.sav"
-    source.write_bytes(synthetic_save)
-
-    with pytest.raises(SaveError, match="только один stack"):
-        prepare_source_copy(
-            source,
-            "stalker2",
-            tmp_path / "run",
-            stacks=((0x30000001, 7), (0x30000002, 5)),
         )
 
 

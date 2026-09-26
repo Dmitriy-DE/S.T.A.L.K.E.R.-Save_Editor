@@ -29,6 +29,7 @@ from editor.catalog import UpgradeCatalog
 from editor.equipment import category_label
 from editor.i18n import tr
 from editor.official_names import official_name
+from editor.s2_items import s2_description, s2_variant_of
 from editor.s2_names import s2_readable_name
 from editor.xray_slots import placement_label, placement_targets
 from save_format import InventoryItem
@@ -477,6 +478,15 @@ class ItemDetailView(QWidget):
             facts.append(tr("Одинаковых предметов: {0}", self._group_size))
         elif item.count is not None:
             facts.append(tr("Количество в сохранении: {0}", item.count))
+        # S2 knowledge only for S2 saves: trilogy sections like "medkit"
+        # would otherwise match S2 SIDs case-insensitively.
+        if str(getattr(self, "_release_id", "") or "").startswith("stalker2"):
+            variant = s2_variant_of(item.display_name)
+            if variant:
+                facts.insert(1, tr("Уникальный вариант: {0}", variant))
+            official = s2_description(item.display_name)
+            if official:
+                facts = [official, "", *facts]
         self.description_label.setText("\n".join(facts))
         self.reset_button.setEnabled(
             any(

@@ -64,6 +64,8 @@ def _default_target() -> str:
         return "windows"
     if name == "linux":
         return "linux"
+    if name == "darwin":
+        return "macos"
     raise ManifestError(f"unsupported update platform: {platform.system()}")
 
 
@@ -119,8 +121,8 @@ class UpdateClient:
         manifest_url: str = DEFAULT_MANIFEST_URL,
         current_version: str,
         target: str | None = None,
-        architecture: str = "x86_64",
-        kind: str = "portable",
+        architecture: str | None = None,
+        kind: str | None = None,
         timeout: float = 15.0,
         allowed_hosts: frozenset[str] = frozenset({DOWNLOAD_HOST}),
         allowed_schemes: frozenset[str] = frozenset({"https"}),
@@ -132,9 +134,14 @@ class UpdateClient:
         )
         self.manifest_url = manifest_url
         self.current_version = current_version
-        self.target = target or _default_target()
-        self.architecture = architecture
-        self.kind = kind
+        detected_target = (target or _default_target()).casefold()
+        self.target = "macos" if detected_target.casefold() == "darwin" else detected_target
+        machine = platform.machine().casefold()
+        default_architecture = (
+            "arm64" if self.target == "macos" and machine in {"arm64", "aarch64"} else "x86_64"
+        )
+        self.architecture = architecture or default_architecture
+        self.kind = kind or ("disk-image" if self.target == "macos" else "portable")
         self.timeout = timeout
         self.allowed_hosts = allowed_hosts
         self.allowed_schemes = allowed_schemes
@@ -184,6 +191,14 @@ class UpdateClient:
 
         destination = Path(destination).expanduser().resolve()
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.is_file():
+            # A verified copy from an earlier attempt is reused instead of
+            # downloading the same release again.
+            try:
+                artifact.verify(destination)
+                return destination
+            except ManifestError:
+                destination.unlink(missing_ok=True)
         descriptor, temporary_name = tempfile.mkstemp(
             prefix=f".{destination.name}.", suffix=".part", dir=destination.parent
         )
@@ -219,12 +234,22 @@ def detect_installation(
 ) -> InstallationInfo:
     """Detect a frozen portable/package installation without touching files."""
 
-    target = (platform_name or platform.system()).casefold()
-    if target not in {"windows", "linux"}:
+    platform_value = (platform_name or platform.system()).casefold()
+    target = "macos" if platform_value == "darwin" else platform_value
+    if target not in {"windows", "linux", "macos"}:
         raise ManifestError(f"unsupported update platform: {platform_name or platform.system()}")
     path = Path(executable or sys.executable).expanduser().resolve()
-    root = path.parent
-    manifest_path = root / "BUILD_MANIFEST.json"
+    app_bundle = (
+        next((parent for parent in path.parents if parent.suffix.casefold() == ".app"), None)
+        if target == "macos"
+        else None
+    )
+    root = app_bundle or path.parent
+    manifest_path = (
+        root / "Contents" / "Resources" / "BUILD_MANIFEST.json"
+        if app_bundle is not None
+        else root / "BUILD_MANIFEST.json"
+    )
     if target == "linux" and root == PACKAGE_INSTALL_ROOT:
         return InstallationInfo(target, "x86_64", "package", root, path)
     if manifest_path.is_file():
@@ -234,14 +259,16 @@ def detect_installation(
             raise ManifestError(f"packaged build manifest is invalid: {exc}") from exc
         if manifest.get("target") != target:
             raise ManifestError("packaged build target does not match the current platform")
-        architecture = str(manifest.get("architecture") or "x86_64")
+        default_architecture = "arm64" if target == "macos" else "x86_64"
+        architecture = str(manifest.get("architecture") or default_architecture)
         kind: Literal["portable", "installer"] = (
             "installer"
             if target == "windows" and (root / "INSTALLER_MARKER").is_file()
             else "portable"
         )
         return InstallationInfo(target, architecture, kind, root, path)
-    return InstallationInfo(target, "x86_64", "development", root, path)
+    default_architecture = "arm64" if target == "macos" else "x86_64"
+    return InstallationInfo(target, default_architecture, "development", root, path)
 
 
 def _safe_destination(root: Path, member_name: str) -> Path:
@@ -401,6 +428,12 @@ def build_installer_command(
         raise ManifestError(f"update installer is missing: {archive}")
     selected_kind = kind or installation.kind
     target = (platform_name or installation.target).casefold()
+    if target == "darwin":
+        target = "macos"
+    if selected_kind == "disk-image":
+        if target != "macos" or archive.suffix.casefold() != ".dmg":
+            raise ManifestError("macOS disk-image handoff requires a verified .dmg")
+        return ["open", str(archive)]
     if selected_kind == "installer":
         if target != "windows" or archive.suffix.casefold() != ".exe":
             raise ManifestError("Windows installer handoff requires a verified .exe")
