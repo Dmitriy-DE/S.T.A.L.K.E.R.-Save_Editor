@@ -1847,6 +1847,12 @@
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
+  "assets/icons/s2/SQ10_BunchOfKeysSPO.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
   "assets/icons/s2/Sausage.png": {
     "basis": "fextralife",
     "generator": "tools/build_s2_catalog.py",
@@ -1900,6 +1906,12 @@
     "generator": "tools/build_s2_catalog.py",
     "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png",
     "source": "Fextralife item image: Varan's PDA"
+  },
+  "assets/icons/s2/VartaDogtag.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
   "assets/icons/s2/Veles.png": {
     "basis": "fextralife",
@@ -3839,6 +3851,12 @@
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
+  "web/icons/s2/SQ10_BunchOfKeysSPO.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
   "web/icons/s2/Sausage.png": {
     "basis": "fextralife",
     "generator": "tools/build_s2_catalog.py",
@@ -3892,6 +3910,12 @@
     "generator": "tools/build_s2_catalog.py",
     "origin_url": "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png",
     "source": "Fextralife item image: Varan's PDA"
+  },
+  "web/icons/s2/VartaDogtag.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
   "web/icons/s2/Veles.png": {
     "basis": "fextralife",
