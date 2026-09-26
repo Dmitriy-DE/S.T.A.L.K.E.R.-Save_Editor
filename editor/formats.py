@@ -125,6 +125,7 @@ _PLAN_CAPABILITIES = (
     ("detach", "remove_items"),
     ("moves", "move_items"),
     ("adds", "add_items"),
+    ("stash_takes", "add_items"),
     ("upgrades", "edit_upgrades"),
     ("placements", "edit_placement"),
     ("faction_relations", "edit_relations"),

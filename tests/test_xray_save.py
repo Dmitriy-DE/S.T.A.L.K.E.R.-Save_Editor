@@ -90,9 +90,10 @@ def _spawn(
     state: bytes,
     update: bytes,
     client_data: bytes = b"",
+    name_replace: str = "",
 ) -> bytes:
     packet = bytearray(struct.pack("<H", 1))
-    packet += _z(name) + _z("")
+    packet += _z(name) + _z(name_replace)
     packet += struct.pack("<BB", 0, 0xFE)
     packet += struct.pack("<6f", 0, 0, 0, 0, 0, 0)
     packet += struct.pack("<4H", 0, object_id, parent_id, 0xFFFF)
