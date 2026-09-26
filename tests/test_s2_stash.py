@@ -5,9 +5,9 @@ from __future__ import annotations
 import struct
 
 import pytest
+from conftest import _object_record
 
 import save_format as sf
-from conftest import _object_record
 
 STASHED = 0x30000010
 
