@@ -508,9 +508,9 @@ def locate_libsteam_api(
 ) -> Path | None:
     """Find Valve's ``libsteam_api`` for the in-process native cloud worker.
 
-    Search order: an extracted helper AppImage payload (which ships its own
-    copy), then the directory next to a discovered helper, then Steam library
-    game installs.  Returns ``None`` when nothing is available; the caller then
+    Search order: on Linux the Steam client's own runtime copy
+    (``steamrt64``), then the directory next to a discovered helper, then Steam
+    library game installs, then an extracted helper AppImage payload.  Returns ``None`` when nothing is available; the caller then
     falls back to the subprocess helper.
     """
 
@@ -553,6 +553,14 @@ def locate_libsteam_api(
     # installed Steamworks game that ships the redistributable.  Extracting an
     # AppImage is a heavy side effect, so it is the last resort — never done
     # merely to answer "where is the library".
+    # The Linux Steam client ships its own runtime copy; it needs no helper
+    # and no Steamworks game with a native Linux build.
+    if name != "windows":
+        for root in steam_roots(system=name, environ=environ, home=home):
+            found = _first_lib(root / "steamrt64") if sys.maxsize > 2**32 else _first_lib(root / "steamrt32")
+            if found is not None:
+                return found
+
     helper = discover_helper(system=system, environ=environ, home=home)
     if helper is not None:
         found = _first_lib(helper.parent)
