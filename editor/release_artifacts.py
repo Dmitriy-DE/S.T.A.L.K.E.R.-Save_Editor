@@ -26,6 +26,11 @@ def artifact_names(version: str, target: str) -> tuple[str, ...]:
             f"{APP_NAME}-windows-x86_64-v{version}.zip",
             f"{APP_NAME}-windows-x86_64-v{version}-setup.exe",
         )
+    if target == "macos":
+        return (
+            f"{APP_NAME}-macos-arm64-v{version}.zip",
+            f"{APP_NAME}-macos-arm64-v{version}.dmg",
+        )
     raise ValueError(f"unknown build target: {target}")
 
 

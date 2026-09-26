@@ -13,13 +13,20 @@ import pytest
 from tools.publish_release import main, prepare_release, publish_r2, verify_public_r2
 
 
-def _versioned_artifacts(root: Path, version: str = "0.5.9") -> Path:
+def _versioned_artifacts(
+    root: Path,
+    version: str = "0.5.9",
+    *,
+    include_macos: bool = False,
+) -> Path:
     artifacts = root / "artifacts"
     artifacts.mkdir()
     (artifacts / f"SaveEditor-windows-x86_64-v{version}.zip").write_bytes(b"windows bytes")
     (artifacts / f"SaveEditor-windows-x86_64-v{version}-setup.exe").write_bytes(b"installer bytes")
     (artifacts / f"SaveEditor-linux-x86_64-v{version}.tar.gz").write_bytes(b"linux bytes")
     (artifacts / f"stalker2-save-editor_{version}_amd64.deb").write_bytes(b"deb bytes")
+    if include_macos:
+        (artifacts / f"SaveEditor-macos-arm64-v{version}.dmg").write_bytes(b"macOS DMG bytes")
     return artifacts
 
 
@@ -88,6 +95,60 @@ def test_prepare_release_rejects_missing_versioned_artifact(tmp_path: Path) -> N
             commit="f" * 40,
             published_at="2026-09-20T12:00:00Z",
         )
+
+
+def test_prepare_release_publishes_optional_macos_disk_image(tmp_path: Path) -> None:
+    artifacts = _versioned_artifacts(tmp_path, include_macos=True)
+    output = tmp_path / "release"
+
+    result = prepare_release(
+        artifact_dir=artifacts,
+        output_dir=output,
+        version="0.5.9",
+        commit="f" * 40,
+        published_at="2026-09-20T12:00:00Z",
+    )
+
+    disk_image = output / "SaveEditor-macos-arm64.dmg"
+    assert result["macos-arm64"] == disk_image
+    assert disk_image.read_bytes() == b"macOS DMG bytes"
+    manifest = json.loads((output / "latest.json").read_text(encoding="utf-8"))
+    assert manifest["optional_artifacts"]["macos-arm64"]["file"] == disk_image.name
+    assert manifest["optional_artifacts"]["macos-arm64"]["sha256"] == hashlib.sha256(
+        b"macOS DMG bytes"
+    ).hexdigest()
+    checksum = (output / "SHA256SUMS").read_text(encoding="utf-8")
+    assert f"{hashlib.sha256(b'macOS DMG bytes').hexdigest()}  {disk_image.name}" in checksum
+
+
+def test_publish_r2_includes_optional_macos_disk_image(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    artifacts = _versioned_artifacts(tmp_path, include_macos=True)
+    output = tmp_path / "release"
+    prepare_release(
+        artifact_dir=artifacts,
+        output_dir=output,
+        version="0.5.9",
+        commit="f" * 40,
+        published_at="2026-09-20T12:00:00Z",
+    )
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.publish_release.subprocess.run", fake_run)
+    publish_r2(output)
+
+    macos_command = next(
+        command
+        for command in commands
+        if "save-editor-downloads/SaveEditor-macos-arm64.dmg" in command
+    )
+    assert "application/x-apple-diskimage" in macos_command
+    assert macos_command[-1] == 'attachment; filename="SaveEditor-macos-arm64.dmg"'
 
 
 def test_publish_r2_uses_stable_keys_and_explicit_wrangler_commands(

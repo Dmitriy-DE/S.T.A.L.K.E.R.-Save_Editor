@@ -17,6 +17,7 @@ from editor.update_manifest import (
 def _artifact_payload(
     *,
     target: str = "windows-x86_64",
+    architecture: str = "x86_64",
     kind: str = "portable",
     file: str = "SaveEditor-windows-x86_64.zip",
     body: bytes = b"release bytes",
@@ -24,7 +25,7 @@ def _artifact_payload(
 ) -> dict[str, object]:
     return {
         "target": target,
-        "architecture": "x86_64",
+        "architecture": architecture,
         "kind": kind,
         "file": file,
         "size": len(body),
@@ -55,6 +56,14 @@ def _manifest_payload() -> dict[str, object]:
         body=b"deb bytes",
         url="https://save-editor-downloads.save-editor.workers.dev/stalker2-save-editor_amd64.deb",
     )
+    macos_body = _artifact_payload(
+        target="macos-arm64",
+        architecture="arm64",
+        kind="disk-image",
+        file="SaveEditor-macos-arm64.dmg",
+        body=b"macOS disk image bytes",
+        url="https://save-editor-downloads.save-editor.workers.dev/SaveEditor-macos-arm64.dmg",
+    )
     return {
         "schema": 1,
         "channel": "stable",
@@ -68,6 +77,7 @@ def _manifest_payload() -> dict[str, object]:
         },
         "optional_artifacts": {
             "windows-installer-x86_64": installer_body,
+            "macos-arm64": macos_body,
         },
     }
 
@@ -80,6 +90,11 @@ def test_manifest_parses_and_selects_portable_targets() -> None:
     assert manifest.select("windows", kind="installer").file == "SaveEditor-windows-x86_64-setup.exe"
     assert manifest.select("linux").file == "SaveEditor-linux-x86_64.tar.gz"
     assert manifest.select("linux", kind="package").file == "stalker2-save-editor_amd64.deb"
+    assert manifest.select("macos", "arm64", kind="disk-image").file == (
+        "SaveEditor-macos-arm64.dmg"
+    )
+    with pytest.raises(ManifestError, match="artifact not available"):
+        manifest.select("macos", "x86_64", kind="disk-image")
 
 
 def test_manifest_rejects_unknown_target_and_bad_schema() -> None:
@@ -92,6 +107,20 @@ def test_manifest_rejects_unknown_target_and_bad_schema() -> None:
     payload["schema"] = 2
     with pytest.raises(ManifestError, match="schema"):
         ReleaseManifest.from_json(json.dumps(payload))
+
+
+def test_manifest_rejects_mismatched_macos_artifact_kind() -> None:
+    payload = _manifest_payload()
+    optional = payload["optional_artifacts"]
+    assert isinstance(optional, dict)
+    macos_artifact = optional["macos-arm64"]
+    assert isinstance(macos_artifact, dict)
+    macos_artifact["kind"] = "portable"
+
+    manifest = ReleaseManifest.from_json(json.dumps(payload))
+
+    with pytest.raises(ManifestError, match="artifact not available"):
+        manifest.select("macos", "arm64", kind="disk-image")
 
 
 @pytest.mark.parametrize(

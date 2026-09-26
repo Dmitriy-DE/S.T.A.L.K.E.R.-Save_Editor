@@ -905,7 +905,10 @@ class MainWindow(QMainWindow):
         installation = self._update_installation_info()
         if installation is None or installation.kind == "development":
             return None
-        kind = installation.kind if installation.kind in {"installer", "package"} else "portable"
+        if installation.target == "macos":
+            kind = "disk-image"
+        else:
+            kind = installation.kind if installation.kind in {"installer", "package"} else "portable"
         self._update_client = UpdateClient(
             current_version=app_version(),
             target=installation.target,

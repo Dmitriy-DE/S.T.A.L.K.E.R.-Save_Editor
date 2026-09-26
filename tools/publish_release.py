@@ -30,17 +30,20 @@ STABLE_FILES = (
     # Publish the manifest last so it acts as the channel's commit marker.
     "latest.json",
 )
+OPTIONAL_STABLE_FILES = ("SaveEditor-macos-arm64.dmg",)
 _TARGETS = {
     "windows-x86_64": ("windows", "SaveEditor-windows-x86_64.zip"),
     "windows-installer-x86_64": ("windows", "SaveEditor-windows-x86_64-setup.exe"),
     "linux-x86_64": ("linux", "SaveEditor-linux-x86_64.tar.gz"),
     "linux-deb-amd64": ("linux", "stalker2-save-editor_amd64.deb"),
+    "macos-arm64": ("macos", "SaveEditor-macos-arm64.dmg"),
 }
 _CONTENT_TYPES = {
     ".zip": "application/zip",
     ".exe": "application/vnd.microsoft.portable-executable",
     ".gz": "application/gzip",
     ".deb": "application/vnd.debian.binary-package",
+    ".dmg": "application/x-apple-diskimage",
     ".json": "application/json; charset=utf-8",
     ".asc": "application/pgp-keys",
     ".gpg": "application/octet-stream",
@@ -79,17 +82,34 @@ def _locate(artifact_dir: Path, filename: str) -> Path:
     raise ValueError(f"release artifact is ambiguous: {filename}")
 
 
+def _locate_optional(artifact_dir: Path, filename: str) -> Path | None:
+    direct = artifact_dir / filename
+    if direct.is_file():
+        return direct
+    matches = sorted(path for path in artifact_dir.rglob(filename) if path.is_file())
+    if len(matches) > 1:
+        raise ValueError(f"release artifact is ambiguous: {filename}")
+    return matches[0] if matches else None
+
+
 def _versioned_paths(artifact_dir: Path, version: str) -> dict[str, Path]:
     windows_names = artifact_names(version, "windows")
     linux_names = artifact_names(version, "linux")
     names = windows_names + linux_names
     by_name = {name: _locate(artifact_dir, name) for name in names}
-    return {
+    paths = {
         "windows-x86_64": by_name[windows_names[0]],
         "windows-installer-x86_64": by_name[windows_names[1]],
         "linux-x86_64": by_name[linux_names[0]],
         "linux-deb-amd64": by_name[linux_names[1]],
     }
+    macos_disk_image = _locate_optional(
+        artifact_dir,
+        artifact_names(version, "macos")[1],
+    )
+    if macos_disk_image is not None:
+        paths["macos-arm64"] = macos_disk_image
+    return paths
 
 
 def prepare_release(
@@ -110,9 +130,10 @@ def prepare_release(
     output_dir.mkdir(parents=True, exist_ok=True)
     source_paths = _versioned_paths(artifact_dir, version)
     stable_paths: dict[str, Path] = {}
-    for target, (_, filename) in _TARGETS.items():
+    for target, source in source_paths.items():
+        _, filename = _TARGETS[target]
         destination = output_dir / filename
-        shutil.copyfile(source_paths[target], destination)
+        shutil.copyfile(source, destination)
         stable_paths[target] = destination
     manifest_path = output_dir / "latest.json"
     build_release_manifest(
@@ -122,14 +143,17 @@ def prepare_release(
         output=manifest_path,
         published_at=published_at,
     )
+    checksum_targets = [
+        "windows-x86_64",
+        "windows-installer-x86_64",
+        "linux-x86_64",
+        "linux-deb-amd64",
+    ]
+    if "macos-arm64" in stable_paths:
+        checksum_targets.append("macos-arm64")
     checksum_lines = [
         f"{_sha256(stable_paths[target])}  {stable_paths[target].name}"
-        for target in (
-            "windows-x86_64",
-            "windows-installer-x86_64",
-            "linux-x86_64",
-            "linux-deb-amd64",
-        )
+        for target in checksum_targets
     ]
     (output_dir / "SHA256SUMS").write_text("\n".join(checksum_lines) + "\n", encoding="utf-8")
     return {"manifest": manifest_path, **stable_paths}
@@ -190,6 +214,11 @@ def _publication_files(output_dir: Path, *, require_apt: bool = False) -> tuple[
     for filename in STABLE_FILES:
         if filename != "latest.json":
             ordered.append((filename, output_dir / filename))
+    ordered.extend(
+        (filename, output_dir / filename)
+        for filename in OPTIONAL_STABLE_FILES
+        if (output_dir / filename).is_file()
+    )
     ordered.extend((path.relative_to(output_dir).as_posix(), path) for path in apt_files)
     ordered.append(("latest.json", output_dir / "latest.json"))
     return tuple(ordered)
