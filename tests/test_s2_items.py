@@ -89,3 +89,9 @@ def test_descriptions_follow_the_name_rule():
     text = s2_items.s2_description("Gun_SOFMOD_AR") or ""
     assert text.startswith("A rifle") and not re.search("[А-Яа-я]", text)
     assert s2_items.s2_description("Medkit") is None
+
+
+def test_items_without_a_picture_borrow_their_family_icon():
+    assert s2_items.s2_icon_name("Yanov_PDA_Garpia") == "s2/KozimkovPDA.png"
+    assert s2_items.s2_icon_name("Blueprint_Lavina_Upgrade_2") == "s2/Blueprint_Gvintar_Upgrade_1.png"
+    assert s2_items.s2_icon_name("NoSuchSid_XYZ") is None

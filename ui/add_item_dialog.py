@@ -92,6 +92,7 @@ class AddItemDialog(QDialog):
         if self.item_list.count():
             self.item_list.setCurrentRow(0)
         self._sync_quantity()
+        self.search_edit.setFocus()
 
     def _filter(self, text: str) -> None:
         query = str(text).strip().casefold()

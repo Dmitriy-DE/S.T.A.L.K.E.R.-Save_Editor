@@ -53,9 +53,10 @@ def test_analyze_exposes_release_edition_and_capabilities_from_registry(
     assert snapshot["capabilities"]["experimental_fields"] == [
         "edit_durability",
         "edit_money",
+        "edit_stacks",
     ]
     assert snapshot["capabilities"]["edit_durability"] is True
-    assert snapshot["capabilities"]["edit_stacks"] is False
+    assert snapshot["capabilities"]["edit_stacks"] is True
     assert snapshot["capabilities"]["add_items"] is False
     assert snapshot["catalog_available"] is False
     assert snapshot["capabilities"] == by_id("stalker2").capabilities.as_dict()
@@ -91,7 +92,7 @@ def test_metadata_table_matches_the_desktop_rows(synthetic_save: bytes) -> None:
     assert snapshot["metadata"][-1][:2] == ["UE5 GVAS schema", "не разобрана"]
 
 
-def test_web_money_edit_is_experimental_but_stack_edit_is_refused(
+def test_web_money_edit_is_experimental_and_unknown_stack_is_refused(
     synthetic_save: bytes,
 ) -> None:
     from save_format import SaveError
@@ -99,8 +100,9 @@ def test_web_money_edit_is_experimental_but_stack_edit_is_refused(
     snapshot = json.loads(web_bridge.analyze(synthetic_save, "slot.sav"))
     result = json.loads(web_bridge.prepare(900_000, "[]"))
     assert result["money"] == [100, 900_000]
-    with pytest.raises(SaveError, match="не подтверждено"):
-        web_bridge.prepare(None, json.dumps([[0x30000001, 3]]))
+    # Stack edits are open for S2 now, but never for a handle the save lacks.
+    with pytest.raises(SaveError):
+        web_bridge.prepare(None, json.dumps([[0x3FFFFFF1, 3]]))
     assert snapshot["money_editable"] is True
 
 

@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         index = arguments.index("--steam-native-op")
     except ValueError:
-        print("Использование: SaveEditor-native --steam-native-op list|read|write", file=sys.stderr)
+        print("Использование: SaveEditor-native --steam-native-op list|read|write|session", file=sys.stderr)
         return 2
     return run_cli_op(arguments[index + 1 :])
 

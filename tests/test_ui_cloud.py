@@ -693,3 +693,33 @@ def test_closing_the_view_cancels_a_blocking_cloud_worker(
 
     assert transport.closed is True
     assert view._thread is None or not view._thread.isRunning()
+
+
+def test_reopening_an_unchanged_cloud_save_does_not_download_it_again(qtbot, synthetic_save: bytes, tmp_path) -> None:
+    name = "Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav"
+    transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
+    reads: list[str] = []
+    original = transport.read_file
+
+    def counting_read(filename: str) -> bytes:
+        reads.append(filename)
+        return original(filename)
+
+    transport.read_file = counting_read  # type: ignore[method-assign]
+    window = MainWindow(EditorService())
+    qtbot.addWidget(window)
+    window.cloud_controller.worker_factory = lambda _path: transport
+    window.cloud_controller.helper_path = tmp_path / "helper"
+
+    with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.start_connect()
+    qtbot.waitUntil(lambda: window.cloud_controller._thread is None, timeout=SIGNAL_TIMEOUT_MS)
+    window.cloud_reference_view.save_table.selectRow(0)
+    with qtbot.waitSignal(window.cloud_controller.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.analyze_selected()
+    qtbot.waitUntil(lambda: window.cloud_controller._thread is None, timeout=SIGNAL_TIMEOUT_MS)
+    first = len(reads)
+    assert first == 1
+    with qtbot.waitSignal(window.cloud_controller.snapshot_ready, timeout=SIGNAL_TIMEOUT_MS):
+        window.cloud_controller.analyze_selected()
+    assert len(reads) == first

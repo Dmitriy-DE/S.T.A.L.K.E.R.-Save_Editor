@@ -66,7 +66,7 @@ def test_review_renderer_accepts_an_explicit_reference_directory(tmp_path: Path)
     assert args.reference_dir == tmp_path
 
 
-def test_library_review_fixture_uses_the_official_enhanced_candidate(
+def test_library_review_fixture_shows_a_readable_enhanced_edition_save(
     synthetic_save: bytes, tmp_path: Path
 ) -> None:
     descriptor = release_by_id("stalker-soc-ee")
@@ -78,10 +78,9 @@ def test_library_review_fixture_uses_the_official_enhanced_candidate(
 
     assert candidate.candidate_release_id == descriptor.id
     assert candidate.candidate_game_title == descriptor.title
-    assert candidate.format_id is None
-    assert candidate.detected_release_id is None
-    assert candidate.unsupported_reason is not None
-    assert candidate.unsupported_reason.code == "unsupported_release"
+    assert candidate.format_id == descriptor.id
+    assert candidate.detected_release_id == descriptor.id
+    assert candidate.unsupported_reason is None
 
 
 def test_library_review_slots_match_the_bytes_detected_by_registered_formats(
@@ -93,13 +92,9 @@ def test_library_review_slots_match_the_bytes_detected_by_registered_formats(
     for slot in slots:
         payload = _review_library_payload(slot, local)
         detected = detect(payload)
-        if slot.candidate_release_id == release_by_id("stalker-soc-ee").id:
-            assert detected is None
-            assert slot.detected_release_id is None
-        else:
-            assert detected is not None
-            assert slot.detected_release_id == detected.release_id
-            assert slot.format_id == detected.id
+        assert detected is not None
+        assert slot.detected_release_id == detected.release_id
+        assert slot.format_id == detected.id
 
 
 def test_library_save_rows_separate_filename_from_release_subtitle(
