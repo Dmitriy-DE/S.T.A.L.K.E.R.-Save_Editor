@@ -62,7 +62,7 @@ def _server(root: Path, manifest_payload: dict[str, object]) -> Iterator[str]:
         server.server_close()
 
 
-def _manifest_files(tmp_path: Path) -> dict[str, object]:
+def _manifest_files(tmp_path: Path, *, include_macos: bool = False) -> dict[str, object]:
     files = {
         "windows-x86_64": tmp_path / "SaveEditor-windows-x86_64.zip",
         "windows-installer-x86_64": tmp_path / "SaveEditor-windows-x86_64-setup.exe",
@@ -73,6 +73,9 @@ def _manifest_files(tmp_path: Path) -> dict[str, object]:
     files["windows-installer-x86_64"].write_bytes(b"windows installer bytes")
     files["linux-x86_64"].write_bytes(b"linux release bytes")
     files["linux-deb-amd64"].write_bytes(b"debian release bytes")
+    if include_macos:
+        files["macos-arm64"] = tmp_path / "SaveEditor-macos-arm64.dmg"
+        files["macos-arm64"].write_bytes(b"macOS disk image bytes")
     output = tmp_path / "unused.json"
     return build_release_manifest(
         version="0.5.9",
@@ -227,8 +230,18 @@ def test_update_client_downloads_and_rejects_changed_bytes(tmp_path: Path) -> No
         assert client.download(result.artifact, destination) == destination
         assert destination.read_bytes() == b"windows release bytes"
 
+        # A verified earlier copy is reused without another request.
+        (tmp_path / "SaveEditor-windows-x86_64.zip").write_bytes(b"server gone wrong")
+        assert client.download(result.artifact, destination) == destination
+        assert destination.read_bytes() == b"windows release bytes"
+        # A corrupted local copy is replaced (here: rejected, server is bad).
+        destination.write_bytes(b"corrupt")
+        with pytest.raises(ManifestError):
+            client.download(result.artifact, destination)
+        assert not destination.exists()
+
         (tmp_path / "SaveEditor-windows-x86_64.zip").write_bytes(b"tampered bytes here")
-        destination.unlink()
+        destination.unlink(missing_ok=True)
         with pytest.raises(ManifestError, match="mismatch"):
             client.download(result.artifact, destination)
         assert not destination.exists()
@@ -257,6 +270,42 @@ def test_update_client_selects_windows_installer_artifact(tmp_path: Path) -> Non
     assert result.artifact is not None
     assert result.artifact.kind == "installer"
     assert result.artifact.file == "SaveEditor-windows-x86_64-setup.exe"
+
+
+def test_update_client_downloads_and_verifies_macos_disk_image(tmp_path: Path) -> None:
+    payload = _manifest_files(tmp_path, include_macos=True)
+    with _server(tmp_path, payload) as manifest_url:
+        client = UpdateClient(
+            manifest_url=manifest_url,
+            current_version="0.5.0",
+            target="macos",
+            architecture="arm64",
+            kind="disk-image",
+            allowed_hosts=frozenset({"127.0.0.1"}),
+            allowed_schemes=frozenset({"http"}),
+        )
+        result = client.check()
+        assert result.state == "available"
+        assert result.artifact is not None
+        assert result.artifact.kind == "disk-image"
+        assert result.artifact.file == "SaveEditor-macos-arm64.dmg"
+        destination = tmp_path / "verified-update.dmg"
+        assert client.download(result.artifact, destination) == destination
+
+    assert destination.read_bytes() == b"macOS disk image bytes"
+
+
+def test_update_client_defaults_to_macos_arm64_disk_image(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(updater.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(updater.platform, "machine", lambda: "arm64")
+
+    client = UpdateClient(current_version="0.5.9")
+
+    assert client.target == "macos"
+    assert client.architecture == "arm64"
+    assert client.kind == "disk-image"
 
 
 def test_update_client_returns_unavailable_without_raising() -> None:
@@ -304,6 +353,45 @@ def test_detect_installation_reads_windows_installer_marker(tmp_path: Path) -> N
     info = detect_installation(executable=executable, platform_name="windows")
 
     assert info.kind == "installer"
+
+
+def test_detect_installation_reads_macos_app_bundle_manifest(tmp_path: Path) -> None:
+    bundle = tmp_path / "SaveEditor.app"
+    executable = bundle / "Contents" / "MacOS" / "SaveEditor"
+    resources = bundle / "Contents" / "Resources"
+    executable.parent.mkdir(parents=True)
+    resources.mkdir(parents=True)
+    executable.write_bytes(b"app executable")
+    (resources / "BUILD_MANIFEST.json").write_text(
+        json.dumps({"target": "macos", "architecture": "arm64", "version": "0.5.9"}),
+        encoding="utf-8",
+    )
+
+    info = detect_installation(executable=executable, platform_name="darwin")
+
+    assert info.target == "macos"
+    assert info.architecture == "arm64"
+    assert info.kind == "portable"
+    assert info.root == bundle
+
+
+def test_macos_disk_image_handoff_opens_image(tmp_path: Path) -> None:
+    disk_image = tmp_path / "SaveEditor-macos-arm64.dmg"
+    disk_image.write_bytes(b"verified disk image")
+    installation = InstallationInfo(
+        "macos",
+        "arm64",
+        "portable",
+        tmp_path / "SaveEditor.app",
+        tmp_path / "SaveEditor.app" / "Contents" / "MacOS" / "SaveEditor",
+    )
+
+    assert build_installer_command(
+        disk_image,
+        installation,
+        kind="disk-image",
+        platform_name="darwin",
+    ) == ["open", str(disk_image.resolve())]
 
 
 def test_detect_installation_prefers_linux_package_root_with_build_manifest(

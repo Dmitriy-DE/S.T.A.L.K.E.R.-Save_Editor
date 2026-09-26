@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QLocale, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QPainter, QPen
+from PySide6.QtGui import QColor, QIcon, QKeySequence, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -333,9 +333,11 @@ class EditorView(QWidget):
         inventory_header.addWidget(section_header(tr("ИНВЕНТАРЬ"), parent=self.inventory_column), 1)
         self.item_count_label = QLabel(tr("Предметов: 0"), self.inventory_column)
         inventory_header.addWidget(self.item_count_label)
-        self.add_button = action_button(tr("+ ДОБАВИТЬ"), self.inventory_column)
-        self.add_button.setObjectName("inventoryAddButton")
-        self.add_button.setToolTip(tr("Добавить предмет из каталога выбранной игры"))
+        # Primary style: adding items is the main action on trilogy saves.
+        self.add_button = action_button(tr("+ ДОБАВИТЬ"), self.inventory_column, kind="primary")
+        self.add_button.setProperty("inventoryAdd", True)
+        self.add_button.setToolTip(tr("Добавить предмет из каталога выбранной игры") + " (Ctrl+N)")
+        self.add_button.setShortcut(QKeySequence("Ctrl+N"))
         self.add_button.setVisible(False)
         self.add_button.clicked.connect(self.add_requested)
         inventory_header.addWidget(self.add_button)

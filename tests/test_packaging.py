@@ -25,6 +25,15 @@ def test_resolve_target_rejects_cross_os_build() -> None:
         build.resolve_target("windows", host="Linux")
 
 
+def test_macos_target_requires_native_arm64_host() -> None:
+    assert build.host_target("Darwin") == "macos"
+    assert build.resolve_target("macos", host="Darwin", machine="arm64") == "macos"
+    with pytest.raises(build.BuildError, match="arm64"):
+        build.resolve_target("macos", host="Darwin", machine="x86_64")
+    with pytest.raises(build.BuildError, match="не является cross-compiler"):
+        build.resolve_target("macos", host="Linux", machine="arm64")
+
+
 def test_builder_script_plan_runs_from_repository_root() -> None:
     result = subprocess.run(
         [sys.executable, str(ROOT / "packaging" / "build.py"), "--plan"],
@@ -40,6 +49,10 @@ def test_artifact_names_include_architecture_and_version() -> None:
     assert build.artifact_names("9.9.9-test", "linux") == (
         "SaveEditor-linux-x86_64-v9.9.9-test.tar.gz",
         "stalker2-save-editor_9.9.9-test_amd64.deb",
+    )
+    assert build.artifact_names("9.9.9-test", "macos") == (
+        "SaveEditor-macos-arm64-v9.9.9-test.zip",
+        "SaveEditor-macos-arm64-v9.9.9-test.dmg",
     )
 
 
@@ -95,7 +108,7 @@ def test_windows_installer_build_uses_inno_and_requires_output(
     assert calls and calls[0][0] == str(compiler)
 
 
-def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) -> None:
+def test_encoder_setup_is_portable_and_uses_cxx11_on_macos(tmp_path: Path) -> None:
     source_root = tmp_path / "source" / "pyooz-0.0.8"
     ooz_root = source_root / "ooz" / "dep" / "ooz"
     ooz_root.joinpath("simde").mkdir(parents=True)
@@ -104,11 +117,18 @@ def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) 
     wrapper = tmp_path / "encoder_bindings.cpp"
     wrapper.write_text("// fixture\n", encoding="utf-8")
 
-    script = encoder_build._setup_script(source_root, wrapper, base_dir=tmp_path)
+    macos_script = encoder_build._setup_script(
+        source_root, wrapper, base_dir=tmp_path, target_platform="darwin"
+    )
+    windows_script = encoder_build._setup_script(
+        source_root, wrapper, base_dir=tmp_path, target_platform="win32"
+    )
 
-    assert str(tmp_path) not in script
-    assert "encoder_bindings.cpp" in script
-    assert "source/pyooz-0.0.8" in script
+    assert str(tmp_path) not in macos_script
+    assert "encoder_bindings.cpp" in macos_script
+    assert "source/pyooz-0.0.8" in macos_script
+    assert 'extra_compile_args=["-std=c++11"]' in macos_script
+    assert "-std=c++11" not in windows_script
 
 
 def test_encoder_binding_imports_standard_math_for_msvc() -> None:
@@ -141,6 +161,68 @@ def test_manifest_is_machine_readable_and_declares_runtime_policy(tmp_path: Path
     assert loaded["runtime_policy"]["core"] == "Python standard library"
     assert "required for changed compressed saves" in loaded["runtime_policy"]["encoder"]
     assert loaded["runtime_policy"]["steam_helper"] == "external executable; never bundled"
+
+
+def test_macos_manifest_records_arm64_without_linux_libc(tmp_path: Path) -> None:
+    manifest = build.build_manifest(root=ROOT, target="macos", version="test")
+
+    assert manifest["architecture"] == "arm64"
+    assert manifest["libc_minimum"] is None
+    assert manifest["target"] == "macos"
+
+
+def test_macos_package_helpers_use_native_bundle_tools(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_icon = tmp_path / "icon.png"
+    source_icon.write_bytes(b"png")
+    bundle = tmp_path / "SaveEditor.app"
+    bundle.mkdir()
+    icon = tmp_path / "SaveEditor.icns"
+    archive = tmp_path / "SaveEditor.zip"
+    image = tmp_path / "SaveEditor.dmg"
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        Path(command[-1]).write_bytes(b"artifact")
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(build.subprocess, "run", fake_run)
+
+    build._generate_macos_icon(source_icon, icon)
+    build._make_macos_zip(bundle, archive)
+    build._make_macos_dmg(bundle, image, version="1.2.3")
+
+    assert calls[0][:4] == ["sips", "-s", "format", "icns"]
+    assert calls[0][4] == str(source_icon)
+    assert calls[1][:5] == ["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent"]
+    assert calls[2][:2] == ["hdiutil", "create"]
+    assert "-format" in calls[2] and "UDZO" in calls[2]
+    assert all(path.is_file() for path in (icon, archive, image))
+
+
+def test_macos_spec_declares_viewer_document_types_and_bundle_icon() -> None:
+    source = (ROOT / "packaging" / "editor.spec").read_text(encoding="utf-8")
+
+    assert "BUNDLE(" in source
+    assert "CFBundleTypeRole" in source and "Viewer" in source
+    assert '"sav"' in source and '"scop"' in source
+    assert "SAVE_EDITOR_APP_ICON" in source
+    assert "SAVE_EDITOR_BUILD_METADATA_DIR" in source
+
+
+def test_macos_bundle_metadata_is_staged_for_pyinstaller_resources(tmp_path: Path) -> None:
+    manifest = {
+        "application": "SaveEditor",
+        "version": "1.2.3",
+        "source_commit": "abc123",
+    }
+
+    metadata_dir = build.stage_macos_bundle_metadata(tmp_path, manifest)
+
+    assert json.loads((metadata_dir / "BUILD_MANIFEST.json").read_text(encoding="utf-8")) == manifest
+    assert (metadata_dir / "SOURCE_COMMIT.txt").read_text(encoding="utf-8") == "abc123\n"
 
 
 def test_plan_is_explicitly_non_cross_compiling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

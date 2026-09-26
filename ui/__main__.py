@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         current_language(),
     )
     try:
-        from PySide6.QtWidgets import QApplication
+        from .application import SaveEditorApplication
     except ImportError as exc:
         print(
             tr("Интерфейс Qt не установлен. Выполни: python -m pip install -r requirements.txt"),
@@ -143,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from .main_window import MainWindow
 
-    app = QApplication([sys.argv[0], *arguments])
+    app = SaveEditorApplication([sys.argv[0], *arguments])
     app.setApplicationName("S.T.A.L.K.E.R. Save Editor")
     from PySide6.QtGui import QIcon
 
@@ -164,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
 
     install_click_sounds(app)
     window = MainWindow(EditorService())
+    app.set_save_open_handler(window.open_save_path)
     window.show()
     return app.exec()
 

@@ -1,8 +1,13 @@
 {
   "version": "0.0.8",
   "source": "https://pypi.org/pypi/pyooz/0.0.8/json",
-  "checked_on": "2026-09-13",
+  "checked_on": "2026-09-26",
   "files": [
+    {
+      "filename": "pyooz-0.0.8-cp38-abi3-macosx_10_9_universal2.whl",
+      "url": "https://files.pythonhosted.org/packages/79/a2/4d05fe3143becacc41326da1d04488ddf3266abbba0bc514/pyooz-0.0.8-cp38-abi3-macosx_10_9_universal2.whl",
+      "sha256": "7fd7b26bf34a293e2414b6361c16c4dff80c3ba0494fb89e85024c5fd136af61"
+    },
     {
       "filename": "pyooz-0.0.8-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
       "url": "https://files.pythonhosted.org/packages/2f/47/b62dc161151e7835d1a8cbd295ae9f8f27a1bff261fdb098bf5eb1991181/pyooz-0.0.8-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",

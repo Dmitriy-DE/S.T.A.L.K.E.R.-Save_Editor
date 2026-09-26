@@ -68,6 +68,13 @@ class XRayFormatSpec:
     outer_versions: frozenset[int]
     actor_versions: frozenset[int]
     client_place_offset: int
+    # Originals store the outer version again in the ALIFE header; the
+    # Enhanced Editions use their own ALIFE numbers there.
+    alife_versions: frozenset[int] = frozenset()
+    # Byte strings the object chunk must / must not contain.  Clear Sky EE and
+    # Call of Pripyat EE share every version number; their level names differ.
+    object_markers: tuple[bytes, ...] = ()
+    forbidden_object_markers: tuple[bytes, ...] = ()
 
 
 SOC_FORMAT = XRayFormatSpec(
@@ -94,7 +101,41 @@ COP_FORMAT = XRayFormatSpec(
     actor_versions=frozenset({128}),
     client_place_offset=1,
 )
+# Enhanced Editions (2026-09-26 evidence, docs/evidence/EE_FORMAT_2026-09-26.md):
+# the same LZO container and chunk layout as the originals, own ALIFE version.
+SOC_EE_FORMAT = XRayFormatSpec(
+    id="stalker-soc-ee",
+    title="S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition",
+    extension=".sav",
+    outer_versions=frozenset({3}),
+    actor_versions=frozenset({118}),
+    client_place_offset=1,
+    alife_versions=frozenset({51}),
+)
+CS_EE_FORMAT = XRayFormatSpec(
+    id="stalker-cs-ee",
+    title="S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition",
+    extension=".scs",
+    outer_versions=frozenset({6}),
+    actor_versions=frozenset({128}),
+    client_place_offset=1,
+    alife_versions=frozenset({54}),
+    object_markers=(b"marsh",),
+    forbidden_object_markers=(b"zaton",),
+)
+COP_EE_FORMAT = XRayFormatSpec(
+    id="stalker-cop-ee",
+    title="S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition",
+    extension=".scop",
+    outer_versions=frozenset({6}),
+    actor_versions=frozenset({128}),
+    client_place_offset=1,
+    alife_versions=frozenset({54}),
+    object_markers=(b"zaton",),
+    forbidden_object_markers=(b"marsh",),
+)
 XRAY_FORMATS = (SOC_FORMAT, CS_FORMAT, COP_FORMAT)
+XRAY_EE_FORMATS = (SOC_EE_FORMAT, CS_EE_FORMAT, COP_EE_FORMAT)
 
 
 class XRaySaveError(XRayError):
@@ -1106,7 +1147,8 @@ def parse_xray(
     if len(header_chunk.data) != 4:
         raise _fail("ALIFE header chunk должен содержать ровно u32 version")
     alife_version = struct.unpack_from("<I", header_chunk.data, 0)[0]
-    if alife_version != container.version:
+    expected_alife = spec.alife_versions or frozenset({container.version})
+    if alife_version not in expected_alife:
         raise _fail(
             f"ALIFE chunk version {alife_version} не совпадает с outer version {container.version}"
         )
@@ -1135,6 +1177,12 @@ def parse_xray(
 
     object_chunk = _chunk_once(chunks, 2)
     assert object_chunk is not None
+    for marker in spec.object_markers:
+        if marker not in object_chunk.data:
+            raise _fail(f"нет признака {marker.decode()!r} для {spec.id}")
+    for marker in spec.forbidden_object_markers:
+        if marker in object_chunk.data:
+            raise _fail(f"признак {marker.decode()!r} другой игры, не {spec.id}")
     objects = (
         _parse_objects(container.raw, object_chunk)
         if with_inventory
@@ -2180,6 +2228,7 @@ __all__ = [
     "COP_FORMAT",
     "CS_FORMAT",
     "SOC_FORMAT",
+    "XRAY_EE_FORMATS",
     "XRAY_FORMATS",
     "XRayFormatSpec",
     "XRayItemAdd",

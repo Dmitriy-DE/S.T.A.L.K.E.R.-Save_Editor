@@ -217,7 +217,7 @@ def record_output_device(description: str | None) -> None:
 
 
 def _game_check_name(release: ReleaseDescriptor, label: str) -> str:
-    return tr("{0}: {1}", release.title, label)
+    return f"{release.title}: {label}"
 
 
 def _save_directories(release_id: str) -> tuple[Path, ...]:

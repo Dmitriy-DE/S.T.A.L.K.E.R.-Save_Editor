@@ -12,10 +12,12 @@ def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path)
     installer = tmp_path / "windows-setup.exe"
     linux = tmp_path / "linux.tar.gz"
     deb = tmp_path / "editor.deb"
+    macos = tmp_path / "SaveEditor-macos-arm64.dmg"
     windows.write_bytes(b"windows final bytes")
     installer.write_bytes(b"installer final bytes")
     linux.write_bytes(b"linux final bytes")
     deb.write_bytes(b"deb final bytes")
+    macos.write_bytes(b"macOS disk image bytes")
     output = tmp_path / "latest.json"
 
     payload = build_release_manifest(
@@ -26,6 +28,7 @@ def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path)
             "windows-installer-x86_64": installer,
             "linux-x86_64": linux,
             "linux-deb-amd64": deb,
+            "macos-arm64": macos,
         },
         output=output,
         published_at="2026-09-20T12:00:00Z",
@@ -42,6 +45,15 @@ def test_build_release_manifest_uses_final_bytes_and_stable_urls(tmp_path: Path)
     assert loaded["optional_artifacts"]["windows-installer-x86_64"]["size"] == len(
         b"installer final bytes"
     )
+    assert loaded["optional_artifacts"]["macos-arm64"] == {
+        "target": "macos-arm64",
+        "architecture": "arm64",
+        "kind": "disk-image",
+        "file": "SaveEditor-macos-arm64.dmg",
+        "size": len(b"macOS disk image bytes"),
+        "sha256": hashlib.sha256(b"macOS disk image bytes").hexdigest(),
+        "url": "https://save-editor-downloads.save-editor.workers.dev/SaveEditor-macos-arm64.dmg",
+    }
 
 
 def test_build_release_manifest_requires_all_targets(tmp_path: Path) -> None:
