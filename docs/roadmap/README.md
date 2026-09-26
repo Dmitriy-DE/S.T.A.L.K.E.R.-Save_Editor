@@ -4,6 +4,8 @@
 `docs/tasks/INDEX.md` (очередь эпохи 0.3–0.5; уедут в архив задачей CL-3).
 
 - **[STATE.md](STATE.md) — текущий снимок: где что, баги, открытые PR, что доказано. Читать первым.**
+- **[NEXT-2026-09-26.md](NEXT-2026-09-26.md) — следующий пакет карточек (UP-1, PERF-1, STASH-2, ED-5…).**
+- **[AUDIT_2026-09-26.md](AUDIT_2026-09-26.md) — сверка всех просьб владельца с сделанным.**
 - **[LESSONS.md](LESSONS.md) — где ошибались и какие правила из этого следуют.**
 - [DECISIONS.md](DECISIONS.md) — разбор каждой идеи владельца, вердикт и решения, которые ждут владельца.
 - Карточки задач по эпикам: [ST](ST-stabilization.md) · [KB](KB-s2-knowledge.md) · [ED](ED-editing.md) ·
@@ -125,7 +127,7 @@ Write-возможность получает `experimental` только с L5-
 | ID | Задача | Кто | Размер | Зависит | Уровень | Волна | Статус |
 |---|---|---|---|---|---|---|---|
 | ST-1 | Разложить ветку round-3 на PR | Claude | M | D1 | L3 | 1 | done (#142–#146) |
-| ST-2 | OTA на Linux end-to-end | Claude + владелец | M | ST-1 | L4 | 2 | review: фикс в 0.7.3 (#142); 0.7.2 закрывал окно сам. L4 — обновление 0.7.3→0.7.4; скачивание не повторяется (#167) |
+| ST-2 | OTA на Linux end-to-end | Claude + владелец | M | ST-1 | L4 | 2 | done: 0.7.5→0.7.6 встала у владельца (dpkg); UX установки — UP-1 |
 | ST-3 | Лаги после смены языка: замер в сборке | Claude | S | ST-1 | L4 | 2 | todo |
 | ST-4 | Музыка меню: проверка в сборках | Claude | S | ST-1, RL-3 | L4 | 2 | todo |
 | ST-5 | Аудит обрезанного UI: 15 языков × все экраны | Claude + Gemini | M | ST-1 | L3 | 2 | done (#156, #159) |
@@ -158,7 +160,7 @@ Write-возможность получает `experimental` только с L5-
 | EE-1 | Сейвы трёх EE (5–10 на игру) | владелец | S | — | — | 1–2 | done: 17 сейвов (ТЧ 4, ЧН 7, ЗП 6) |
 | EE-2 | Ресерч формата EE | Claude | L | EE-1 | — | 3 | done: docs/evidence/EE_FORMAT_2026-09-26.md (#176) |
 | EE-3 | Чтение EE | Claude | M | EE-2 | L3 | 3 | done (#176), чтение подтверждено владельцем по суммам |
-| EE-4 | Запись EE: деньги, стаки, предметы | Claude + владелец | L | EE-3 | L5 | 3 | in_progress: деньги пишутся (L3); слоты editor_money в трёх EE ждут L5 владельца |
+| EE-4 | Запись EE: деньги, стаки, предметы | Claude + владелец | L | EE-3 | L5 | 3 | in_progress: деньги L5 (ЧН EE, ЗП EE); стаки/добавление/удаление experimental, ждут L5 |
 | MAC-1 | Сборка macOS (.app) | Codex | M | — | L3 | 2 | done (#158) |
 | MAC-2 | CI macos-14 + smoke | Codex | S | MAC-1 | L3 | 2 | todo |
 | MAC-3 | Подпись и обновления на macOS | Codex | M | MAC-2, D7 | L4 | 3 | done (#175) |
@@ -169,14 +171,14 @@ Write-возможность получает `experimental` только с L5-
 | MOD-4 | Компаньон S2 через Zone Kit | Claude | L | MOD-2, D2 | L5 | 4 | todo |
 | MOD-5 | Пакеты для оригиналов (gamedata/установщик) | Codex | S | MOD-3 | L4 | 4 | todo |
 | TP-1 | Ресерч: позиция и уровень актора X-Ray | Claude | M | — | — | 3 | todo |
-| TP-2 | Точки назначения из all.spawn/game.graph | Codex | M | TP-1 | L2 | 3 | todo |
+| TP-2 | Точки назначения из all.spawn/game.graph | Codex | M | TP-1 | L2 | 3 | partial: чтение level changer (#168) |
 | TP-3 | Перенос в пределах уровня (experimental) | Claude | M | TP-2 | L5 | 3 | todo |
 | TP-4 | Перенос между уровнями (experimental) | Claude | L | TP-3 | L5 | 4 | todo |
 | TP-5 | S2: ресерч позиции | Claude | M | D2 | — | 4 | todo |
 | CS-1 | Golden-векторы из Python-оракула | Claude → Codex | M | RL-5 | L2 | 2 | done (#165) |
-| CS-2 | Архитектура и каркас нового репо | Claude → Codex | M | D5, CS-1 | L2 | 4 | in_progress: репо S.T.A.L.K.E.R.-Save-Editor-Next (приватное), ARCHITECTURE.md; каркас — Codex (пакет 2) |
-| CS-3 | Кодеки: Kraken (native), LZO (managed) | Codex | M | CS-2 | L2 | 4 | todo — Codex (пакет 2) |
-| CS-4 | Порт readers по модулю, паритет | Codex | L | CS-3 | L2 | 4 | todo — Codex (пакет 2) |
+| CS-2 | Архитектура и каркас нового репо | Claude → Codex | M | D5, CS-1 | L2 | 4 | done: Next-репо (публичный), каркас, CI 3 ОС |
+| CS-3 | Кодеки: Kraken (native), LZO (managed) | Codex | M | CS-2 | L2 | 4 | done: LZO и Kraken, паритет с Python |
+| CS-4 | Порт readers по модулю, паритет | Codex | L | CS-3 | L2 | 4 | in_progress: трилогия, EE, каталоги в main; S2 — PR #8 |
 | CS-5 | Порт writers по одной capability | Codex + Claude | L | CS-4 | L5 | 4 | todo |
 | CS-6 | Avalonia UI | Codex | L | CS-4 | L3 | 4 | todo |
 | CS-7 | Steam, updater, пакеты 3 ОС | Codex | L | CS-6 | L4 | 4 | todo |
@@ -192,6 +194,12 @@ Write-возможность получает `experimental` только с L5-
 | S2-FACTIONS | S2: отношения с группировками (ресерч по паре сейвов) | Claude | M | — | L5 | 3 | todo (отложено владельцем: очередь в GFN) |
 | UI-ICONS | Иконки предметов есть не везде (замечание владельца) | Claude | S | — | L4 | 2 | done: КПК/чертежи (#173), прицелы (#182); 10 предметов без источника |
 | SC-4 | Уже скачанный облачный сейв открывать без повторного скачивания | Claude | S | SC-1 | L4 | 2 | done (#174) |
+| UP-1 | Видно, что идёт установка обновления | Claude | S | — | L4 | 2 | todo |
+| PERF-1 | Память 0,5–1,1 ГБ и «падения» Python-версии | Claude | M | — | L4 | 2 | todo |
+| STASH-2 | Ящик ↔ рюкзак в обе стороны, создание в ящике | Claude | M | ED-2 | L5 | 2 | todo |
+| CS-PERF | Оптимизация C#-версии: бюджет памяти/времени, замер в CI | Codex + Claude | M | CS-6 | L4 | 4 | todo |
+| ED-5 | S2: запись апгрейдов (просьба владельца 25.09, потерялась) | Claude | M | — | L5 | 3 | todo |
+| TR-1 | Вычитка переводов 12 языков носителями | Gemini + владелец | S | — | L4 | 3 | todo |
 | S2-STASH | S2: личный ящик PlayerStash по скриншотам | Claude | M | — | L2 | 2 | in_progress: тайник разобран (список + сетка, пустые ячейки FFFFFFFF, флаги записи +15 и бит 0x08 в +28), #184 |
 | RS-1 | Что ещё можно вытащить из сейвов (по играм) | Claude (+Gemini черновик) | M | — | — | 2 | черновик (#155), проверка Gemini |
 | RS-2 | Официальные гайды и SDK по моддингу всех игр | Gemini → Claude | S | — | — | 1 | done (#150, Gemini) |
