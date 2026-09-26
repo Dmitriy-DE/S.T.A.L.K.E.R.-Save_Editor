@@ -27,6 +27,7 @@ Keep each change bounded. Prefer one user-facing problem per branch/PR.
 
 ## Before finishing
 
+- Use the [L1–L5 verification levels](docs/roadmap/RL-reliability.md) in PR reports.
 - run the smallest relevant tests first, then the broader project checks;
 - document any unverified game/platform/cloud assumptions;
 - update public docs only when behaviour actually changed;
