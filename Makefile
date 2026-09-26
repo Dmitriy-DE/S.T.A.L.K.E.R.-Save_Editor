@@ -5,8 +5,9 @@ ARTIFACT_DIR ?= release-input
 OUTPUT_DIR ?= release-output
 APT_SIGNING_KEY ?=
 APT_GPG_HOME ?= /tmp/save-editor-apt-gnupg
+CORPUS_OUT ?= $(HOME)/.local/share/Stalker2SaveEditor/corpus-lab
 
-.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package release-manifest apt-repo r2-publish
+.PHONY: check lint typecheck docs docs-check web web-serve web-publish web-deploy test selftest run package-plan package release-manifest apt-repo r2-publish corpus-lab
 check: lint typecheck docs-check
 	$(PYTHON) -m py_compile cli.py save_format.py steam_cloud.py tests/selftest_real.py
 
@@ -74,3 +75,7 @@ apt-repo:
 
 r2-publish:
 	$(PYTHON) tools/publish_release.py --artifacts $(ARTIFACT_DIR) --version $(VERSION) --commit $$(git rev-parse HEAD) --output $(OUTPUT_DIR) --publish-r2 --verify-r2
+
+corpus-lab:
+	@test -n "$(ROOTS)" || (echo 'usage: make corpus-lab ROOTS="<save folder> [another folder]"' && exit 2)
+	$(PYTHON) tools/corpus_lab.py --roots $(ROOTS) --out "$(CORPUS_OUT)"
