@@ -10,7 +10,7 @@
 
 ## 1. Текущее состояние в проекте
 
-На данный момент в [web/s2_items.json](file:///home/dmytro/Projects/save-editor/web/s2_items.json) покрытие именами по языкам распределено неравномерно:
+На данный момент в [web/s2_items.json](../../web/s2_items.json) покрытие именами по языкам распределено неравномерно:
 - **ru:** 1375 предметов (100% из русской таблицы локализации `Module:S2Localization` на Fandom);
 - **en:** 349 предметов (ручная выверка + карточки инфобоксов en-вики);
 - **uk:** 141 предмет (только интервики-ссылки `langlinks` со страниц en-вики);
@@ -155,10 +155,10 @@
 ## 4. Рекомендации для сборщика каталога (`tools/build_s2_catalog.py`)
 
 1. **Немедленное улучшение для украинского языка (`uk`):**
-   - Добавить в [build_s2_catalog.py](file:///home/dmytro/Projects/save-editor/tools/build_s2_catalog.py) подгрузку словаря из репозитория `Trasiankus/stalker2-bel/localization.json` (или сохранить выжимку `sid_*_name` в [data/s2_sources.json](file:///home/dmytro/Projects/save-editor/data/s2_sources.json)).
+   - Добавить в [build_s2_catalog.py](../../tools/build_s2_catalog.py) подгрузку словаря из репозитория `Trasiankus/stalker2-bel/localization.json` (или сохранить выжимку `sid_*_name` в [data/s2_sources.json](../../data/s2_sources.json)).
    - Это поднимет покрытие украинского языка с **141** до **1375+ предметов (100%)** без ручного труда.
 
 2. **Стратегическое решение для всех 15 языков:**
    - Извлечь из Zone Kit (`Stalker2/Content/TextToolBackup/TextDatabase.json`) или распакованного `LocalizationDB.ubulk` только релевантные для инвентаря ключи (`sid_items_*_name`, `sid_questItemprototypes_*_name`, `sid_upgrades_*_name`);
    - Упаковать их в компактный файл `data/s2_item_names_multilang.json.gz` (~300–400 КБ);
-   - Встроить обработку этого файла в [build_s2_catalog.py](file:///home/dmytro/Projects/save-editor/tools/build_s2_catalog.py). В результате интерфейс редактора на немецком, польском, французском, испанском, чешском, японском и других языках получит 100% аутентичные официальные имена GSC.
+   - Встроить обработку этого файла в [build_s2_catalog.py](../../tools/build_s2_catalog.py). В результате интерфейс редактора на немецком, польском, французском, испанском, чешском, японском и других языках получит 100% аутентичные официальные имена GSC.
