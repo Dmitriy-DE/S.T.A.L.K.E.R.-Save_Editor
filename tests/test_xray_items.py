@@ -63,3 +63,32 @@ def test_item_change_surfaces_keep_unproven_mutations_read_only() -> None:
     assert "S2 add/remove surface is omitted" in detail.read_text(encoding="utf-8")
     assert "Исходный файл не изменяется" in page.read_text(encoding="utf-8")
     assert "item.remove_editable && caps.remove_items" in browser.read_text(encoding="utf-8")
+
+
+def test_added_clone_never_keeps_the_templates_worn_slot() -> None:
+    """Clear Sky: a cloned outfit inherited place=slot and replaced the worn one."""
+
+    import struct
+
+    from test_xray_save import _base_item_state, _chunk, _object_record, _spawn, _state_base
+
+    from editor.xray_container import lzo1x_compress
+    from editor.xray_save import CS_FORMAT, _reset_added_item_state, parse_xray
+
+    version, outer = 122, 5
+    actor = _spawn("actor", 0, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0))
+    worn = b"\x02\x01\x00\x00\x80\x3f\x00"  # client data: place 1 = slot
+    item = _spawn("bandage_existing", 0x2345, 0, version, _base_item_state(version), struct.pack("<H", 0) + b"\x00", worn)
+    objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(item, struct.pack("<H", 0) + b"\x00")
+    raw = b"".join((
+        _chunk(0, struct.pack("<I", outer)),
+        _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
+        _chunk(1, b"\x00" * 8),
+        _chunk(2, objects),
+        _chunk(9, b"registry"),
+    ))
+    data = struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
+
+    fixed = parse_xray(_reset_added_item_state(data, CS_FORMAT, 0x2345), CS_FORMAT, with_inventory=True)
+    obj = fixed.object_by_id(0x2345)
+    assert fixed.container.raw[obj.client_data_offset + 1] == 3  # backpack
