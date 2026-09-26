@@ -680,6 +680,7 @@
  "Облачные сохранения и проверенная запись": "Bulut kayıtları ve doğrulanmış yazma",
  "Обновить": "Yenile",
  "Обновление Save Editor": "Save Editor güncellemesi",
+ "Обновление установлено. Перезапускаю редактор…": "Güncelleme kuruldu. Düzenleyici yeniden başlatılıyor…",
  "Обновления": "Güncellemeler",
  "Образ открыт. Закрой Save Editor, перетащи приложение из образа в папку «Программы» и подтверди замену. Затем запусти редактор снова. Установленная версия не подтверждена.": "Disk görüntüsü açıldı. Save Editor'ı kapat, uygulamayı görüntüden Uygulamalar klasörüne sürükle ve değiştirmeyi onayla. Ardından düzenleyiciyi yeniden başlat. Yüklü sürüm doğrulanmadı.",
  "Объединено одинаковых предметов: {0}": "Gruplanan aynı eşyalar: {0}",
@@ -1152,11 +1153,15 @@
  "Уникальный вариант: {0}": "Benzersiz varyant: {0}",
  "Уровень": "Seviye",
  "Успешно": "Başarılı",
+ "Устанавливается… Подтверди пароль в системном окне и не закрывай редактор.": "Kuruluyor… Sistem penceresinde parolayı onayla ve düzenleyiciyi kapatma.",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Native Steam Cloud'u kullanmak için oyunu Steam'den yükleyin.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Ses dosyalarını kontrol etmek için oyunu yükleyin.",
  "Установите системную команду, если она нужна этому способу установки.": "Bu kurulum türü için gerekliyse sistem komutunu yükleyin.",
  "Установка": "Kurulum",
  "Установка игры не найдена": "Oyun kurulumu bulunamadı",
  "Установка не найдена": "Kurulum bulunamadı",
+ "Установка не удалась (код {0}). Редактор остаётся на текущей версии.": "Kurulum başarısız (kod {0}). Düzenleyici mevcut sürümde kalıyor.",
+ "Установка отменена: пароль не подтверждён. Можно попробовать ещё раз.": "Kurulum iptal edildi: parola onaylanmadı. Yeniden deneyebilirsin.",
  "Установленных игр не найдено.": "Kurulu oyun bulunamadı.",
  "Установлено: {0}": "Takılı: {0}",
  "Установщик запущен; подтверди обновление в системе. Приложение закрывается.": "Yükleyici çalışıyor; güncellemeyi sistemde onayla. Uygulama kapanıyor.",
@@ -1328,6 +1333,5 @@
  "●  НЕ НАЙДЕНО": "●  BULUNAMADI",
  "● БУДЕТ СОЗДАНО": "● OLUŞTURULACAK",
  "● ГОТОВО": "● HAZIR",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE",
- "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Native Steam Cloud'u kullanmak için oyunu Steam'den yükleyin."
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE"
 }

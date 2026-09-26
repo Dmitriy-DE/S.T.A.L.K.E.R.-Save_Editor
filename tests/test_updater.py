@@ -571,3 +571,22 @@ def test_wait_for_process_exit_returns_for_an_exited_process() -> None:
     process = subprocess.Popen([sys.executable, "-c", "pass"])
     process.wait(timeout=2)
     updater.wait_for_process_exit(process.pid, timeout=0.5)
+
+
+def test_stale_per_process_downloads_are_removed(tmp_path: Path) -> None:
+    from editor.updater import remove_stale_downloads
+
+    old = tmp_path / "SaveEditor-update-554654-stalker2-save-editor_amd64.deb"
+    current = tmp_path / "SaveEditor-update-stalker2-save-editor_amd64.deb"
+    other = tmp_path / "unrelated.deb"
+    for path in (old, current, other):
+        path.write_bytes(b"x")
+    assert remove_stale_downloads(tmp_path) == 1
+    assert not old.exists() and current.exists() and other.exists()
+
+
+def test_linux_package_handoff_removes_the_download_after_install() -> None:
+    from editor.updater import PKEXEC_HANDOFF_SCRIPT
+
+    assert 'rm -f "$2"' in PKEXEC_HANDOFF_SCRIPT
+    assert PKEXEC_HANDOFF_SCRIPT.index("install") < PKEXEC_HANDOFF_SCRIPT.index("rm -f")
