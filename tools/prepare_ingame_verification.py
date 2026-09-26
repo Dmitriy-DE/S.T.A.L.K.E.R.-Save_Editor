@@ -25,6 +25,7 @@ if str(ROOT) not in sys.path:
 
 from editor.formats import detect_or_raise  # noqa: E402
 from editor.models import EditPlan, SourceRef  # noqa: E402
+from editor.prepare import prepare_edit  # noqa: E402
 from editor.releases import official_releases, release_by_id  # noqa: E402
 from editor.service import EditorService  # noqa: E402
 from save_format import SaveError  # noqa: E402
@@ -99,10 +100,22 @@ def _verify_requested_mutations(
     durability: tuple[tuple[int, float], ...],
     upgrades: tuple[tuple[int, tuple[str, ...]], ...],
     placements: tuple[tuple[int, str, int | None], ...],
+    stacks: tuple[tuple[int, int], ...] = (),
 ) -> dict[str, object]:
     """Verify the prepared copy before it is handed to the game."""
 
     mutation: dict[str, object] = {}
+    stack_rows: list[dict[str, object]] = []
+    for handle, expected_count in stacks:
+        item = _item_by_handle(info, handle)
+        if item.count != expected_count:
+            raise SaveError(
+                f"Подготовленный output не сохранил count 0x{handle:08X}: "
+                f"{item.count!r} вместо {expected_count}"
+            )
+        stack_rows.append({"handle": handle, "after": expected_count})
+    if stack_rows:
+        mutation["stacks"] = stack_rows
     if money is not None:
         if info.money != money:
             raise SaveError(
@@ -172,6 +185,7 @@ def prepare_source_copy(
     durability: tuple[tuple[int, float], ...] = (),
     upgrades: tuple[tuple[int, tuple[str, ...]], ...] = (),
     placements: tuple[tuple[int, str, int | None], ...] = (),
+    stacks: tuple[tuple[int, int], ...] = (),
 ) -> VerificationManifest:
     """Create a bounded mutation copy without changing the selected source."""
 
@@ -182,9 +196,9 @@ def prepare_source_copy(
         raise SaveError(f"Исходный сейв не найден: {source}")
     if money is not None and not 0 <= money <= 2_000_000_000:
         raise SaveError("Деньги должны быть в диапазоне 0…2 000 000 000")
-    if money is None and not (durability or upgrades or placements):
+    if money is None and not (durability or upgrades or placements or stacks):
         raise SaveError(
-            "Укажи хотя бы одно bounded-изменение: money, durability, upgrades или placement"
+            "Укажи хотя бы одно bounded-изменение: money, durability, upgrades, placement или stack"
         )
     mutation_categories = sum(
         (
@@ -192,6 +206,7 @@ def prepare_source_copy(
             bool(durability),
             bool(upgrades),
             bool(placements),
+            bool(stacks),
         )
     )
     if mutation_categories > 1:
@@ -206,8 +221,10 @@ def prepare_source_copy(
 
     suffix = source.suffix or ".sav"
     source_copy = workspace / f"{source.stem}.source{suffix}"
-    if money is not None and not (durability or upgrades or placements):
+    if money is not None and not (durability or upgrades or placements or stacks):
         mutation_label = f"money-{money}"
+    elif stacks:
+        mutation_label = "stacks"
     elif durability:
         mutation_label = "durability"
     elif upgrades:
@@ -252,14 +269,21 @@ def prepare_source_copy(
         durability=durability,
         upgrades=upgrades,
         placements=placements,
+        stacks=stacks,
     )
-    prepared = service.prepare(
-        data,
-        plan,
-        source_name=str(source_copy),
-        catalog=inspection.catalog,
-        game_catalog=inspection.game_catalog,
-    )
+    if stacks:
+        # Verification-only: the product keeps a count edit closed until this
+        # very copy passes a game load (docs/roadmap ED-3).  The core writer
+        # still runs its own round-trip and CRC checks.
+        prepared = prepare_edit(data, plan)
+    else:
+        prepared = service.prepare(
+            data,
+            plan,
+            source_name=str(source_copy),
+            catalog=inspection.catalog,
+            game_catalog=inspection.game_catalog,
+        )
     receipt = service.export_local(
         source_copy,
         edited_path,
@@ -277,6 +301,7 @@ def prepare_source_copy(
         durability=durability,
         upgrades=upgrades,
         placements=placements,
+        stacks=stacks,
     )
 
     manifest = VerificationManifest(
@@ -319,6 +344,13 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         metavar=("HANDLE", "KEYS"),
         help="one handle and comma-separated desired upgrade keys",
+    )
+    parser.add_argument(
+        "--stack",
+        nargs=2,
+        action="append",
+        metavar=("HANDLE", "COUNT"),
+        help="one handle/count pair; S2 count edits are verification-only",
     )
     parser.add_argument(
         "--placement",
@@ -364,6 +396,7 @@ def main(argv: list[str] | None = None) -> int:
             durability=durability,
             upgrades=upgrades,
             placements=placements,
+            stacks=tuple((_parse_handle(handle), int(count)) for handle, count in (args.stack or ())),
         )
         print(json.dumps(manifest.to_payload(), ensure_ascii=False, indent=2, sort_keys=True))
         print(f"Manifest: {manifest.manifest_path}")
