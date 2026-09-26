@@ -1836,9 +1836,9 @@
                   "writable": false
                 },
                 "edit_stacks": {
-                  "maturity": "research",
-                  "reason": "S2 stack writer не подтверждён.",
-                  "writable": false
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
                 },
                 "edit_upgrades": {
                   "maturity": "unsupported",
@@ -1995,7 +1995,7 @@
           }
         },
         "stack_delta": {
-          "error_type": "SaveError",
+          "error_type": null,
           "plan": {
             "money": null,
             "stacks": [
@@ -2005,14 +2005,15 @@
               }
             ]
           },
-          "result": "blocked",
+          "result": "passed",
           "safety_checks": {
-            "capability_allows": false,
-            "capability_gate_rejected": true,
-            "crc_ok": null,
-            "mutation_visible_after_reparse": false,
-            "output_sha256_matches": false,
-            "reparse_succeeded": false,
+            "capability_allows": true,
+            "capability_gate_rejected": false,
+            "crc_ok": true,
+            "format_preserved": true,
+            "mutation_visible_after_reparse": true,
+            "output_sha256_matches": true,
+            "reparse_succeeded": true,
             "source_sha256_matches": true,
             "source_unchanged": true
           },
@@ -2093,9 +2094,9 @@
                   "writable": false
                 },
                 "edit_stacks": {
-                  "maturity": "research",
-                  "reason": "S2 stack writer не подтверждён.",
-                  "writable": false
+                  "maturity": "experimental",
+                  "reason": null,
+                  "writable": true
                 },
                 "edit_upgrades": {
                   "maturity": "unsupported",
@@ -2190,7 +2191,7 @@
             "items": [
               {
                 "condition": null,
-                "count": 2,
+                "count": 3,
                 "handle": 805306369,
                 "handle_hex": "0x30000001",
                 "placement": {
@@ -2332,9 +2333,9 @@
               "writable": false
             },
             "edit_stacks": {
-              "maturity": "research",
-              "reason": "S2 stack writer не подтверждён.",
-              "writable": false
+              "maturity": "experimental",
+              "reason": null,
+              "writable": true
             },
             "edit_upgrades": {
               "maturity": "unsupported",

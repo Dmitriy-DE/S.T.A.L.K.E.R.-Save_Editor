@@ -111,13 +111,14 @@ def test_mutation_vectors_capture_results_and_capability_gates(
 
     stalker2 = samples["stalker2"]
     assert stalker2["mutations"]["money_plus_one"]["result"] == "passed"
-    assert stalker2["mutations"]["stack_delta"]["result"] == "blocked"
+    # ED-3 (2026-09-26) opened S2 stack edits as experimental.
+    assert stalker2["mutations"]["stack_delta"]["result"] == "passed"
     assert stalker2["state"]["capabilities"]["mutations"]["edit_stacks"][
         "maturity"
-    ] == "research"
+    ] == "experimental"
     assert stalker2["mutations"]["stack_delta"]["safety_checks"][
         "capability_allows"
-    ] is False
+    ] is True
 
     for release in ("stalker-soc", "stalker-cs", "stalker-cop"):
         assert samples[release]["mutations"]["money_plus_one"]["result"] == "passed"
