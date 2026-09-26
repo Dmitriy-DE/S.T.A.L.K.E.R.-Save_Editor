@@ -2,12 +2,14 @@
 
 ## SC-2 — внешний Steam Cloud helper удалён
 
-Текущий PR удаляет helper discovery/AppImage extraction, subprocess transport,
+PR [#194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194)
+удаляет helper discovery/AppImage extraction, subprocess transport,
 helper UI/diagnostics/packaging paths и их IPC-тесты. Cloud использует native
 RemoteStorage worker, Steam web через CDP для чтения/скачивания и существующие
-write guards. Локальные gates: full pytest, Ruff, mypy и web bundle check;
-GitHub Actions не стартовали из-за account billing restriction. Live Steam
-Cloud read/write и game load не проверялись.
+write guards. Локальные gates: full pytest (941 passed), Ruff, mypy и web bundle check;
+[GitHub Actions](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/actions/runs/36259731656)
+PASS на Ubuntu/Windows с Python 3.11/3.12. Live Steam Cloud read/write и game
+load не проверялись.
 
 ## v0.7.6 — тайники трилогии, правка EE, исправление добавления — 2026-09-26
 

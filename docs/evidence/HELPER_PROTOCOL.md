@@ -1,7 +1,8 @@
 # SteamCloudFileManager worker protocol — S06
 
 > Историческое evidence: этот протокол относился к удалённому SC-2 внешнему
-> transport. Текущий desktop-код его не запускает и не упаковывает; см. PR #8.
+> transport. Текущий desktop-код его не запускает и не упаковывает; см.
+> [SC-2 PR #194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194).
 
 ## Historical local smoke — 2026-09-18
 

@@ -1,7 +1,7 @@
 # Steam Cloud: какие пути записи существуют — 2026-09-14
 
 > Исторический анализ до SC-2. Описанный ниже внешний helper удалён в
-> [PR #8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save-Editor-Next/pull/8).
+> [SC-2 PR #194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194).
 > Текущий код использует native worker для RemoteStorage и Steam CEF web через
 > CDP для чтения списка и скачивания.
 
