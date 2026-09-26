@@ -20,6 +20,11 @@ def self_command(*arguments: str) -> tuple[str, list[str]]:
     """Program and arguments that start this editor in job mode."""
 
     if getattr(sys, "frozen", False):
+        if sys.platform == "darwin":
+            # Inside a .app, the main executable owns the complete bundle
+            # runtime. Relaunch it in CLI mode instead of guessing a sibling
+            # helper path that may not be present in Contents/MacOS.
+            return sys.executable, list(arguments)
         # The windowed Windows executable has no stdout; the console
         # companion shipped for Steam jobs does.
         native = Path(sys.executable).with_name("SaveEditor-native" + Path(sys.executable).suffix)

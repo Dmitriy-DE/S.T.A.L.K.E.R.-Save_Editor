@@ -39,7 +39,7 @@ from editor.release_artifacts import (
 )
 from editor.release_artifacts import debian_version as _debian_version
 
-SUPPORTED_TARGETS = frozenset({"linux", "windows"})
+SUPPORTED_TARGETS = frozenset({"linux", "windows", "macos"})
 PRIVATE_NAMES = frozenset(
     {
         ".git",
@@ -64,19 +64,24 @@ def repository_root() -> Path:
 
 
 def host_target(system: str | None = None) -> str:
-    """Map a host OS name to the first-beta build target."""
+    """Map a host OS name to a supported native build target."""
 
     name = (platform.system() if system is None else system).strip().lower()
     if name == "linux":
         return "linux"
     if name == "windows":
         return "windows"
+    if name == "darwin":
+        return "macos"
     raise BuildError(
-        f"ОС {system or '<unknown>'} не поддерживается; нужны Linux или Windows x86_64"
+        f"ОС {system or '<unknown>'} не поддерживается; нужны Linux, Windows x86_64 "
+        "или macOS arm64"
     )
 
 
-def resolve_target(requested: str, *, host: str | None = None) -> str:
+def resolve_target(
+    requested: str, *, host: str | None = None, machine: str | None = None
+) -> str:
     """Resolve ``auto`` and reject an unsafe cross-OS build request."""
 
     target = requested.strip().lower()
@@ -90,6 +95,12 @@ def resolve_target(requested: str, *, host: str | None = None) -> str:
             f"Нельзя собрать target={target} на host={actual_host}: "
             "PyInstaller не является cross-compiler; запустите builder на целевой ОС"
         )
+    if target == "macos":
+        actual_machine = (platform.machine() if machine is None else machine).strip().lower()
+        if actual_machine not in {"arm64", "aarch64"}:
+            raise BuildError(
+                f"Сборка macOS поддерживает только arm64, обнаружено {actual_machine or '<unknown>'}"
+            )
     return target
 
 
@@ -250,7 +261,7 @@ def build_manifest(
         "application": APP_NAME,
         "version": version,
         "target": target,
-        "architecture": "x86_64",
+        "architecture": "arm64" if target == "macos" else "x86_64",
         "libc_minimum": libc_requirement() if target == "linux" else None,
         "source_commit": commit,
         "source_dirty": bool(dirty_paths),
@@ -308,8 +319,28 @@ def _copy_metadata(runtime: Path, manifest: Mapping[str, object]) -> None:
     )
 
 
+def stage_macos_bundle_metadata(
+    work: Path, manifest: Mapping[str, object]
+) -> Path:
+    """Prepare bundle metadata before PyInstaller signs the macOS app."""
+
+    metadata_dir = Path(work) / "bundle-metadata"
+    if metadata_dir.exists():
+        shutil.rmtree(metadata_dir)
+    metadata_dir.mkdir(parents=True)
+    _copy_metadata(metadata_dir, manifest)
+    return metadata_dir
+
+
 def _run_pyinstaller(
-    *, root: Path, target: str, work: Path, runtime_dist: Path, encoder_dir: Path
+    *,
+    root: Path,
+    target: str,
+    work: Path,
+    runtime_dist: Path,
+    encoder_dir: Path,
+    app_icon: Path | None = None,
+    app_metadata_dir: Path | None = None,
 ) -> None:
     spec = root / "packaging" / "editor.spec"
     if not spec.is_file():
@@ -325,6 +356,10 @@ def _run_pyinstaller(
             "PYTHONHASHSEED": "0",
         }
     )
+    if app_icon is not None:
+        env["SAVE_EDITOR_APP_ICON"] = str(app_icon)
+    if app_metadata_dir is not None:
+        env["SAVE_EDITOR_BUILD_METADATA_DIR"] = str(app_metadata_dir)
     pythonpath = [str(encoder_dir), str(root)]
     if env.get("PYTHONPATH"):
         pythonpath.append(env["PYTHONPATH"])
@@ -349,6 +384,73 @@ def _run_pyinstaller(
         ) from exc
     except subprocess.CalledProcessError as exc:
         raise BuildError(f"PyInstaller завершился с exit code {exc.returncode}") from exc
+
+
+def _generate_macos_icon(source: Path, destination: Path) -> Path:
+    """Convert the checked-in PNG artwork into the ICNS file used by BUNDLE."""
+
+    source = Path(source)
+    destination = Path(destination)
+    if not source.is_file():
+        raise BuildError(f"Исходная иконка macOS отсутствует: {source}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            ["sips", "-s", "format", "icns", str(source), "--out", str(destination)],
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"Не удалось сгенерировать SaveEditor.icns через sips: {exc}") from exc
+    if not destination.is_file():
+        raise BuildError(f"sips не создал иконку macOS: {destination}")
+    return destination
+
+
+def _make_macos_zip(bundle: Path, destination: Path) -> None:
+    """Archive an app bundle with Apple's metadata and symlinks preserved."""
+
+    try:
+        subprocess.run(
+            [
+                "ditto",
+                "-c",
+                "-k",
+                "--sequesterRsrc",
+                "--keepParent",
+                str(bundle),
+                str(destination),
+            ],
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"Не удалось создать macOS ZIP через ditto: {exc}") from exc
+    if not destination.is_file():
+        raise BuildError(f"ditto не создал macOS ZIP: {destination}")
+
+
+def _make_macos_dmg(bundle: Path, destination: Path, *, version: str) -> None:
+    """Create a compressed read-only disk image containing the app bundle."""
+
+    try:
+        subprocess.run(
+            [
+                "hdiutil",
+                "create",
+                "-volname",
+                f"{APP_NAME} {version}",
+                "-srcfolder",
+                str(bundle),
+                "-ov",
+                "-format",
+                "UDZO",
+                str(destination),
+            ],
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BuildError(f"Не удалось создать macOS DMG через hdiutil: {exc}") from exc
+    if not destination.is_file():
+        raise BuildError(f"hdiutil не создал macOS DMG: {destination}")
 
 
 def _normalise_tar_info(info: tarfile.TarInfo) -> tarfile.TarInfo:
@@ -800,6 +902,16 @@ def build(
         shutil.rmtree(work)
     runtime_dist.mkdir(parents=True, exist_ok=True)
 
+    app_icon: Path | None = None
+    if target == "macos":
+        app_icon = _generate_macos_icon(
+            root / "assets" / "app_icon_256.png", work / "SaveEditor.icns"
+        )
+    manifest = build_manifest(root=root, target=target, version=version, output_dir=output_dir)
+    app_metadata_dir = (
+        stage_macos_bundle_metadata(work, manifest) if target == "macos" else None
+    )
+
     encoder_dir = work / "ooz_encoder"
     try:
         subprocess.run(
@@ -823,17 +935,36 @@ def build(
         work=work,
         runtime_dist=runtime_dist,
         encoder_dir=encoder_dir,
+        app_icon=app_icon,
+        app_metadata_dir=app_metadata_dir,
     )
-    runtime = runtime_dist / APP_NAME
-    executable = runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
+    runtime = runtime_dist / (
+        f"{APP_NAME}.app" if target == "macos" else APP_NAME
+    )
+    executable = (
+        runtime / "Contents" / "MacOS" / "SaveEditor"
+        if target == "macos"
+        else runtime / ("SaveEditor.exe" if target == "windows" else "SaveEditor")
+    )
     if not executable.is_file():
         raise BuildError(f"PyInstaller output missing: {executable}")
-    updater = runtime / ("SaveEditor-updater.exe" if target == "windows" else "SaveEditor-updater")
+    updater = (
+        runtime / "Contents" / "MacOS" / "SaveEditor-updater"
+        if target == "macos"
+        else runtime / ("SaveEditor-updater.exe" if target == "windows" else "SaveEditor-updater")
+    )
     if not updater.is_file():
         raise BuildError(f"PyInstaller updater output missing: {updater}")
-    manifest = build_manifest(root=root, target=target, version=version, output_dir=output_dir)
-    _copy_metadata(runtime, manifest)
-    scan_package_tree(runtime)
+    if target == "macos":
+        app_bundle = output_dir / f"{APP_NAME}.app"
+        if app_bundle.exists():
+            shutil.rmtree(app_bundle)
+        shutil.copytree(runtime, app_bundle, symlinks=True)
+        scan_package_tree(app_bundle)
+    else:
+        app_bundle = None
+        _copy_metadata(runtime, manifest)
+        scan_package_tree(runtime)
 
     names = artifact_names(version, target)
     artifacts: list[Path] = []
@@ -844,7 +975,7 @@ def build(
         deb = output_dir / names[1]
         _build_deb(runtime=runtime, destination=deb, work=work, version=version)
         artifacts.append(deb)
-    else:
+    elif target == "windows":
         _make_zip(runtime, archive)
         artifacts.append(archive)
         installer = output_dir / names[1]
@@ -855,6 +986,13 @@ def build(
             version=version,
         )
         artifacts.append(installer)
+    else:
+        assert app_bundle is not None
+        _make_macos_zip(app_bundle, archive)
+        artifacts.append(archive)
+        disk_image = output_dir / names[1]
+        _make_macos_dmg(app_bundle, disk_image, version=version)
+        artifacts.append(disk_image)
     checksums = output_dir / "SHA256SUMS"
     _write_checksums(artifacts, checksums)
     shutil.rmtree(work)
@@ -867,6 +1005,7 @@ def plan(*, target: str, output_dir: Path, version: str | None = None) -> dict[s
     output = Path(output_dir).expanduser().resolve()
     return {
         "target": resolved,
+        "architecture": "arm64" if resolved == "macos" else "x86_64",
         "host": host_target(),
         "version": version,
         "python": sys.executable,
@@ -880,7 +1019,9 @@ def plan(*, target: str, output_dir: Path, version: str | None = None) -> dict[s
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build SaveEditor standalone artifacts")
-    parser.add_argument("--target", choices=("auto", "linux", "windows"), default="auto")
+    parser.add_argument(
+        "--target", choices=("auto", "linux", "windows", "macos"), default="auto"
+    )
     parser.add_argument("--output-dir", type=Path, default=repository_root() / "dist")
     parser.add_argument("--version")
     parser.add_argument(

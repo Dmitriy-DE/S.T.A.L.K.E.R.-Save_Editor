@@ -6,6 +6,7 @@ from editor.platforms import (
     InstalledGame,
     installed_games,
     installed_releases,
+    locate_libsteam_api,
     manual_save_search_paths,
     save_directories,
     save_search_paths,
@@ -32,6 +33,33 @@ def test_linux_steam_roots_include_standard_and_flatpak_locations(tmp_path: Path
         home / ".local" / "share" / "Steam",
         home / ".var" / "app" / "com.valvesoftware.Steam" / "data" / "Steam",
     )
+
+
+def test_macos_steam_root_uses_application_support(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+
+    assert steam_roots(system="Darwin", environ={}, home=home) == (
+        home / "Library" / "Application Support" / "Steam",
+    )
+
+
+def test_macos_finds_steam_api_library_inside_steam_app_bundle(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    library = (
+        home
+        / "Library"
+        / "Application Support"
+        / "Steam"
+        / "Steam.AppBundle"
+        / "Steam"
+        / "Contents"
+        / "MacOS"
+        / "libsteam_api.dylib"
+    )
+    library.parent.mkdir(parents=True)
+    library.write_bytes(b"fixture dylib marker")
+
+    assert locate_libsteam_api(system="Darwin", environ={}, home=home) == library
 
 
 def test_windows_steam_roots_prefer_injected_registry_then_program_files(
@@ -435,6 +463,97 @@ def test_stalker2_legacy_proton_profile_is_found_without_game_manifest(
     assert data_dir in automatic
     assert save_dir in manual
     assert data_dir in manual
+
+
+def test_macos_stalker2_search_is_scoped_to_crossover_and_whisky_bottles(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    crossover = (
+        home
+        / "Library"
+        / "Application Support"
+        / "CrossOver"
+        / "Bottles"
+        / "Stalker2"
+        / "drive_c"
+        / "users"
+        / "crossover"
+        / "AppData"
+        / "Local"
+        / "Stalker2"
+        / "Saved"
+        / "SaveGames"
+    )
+    whisky = (
+        home
+        / "Library"
+        / "Containers"
+        / "com.isaacmarovitz.Whisky"
+        / "Bottles"
+        / "fixture-bottle"
+        / "drive_c"
+        / "users"
+        / "steamuser"
+        / "AppData"
+        / "Local"
+        / "Stalker2"
+        / "Saved"
+        / "SaveGames"
+    )
+    crossover.mkdir(parents=True)
+    whisky.mkdir(parents=True)
+
+    found = save_directories("stalker2", system="Darwin", environ={}, home=home)
+
+    assert crossover in found
+    assert whisky in found
+
+
+def test_macos_save_search_only_enumerates_known_bottle_roots(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    crossover_root = (
+        home / "Library" / "Application Support" / "CrossOver" / "Bottles" / "Fixture"
+    )
+    whisky_root = (
+        home
+        / "Library"
+        / "Containers"
+        / "com.isaacmarovitz.Whisky"
+        / "Bottles"
+        / "fixture-bottle"
+    )
+    crossover_root.mkdir(parents=True)
+    whisky_root.mkdir(parents=True)
+    (crossover_root / "drive_c" / "users" / "crossover").mkdir(parents=True)
+    (whisky_root / "drive_c" / "users" / "steamuser").mkdir(parents=True)
+
+    candidates = save_search_paths("stalker2", system="Darwin", environ={}, home=home)
+
+    assert any("CrossOver" in str(path) and "Bottles" in str(path) for path in candidates)
+    assert any("com.isaacmarovitz.Whisky" in str(path) for path in candidates)
+    assert not (
+        crossover_root
+        / "drive_c"
+        / "users"
+        / "crossover"
+        / "AppData"
+        / "Local"
+        / "Stalker2"
+        / "Saved"
+        / "SaveGames"
+    ).exists()
+    assert not (
+        whisky_root
+        / "drive_c"
+        / "users"
+        / "steamuser"
+        / "AppData"
+        / "Local"
+        / "Stalker2"
+        / "Saved"
+        / "SaveGames"
+    ).exists()
 
 
 def test_save_search_paths_explains_missing_candidates_without_creating_them(

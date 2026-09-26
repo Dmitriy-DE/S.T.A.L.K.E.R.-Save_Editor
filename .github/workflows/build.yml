@@ -280,10 +280,116 @@ jobs:
           path: artifacts/
           if-no-files-found: error
 
+  package-macos:
+    name: macOS arm64 app, ZIP and DMG / Python 3.11
+    needs: source-gate
+    runs-on: macos-14
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            requirements-build.txt
+
+      - name: Install build and smoke-test dependencies
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call(
+              [
+                  sys.executable,
+                  "-m",
+                  "pip",
+                  "install",
+                  "--requirement",
+                  "requirements-build.txt",
+                  "--requirement",
+                  "requirements-dev.txt",
+              ]
+          )
+
+      - name: Build macOS arm64 app, ZIP and DMG
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          subprocess.check_call(
+              [sys.executable, "packaging/build.py", "--target", "macos", "--output-dir", "artifacts"]
+          )
+
+      - name: Smoke bundled diagnostic and read-only peek
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_bundle="artifacts/SaveEditor.app"
+          codesign --verify --deep --strict "$app_bundle"
+          app="$app_bundle/Contents/MacOS/SaveEditor"
+          test -x "$app"
+          mkdir -p macos-smoke
+          python - <<'PY'
+          import runpy
+          from pathlib import Path
+
+          fixture = runpy.run_path("tests/conftest.py")["synthetic_save"]
+          Path("macos-smoke/fixture.sav").write_bytes(fixture.__wrapped__())
+          PY
+          diagnostic_output="$("$app" --diagnostic --encoder-smoke)"
+          DIAGNOSTIC_OUTPUT="$diagnostic_output" python - <<'PY'
+          import json
+          import os
+
+          report = json.loads(os.environ["DIAGNOSTIC_OUTPUT"])
+          assert report["platform"].lower() == "darwin", report
+          assert report["machine"].lower() in {"arm64", "aarch64"}, report
+          assert report["decoder"] == "loaded", report
+          assert report["encoder_round_trip"] is True, report
+          PY
+          peek_output="$("$app" --peek macos-smoke/fixture.sav)"
+          PEEK_OUTPUT="$peek_output" python - <<'PY'
+          import json
+          import os
+
+          report = json.loads(os.environ["PEEK_OUTPUT"])
+          assert isinstance(report, dict), report
+          assert report["crc_ok"] is True, report
+          PY
+          hdiutil verify artifacts/SaveEditor-macos-arm64-v"$(sed -n '1p' VERSION)".dmg
+
+      - name: Export package version
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"VERSION={Path('VERSION').read_text(encoding='utf-8').strip()}\n")
+
+      - name: Upload macOS release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: SaveEditor-macos-${{ github.sha }}
+          path: |
+            artifacts/SaveEditor-macos-arm64-v${{ env.VERSION }}.zip
+            artifacts/SaveEditor-macos-arm64-v${{ env.VERSION }}.dmg
+            artifacts/SHA256SUMS
+          if-no-files-found: error
+
   release:
     name: Publish GitHub Release, R2 and signed APT
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [package-linux, package-windows]
+    needs: [package-linux, package-windows, package-macos]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -348,6 +454,17 @@ jobs:
           set -euo pipefail
           python tools/publish_release.py --artifacts release-input --version "$VERSION" --commit "$GITHUB_SHA" --output release-output
 
+      - name: Stage macOS assets for GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "release-input/SaveEditor-macos-arm64-v${VERSION}.zip" release-output/SaveEditor-macos-arm64.zip
+          cp "release-input/SaveEditor-macos-arm64-v${VERSION}.dmg" release-output/SaveEditor-macos-arm64.dmg
+          shasum -a 256 \
+            release-output/SaveEditor-macos-arm64.zip \
+            release-output/SaveEditor-macos-arm64.dmg \
+            > release-output/SHA256SUMS-macos
+
       - name: Build signed APT repository
         if: steps.creds.outputs.apt == 'true'
         shell: bash
@@ -406,6 +523,9 @@ jobs:
             release-output/SaveEditor-windows-x86_64-setup.exe
             release-output/SaveEditor-linux-x86_64.tar.gz
             release-output/stalker2-save-editor_amd64.deb
+            release-output/SaveEditor-macos-arm64.zip
+            release-output/SaveEditor-macos-arm64.dmg
+            release-output/SHA256SUMS-macos
             release-output/SHA256SUMS
             release-output/latest.json
           )

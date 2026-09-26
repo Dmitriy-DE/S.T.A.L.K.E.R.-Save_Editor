@@ -18,8 +18,14 @@ from typing import Any
 
 PYOOZ_VERSION = "0.0.8"
 MAX_UNPACKED_SIZE = 512 * 1024 * 1024
-_SUPPORTED_SYSTEMS = {"linux", "windows"}
-_SUPPORTED_MACHINES = {"amd64", "x86_64"}
+_SUPPORTED_PLATFORM_ARCHES = {
+    ("linux", "amd64"),
+    ("linux", "x86_64"),
+    ("windows", "amd64"),
+    ("windows", "x86_64"),
+    ("darwin", "arm64"),
+    ("darwin", "aarch64"),
+}
 
 
 class CodecError(RuntimeError):
@@ -78,7 +84,7 @@ def default_vendor_dir() -> Path:
 def _unsupported_message(system: str, machine: str) -> str:
     return (
         f"Платформа {system or '<unknown>'}/{machine or '<unknown>'} не поддерживается. "
-        "Нужны Linux или Windows x86_64/AMD64 и зависимость "
+        "Нужны Linux или Windows x86_64/AMD64 либо macOS arm64 и зависимость "
         f"pyooz=={PYOOZ_VERSION}."
     )
 
@@ -117,7 +123,7 @@ def load_decoder(
     display_system = raw_system.strip() or "<unknown>"
     display_machine = raw_machine.strip() or "<unknown>"
 
-    if normal_system not in _SUPPORTED_SYSTEMS or normal_machine not in _SUPPORTED_MACHINES:
+    if (normal_system, normal_machine) not in _SUPPORTED_PLATFORM_ARCHES:
         raise CodecError(_unsupported_message(display_system, display_machine))
 
     import_module = importer or importlib.import_module
