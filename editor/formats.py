@@ -24,8 +24,11 @@ from .s2_catalog import (
 )
 from .xray_catalog import XRayCatalogProvider, has_mod_overlay
 from .xray_save import (
+    COP_EE_FORMAT,
     COP_FORMAT,
+    CS_EE_FORMAT,
     CS_FORMAT,
+    SOC_EE_FORMAT,
     SOC_FORMAT,
     XRayFormatSpec,
     inspect_xray,
@@ -319,7 +322,7 @@ class _Stalker2Format:
 class _XRayFormat:
     """Adapter exposing one original-game X-Ray family to the shared registry."""
 
-    def __init__(self, spec: XRayFormatSpec) -> None:
+    def __init__(self, spec: XRayFormatSpec, *, read_only: bool = False) -> None:
         self.spec = spec
         self.id = spec.id
         self.title = spec.title
@@ -349,6 +352,13 @@ class _XRayFormat:
                         if equipment.support("upgrades").writable
                         else {}
                     ),
+                }
+                if not read_only
+                else {
+                    # Enhanced Editions are readable; nothing is written
+                    # before the game accepts it (EE-4).
+                    name: CapabilitySupport("research", "EE: запись не проверена в игре")
+                    for name in ("edit_money", "edit_stacks", "add_items", "remove_items")
                 },
             ),
         )
@@ -509,6 +519,9 @@ STALKER2_FORMAT: SaveFormat = _Stalker2Format()
 STALKER_SOC_FORMAT: SaveFormat = _XRayFormat(SOC_FORMAT)
 STALKER_CS_FORMAT: SaveFormat = _XRayFormat(CS_FORMAT)
 STALKER_COP_FORMAT: SaveFormat = _XRayFormat(COP_FORMAT)
+STALKER_SOC_EE_FORMAT: SaveFormat = _XRayFormat(SOC_EE_FORMAT, read_only=True)
+STALKER_CS_EE_FORMAT: SaveFormat = _XRayFormat(CS_EE_FORMAT, read_only=True)
+STALKER_COP_EE_FORMAT: SaveFormat = _XRayFormat(COP_EE_FORMAT, read_only=True)
 _REGISTERED_FORMATS: list[SaveFormat] = []
 
 
@@ -621,6 +634,9 @@ register(STALKER2_FORMAT)
 register(STALKER_SOC_FORMAT)
 register(STALKER_CS_FORMAT)
 register(STALKER_COP_FORMAT)
+register(STALKER_SOC_EE_FORMAT)
+register(STALKER_CS_EE_FORMAT)
+register(STALKER_COP_EE_FORMAT)
 
 
 __all__ = [
