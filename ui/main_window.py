@@ -52,7 +52,13 @@ from editor.platforms import backup_dirs
 from editor.releases import is_xray_original_release
 from editor.service import EditorService
 from editor.settings import PathSettings, load_settings, search_paths_for_settings
-from editor.updater import InstallationInfo, UpdateCheckResult, UpdateClient, detect_installation
+from editor.updater import (
+    InstallationInfo,
+    UpdateCheckResult,
+    UpdateClient,
+    detect_installation,
+    remove_stale_downloads,
+)
 from editor.xray_slots import placement_label
 from save_format import SaveError, SaveInfo
 
@@ -254,6 +260,8 @@ class MainWindow(QMainWindow):
         self._build_draft_shortcuts()
         if self._auto_update_check:
             QTimer.singleShot(0, lambda: self.check_for_updates(manual=False))
+            # Downloads named by the pre-0.7.4 scheme were never reused or removed.
+            QTimer.singleShot(0, remove_stale_downloads)
             QTimer.singleShot(1200, self._offer_crash_report)
 
     @staticmethod
