@@ -81,8 +81,17 @@ class AddItemDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
+        # Official names repeat for variants (six «АКМ-74/2»); the key tells
+        # them apart.
+        seen: dict[str, int] = {}
+        for definition in self._definitions:
+            name = self._labels[definition.key]
+            if name:
+                seen[name] = seen.get(name, 0) + 1
         for definition in self._definitions:
             label = self._labels[definition.key] or definition.key
+            if seen.get(label, 0) > 1:
+                label = f"{label}  ·  {definition.key}"
             entry = QListWidgetItem(label)
             entry.setData(Qt.ItemDataRole.UserRole, definition.key)
             entry.setToolTip(definition.key)
