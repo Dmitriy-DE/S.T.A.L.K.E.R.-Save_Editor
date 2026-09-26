@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import tempfile
 
 import tools.check_doc_links as checker
 
