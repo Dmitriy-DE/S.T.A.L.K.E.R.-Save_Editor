@@ -148,7 +148,7 @@ def _verify_mutation(
     money_matches = True
     mutation_matches = True
     recognized_mutations = 0
-    known_keys = {"money", "durability", "upgrades", "placements"}
+    known_keys = {"money", "stacks", "durability", "upgrades", "placements"}
     for key in expected:
         if key not in known_keys:
             issues.append(f"неизвестный тип mutation: {key}")
@@ -174,6 +174,44 @@ def _verify_mutation(
                 if not money_matches:
                     issues.append(f"money: {info.money!r} вместо {target}")
                 mutation_matches = mutation_matches and money_matches
+
+    stacks_observed: list[dict[str, object]] = []
+    stacks_request = expected.get("stacks", [])
+    if not isinstance(stacks_request, list):
+        issues.append("stacks: повреждённая запись в manifest")
+        mutation_matches = False
+        stacks_request = []
+    elif not stacks_request and "stacks" in expected:
+        issues.append("stacks: пустая запись в manifest")
+        mutation_matches = False
+    for row in stacks_request:
+        if not isinstance(row, dict) or "handle" not in row or "after" not in row:
+            issues.append("stacks: повреждённая строка в manifest")
+            mutation_matches = False
+            continue
+        try:
+            handle = int(row["handle"])
+            target_count = int(row["after"])
+        except (TypeError, ValueError):
+            issues.append("stacks: handle/after имеют неверный тип")
+            mutation_matches = False
+            continue
+        if not 1 <= target_count <= 1_000_000:
+            issues.append("stacks: after должен быть в диапазоне 1…1 000 000")
+            mutation_matches = False
+            continue
+        recognized_mutations += 1
+        item = _item_by_handle(info, handle)
+        observed_count = None if item is None else item.count
+        stacks_observed.append({"handle": handle, "after": observed_count})
+        matched = observed_count == target_count
+        if not matched:
+            issues.append(
+                f"stack 0x{handle:08X}: {observed_count!r} вместо {target_count}"
+            )
+        mutation_matches = mutation_matches and matched
+    if stacks_observed:
+        observed["stacks"] = stacks_observed
 
     durability_observed: list[dict[str, object]] = []
     durability_request = expected.get("durability", [])

@@ -25,6 +25,7 @@ if str(ROOT) not in sys.path:
 
 from editor.formats import detect_or_raise  # noqa: E402
 from editor.models import EditPlan, SourceRef  # noqa: E402
+from editor.prepare import prepare_edit  # noqa: E402
 from editor.releases import official_releases, release_by_id  # noqa: E402
 from editor.service import EditorService  # noqa: E402
 from save_format import SaveError  # noqa: E402
@@ -96,6 +97,7 @@ def _verify_requested_mutations(
     info,
     *,
     money: int | None,
+    stacks: tuple[tuple[int, int], ...],
     durability: tuple[tuple[int, float], ...],
     upgrades: tuple[tuple[int, tuple[str, ...]], ...],
     placements: tuple[tuple[int, str, int | None], ...],
@@ -110,6 +112,18 @@ def _verify_requested_mutations(
                 f"ожидалось {money}"
             )
         mutation["money"] = {"after": money}
+
+    stack_rows: list[dict[str, object]] = []
+    for handle, expected_count in stacks:
+        item = _item_by_handle(info, handle)
+        if item.count != expected_count:
+            raise SaveError(
+                f"Подготовленный output не сохранил stack 0x{handle:08X}: "
+                f"{item.count!r} вместо {expected_count}"
+            )
+        stack_rows.append({"handle": handle, "after": expected_count})
+    if stack_rows:
+        mutation["stacks"] = stack_rows
 
     durability_rows: list[dict[str, object]] = []
     for handle, expected_condition in durability:
@@ -158,7 +172,7 @@ def _verify_requested_mutations(
         mutation["placements"] = placement_rows
     if not mutation:
         raise SaveError(
-            "Укажи хотя бы одно bounded-изменение: money, durability, upgrades или placement"
+            "Укажи хотя бы одно bounded-изменение: money, stack, durability, upgrades или placement"
         )
     return mutation
 
@@ -169,6 +183,7 @@ def prepare_source_copy(
     workspace: Path,
     money: int | None = None,
     *,
+    stacks: tuple[tuple[int, int], ...] = (),
     durability: tuple[tuple[int, float], ...] = (),
     upgrades: tuple[tuple[int, tuple[str, ...]], ...] = (),
     placements: tuple[tuple[int, str, int | None], ...] = (),
@@ -182,13 +197,14 @@ def prepare_source_copy(
         raise SaveError(f"Исходный сейв не найден: {source}")
     if money is not None and not 0 <= money <= 2_000_000_000:
         raise SaveError("Деньги должны быть в диапазоне 0…2 000 000 000")
-    if money is None and not (durability or upgrades or placements):
+    if money is None and not (stacks or durability or upgrades or placements):
         raise SaveError(
-            "Укажи хотя бы одно bounded-изменение: money, durability, upgrades или placement"
+            "Укажи хотя бы одно bounded-изменение: money, stack, durability, upgrades или placement"
         )
     mutation_categories = sum(
         (
             money is not None,
+            bool(stacks),
             bool(durability),
             bool(upgrades),
             bool(placements),
@@ -198,6 +214,11 @@ def prepare_source_copy(
         raise SaveError(
             "M10 допускает одну категорию bounded-изменения за один controlled run"
         )
+    if release_id == "stalker2":
+        if len(stacks) > 1:
+            raise SaveError("Controlled S2 stack run допускает только один stack")
+        if len(stacks) + len(durability) > 1:
+            raise SaveError("S2 controlled run допускает одну bounded-правку")
 
     try:
         workspace.mkdir(parents=True, exist_ok=True)
@@ -210,6 +231,8 @@ def prepare_source_copy(
         mutation_label = f"money-{money}"
     elif durability:
         mutation_label = "durability"
+    elif stacks:
+        mutation_label = "stack"
     elif upgrades:
         mutation_label = "upgrades"
     else:
@@ -244,22 +267,38 @@ def prepare_source_copy(
     original_money = inspection.info.money
     if money is not None and original_money is None:
         raise SaveError("В выбранном сейве нет однозначно разобранного поля денег")
+    for handle, count in stacks:
+        item = _item_by_handle(inspection.info, handle)
+        if not item.editable_count or item.count is None:
+            raise SaveError(f"Stack 0x{handle:08X} не подтверждён для bounded-проверки")
+        if not 1 <= count <= item.count_max:
+            raise SaveError(
+                f"Stack 0x{handle:08X}: count должен быть в диапазоне 1…{item.count_max}"
+            )
+        if count == item.count:
+            raise SaveError(f"Stack 0x{handle:08X}: новое count совпадает с исходным")
 
     source_sha = _sha256(data)
     plan = EditPlan(
         source=SourceRef(kind="local", locator=str(source_copy), sha256=source_sha),
         money=money,
+        stacks=stacks,
         durability=durability,
         upgrades=upgrades,
         placements=placements,
     )
-    prepared = service.prepare(
-        data,
-        plan,
-        source_name=str(source_copy),
-        catalog=inspection.catalog,
-        game_catalog=inspection.game_catalog,
-    )
+    if release_id == "stalker2" and stacks:
+        # This controlled L5 utility writes only a workspace copy. Keep the
+        # production capability gate unchanged; S2 stack remains research-only.
+        prepared = prepare_edit(data, plan)
+    else:
+        prepared = service.prepare(
+            data,
+            plan,
+            source_name=str(source_copy),
+            catalog=inspection.catalog,
+            game_catalog=inspection.game_catalog,
+        )
     receipt = service.export_local(
         source_copy,
         edited_path,
@@ -274,6 +313,7 @@ def prepare_source_copy(
     mutation = _verify_requested_mutations(
         edited_inspection.info,
         money=money,
+        stacks=stacks,
         durability=durability,
         upgrades=upgrades,
         placements=placements,
@@ -306,6 +346,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--release", choices=tuple(r.id for r in official_releases()), required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--money", type=int)
+    parser.add_argument(
+        "--stack",
+        nargs=2,
+        action="append",
+        metavar=("HANDLE", "COUNT"),
+        help="one handle/count pair for a controlled stack verification copy",
+    )
     parser.add_argument(
         "--durability",
         nargs=2,
@@ -344,6 +391,10 @@ def main(argv: list[str] | None = None) -> int:
             (_parse_handle(handle), float(value))
             for handle, value in (args.durability or ())
         )
+        stacks = tuple(
+            (_parse_handle(handle), int(count))
+            for handle, count in (args.stack or ())
+        )
         upgrades = tuple(
             (_parse_handle(handle), tuple(key for key in keys.split(",") if key))
             for handle, keys in (args.upgrade or ())
@@ -361,6 +412,7 @@ def main(argv: list[str] | None = None) -> int:
             args.release,
             args.workspace,
             args.money,
+            stacks=stacks,
             durability=durability,
             upgrades=upgrades,
             placements=placements,
