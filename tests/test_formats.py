@@ -130,7 +130,8 @@ def test_service_inspection_projects_common_release_capabilities(
     assert result.edition == "s2"
     assert result.capabilities.edit_money is True
     assert result.capabilities.is_experimental("edit_money") is True
-    assert result.capabilities.edit_stacks is False
+    assert result.capabilities.edit_stacks is True
+    assert result.capabilities.is_experimental("edit_stacks") is True
     assert result.capabilities.add_items is False
 
 
@@ -175,23 +176,21 @@ def test_s2_prepare_refuses_fields_the_capability_matrix_keeps_read_only(synthet
 
     source = SourceRef(kind="local", locator="slot.sav", sha256=hashlib.sha256(synthetic_save).hexdigest())
     # The UI hid these, but the CLI reached the S2 writer directly.
-    with pytest.raises(SaveError, match="edit_stacks"):
-        STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, stacks=((0x30000001, 3),)))
     with pytest.raises(SaveError, match="remove_items"):
         STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, detach=((0x30000001, False),)))
     prepared = STALKER2_FORMAT.prepare(synthetic_save, EditPlan(source=source, money=123))
     assert prepared.output_sha256
 
 
-def test_stalker2_stack_edits_stay_closed_until_game_verified(synthetic_save: bytes) -> None:
-    """Docs, UI and writer must agree: no S2 count edits before an L5 check."""
+def test_stalker2_stack_edits_are_open_as_experimental_after_game_check(synthetic_save: bytes) -> None:
+    """ED-3 confirmed S2 count edits in the game; they stay marked experimental."""
 
     from dataclasses import replace
 
     from editor.formats import require_plan_capabilities
 
     format_ = by_id("stalker2")
-    assert format_.capabilities.support("edit_stacks").writable is False
-    plan = replace(_plan(synthetic_save), money=None, stacks=((1, 2),))
-    with pytest.raises(sf.SaveError, match="edit_stacks"):
-        require_plan_capabilities(format_.capabilities, plan)
+    support = format_.capabilities.support("edit_stacks")
+    assert support.writable is True
+    assert format_.capabilities.is_experimental("edit_stacks") is True
+    require_plan_capabilities(format_.capabilities, replace(_plan(synthetic_save), money=None, stacks=((1, 2),)))

@@ -227,8 +227,18 @@ def test_update_client_downloads_and_rejects_changed_bytes(tmp_path: Path) -> No
         assert client.download(result.artifact, destination) == destination
         assert destination.read_bytes() == b"windows release bytes"
 
+        # A verified earlier copy is reused without another request.
+        (tmp_path / "SaveEditor-windows-x86_64.zip").write_bytes(b"server gone wrong")
+        assert client.download(result.artifact, destination) == destination
+        assert destination.read_bytes() == b"windows release bytes"
+        # A corrupted local copy is replaced (here: rejected, server is bad).
+        destination.write_bytes(b"corrupt")
+        with pytest.raises(ManifestError):
+            client.download(result.artifact, destination)
+        assert not destination.exists()
+
         (tmp_path / "SaveEditor-windows-x86_64.zip").write_bytes(b"tampered bytes here")
-        destination.unlink()
+        destination.unlink(missing_ok=True)
         with pytest.raises(ManifestError, match="mismatch"):
             client.download(result.artifact, destination)
         assert not destination.exists()

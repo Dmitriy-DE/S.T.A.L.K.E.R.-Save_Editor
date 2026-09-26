@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import platform
 import tempfile
 from pathlib import Path
@@ -66,7 +65,7 @@ class UpdateDownloadWorker(QThread):
 
     def run(self) -> None:
         destination = Path(tempfile.gettempdir()) / (
-            f"SaveEditor-update-{os.getpid()}-{self.artifact.file}"
+            f"SaveEditor-update-{self.artifact.file}"
         )
         try:
             LOGGER.info(
