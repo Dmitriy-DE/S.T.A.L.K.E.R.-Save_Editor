@@ -1,4 +1,4 @@
-"""Operating-system paths and local helper discovery.
+"""Operating-system paths and Steam runtime discovery.
 
 The editor stores new state below the platform's user data directory.  The
 pre-v0.3 ``~/Stalker2SaveEditor`` directory remains a read-only discovery
@@ -11,8 +11,6 @@ import logging
 import os
 import platform
 import re
-import shutil
-import subprocess
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -24,7 +22,6 @@ from .steam_vdf import library_paths, parse_vdf, read_text
 LOGGER = logging.getLogger(__name__)
 
 APP_DIR_NAME = "Stalker2SaveEditor"
-HELPER_ENV = "STALKER2_STEAM_HELPER"
 
 
 @dataclass(frozen=True)
@@ -274,244 +271,17 @@ def backup_dirs(
     return (current,) if current == legacy else (current, legacy)
 
 
-def _expand_path(value: str, *, home: Path) -> Path:
-    return _path_value(value, home=home, environ=os.environ)
-
-
-def _is_helper_file(path: Path, *, windows: bool) -> bool:
-    if not path.is_file():
-        return False
-    if windows:
-        # Windows does not use POSIX execute bits.  PATH entries may be named
-        # without a suffix, while scanned release assets must be .exe files.
-        return path.suffix.lower() in ("", ".exe")
-    try:
-        return bool(path.stat().st_mode & 0o111)
-    except OSError:
-        return False
-
-
-def _roots_for(
-    *,
-    system: str,
-    environ: Mapping[str, str],
-    home: Path,
-) -> tuple[Path, ...]:
-    if system == "windows":
-        values = [
-            environ.get("LOCALAPPDATA"),
-            environ.get("PROGRAMFILES"),
-            environ.get("PROGRAMFILES(X86)"),
-        ]
-        roots = [Path(value).expanduser() for value in values if value]
-        roots.extend((home / "Downloads", home / "Desktop"))
-        return tuple(roots)
-    values = [environ.get("XDG_DATA_HOME")]
-    roots = [Path(value).expanduser() for value in values if value]
-    roots.extend((home / "Downloads", home / "Applications", home / ".local" / "bin"))
-    return tuple(roots)
-
-
-def discover_helper(
-    *,
-    system: str | None = None,
-    environ: Mapping[str, str] | None = None,
-    home: Path | None = None,
-) -> Path | None:
-    """Find an executable SteamCloudFileManager without invoking a shell.
-
-    An explicit ``STALKER2_STEAM_HELPER`` path wins.  Discovery only returns
-    existing files; on POSIX a helper must already have an execute bit, while
-    Windows release assets are selected by their ``.exe`` suffix.
-    """
-
-    name = _system_name(system)
-    env = _environment(environ)
-    home_path = _home_path(home)
-    windows = name == "windows"
-
-    # The published SteamCloudFileManager helper is a Windows executable or a
-    # Linux AppImage. Do not mistake either for a native macOS helper.
-    if name == "darwin":
-        return None
-
-    explicit = env.get(HELPER_ENV)
-    if explicit:
-        candidate = _expand_path(explicit, home=home_path)
-        if _is_helper_file(candidate, windows=windows):
-            return candidate
-
-    names = (
-        ("SteamCloudFileManager.exe", "SteamCloudFileManager")
-        if windows
-        else ("steam-cloud-file-manager", "SteamCloudFileManager")
-    )
-    for command in names:
-        found = shutil.which(command)
-        if found:
-            candidate = Path(found).expanduser()
-            if _is_helper_file(candidate, windows=windows):
-                return candidate
-
-    patterns = (
-        ("SteamCloudFileManager*.exe", "*steam*cloud*file*manager*.exe")
-        if windows
-        else (
-            "SteamCloudFileManager*.AppImage",
-            "*steam*cloud*file*manager*.AppImage",
-            "steam-cloud-file-manager*",
-        )
-    )
-    candidates: list[Path] = []
-    seen: set[Path] = set()
-    for root in _roots_for(system=name, environ=env, home=home_path):
-        if not root.is_dir():
-            continue
-        for pattern in patterns:
-            for candidate in root.glob(pattern):
-                resolved = candidate.expanduser()
-                if resolved in seen or not _is_helper_file(resolved, windows=windows):
-                    continue
-                seen.add(resolved)
-                candidates.append(resolved)
-
-        if not windows:
-            # Linux release archives are commonly extracted into a directory
-            # under Downloads. Inspect only the known executable names one
-            # level below that directory; do not recurse through user data.
-            for directory_pattern in (
-                "SteamCloudFileManager*",
-                "*steam*cloud*file*manager*",
-            ):
-                for directory in root.glob(directory_pattern):
-                    if not directory.is_dir():
-                        continue
-                    for filename in ("steam-cloud-file-manager", "SteamCloudFileManager"):
-                        resolved = (directory / filename).expanduser()
-                        if resolved in seen or not _is_helper_file(resolved, windows=False):
-                            continue
-                        seen.add(resolved)
-                        candidates.append(resolved)
-
-    def _has_adjacent_steam_api(path: Path) -> bool:
-        if windows:
-            return any(
-                (path.parent / name).is_file()
-                for name in ("steam_api64.dll", "steam_api.dll")
-            )
-        return (path.parent / "libsteam_api.so").is_file()
-
-    candidates.sort(
-        key=lambda path: (
-            _has_adjacent_steam_api(path),
-            path.stat().st_mtime_ns,
-            str(path),
-        ),
-        reverse=True,
-    )
-    return candidates[0] if candidates else None
-
-
-def _helper_cache_root(
-    *,
-    system: str | None = None,
-    environ: Mapping[str, str] | None = None,
-    home: Path | None = None,
-) -> Path:
-    """Return the directory where extracted AppImage payloads are cached."""
-
-    return user_data_dir(system=system, environ=environ, home=home) / "helper-cache"
-
-
-def extract_appimage(appimage: Path, *, cache_root: Path | None = None) -> Path:
-    """Extract an AppImage without FUSE and return its ``squashfs-root``.
-
-    Type-2 AppImages self-mount through ``libfuse.so.2``; on systems that only
-    ship libfuse3 the helper crashes at ``dlopen()``.  ``--appimage-extract`` is
-    handled by the AppImage runtime itself and needs no FUSE, so we unpack once
-    into a cache keyed by the AppImage's size and mtime and run the inner ELF
-    directly.  Re-extraction happens only when the AppImage changes.
-    """
-
-    appimage = Path(appimage).expanduser()
-    if not appimage.is_file():
-        raise FileNotFoundError(f"AppImage не найден: {appimage}")
-    stat = appimage.stat()
-    key = f"{appimage.stem}-{stat.st_size}-{stat.st_mtime_ns}"
-    root = (cache_root or _helper_cache_root()) / key
-    squashfs = root / "squashfs-root"
-    inner = squashfs / "usr" / "bin" / appimage.stem
-    if squashfs.is_dir() and (inner.is_file() or (squashfs / appimage.stem).is_file()):
-        return squashfs
-
-    root.mkdir(parents=True, exist_ok=True)
-    try:
-        mode = appimage.stat().st_mode
-        appimage.chmod(mode | 0o111)
-    except OSError:
-        pass
-    # Remove a partial extraction from a previous failed run so the cache never
-    # serves half an archive.
-    if squashfs.exists():
-        shutil.rmtree(squashfs, ignore_errors=True)
-    try:
-        subprocess.run(
-            [str(appimage), "--appimage-extract"],
-            cwd=str(root),
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            timeout=120,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise RuntimeError(f"Не удалось распаковать AppImage: {exc}") from exc
-    if not squashfs.is_dir():
-        raise RuntimeError("AppImage распакован, но squashfs-root не появился")
-    return squashfs
-
-
-def resolve_helper_command(
-    helper: Path, *, cache_root: Path | None = None
-) -> tuple[Path, Path]:
-    """Return ``(executable, library_dir)`` for a discovered helper.
-
-    A plain binary runs in place.  An AppImage is transparently extracted (no
-    FUSE) and its inner ELF is returned instead, with the payload directory as
-    the library dir so the adjacent ``libsteam_api.so`` resolves.
-    """
-
-    helper = Path(helper).expanduser()
-    if helper.suffix.lower() != ".appimage":
-        return helper, helper.parent
-    squashfs = extract_appimage(helper, cache_root=cache_root)
-    inner = squashfs / "usr" / "bin" / helper.stem
-    if not inner.is_file():
-        alt = squashfs / helper.stem
-        if alt.is_file():
-            inner = alt
-        else:
-            raise RuntimeError(
-                f"Внутренний бинарник не найден в распакованном AppImage: {inner}"
-            )
-    try:
-        inner.chmod(inner.stat().st_mode | 0o111)
-    except OSError:
-        pass
-    return inner, squashfs
-
-
 def locate_libsteam_api(
     *,
     system: str | None = None,
     environ: Mapping[str, str] | None = None,
     home: Path | None = None,
 ) -> Path | None:
-    """Find Valve's ``libsteam_api`` for the in-process native cloud worker.
+    """Find Valve's ``libsteam_api`` for the native Steam Cloud worker.
 
-    Search order: on Linux the Steam client's own runtime copy
-    (``steamrt64``), then the directory next to a discovered helper, then Steam
-    library game installs, then an extracted helper AppImage payload.  Returns ``None`` when nothing is available; the caller then
-    falls back to the subprocess helper.
+    On Linux, prefer the Steam client's ``steamrt64`` runtime, followed by
+    Steam library game installs. Returns ``None`` when no supported copy is
+    available; Steam web can still provide read-only cloud access.
     """
 
     name = _system_name(system)
@@ -549,23 +319,13 @@ def locate_libsteam_api(
             if found is not None:
                 return found
 
-    # Cheap lookups first: a copy sitting next to the helper, then any
-    # installed Steamworks game that ships the redistributable.  Extracting an
-    # AppImage is a heavy side effect, so it is the last resort — never done
-    # merely to answer "where is the library".
-    # The Linux Steam client ships its own runtime copy; it needs no helper
-    # and no Steamworks game with a native Linux build.
+    # The Linux Steam client ships its own runtime copy, even when no installed
+    # Steamworks game has a native Linux build.
     if name != "windows":
         for root in steam_roots(system=name, environ=environ, home=home):
             found = _first_lib(root / "steamrt64") if sys.maxsize > 2**32 else _first_lib(root / "steamrt32")
             if found is not None:
                 return found
-
-    helper = discover_helper(system=system, environ=environ, home=home)
-    if helper is not None:
-        found = _first_lib(helper.parent)
-        if found is not None:
-            return found
 
     for game in installed_games(system=name, environ=environ, home=home):
         found = _first_lib(game.install_dir)
@@ -584,14 +344,6 @@ def locate_libsteam_api(
             if found is not None:
                 return found
 
-    # Last resort: the helper is an AppImage that bundles its own copy; extract
-    # it (no FUSE) and look inside the payload.
-    if helper is not None and helper.suffix.lower() == ".appimage":
-        try:
-            _exe, lib_dir = resolve_helper_command(helper)
-        except (OSError, RuntimeError):
-            return None
-        return _first_lib(lib_dir)
     return None
 
 

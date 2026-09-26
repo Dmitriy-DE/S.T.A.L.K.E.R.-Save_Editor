@@ -1,8 +1,8 @@
 # Структура проекта
 
 ```text
-cli.py / save_format.py / steam_cloud.py           parser, research CLI and Steam helper IPC
-editor/                                            UI-free service, storage, cloud transaction and platform paths
+cli.py / save_format.py / steam_cloud.py           parser, research CLI and cloud file metadata
+editor/                                            UI-free service, native Steam Cloud worker, storage and platform paths
 editor/steam_vdf.py                                dependency-free Steam KeyValues reader
 ui/                                                Qt interface: Zone theme, overview, inventory, changes, backups, Cloud
 packaging/                                         PyInstaller builder for Linux tar.gz/.deb and Windows zip

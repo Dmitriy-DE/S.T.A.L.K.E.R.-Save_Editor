@@ -39,7 +39,7 @@ STATIC_ASSETS = (
 
 # Only what the browser actually needs: parse a save, build an immutable edit
 # plan and apply it.  Storage, cloud transactions and platform paths stay out -
-# a browser tab has no backup directory, no Steam helper and no user data dir.
+# a browser tab has no backup directory, native Steam access or user data dir.
 MODULES = (
     "save_format.py",
     "editor/__init__.py",

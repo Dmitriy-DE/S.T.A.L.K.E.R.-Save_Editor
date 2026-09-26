@@ -1,5 +1,8 @@
 # B02 beta acceptance matrix — current evidence
 
+> Исторический снимок до SC-2. Его Steam helper gates и статусы не описывают
+> текущий Cloud backend; он использует native worker и Steam web/CDP.
+
 Дата отчёта: 2026-09-13. Source commit для локального package build:
 `14650ce83e8e4519d771b36b14a02ce73fc09d5f`. Этот файл фиксирует проверенное
 состояние и не превращает отсутствующие Windows/Steam данные в PASS. После

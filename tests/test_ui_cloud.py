@@ -58,7 +58,7 @@ class CloudSurface(CloudLibraryView):
     def __setattr__(self, name: str, value) -> None:
         if name not in {"_backend", "backend"} and "_backend" in self.__dict__:
             backend = object.__getattribute__(self, "_backend")
-            if name in {"service", "worker_factory", "helper_finder", "helper_path", "backup_dir"}:
+            if name in {"service", "worker_factory", "backup_dir"}:
                 setattr(backend, name, value)
                 return
         super().__setattr__(name, value)
@@ -288,7 +288,7 @@ def test_diagnostics_dialog_exports_in_a_worker_and_keeps_send_available(
 def test_cloud_view_does_not_connect_on_construction(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
     created: list[FakeCloudTransport] = []
 
-    def factory(_path: Path) -> FakeCloudTransport:
+    def factory() -> FakeCloudTransport:
         transport = FakeCloudTransport(synthetic_save)
         created.append(transport)
         return transport
@@ -296,7 +296,6 @@ def test_cloud_view_does_not_connect_on_construction(qtbot, synthetic_save: byte
     view = CloudView(
         EditorService(),
         worker_factory=factory,
-        helper_path=tmp_path / "helper",
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -311,7 +310,7 @@ def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
 ) -> None:
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: FakeCloudTransport(synthetic_save, writable=False),
+        worker_factory=lambda: FakeCloudTransport(synthetic_save, writable=False),
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -323,14 +322,13 @@ def test_cloud_intro_describes_one_click_save_and_read_only_boundary(
     assert "Загрузить в облако" not in view.intro_label.text()
 
 
-def test_cloud_view_connects_without_a_helper(qtbot, synthetic_save: bytes, tmp_path: Path) -> None:
-    # The native worker needs no AppImage, so an absent helper must not block a
-    # connect — this is what lets the tab auto-connect in the background.
+def test_cloud_view_connects_through_the_native_worker_factory(
+    qtbot, synthetic_save: bytes, tmp_path: Path
+) -> None:
     transport = FakeCloudTransport(synthetic_save)
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_finder=lambda: None,
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -343,13 +341,12 @@ def test_cloud_view_connects_without_a_helper(qtbot, synthetic_save: bytes, tmp_
 
 
 def test_cloud_view_surfaces_a_connect_failure(qtbot, tmp_path: Path) -> None:
-    def failing_factory(_path: Path) -> FakeCloudTransport:
+    def failing_factory() -> FakeCloudTransport:
         raise RuntimeError("no cloud backend")
 
     view = CloudView(
         EditorService(),
         worker_factory=failing_factory,
-        helper_finder=lambda: None,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -365,8 +362,7 @@ def test_cloud_view_empty_list_has_explicit_state(qtbot, synthetic_save: bytes, 
     transport = FakeCloudTransport(synthetic_save)
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -395,8 +391,7 @@ def test_cloud_view_filters_non_data_files(
     )
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
     )
     qtbot.addWidget(view)
     with qtbot.waitSignal(view.files_ready, timeout=SIGNAL_TIMEOUT_MS):
@@ -420,8 +415,7 @@ def test_cloud_view_hides_editor_artifacts_and_explains_why(
     )
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
     )
     qtbot.addWidget(view)
 
@@ -449,8 +443,7 @@ def test_cloud_view_profile_switch_filters_the_selected_game_path(
     )
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
     )
     qtbot.addWidget(view)
     index = view.profile_combo.findData("stalker-cop")
@@ -473,8 +466,7 @@ def test_cloud_view_pins_selected_data_path_and_rejects_wrong_slot(
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file(name)])
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -511,8 +503,7 @@ def test_cloud_view_keeps_upload_disabled_until_transport_is_writable(
     )
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -545,8 +536,7 @@ def test_cloud_view_upload_reports_verified_or_uncertain_without_retry(
     )
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -622,8 +612,7 @@ def test_main_window_routes_cloud_snapshot_preview_to_upload(
     # scoped approved cloud service so this test can still cover the cloud
     # preview/upload transaction without re-rendering the live window.
     window.cloud_controller.service = _ApprovedCloudService()
-    window.cloud_controller.worker_factory = lambda _path: transport
-    window.cloud_controller.helper_path = tmp_path / "helper"
+    window.cloud_controller.worker_factory = lambda: transport
     window.cloud_controller.backup_dir = tmp_path / "backups"
 
     with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
@@ -676,7 +665,7 @@ def test_main_window_one_click_save_uploads_cloud_snapshot(
         staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
     )
     window.cloud_controller.service = _ApprovedCloudService()
-    window.cloud_controller.worker_factory = lambda _path: transport
+    window.cloud_controller.worker_factory = lambda: transport
     window.cloud_controller.backup_dir = tmp_path / "backups"
 
     with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
@@ -716,8 +705,7 @@ def test_closing_the_view_waits_for_its_worker(qtbot, synthetic_save: bytes, tmp
     transport = FakeCloudTransport(synthetic_save, files=[_cloud_file("Stalker2/Saved/STEAM/SaveGames/Data/slot-a.sav")])
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_path=tmp_path / "helper",
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -737,8 +725,7 @@ def test_closing_the_view_cancels_a_blocking_cloud_worker(
     transport = BlockingCloudTransport(synthetic_save)
     view = CloudView(
         EditorService(),
-        worker_factory=lambda _path: transport,
-        helper_finder=lambda: None,
+        worker_factory=lambda: transport,
         backup_dir=tmp_path / "backups",
     )
     qtbot.addWidget(view)
@@ -765,8 +752,7 @@ def test_reopening_an_unchanged_cloud_save_does_not_download_it_again(qtbot, syn
     transport.read_file = counting_read  # type: ignore[method-assign]
     window = MainWindow(EditorService())
     qtbot.addWidget(window)
-    window.cloud_controller.worker_factory = lambda _path: transport
-    window.cloud_controller.helper_path = tmp_path / "helper"
+    window.cloud_controller.worker_factory = lambda: transport
 
     with qtbot.waitSignal(window.cloud_controller.files_ready, timeout=SIGNAL_TIMEOUT_MS):
         window.cloud_controller.start_connect()

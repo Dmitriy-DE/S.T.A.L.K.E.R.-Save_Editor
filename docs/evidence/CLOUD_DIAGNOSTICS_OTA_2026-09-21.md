@@ -1,5 +1,9 @@
 # Cloud diagnostics and OTA correction — 2026-09-21
 
+> Снимок диагностики до SC-2. Исторический список источников включает helper;
+> текущая реализация использует native worker и Steam CEF web/CDP
+> ([SC-2 PR #194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194)).
+
 ## Confirmed source causes
 
 - `remotecache.vdf` can list a real remote Steam object while its local

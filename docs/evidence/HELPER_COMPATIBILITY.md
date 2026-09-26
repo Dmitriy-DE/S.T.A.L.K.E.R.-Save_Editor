@@ -1,5 +1,8 @@
 # SteamCloudFileManager helper compatibility — P02
 
+> Историческое evidence: helper transport удалён в [SC-2 PR #194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194). Ниже описан
+> прежний offline/live probe, а не текущий путь Steam Cloud.
+
 ## Local runtime check — 2026-09-18
 
 The project adapter was exercised with the extracted Linux `v1.3.5` helper and

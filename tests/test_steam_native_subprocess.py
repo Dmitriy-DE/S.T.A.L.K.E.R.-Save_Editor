@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -62,7 +63,7 @@ def test_native_list_timeout_becomes_a_bounded_cloud_error(
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
-    worker = worker_type(helper_path=None, timeout=7.5)
+    worker = worker_type(timeout=7.5)
     worker.start()
     worker.app_id = APP_ID
 
@@ -95,7 +96,7 @@ def test_native_list_decodes_child_file_records(monkeypatch: pytest.MonkeyPatch)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
-    worker = worker_type(helper_path=None)
+    worker = worker_type()
     worker.start()
     worker.app_id = APP_ID
 
@@ -147,7 +148,7 @@ def test_native_list_uses_selected_release_filter_and_reports_backend(
     assert "41700" in worker.status_hint
 
 
-def test_initial_native_list_timeout_selects_helper_once(
+def test_native_list_timeout_uses_steam_web_fallback_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = 0
@@ -166,39 +167,38 @@ def test_initial_native_list_timeout_selects_helper_once(
         process.communicate = timeout_communicate
         return process
 
-    class FakeHelper:
-        def __init__(self, path, *, log=None):
-            self.path = path
-            self.started = False
-            self.connected = None
+    class FakeCdp:
+        instances: ClassVar[list[FakeCdp]] = []
+
+        def __init__(self):
             self.list_calls = 0
+            self.closed = False
+            self.instances.append(self)
 
         def start(self):
-            self.started = True
+            return None
 
         def connect(self, app_id):
-            self.connected = app_id
+            assert app_id == APP_ID
 
         def list_files(self):
             self.list_calls += 1
-            return [CloudFile("slot.sav", 4, 1, True, True)]
+            return [CloudFile("slot.sav", 4, 1, True, True, source="web")]
+
+        def read_file(self, _filename):
+            return b"save"
 
         def close(self):
-            return None
-
-    helper_instances = []
-
-    def make_helper(path, *, log=None):
-        helper = FakeHelper(path, log=log)
-        helper_instances.append(helper)
-        return helper
+            self.closed = True
 
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
 
     worker = worker_type(
-        helper_path="/tmp/helper", helper_factory=make_helper, timeout=1.0
+        cdp_factory=FakeCdp,
+        cache_finder=lambda *_args, **_kwargs: (),
+        timeout=1.0,
     )
     worker.start()
     worker.app_id = APP_ID
@@ -206,10 +206,10 @@ def test_initial_native_list_timeout_selects_helper_once(
     assert [item.name for item in worker.list_files()] == ["slot.sav"]
     assert [item.name for item in worker.list_files()] == ["slot.sav"]
     assert calls == 1
-    assert len(helper_instances) == 1
-    assert helper_instances[0].started is True
-    assert helper_instances[0].connected == APP_ID
-    assert helper_instances[0].list_calls == 2
+    assert len(FakeCdp.instances) == 1
+    assert FakeCdp.instances[0].list_calls == 2
+    assert worker.read_file("slot.sav") == b"save"
+    assert worker.write_capability.writable is False
 
 
 def test_empty_native_list_uses_cdp_cloud_files_for_download(
@@ -376,7 +376,7 @@ def test_native_read_and_write_use_isolated_payload_files(
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
     worker_type = getattr(steam_native, "SteamNativeSubprocessWorker", None)
     assert worker_type is not None
-    worker = worker_type(helper_path=None)
+    worker = worker_type()
     worker.start()
     worker.app_id = 123
 
@@ -384,6 +384,17 @@ def test_native_read_and_write_use_isolated_payload_files(
     worker.write_file("slot.sav", b"edited")
 
     assert seen == [b"edited"]
+
+
+def test_sync_is_a_noop_after_native_operation(monkeypatch: pytest.MonkeyPatch) -> None:
+    worker = steam_native.SteamNativeSubprocessWorker()
+
+    def fail_native(*_args, **_kwargs):
+        raise AssertionError("sync must not start another native operation")
+
+    monkeypatch.setattr(worker, "_run_native", fail_native)
+
+    worker.sync()
 
 
 def test_close_kills_an_active_native_child(monkeypatch: pytest.MonkeyPatch) -> None:

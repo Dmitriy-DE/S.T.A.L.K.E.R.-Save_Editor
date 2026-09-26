@@ -59,7 +59,7 @@ class CloudWriteNotAttemptedError(RuntimeError):
 closed when a third-party transport does not advertise one.  Production
 transports expose these states:
 
-- Steam helper/native backend after successful native listing: writable;
+- Native RemoteStorage backend after a successful native listing: writable;
 - Steam web/CDP fallback: read-only with a web-specific reason;
 - local Steam cache fallback: read-only with a cache-specific reason.
 

@@ -2,19 +2,14 @@
 
 ``SteamNativeWorker`` is the small ctypes implementation executed by the
 short-lived child mode. The UI uses ``SteamNativeSubprocessWorker`` so a native
-call that stops responding can be killed without freezing the editor. This
-replaces the third-party ``SteamCloudFileManager`` helper as the primary cloud
-backend: no FUSE or helper process is needed when Valve's library is available;
-the helper remains a bounded fallback for an initial list failure. It still
-depends on Valve's proprietary ``libsteam_api`` — the only door into Steam
-Cloud — but that library ships with every Steamworks game and with the helper
-payload.
+call that stops responding can be killed without freezing the editor. The
+worker uses Valve's proprietary ``libsteam_api`` for Cloud writes and Steam's
+local CEF page as a read-only fallback when RemoteStorage does not list the
+account's files. S.T.A.L.K.E.R. 2 Auto-Cloud writes still use the guarded local
+game folder and Steam game-session flow.
 
-Both public workers mirror :class:`steam_cloud.SteamWorker` (``start``,
-``connect``, ``close``, ``list_files``, ``read_file``, ``write_file``,
-``sync``, ``wait_persisted``) so they are drop-ins for the Cloud tab's
-``worker_factory``. The child mode reports missing libraries, failed init, and
-timeouts as data; the parent can then show an error or select the helper.
+The child mode reports missing libraries, failed init, and timeouts as data;
+the parent can then show an error or use the read-only Steam web path.
 
 NOTE: the live download/upload round-trip cannot be verified without an
 installed game and a running Steam session; it is exercised only against a
@@ -41,7 +36,6 @@ from steam_cloud import (
     CloudFile,
     CloudFileFilter,
     SteamCloudError,
-    SteamWorker,
     _refuse_automated_live_session,
     default_cloud_file_filter,
 )
@@ -49,7 +43,6 @@ from steam_cloud import (
 from .cloud_capabilities import (
     CloudWriteCapability,
     CloudWriteNotAttemptedError,
-    cloud_write_capability,
 )
 from .platforms import locate_libsteam_api
 from .steam_autocloud import auto_cloud_local_path, auto_cloud_local_root
@@ -341,16 +334,14 @@ class SteamNativeSubprocessWorker:
     ``ctypes`` cannot interrupt a native call that stops responding.  The Qt
     worker therefore must never call :class:`SteamNativeWorker` directly.  Each
     native operation runs in a short-lived child process and is bounded by a
-    hard timeout.  A failed initial ``list`` can select the existing helper
-    fallback; failures after that selection are returned to the transaction and
-    are never retried through another backend.
+    hard timeout. A failed native operation may use Steam's read-only web/cache
+    path for discovery and download; Cloud writes remain on the native or
+    guarded Auto-Cloud route.
     """
 
     def __init__(
         self,
         *,
-        helper_path: str | Path | None = None,
-        helper_factory: Callable[..., Any] = SteamWorker,
         log: Callable[[str], None] | None = None,
         timeout: float = 15.0,
         cdp_factory: Callable[..., Any] = SteamCdpWorker,
@@ -369,15 +360,12 @@ class SteamNativeSubprocessWorker:
         self._auto_cloud_root: Path | None = None
         self._session: subprocess.Popen[str] | None = None
         self._last_write_sha256: str | None = None
-        self.helper_path = Path(helper_path).expanduser() if helper_path is not None else None
-        self.helper_factory = helper_factory
         self.log = log or (lambda _s: None)
         self.timeout = timeout
         self.cdp_factory = cdp_factory
         self.cache_finder = cache_finder
         self._file_filter: CloudFileFilter = file_filter or default_cloud_file_filter
         self.app_id: int | None = None
-        self._helper: SteamWorker | None = None
         self._cdp: Any | None = None
         self._cached_files: dict[str, CloudFile] = {}
         # ``GetFileCount`` enumerates only files currently synchronized to the
@@ -480,10 +468,7 @@ class SteamNativeSubprocessWorker:
         """Apply one release allow-list to every list/cache/web backend."""
 
         self._file_filter = file_filter or default_cloud_file_filter
-        for backend in (self._helper, self._cdp):
-            setter = getattr(backend, "set_file_filter", None)
-            if callable(setter):
-                setter(self._file_filter)
+        self._configure_backend(self._cdp)
 
     def _configure_backend(self, backend: Any) -> None:
         setter = getattr(backend, "set_file_filter", None)
@@ -717,10 +702,6 @@ class SteamNativeSubprocessWorker:
                 True,
                 "запись через папку игры: Steam выгрузит файл при выходе из игры",
             )
-        if self._helper is not None:
-            capability = cloud_write_capability(self._helper)
-            if capability.writable:
-                return capability
         if self._native_writer_ready:
             if self._cdp is not None:
                 reason = (
@@ -745,8 +726,6 @@ class SteamNativeSubprocessWorker:
                 False,
                 "Steam cache fallback доступен только для чтения",
             )
-        if self._helper is not None:
-            return cloud_write_capability(self._helper)
         return CloudWriteCapability(True, "Steam RemoteStorage writer готов")
 
     def _web_or_cache_files(self) -> list[CloudFile] | None:
@@ -829,22 +808,6 @@ class SteamNativeSubprocessWorker:
             if fallback is None:
                 self._status_hint = "список сохранений этой игры доступен только через Steam Cloud web"
             return [] if fallback is None else fallback
-        if self._helper is not None:
-            self._configure_backend(self._helper)
-            files = self._helper.list_files()
-            if files:
-                self._status_hint = (
-                    "список через SteamCloudFileManager helper "
-                    f"(app_id={self.app_id or APP_ID})"
-                )
-                return files
-            fallback = self._web_or_cache_files()
-            if fallback is None:
-                self._status_hint = (
-                    "SteamCloudFileManager helper ответил пустым списком "
-                    f"(app_id={self.app_id or APP_ID}); web/cache не дали подходящих файлов"
-                )
-            return [] if fallback is None else fallback
         native_error: SteamCloudError | None = None
         try:
             files = self._native_list()
@@ -861,35 +824,7 @@ class SteamNativeSubprocessWorker:
             )
         except SteamCloudError as error:
             native_error = error
-            if self.helper_path is not None:
-                helper = self.helper_factory(self.helper_path, log=self.log)
-                try:
-                    self._configure_backend(helper)
-                    helper.start()
-                    helper.connect(self.app_id or APP_ID)
-                    files = helper.list_files()
-                except Exception as helper_error:
-                    try:
-                        helper.close()
-                    except Exception:
-                        pass
-                    self.log(
-                        f"Нативный Steam Cloud недоступен ({error}); helper тоже не ответил: "
-                        f"{helper_error}"
-                    )
-                else:
-                    self._helper = helper
-                    if files:
-                        self._status_hint = (
-                            "список через SteamCloudFileManager helper "
-                            f"(app_id={self.app_id or APP_ID})"
-                        )
-                        self.log(
-                            f"Steam Cloud: native child недоступен ({error}); использую helper"
-                        )
-                        return files
-            else:
-                self.log(f"Нативный Steam Cloud недоступен: {error}")
+            self.log(f"Нативный Steam Cloud недоступен: {error}")
 
         fallback = self._web_or_cache_files()
         if fallback is not None:
@@ -943,16 +878,10 @@ class SteamNativeSubprocessWorker:
                     raise SteamCloudError(f"{cache_error}; {web_error}") from web_error
         if source in {"steam_cache_metadata", "web"}:
             return self._read_from_web(cloud_file)
-        if source == "helper_remote_storage":
-            if self._helper is None:
-                raise SteamCloudError("Steam helper backend для выбранного файла недоступен")
-            return self._helper.read_file(cloud_file.name)
         if source == "native_remote_storage":
             response, data = self._run_native("read", name=cloud_file.name, read_output=True)
         elif self._cdp is not None:
             return self._cdp.read_file(cloud_file.name)
-        elif self._helper is not None:
-            return self._helper.read_file(cloud_file.name)
         else:
             response, data = self._run_native("read", name=cloud_file.name, read_output=True)
         if response.get("type") != "Ok" or data is None:
@@ -977,9 +906,7 @@ class SteamNativeSubprocessWorker:
                 timestamp=0,
                 is_persisted=False,
                 exists=True,
-                source=("web" if self._cdp is not None else
-                        "helper_remote_storage" if self._helper is not None else
-                        "native_remote_storage"),
+                source=("web" if self._cdp is not None else "native_remote_storage"),
             )
         )
 
@@ -1001,8 +928,6 @@ class SteamNativeSubprocessWorker:
 
         if self._auto_cloud_root is not None:
             return self._fresh_web_read(filename)
-        if self._helper is not None:
-            return self._helper.read_file(filename)
         if self._native_writer_ready:
             response, data = self._run_native("read", name=filename, read_output=True)
             return self._native_read_result(response, data)
@@ -1015,9 +940,6 @@ class SteamNativeSubprocessWorker:
         _refuse_automated_live_session(self.app_id or 0, "WriteFile")
         if self._auto_cloud_root is not None:
             self._write_auto_cloud(filename, bytes(data))
-            return
-        if self._helper is not None:
-            self._helper.write_file(filename, data)
             return
         response, _ = self._run_native("write", name=filename, payload=bytes(data))
         if response.get("type") != "Ok":
@@ -1059,9 +981,8 @@ class SteamNativeSubprocessWorker:
         return bytes(self._cdp.read_file(filename))
 
     def sync(self) -> None:
-        if self._helper is not None:
-            self._helper.sync()
         # The child pumps callbacks after FileWrite and shuts down immediately.
+        return None
 
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
         if self._auto_cloud_root is not None:
@@ -1078,8 +999,6 @@ class SteamNativeSubprocessWorker:
                     self.log(f"Steam Cloud web: файл ещё не обновился: {exc}")
                 time.sleep(min(5.0, max(0.0, deadline - time.monotonic())))
             return False
-        if self._helper is not None:
-            return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
         if not self._native_writer_ready:
             if self._cdp is not None:
                 return self._cdp.wait_persisted(filename, expected_size, timeout=timeout)
@@ -1133,11 +1052,6 @@ class SteamNativeSubprocessWorker:
             process = self._active_process
         if process is not None:
             self._kill_process(process)
-        if self._helper is not None:
-            try:
-                self._helper.close()
-            finally:
-                self._helper = None
         if self._cdp is not None:
             try:
                 self._cdp.close()

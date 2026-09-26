@@ -1,6 +1,10 @@
 # SteamCloudFileManager worker protocol — S06
 
-## Current local smoke — 2026-09-18
+> Историческое evidence: этот протокол относился к удалённому SC-2 внешнему
+> transport. Текущий desktop-код его не запускает и не упаковывает; см.
+> [SC-2 PR #194](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/pull/194).
+
+## Historical local smoke — 2026-09-18
 
 The extracted Linux helper answered `Ping` with `Pong` and accepted
 `Connect { app_id: 1643320 }`. `GetFiles` returned an empty list. No

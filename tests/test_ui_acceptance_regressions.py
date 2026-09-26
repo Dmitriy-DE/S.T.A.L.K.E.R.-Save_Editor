@@ -538,7 +538,7 @@ def _cloud_receipt(tmp_path: Path, *, status: str, sha: str, reason: str | None 
 
 def test_verified_cloud_result_requires_remote_reconciliation(qtbot, tmp_path: Path, synthetic_save: bytes) -> None:
     info = inspect_save(synthetic_save, with_inventory=True)
-    controller = CloudController(EditorService(), helper_finder=lambda: None)
+    controller = CloudController(EditorService())
     prepared = PreparedEdit(
         plan=EditPlan(source=SourceRef("cloud", "slot.sav", info.sha256)),
         data=synthetic_save,

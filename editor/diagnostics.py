@@ -24,7 +24,7 @@ from urllib.parse import urlsplit
 
 from . import codec
 from .i18n import tr
-from .platforms import InstalledGame, discover_helper, user_data_dir
+from .platforms import InstalledGame, locate_libsteam_api, user_data_dir
 from .platforms import installed_releases as _installed_releases
 from .platforms import save_directories as _platform_save_directories
 from .releases import ReleaseDescriptor, official_releases
@@ -488,23 +488,7 @@ def check_installation_type() -> Check:
 
 
 def _find_steam_api_library() -> Path | None:
-    library_names: tuple[str, ...]
-    if os.name == "nt":
-        library_names = ("steam_api64.dll", "steam_api.dll")
-    else:
-        library_names = ("libsteam_api.so",)
-    helper = discover_helper()
-    roots: list[Path] = []
-    if helper is not None and helper.suffix.casefold() != ".appimage":
-        roots.append(helper.parent)
-    roots.extend(game.install_dir for game in _installed_releases())
-    for root in roots:
-        for directory in (root, root / "bin", root / "Binaries", root / "_CommonRedist"):
-            for filename in library_names:
-                candidate = directory / filename
-                if candidate.is_file():
-                    return candidate
-    return None
+    return locate_libsteam_api()
 
 
 def check_steam_api_library() -> Check:
@@ -512,7 +496,7 @@ def check_steam_api_library() -> Check:
     try:
         library = _find_steam_api_library()
         if library is None:
-            return _result("Steam", name, "warn", tr("Библиотека не найдена"), tr("Установите игру из Steam или её native helper."))
+            return _result("Steam", name, "warn", tr("Библиотека не найдена"), tr("Установите игру из Steam, чтобы использовать native Steam Cloud."))
         loader = getattr(ctypes, "WinDLL", ctypes.CDLL) if os.name == "nt" else ctypes.CDLL
         loader(str(library))
     except Exception as exc:

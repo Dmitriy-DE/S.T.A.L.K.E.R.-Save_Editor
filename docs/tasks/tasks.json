@@ -121,7 +121,7 @@
   },
   {
     "id": "S05",
-    "title": "Steam worker: restart, timeout и единственный reader",
+    "title": "Steam worker: restart, timeout и единственный reader (исторический; внешний transport удалён в SC-2)",
     "depends_on": [
       "S01"
     ],
@@ -130,7 +130,7 @@
       "tests/fake_worker.py",
       "tests/test_worker_lifecycle.py"
     ],
-    "contract": "Сохранить публичные SteamWorker start/connect/request/read_file/write_file/close. После timeout текущий процесс считается непригодным; следующий явный connect создаёт новую сессию.",
+    "contract": "Исторический S05 helper contract: публичные SteamWorker start/connect/request/read_file/write_file/close и внешний JSON transport удалены в SC-2.",
     "steps": [
       "Создать fake helper с тем же line-delimited JSON; режимы crash, delayed reply, malformed JSON, stderr flood, chunked response.",
       "Regression: request на умершем процессе не deadlock. Regression: delayed ответ после timeout не становится ответом следующего запроса.",
@@ -215,7 +215,7 @@
   },
   {
     "id": "P02",
-    "title": "Пути данных, launcher и helper на обеих ОС",
+    "title": "Пути данных, launcher и helper на обеих ОС (исторический контракт; helper удалён в SC-2)",
     "depends_on": [
       "P01",
       "S05"
@@ -230,7 +230,7 @@
       "tests/test_platforms.py",
       "docs/evidence/HELPER_COMPATIBILITY.md"
     ],
-    "contract": "user_data_dir() -> Path; discover_helper() -> Path|None. Linux XDG_DATA_HOME/APPDATA on Windows; legacy ~/Stalker2SaveEditor читается без удаления/автомиграции backups.",
+    "contract": "Исторический снимок P02: user_data_dir() -> Path; discover_helper() -> Path|None. discover_helper и внешний Steam worker transport удалены в SC-2. Linux XDG_DATA_HOME/APPDATA on Windows; legacy ~/Stalker2SaveEditor читается без удаления/автомиграции backups.",
     "steps": [
       "Tests unicode/spaces, missing env, helper отсутствует, non-executable Linux helper, Windows exe + dependent DLLs.",
       "Ввести platform paths и Windows launcher; исключить chmod для .exe. Выбор helper явный, запуск списком args без shell.",

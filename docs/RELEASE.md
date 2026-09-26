@@ -614,6 +614,9 @@ issue #9 оставлена открытой до появления насто�
 
 ## Матрица приёмки B02
 
+> Исторический снимок до SC-2. Строки Steam helper ниже заменены native
+> worker + Steam web/CDP; этот старый release gate не является текущим.
+
 | Проверка | Linux | Windows | Условие |
 |---|---|---|---|
 | Unit + fake-worker tests | обязательно | обязательно | exit 0, без network writes |
@@ -621,7 +624,7 @@ issue #9 оставлена открытой до появления насто�
 | Local analyze/edit/export/restore | обязательно | обязательно | backup и before/after hashes |
 | CRC/round-trip отказ на повреждённом файле | обязательно | обязательно | output не появляется |
 | UI 1366×768, 150/200% DPI, keyboard | обязательно | обязательно | нет недоступных кнопок |
-| Steam helper connect/list/download | обязательно для cloud claim | обязательно для cloud claim | pinned helper |
+| Native worker + Steam web/CDP list/download | обязательно для cloud claim | обязательно для cloud claim | replaced the old external-helper gate in SC-2 |
 | Live upload/persist/read-back/GFN load/re-save | только по поручению владельца | только по поручению владельца | disposable slot, game build записан |
 
 ## Снимок B02 на 2026-09-13
@@ -630,7 +633,7 @@ issue #9 оставлена открытой до появления насто�
 merge `3346167`. Linux bundle smoke на локальном x86_64 host PASS; точные
 hashes и NOT_RUN строки находятся в
 [`docs/evidence/BETA_ACCEPTANCE.md`](evidence/BETA_ACCEPTANCE.md). Windows
-build, target runner, native DPI/keyboard, Steam helper и game/GFN reload пока
+build, target runner, native DPI/keyboard, Cloud runtime and game/GFN reload тогда
 не доказаны, поэтому GitHub prerelease не создаётся.
 
 При отсутствии live cloud evidence можно выпустить обозначенную local-only experimental beta с отключённым или явно непроверенным cloud path; нельзя маркировать cloud verified. При отсутствии Windows evidence не объявлять cross-platform beta завершённой.
