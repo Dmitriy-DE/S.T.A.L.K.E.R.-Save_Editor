@@ -34,7 +34,13 @@ from PySide6.QtWidgets import (
 from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.compare import compare_saves
-from editor.diagnostics import LOG_FILENAME, collect_log_bundle, log_directory, pending_crash_report
+from editor.diagnostics import (
+    LOG_FILENAME,
+    collect_log_bundle,
+    log_directory,
+    pending_crash_report,
+    record_output_device,
+)
 from editor.equipment import EquipmentItem
 from editor.equipment_edits import RepairStageResult, stage_bulk_repair
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
@@ -56,7 +62,7 @@ from .character_view import CharacterView
 from .cloud_controller import CloudController, CloudSnapshot
 from .cloud_library_view import CloudLibraryView
 from .compare_dialog import CompareDialog
-from .diagnostics_dialog import DiagnosticsDialog
+from .diagnostics_dialog import DiagnosticsDialog, EnvironmentDoctorDialog
 from .editor_view import EditorView
 from .effects import Effects
 from .formatting import count_ru, human_money, human_size, source_display_name
@@ -217,6 +223,7 @@ class MainWindow(QMainWindow):
         self._cloud_busy = False
         self._support_dialog: SupportDialog | None = None
         self._diagnostics_dialog: DiagnosticsDialog | None = None
+        self._environment_doctor_dialog: EnvironmentDoctorDialog | None = None
         self._error_dialog: QMessageBox | None = None
         self._details_dialog: TechnicalDetailsDialog | None = None
         self._update_client = update_client
@@ -316,6 +323,9 @@ class MainWindow(QMainWindow):
         )
         self.settings_reference_view.journal_requested.connect(self._open_diagnostics_log)
         self.settings_reference_view.report_requested.connect(lambda: self._show_diagnostics_dialog())
+        self.settings_reference_view.environment_check_requested.connect(
+            self._show_environment_doctor
+        )
         self.settings_reference_view.copy_diagnostics_requested.connect(
             self._copy_diagnostics_to_clipboard
         )
@@ -823,10 +833,41 @@ class MainWindow(QMainWindow):
             self._diagnostics_dialog.raise_()
             self._diagnostics_dialog.activateWindow()
             return
+        self._refresh_diagnostics_output_device()
         dialog = DiagnosticsDialog(self, after_crash=after_crash)
         self._diagnostics_dialog = dialog
         dialog.finished.connect(lambda _result: self._clear_diagnostics_dialog(dialog))
         dialog.open()
+
+    @staticmethod
+    def _refresh_diagnostics_output_device() -> None:
+        try:
+            from PySide6.QtMultimedia import QMediaDevices
+
+            output = QMediaDevices.defaultAudioOutput()
+            record_output_device(None if output.isNull() else output.description())
+        except Exception:
+            record_output_device(None)
+
+    def _show_environment_doctor(self) -> None:
+        if (
+            self._environment_doctor_dialog is not None
+            and self._environment_doctor_dialog.isVisible()
+        ):
+            self._environment_doctor_dialog.raise_()
+            self._environment_doctor_dialog.activateWindow()
+            return
+        self._refresh_diagnostics_output_device()
+        dialog = EnvironmentDoctorDialog(self)
+        self._environment_doctor_dialog = dialog
+        dialog.finished.connect(
+            lambda _result: self._clear_environment_doctor_dialog(dialog)
+        )
+        dialog.open()
+
+    def _clear_environment_doctor_dialog(self, dialog: EnvironmentDoctorDialog) -> None:
+        if self._environment_doctor_dialog is dialog:
+            self._environment_doctor_dialog = None
 
     def _open_settings_backup_folder(self) -> None:
         folder = next((path for path in backup_dirs() if path.is_dir()), None)

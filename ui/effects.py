@@ -23,6 +23,7 @@ from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QAbstractButton, QApplication, QGraphicsOpacityEffect, QWidget
 
+from editor.diagnostics import record_media_error
 from editor.platforms import user_data_dir
 from editor.preferences import Preferences, load_preferences, save_preferences
 
@@ -330,9 +331,16 @@ class Effects(QObject):
             self._music = QMediaPlayer(self)
             self._music.setAudioOutput(self._music_output)
             self._music.setLoops(QMediaPlayer.Loops.Infinite)
+            self._music.errorOccurred.connect(self._capture_media_error)
         self._music_output.setVolume(self._music_volume())
         self._music.setSource(QUrl.fromLocalFile(str(source)))
         self._music.play()
+
+    def _capture_media_error(self, _error: object, message: str | None = None) -> None:
+        detail = message
+        if not detail and self._music is not None:
+            detail = self._music.errorString()
+        record_media_error(detail)
 
     # --- sound --------------------------------------------------------
     def _volume(self) -> float:

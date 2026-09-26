@@ -261,12 +261,14 @@ def test_submit_logs_returns_report_id_without_deleting_local_logs(
     report_id = diagnostics.submit_logs(
         endpoint="https://save-editor-downloads.save-editor.workers.dev/diagnostics",
         log_dir=tmp_path,
+        environment_report="Environment: OK",
     )
 
     assert report_id == "20260921-abc"
     assert seen["timeout"] == diagnostics.DEFAULT_TIMEOUT
     assert seen["request"].get_header("Content-type") == "application/gzip"
     assert b"cloud operation failed\n" in gzip.decompress(seen["request"].data)
+    assert b"Environment: OK" in gzip.decompress(seen["request"].data)
     assert log_path.is_file()
 
 
