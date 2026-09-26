@@ -4,6 +4,7 @@
 `docs/tasks/INDEX.md` (очередь эпохи 0.3–0.5; уедут в архив задачей CL-3).
 
 - **[STATE.md](STATE.md) — текущий снимок: где что, баги, открытые PR, что доказано. Читать первым.**
+- **[LESSONS.md](LESSONS.md) — где ошибались и какие правила из этого следуют.**
 - [DECISIONS.md](DECISIONS.md) — разбор каждой идеи владельца, вердикт и решения, которые ждут владельца.
 - Карточки задач по эпикам: [ST](ST-stabilization.md) · [KB](KB-s2-knowledge.md) · [ED](ED-editing.md) ·
   [CP](CP-content-packs.md) · [RL](RL-reliability.md) · [EE](EE-enhanced.md) · [MAC](MAC-macos.md) ·
