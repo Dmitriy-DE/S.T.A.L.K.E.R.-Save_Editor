@@ -72,7 +72,7 @@ read-only instead of being guessed.
 <!-- BEGIN CAPABILITIES -->
 | Release | edit_money | edit_stacks | move_items | add_items | remove_items | edit_durability | edit_upgrades | edit_relations | edit_player_faction | edit_placement | equipment_durability | equipment_upgrades | equipment_placement | equipment_add | equipment_remove |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| S.T.A.L.K.E.R. 2: Heart of Chornobyl | experimental | research | unsupported | unsupported | unsupported | experimental | unsupported | unsupported | unsupported | unsupported | experimental | research | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R. 2: Heart of Chornobyl | experimental | experimental | unsupported | unsupported | unsupported | experimental | unsupported | unsupported | unsupported | unsupported | experimental | research | unsupported | unsupported | unsupported |
 | S.T.A.L.K.E.R.: Shadow of Chernobyl | verified | verified | unsupported | verified | verified | experimental | unsupported | experimental | experimental | experimental | experimental | unsupported | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Clear Sky | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Call of Pripyat | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
