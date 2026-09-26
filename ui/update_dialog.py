@@ -187,12 +187,14 @@ class UpdateDialog(QDialog):
         )
         self.status_label.setText(tr("Файл обновления проверен; установка ещё не запускалась."))
         self._set_technical_details(tr("Проверенный файл: {0}", Path(path)))
-        self.restart_button.setText(
-            tr("Открыть установщик")
-            if self.check_result.artifact
-            and self.check_result.artifact.kind in {"package", "installer"}
-            else tr("Перезапустить и применить")
-        )
+        artifact_kind = self.check_result.artifact.kind if self.check_result.artifact else ""
+        if artifact_kind == "disk-image":
+            button_text = tr("Открыть образ")
+        elif artifact_kind in {"package", "installer"}:
+            button_text = tr("Открыть установщик")
+        else:
+            button_text = tr("Перезапустить и применить")
+        self.restart_button.setText(button_text)
         self.restart_button.setEnabled(True)
 
     def _on_download_failed(self, message: str) -> None:
@@ -206,22 +208,34 @@ class UpdateDialog(QDialog):
         artifact = self.check_result.artifact
         if archive is None or artifact is None:
             return
-        if artifact.kind in {"package", "installer"}:
+        if artifact.kind in {"package", "installer", "disk-image"}:
             LOGGER.info("update installer handoff start kind=%s file=%s", artifact.kind, artifact.file)
             try:
                 launch_installer(archive, self.installation, kind=artifact.kind)
             except (OSError, ValueError, ManifestError) as exc:
                 LOGGER.exception("update installer handoff rejected kind=%s", artifact.kind)
-                self.status_label.setText(tr("Не удалось запустить установку."))
+                message = (
+                    tr("Не удалось открыть образ обновления.")
+                    if artifact.kind == "disk-image"
+                    else tr("Не удалось запустить установку.")
+                )
+                self.status_label.setText(message)
                 self._set_technical_details(str(exc))
             else:
                 LOGGER.info("update installer handoff opened kind=%s", artifact.kind)
-                self.status_label.setText(
-                    tr("Установщик запущен; подтверди обновление в системе. Приложение закрывается.")
-                )
-                application = QApplication.instance()
-                if application is not None:
-                    application.quit()
+                if artifact.kind == "disk-image":
+                    self.status_label.setText(
+                        tr(
+                            "Образ открыт. Закрой Save Editor, перетащи приложение из образа в папку «Программы» и подтверди замену. Затем запусти редактор снова. Установленная версия не подтверждена."
+                        )
+                    )
+                else:
+                    self.status_label.setText(
+                        tr("Установщик запущен; подтверди обновление в системе. Приложение закрывается.")
+                    )
+                    application = QApplication.instance()
+                    if application is not None:
+                        application.quit()
             return
         updater_name = "SaveEditor-updater.exe" if platform.system().casefold() == "windows" else "SaveEditor-updater"
         updater = self.installation.root / updater_name

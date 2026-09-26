@@ -30,6 +30,7 @@ _ARTIFACT_METADATA = {
     ),
     "linux-x86_64": ("portable", "x86_64", "SaveEditor-linux-x86_64.tar.gz"),
     "linux-deb-amd64": ("package", "x86_64", "stalker2-save-editor_amd64.deb"),
+    "macos-arm64": ("disk-image", "arm64", "SaveEditor-macos-arm64.dmg"),
 }
 
 
