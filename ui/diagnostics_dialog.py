@@ -103,6 +103,7 @@ class DiagnosticsDialog(QDialog):
         self.export_button.clicked.connect(self._export)
         layout.addWidget(self.export_button)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText(tr("Закрыть"))
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
