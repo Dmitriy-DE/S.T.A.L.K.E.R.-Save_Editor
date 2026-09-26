@@ -6,7 +6,7 @@
 - [DECISIONS.md](DECISIONS.md) — разбор каждой идеи владельца, вердикт и решения, которые ждут владельца.
 - Карточки задач по эпикам: [ST](ST-stabilization.md) · [KB](KB-s2-knowledge.md) · [ED](ED-editing.md) ·
   [CP](CP-content-packs.md) · [RL](RL-reliability.md) · [EE](EE-enhanced.md) · [MAC](MAC-macos.md) ·
-  [MOD](MOD-ingame-workshop.md) · [TP](TP-relocation.md) · [CS](CS-csharp.md) · [CL](CL-cleanup.md) · [RS](RS-research.md)
+  [MOD](MOD-ingame-workshop.md) · [TP](TP-relocation.md) · [CS](CS-csharp.md) · [CL](CL-cleanup.md) · [RS](RS-research.md) · [SC](SC-steam.md)
 
 Как пользоваться: статус меняет тот, кто берёт задачу, прямо в таблице ниже.
 Одна карточка — одна ветка — один PR. Карточка написана так, чтобы её можно
@@ -184,6 +184,9 @@ Write-возможность получает `experimental` только с L5-
 | CL-3 | Документация: STATUS, архив, ссылки | Claude + Codex | M | ST-9 | — | 2 | todo |
 | CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | review |
 | CL-5 | Профилирование и оптимизация | Claude | M | RL-5 | L3 | 2 | todo |
+| SC-1 | Честный статус записи в облако (сервер не подтвердил → не «persisted») | Claude | S | — | L4 | 2 | todo |
+| SC-2 | Убрать запасной SteamCloudFileManager helper | Codex | S | SC-1 | L2 | 2 | todo |
+| SC-3 | Достижения Steam: просмотр, разблокировка, сброс | Claude → Codex | M | — | L4 | 3 | todo |
 | RS-1 | Что ещё можно вытащить из сейвов (по играм) | Claude (+Gemini черновик) | M | — | — | 2 | todo |
 | RS-2 | Официальные гайды и SDK по моддингу всех игр | Gemini → Claude | S | — | — | 1 | done (#150, Gemini) |
 
