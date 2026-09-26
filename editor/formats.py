@@ -320,6 +320,15 @@ class _Stalker2Format:
         return prepare_edit(data, plan)
 
 
+def _installed_games_of(release_id: str) -> tuple[Path, ...]:
+    try:
+        from .platforms import installed_releases
+
+        return tuple(Path(game.install_dir) for game in installed_releases() if game.release_id == release_id)
+    except Exception:
+        return ()
+
+
 class _XRayFormat:
     """Adapter exposing one original-game X-Ray family to the shared registry."""
 
@@ -356,9 +365,11 @@ class _XRayFormat:
                 }
                 if not read_only
                 else {
-                    # Enhanced Editions are readable; nothing is written
-                    # before the game accepts it (EE-4).
-                    name: CapabilitySupport("research", "EE: запись не проверена в игре")
+                    # EE-4: money written by the editor loaded in Clear Sky EE
+                    # and Call of Pripyat EE (owner, 2026-09-26).  The object
+                    # serializer is the original one, so stacks, adding and
+                    # removing use the same writer and open as experimental.
+                    name: CapabilitySupport("experimental")
                     for name in ("edit_money", "edit_stacks", "add_items", "remove_items")
                 },
             ),
@@ -438,10 +449,18 @@ class _XRayFormat:
         start = source.parent if source.is_file() else source
         provider = XRayCatalogProvider()
         release = release_by_id(self.release_id)
+        editions = frozenset({release.edition})
         for root in (start, *start.parents):
-            catalog = provider.load(release, root)
+            catalog = provider.load(release, root, allowed_editions=editions)
             if catalog is not None:
                 return catalog
+        if release.edition == "enhanced":
+            # EE saves live in the Proton prefix, not under the install; the
+            # installed EE of the same release supplies its official catalog.
+            for game in _installed_games_of(release.id):
+                catalog = provider.load(release, game, allowed_editions=editions)
+                if catalog is not None:
+                    return catalog
         # The repository ships a compact snapshot generated from official
         # resources.  It is a metadata-only fallback for releases whose
         # installation has no unpacked/verified catalog (notably the local

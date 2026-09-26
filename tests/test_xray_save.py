@@ -432,7 +432,7 @@ def test_xray_edits_reject_structural_operations_and_oversized_ammo() -> None:
         ("stalker-cop-ee", 128, 6, 54, "ammo_zaton_test"),
     ],
 )
-def test_enhanced_edition_saves_are_detected_by_content_and_stay_read_only(
+def test_enhanced_edition_saves_are_detected_by_content_and_edit_as_experimental(
     release_id: str, actor: int, outer: int, alife: int, section: str
 ) -> None:
     from editor.formats import by_id, detect
@@ -441,8 +441,10 @@ def test_enhanced_edition_saves_are_detected_by_content_and_stay_read_only(
     fmt = detect(data)
     assert fmt is not None and fmt.id == release_id
     assert fmt.inspect(data).money == 1234
-    assert fmt.capabilities.edit_money is False
-    assert fmt.capabilities.edit_stacks is False
+    # EE-4: money checked in CS EE and CoP EE; same serializer for the rest.
+    assert fmt.capabilities.edit_money is True
+    assert fmt.capabilities.is_experimental("edit_money")
+    assert fmt.capabilities.edit_stacks is True
     # An original with the same outer version is never taken for the EE.
     original = {"stalker-soc-ee": "stalker-soc", "stalker-cs-ee": "stalker-cop", "stalker-cop-ee": "stalker-cop"}[release_id]
     assert not by_id(release_id).detect(_fixture(actor, outer, section=section))
