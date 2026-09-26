@@ -23,7 +23,7 @@ from editor.formats import detect_or_raise
 from editor.i18n import tr
 from editor.item_names import item_label
 from editor.models import EditPlan, SourceRef
-from editor.xray_save import XRAY_FORMATS, catalog_from_save_inventory
+from editor.xray_save import XRAY_EE_FORMATS, XRAY_FORMATS, catalog_from_save_inventory
 from editor.xray_slots import placement_label, placement_targets
 
 
@@ -224,7 +224,7 @@ def analyze(data: bytes, name: str) -> str:
     spec = getattr(format_, "spec", None)
     if (
         catalog is None
-        and format_.id in {candidate.id for candidate in XRAY_FORMATS}
+        and format_.id in {candidate.id for candidate in (*XRAY_FORMATS, *XRAY_EE_FORMATS)}
         and spec is not None
     ):
         # Keep the fallback for Python bridge tests and diagnostics, but the
