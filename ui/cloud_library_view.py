@@ -108,6 +108,10 @@ class CloudLibraryView(QWidget):
         self.web_button = action_button("STEAM WEB", controls)
         self.web_button.clicked.connect(self.backend.start_steam_web)
         controls_layout.addWidget(self.web_button)
+        self.achievements_button = action_button(tr("ДОСТИЖЕНИЯ"), controls)
+        self.achievements_button.setObjectName("cloudAchievementsButton")
+        self.achievements_button.clicked.connect(self._open_achievements)
+        controls_layout.addWidget(self.achievements_button)
         root.addWidget(controls)
 
         body = QHBoxLayout()
@@ -280,6 +284,14 @@ class CloudLibraryView(QWidget):
         """Refresh the cloud listing; wired to the visible R hint."""
 
         self.backend.start_connect()
+
+    def _open_achievements(self) -> None:
+        from .achievements_dialog import AchievementsDialog
+
+        profile = self.backend.profile
+        dialog = AchievementsDialog(profile.app_id, profile.title, self)
+        dialog.setModal(False)
+        dialog.show()
 
     def _on_files_ready(self, files) -> None:
         files = tuple(files or ())

@@ -578,20 +578,21 @@ class SteamNativeSubprocessWorker:
         payload: bytes | None = None,
         read_output: bool = False,
         timeout: float | None = None,
+        extra: tuple[str, ...] = (),
     ) -> tuple[dict[str, Any], bytes | None]:
         if self._closed:
             raise SteamCloudError("Steam Cloud worker уже закрыт")
         command = self._command(op)
-        operation_timeout = (
-            self.timeout
-            if timeout is None
-            else min(self.timeout, max(0.001, timeout))
-        )
+        # Achievement stats arrive through callbacks and may take longer
+        # than a cloud call; everything else stays within the worker limit.
+        limit = max(self.timeout, 30.0) if op.startswith("achievement") else self.timeout
+        operation_timeout = limit if timeout is None else min(limit, max(0.001, timeout))
         output_path: Path | None = None
         with tempfile.TemporaryDirectory(prefix="stalker2-native-cloud-") as directory:
             root = Path(directory)
             if name is not None:
                 command.extend(("--name", name))
+            command.extend(extra)
             if payload is not None:
                 input_path = root / "input.bin"
                 input_path.write_bytes(payload)
@@ -646,6 +647,28 @@ class SteamNativeSubprocessWorker:
                 except OSError as exc:
                     raise SteamCloudError(f"Steam native child не создал read output: {exc}") from exc
             return response, data
+
+    # ---- achievements (SC-3) -------------------------------------------
+    def list_achievements(self) -> list[dict[str, Any]]:
+        response, _ = self._run_native("achievements")
+        items = response.get("items")
+        if response.get("type") != "Achievements" or not isinstance(items, list):
+            raise SteamCloudError(f"Steam native child вернул неожиданный ответ: {response}")
+        return [dict(item) for item in items if isinstance(item, dict)]
+
+    def set_achievement(self, api_name: str, achieved: bool) -> dict[str, Any]:
+        """Unlock or clear one achievement; only on an explicit user action."""
+
+        _refuse_automated_live_session(self.app_id or 0, "Achievement")
+        response, _ = self._run_native(
+            "achievement",
+            name=api_name,
+            extra=("--achieved", "1" if achieved else "0"),
+        )
+        item = response.get("item")
+        if response.get("type") != "Achievement" or not isinstance(item, dict):
+            raise SteamCloudError(f"Steam native child вернул неожиданный ответ: {response}")
+        return dict(item)
 
     def _native_list(self, *, timeout: float | None = None) -> list[CloudFile]:
         response, _ = self._run_native("list", timeout=timeout)
@@ -1173,11 +1196,12 @@ def run_cli_op(args: list[str]) -> int:
 
     import argparse
     parser = argparse.ArgumentParser(prog="SaveEditor --steam-native-op", add_help=False)
-    parser.add_argument("op", choices=("list", "read", "write", "session"))
+    parser.add_argument("op", choices=("list", "read", "write", "session", "achievements", "achievement"))
     parser.add_argument("--name")
     parser.add_argument("--out")
     parser.add_argument("--in", dest="in_path")
     parser.add_argument("--app-id", type=int, default=APP_ID)
+    parser.add_argument("--achieved", choices=("1", "0"))
     parsed = parser.parse_args(args)
 
     def emit(obj: dict[str, Any]) -> None:
@@ -1231,6 +1255,18 @@ def run_cli_op(args: list[str]) -> int:
             emit({"type": "Ok"})
         elif parsed.op == "session":
             _hold_game_session(worker, emit)
+        elif parsed.op == "achievements":
+            from .steam_achievements import user_stats
+
+            emit({"type": "Achievements", "items": [item.as_dict() for item in user_stats(worker).list()]})
+        elif parsed.op == "achievement":
+            if not parsed.name or parsed.achieved is None:
+                emit({"type": "Error", "message": "achievement требует --name и --achieved"})
+                return 0
+            from .steam_achievements import user_stats
+
+            item = user_stats(worker).set(parsed.name, parsed.achieved == "1")
+            emit({"type": "Achievement", "item": item.as_dict()})
     except SteamCloudError as exc:
         emit({"type": "Error", "message": str(exc)})
     except Exception as exc:
