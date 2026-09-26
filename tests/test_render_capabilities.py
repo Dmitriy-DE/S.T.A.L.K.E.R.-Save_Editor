@@ -49,7 +49,7 @@ def test_capability_tables_match_the_format_and_release_registries() -> None:
     expected_rows = {
         "S.T.A.L.K.E.R. 2: Heart of Chornobyl": (
             "experimental",
-            "research",
+            "experimental",
             "unsupported",
             "unsupported",
             "unsupported",

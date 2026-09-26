@@ -167,9 +167,9 @@ class _Stalker2Format:
             equipment=equipment_support_for_release(_S2_RELEASE.id),
             mutation_support={
                 "edit_money": CapabilitySupport("experimental"),
-                "edit_stacks": CapabilitySupport(
-                    "research", "S2 stack writer не подтверждён."
-                ),
+                # L5 on 2026-09-26: consumable and ammo counts written through
+                # Steam Auto-Cloud were accepted by the game (ED-3).
+                "edit_stacks": CapabilitySupport("experimental"),
                 "edit_durability": _S2_RELEASE.equipment.support("durability")
                 if _S2_RELEASE.equipment is not None
                 else CapabilitySupport("unsupported"),

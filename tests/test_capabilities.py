@@ -58,7 +58,7 @@ def test_registered_formats_expose_release_and_capability_metadata() -> None:
     assert s2.capabilities.is_experimental("edit_durability") is True
     assert s2.capabilities.add_items is False
     assert s2.capabilities.edit_upgrades is False
-    assert s2.capabilities.edit_stacks is False
+    assert s2.capabilities.edit_stacks is True
 
     assert cop.release_id == "stalker-cop"
     assert cop.edition == "original"
