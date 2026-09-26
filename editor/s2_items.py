@@ -105,9 +105,24 @@ def s2_description(sid: str | None, language: str | None = None) -> str | None:
     return texts.get(code) or texts.get("en")
 
 
+# Items without their own picture borrow one from the same family, so the
+# list shows a PDA or a blueprint instead of an empty placeholder.
+_FAMILY_ICONS = (
+    ("pda", "s2/KozimkovPDA.png"),
+    ("blueprint_", "s2/Blueprint_Gvintar_Upgrade_1.png"),
+)
+
+
 def s2_icon_name(sid: str | None) -> str | None:
     entry = s2_entry(sid)
-    return entry.get("icon") if entry else None
+    icon = entry.get("icon") if entry else None
+    if icon or not sid:
+        return icon
+    folded = str(sid).casefold()
+    for marker, family_icon in _FAMILY_ICONS:
+        if marker in folded:
+            return family_icon
+    return None
 
 
 def s2_variant_of(sid: str | None) -> str | None:
