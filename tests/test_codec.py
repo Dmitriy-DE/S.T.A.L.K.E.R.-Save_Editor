@@ -157,14 +157,33 @@ def test_load_decoder_rejects_unsupported_platform_and_architecture() -> None:
     assert calls == []
 
 
-def test_pyooz_provenance_records_linux_and_windows_wheels() -> None:
+def test_load_decoder_uses_universal2_wheel_for_macos_arm64() -> None:
+    decoder = _Decoder()
+    calls: list[str] = []
+
+    def importer(name: str):
+        calls.append(name)
+        return decoder
+
+    assert codec.load_decoder(importer=importer, system="Darwin", machine="arm64") is decoder
+    assert calls == ["ooz"]
+
+
+def test_pyooz_provenance_records_macos_linux_and_windows_wheels() -> None:
     path = Path(__file__).parents[1] / "third_party" / "pyooz" / "provenance.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     names = {entry["filename"] for entry in payload["files"]}
 
     assert "pyooz-0.0.8-cp38-abi3-win_amd64.whl" in names
+    assert "pyooz-0.0.8-cp38-abi3-macosx_10_9_universal2.whl" in names
     assert any("manylinux_2_17_x86_64" in name for name in names)
     assert all(re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]) for entry in payload["files"])
+    macos_wheel = next(
+        entry
+        for entry in payload["files"]
+        if entry["filename"].endswith("macosx_10_9_universal2.whl")
+    )
+    assert macos_wheel["sha256"] == "7fd7b26bf34a293e2414b6361c16c4dff80c3ba0494fb89e85024c5fd136af61"
 
 
 def test_registered_decoder_is_used_before_any_platform_check() -> None:
@@ -203,6 +222,6 @@ def test_explicit_platform_probes_ignore_the_registered_decoder() -> None:
         # A test asking about a specific target is asking about the wheel
         # lookup, not about whatever the embedder installed.
         with pytest.raises(codec.CodecError, match="не поддерживается"):
-            codec.load_decoder(system="Darwin", machine="arm64")
+            codec.load_decoder(system="Darwin", machine="x86_64")
     finally:
         codec.clear_registered_decoder()

@@ -15,6 +15,7 @@ SUPPORTED_RUNNER_LABELS = frozenset(
         "ubuntu-latest",
         "windows-2025",
         "windows-latest",
+        "macos-14",
     }
 )
 RETIRED_RUNNER_LABELS = frozenset({"ubuntu-20.04", "ubuntu-22.04", "windows-2019", "windows-2022"})
@@ -123,6 +124,30 @@ def test_release_packages_run_the_complete_source_gate_before_building() -> None
         step.get("name") == "Build Linux artifacts against the declared glibc floor"
         for step in linux_package["steps"]
     )
+
+
+def test_macos_release_build_smokes_the_app_and_attaches_release_artifacts() -> None:
+    import yaml
+
+    workflow = yaml.safe_load(BUILD_WORKFLOW.read_text(encoding="utf-8"))
+    macos_package = workflow["jobs"]["package-macos"]
+    assert macos_package["runs-on"] == "macos-14"
+    assert macos_package["needs"] == "source-gate"
+    body = "\n".join(step.get("run", "") for step in macos_package["steps"])
+    assert '"--target", "macos"' in body
+    assert "--diagnostic --encoder-smoke" in body
+    assert "--peek macos-smoke/fixture.sav" in body
+    assert "hdiutil verify" in body
+    assert "codesign --verify --deep --strict" in body
+    assert "SaveEditor-macos-arm64" in body
+
+    release = workflow["jobs"]["release"]
+    assert "package-macos" in release["needs"]
+    release_body = "\n".join(step.get("run", "") for step in release["steps"])
+    assert "Stage macOS assets for GitHub Release" in [
+        step.get("name") for step in release["steps"]
+    ]
+    assert "SHA256SUMS-macos" in release_body
 
 
 def test_ci_runs_the_qt_suite_headless() -> None:

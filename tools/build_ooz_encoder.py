@@ -56,7 +56,13 @@ def _source_root(work: Path, archive_path: Path) -> Path:
     return candidates[0]
 
 
-def _setup_script(source_root: Path, wrapper: Path, *, base_dir: Path) -> str:
+def _setup_script(
+    source_root: Path,
+    wrapper: Path,
+    *,
+    base_dir: Path,
+    target_platform: str,
+) -> str:
     ooz_root = source_root / "ooz" / "dep" / "ooz"
     sources = [wrapper, *(ooz_root / name for name in _COMPRESSOR_SOURCES)]
     missing = [path for path in sources if not path.is_file()]
@@ -83,6 +89,9 @@ def _setup_script(source_root: Path, wrapper: Path, *, base_dir: Path) -> str:
     encoded_include = json.dumps(
         [relative(source_root), relative(ooz_root / "simde")]
     )
+    encoded_compile_args = json.dumps(
+        ["-std=c++11"] if target_platform == "darwin" else []
+    )
     return f"""from setuptools import Extension, setup
 
 setup(
@@ -92,6 +101,7 @@ setup(
         name='ooz_encoder',
         sources={encoded_sources},
         include_dirs={encoded_include},
+        extra_compile_args={encoded_compile_args},
         define_macros=[('Py_LIMITED_API', '0x03080000')],
         py_limited_api=True,
     )],
@@ -127,7 +137,13 @@ def build_encoder(
         shutil.copy2(wrapper, wrapper_copy)
         setup_path = work / "setup.py"
         setup_path.write_text(
-            _setup_script(source_root, wrapper_copy, base_dir=work), encoding="utf-8"
+            _setup_script(
+                source_root,
+                wrapper_copy,
+                base_dir=work,
+                target_platform=sys.platform,
+            ),
+            encoding="utf-8",
         )
         interpreter = (
             str(Path(python_executable).expanduser().resolve())

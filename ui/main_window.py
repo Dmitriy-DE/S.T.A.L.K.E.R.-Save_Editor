@@ -1001,7 +1001,12 @@ class MainWindow(QMainWindow):
             tr("Сохранения S.T.A.L.K.E.R. (*.sav *.scop *.scs);;Все файлы (*)"),
         )
         if filename:
-            self._start_inspect(Path(filename))
+            self.open_save_path(Path(filename))
+
+    def open_save_path(self, path: Path) -> None:
+        """Inspect a selected save without changing its source file."""
+
+        self._start_inspect(Path(path))
 
     def _compare_with_file(self) -> None:
         if self.snapshot is None:
