@@ -4,11 +4,13 @@ Task ID and concrete behavior change:
 
 ## Verification
 
+Уровень проверки (L1–L5):
+
 Commands, exit codes and platform:
 
-## Limits
+## Что не проверено
 
-Unverified Windows/cloud/game behavior or blocked evidence:
+Windows, cloud, game behavior or other blocked evidence:
 
 ## Review
 
