@@ -2054,8 +2054,48 @@ def _apply_xray_structural_edits(
                 quantity=request.quantity,
             )
             working = _append_object_record(current, record)
+            working = _reset_added_item_state(working, spec, new_id)
 
     return working
+
+
+def _reset_added_item_state(data: bytes, spec: XRayFormatSpec, object_id: int) -> bytes:
+    """A clone must not inherit the template's worn slot or upgrades.
+
+    The template can be the outfit the player wears: copying its place put the
+    new outfit into the outfit slot on load, and its upgrades belong to another
+    item (owner report 2026-09-26, Clear Sky, Freedom exoskeleton).
+    """
+
+    current = parse_xray(data, spec, with_inventory=True)
+    obj = current.object_by_id(object_id)
+    if obj.upgrades:
+        data = _replace_object_record(current, obj, _upgrade_record(current, obj, ()))
+        current = parse_xray(data, spec, with_inventory=True)
+        obj = current.object_by_id(object_id)
+    raw = bytearray(current.container.raw)
+    if obj.placement_offset is not None:
+        anchor = read_placement_anchor(bytes(raw), obj, spec.client_place_offset)
+        if anchor.placement_type != "ruck":
+            patch_placement(raw, obj, spec.client_place_offset, "ruck", None)
+            data = current.container.build(bytes(raw))
+    elif (
+        obj.client_data_offset is not None
+        and obj.client_data_end is not None
+        and obj.client_data_end - obj.client_data_offset >= 2
+        and raw[obj.client_data_offset] == 2
+        and raw[obj.client_data_offset + 1] in _U8_PLACES
+    ):
+        # Clear Sky keeps the place as one byte after the client-data count:
+        # 1 = slot, 2 = belt, 3 = backpack (all actor items in a real save).
+        if raw[obj.client_data_offset + 1] != _U8_PLACE_RUCK:
+            raw[obj.client_data_offset + 1] = _U8_PLACE_RUCK
+            data = current.container.build(bytes(raw))
+    return data
+
+
+_U8_PLACES = frozenset({1, 2, 3})
+_U8_PLACE_RUCK = 3
 
 
 def prepare_xray(
