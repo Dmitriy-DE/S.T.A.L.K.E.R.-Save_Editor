@@ -689,6 +689,24 @@
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
+  "assets/icons/s2/EN_ColimScope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EN_GoloScope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "assets/icons/s2/EN_X2Scope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
   "assets/icons/s2/EQ16_FaraPDA.png": {
     "basis": "wiki-cc-by-sa",
     "generator": "tools/build_s2_catalog.py",
@@ -1757,6 +1775,12 @@
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
+  "assets/icons/s2/RU_X4Scope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
   "assets/icons/s2/RazorAnomaly.png": {
     "basis": "wiki-cc-by-sa",
     "generator": "tools/build_s2_catalog.py",
@@ -2652,6 +2676,24 @@
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
   "web/icons/s2/EArtifactWorm.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EN_ColimScope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EN_GoloScope_1.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/EN_X2Scope_1.png": {
     "basis": "wiki-cc-by-sa",
     "generator": "tools/build_s2_catalog.py",
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
@@ -3720,6 +3762,12 @@
     "source": "S.T.A.L.K.E.R. 2 wiki item media"
   },
   "web/icons/s2/QuestArtifactHeartofChornobyl.png": {
+    "basis": "wiki-cc-by-sa",
+    "generator": "tools/build_s2_catalog.py",
+    "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",
+    "source": "S.T.A.L.K.E.R. 2 wiki item media"
+  },
+  "web/icons/s2/RU_X4Scope_1.png": {
     "basis": "wiki-cc-by-sa",
     "generator": "tools/build_s2_catalog.py",
     "origin_url": "https://stalker.fandom.com/wiki/S.T.A.L.K.E.R._2:_Heart_of_Chornobyl",

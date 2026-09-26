@@ -556,6 +556,22 @@
   "ZhukovskyPDA": [
    "Pvt. Pavlyuk's PDA",
    "https://static0.fextralifeimages.com/file/stalker2/a/a1/Stalker-2-pda.png"
+  ],
+  "EN_ColimScope_1": [
+   "Collimator Sight",
+   "https://static.wikia.nocookie.net/stalker/images/0/0b/T_inv_icon_en_colimscope_1.png/revision/latest"
+  ],
+  "EN_GoloScope_1": [
+   "Holographic Sight",
+   "https://static.wikia.nocookie.net/stalker/images/5/59/T_inv_icon_en_goloscope_1.png/revision/latest"
+  ],
+  "EN_X2Scope_1": [
+   "RNBW 2x Scope",
+   "https://static.wikia.nocookie.net/stalker/images/b/bd/T_inv_icon_en_x2scope_1.png/revision/latest"
+  ],
+  "RU_X4Scope_1": [
+   "PSO 4x Scope",
+   "https://static.wikia.nocookie.net/stalker/images/f/f4/T_inv_icon_ru_x4scope_1.png/revision/latest"
   ]
  },
  "images_by_name": {
