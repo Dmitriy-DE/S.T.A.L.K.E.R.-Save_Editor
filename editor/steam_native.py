@@ -52,6 +52,7 @@ from .cloud_capabilities import (
     cloud_write_capability,
 )
 from .platforms import locate_libsteam_api
+from .steam_autocloud import auto_cloud_local_path, auto_cloud_local_root
 from .steam_cdp import SteamCdpWorker, discover_cached_cloud_files
 
 # Known ISteamRemoteStorage flat accessor versions, newest first.  The exact
@@ -317,6 +318,41 @@ class SteamNativeWorker:
     def write_capability(self) -> CloudWriteCapability:
         return CloudWriteCapability(True, "Steam RemoteStorage writer готов")
 
+    def _write_auto_cloud(self, filename: str, data: bytes) -> None:
+        assert self._auto_cloud_root is not None
+        try:
+            target = auto_cloud_local_path(self._auto_cloud_root, filename)
+        except ValueError as exc:
+            raise CloudWriteNotAttemptedError(str(exc)) from exc
+        if not target.parent.is_dir():
+            raise CloudWriteNotAttemptedError(f"папка сохранений игры не найдена: {target.parent}")
+        if not self.game_session_active:
+            try:
+                self.begin_game_session()
+            except SteamCloudError as exc:
+                raise CloudWriteNotAttemptedError(str(exc)) from exc
+            # Let Steam finish the launch sync before the local file changes,
+            # otherwise it reports a cloud conflict.
+            time.sleep(self.session_settle)
+        import hashlib
+
+        self._last_write_sha256 = hashlib.sha256(data).hexdigest()
+        temporary = target.with_name(f".{target.name}.editor-part")
+        try:
+            temporary.write_bytes(data)
+            os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+        self.end_game_session()
+
+    def _fresh_web_read(self, filename: str) -> bytes:
+        if self._cdp is None:
+            raise SteamCloudError("Steam Cloud web недоступен для проверки записи")
+        self._configure_backend(self._cdp)
+        # A fresh list refreshes the signed download URLs.
+        self._cdp.list_files()
+        return bytes(self._cdp.read_file(filename))
+
     def sync(self) -> None:
         # RemoteStorage writes are queued to the cloud by the Steam client;
         # pumping callbacks lets that progress.  There is no explicit flat
@@ -355,9 +391,19 @@ class SteamNativeSubprocessWorker:
         cdp_factory: Callable[..., Any] = SteamCdpWorker,
         cache_finder: Callable[..., Any] = discover_cached_cloud_files,
         file_filter: CloudFileFilter | None = None,
+        auto_cloud_finder: Callable[[int], Path | None] = auto_cloud_local_root,
+        session_settle: float = 10.0,
     ) -> None:
         if timeout <= 0:
             raise ValueError("native cloud timeout must be positive")
+        self.auto_cloud_finder = auto_cloud_finder
+        self.session_settle = session_settle
+        # Set for games whose saves live under a Steam Auto-Cloud root (S2):
+        # they are listed/read through Steam web and written through the
+        # local folder plus a game session, never through FileWrite.
+        self._auto_cloud_root: Path | None = None
+        self._session: subprocess.Popen[str] | None = None
+        self._last_write_sha256: str | None = None
         self.helper_path = Path(helper_path).expanduser() if helper_path is not None else None
         self.helper_factory = helper_factory
         self.log = log or (lambda _s: None)
@@ -390,6 +436,80 @@ class SteamNativeSubprocessWorker:
         if int(app_id) <= 0:
             raise SteamCloudError(f"Некорректный Steam app_id: {app_id}")
         self.app_id = app_id
+        if "PYTEST_CURRENT_TEST" in os.environ and self.auto_cloud_finder is auto_cloud_local_root:
+            self._auto_cloud_root = None
+        else:
+            self._auto_cloud_root = self.auto_cloud_finder(int(app_id))
+
+    @property
+    def uses_auto_cloud(self) -> bool:
+        return self._auto_cloud_root is not None
+
+    # ---- game session (Auto-Cloud) -----------------------------------------
+    @property
+    def game_session_active(self) -> bool:
+        return self._session is not None and self._session.poll() is None
+
+    def begin_game_session(self) -> None:
+        """Run as the game in Steam until :meth:`end_game_session`.
+
+        Steam pulls the newest cloud saves into the local folder on start and
+        uploads changed local saves when the session ends.
+        """
+
+        if self.game_session_active:
+            return
+        if self._closed:
+            raise SteamCloudError("Steam Cloud worker уже закрыт")
+        _refuse_automated_live_session(self.app_id or 0, "GameSession")
+        try:
+            process = subprocess.Popen(
+                self._command("session"),
+                env=self._child_environment(),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except OSError as exc:
+            raise SteamCloudError(f"Не удалось запустить сеанс игры в Steam: {exc}") from exc
+        first_line: list[str] = []
+        reader = threading.Thread(target=lambda: first_line.append(process.stdout.readline() if process.stdout else ""), daemon=True)
+        reader.start()
+        reader.join(self.timeout)
+        response: dict[str, Any] = {}
+        if first_line:
+            try:
+                response = json.loads(first_line[0] or "{}")
+            except json.JSONDecodeError:
+                response = {}
+        if response.get("type") != "Ready":
+            self._kill_process(process)
+            detail = response.get("message") or "нет ответа"
+            raise SteamCloudError(f"Steam не запустил сеанс игры: {detail}")
+        self._session = process
+        self.log("Steam Cloud: сеанс игры начат")
+
+    def end_game_session(self, *, timeout: float = 30.0) -> bool:
+        """End the game session; Steam then uploads changed local saves."""
+
+        process, self._session = self._session, None
+        if process is None:
+            return False
+        try:
+            if process.stdin is not None:
+                process.stdin.close()
+        except OSError:
+            pass
+        try:
+            process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self._kill_process(process)
+            return False
+        self.log("Steam Cloud: сеанс игры завершён")
+        return process.returncode == 0
 
     def set_file_filter(self, file_filter: CloudFileFilter | None) -> None:
         """Apply one release allow-list to every list/cache/web backend."""
@@ -599,6 +719,16 @@ class SteamNativeSubprocessWorker:
 
     @property
     def write_capability(self) -> CloudWriteCapability:
+        if self._auto_cloud_root is not None:
+            if self._cdp is None:
+                return CloudWriteCapability(
+                    False,
+                    "запись проверяется через Steam Cloud web; включи его и обнови список",
+                )
+            return CloudWriteCapability(
+                True,
+                "запись через папку игры: Steam выгрузит файл при выходе из игры",
+            )
         if self._helper is not None:
             capability = cloud_write_capability(self._helper)
             if capability.writable:
@@ -704,6 +834,13 @@ class SteamNativeSubprocessWorker:
         if self._cdp is not None:
             self._configure_backend(self._cdp)
             return list(self._cdp.list_files())
+        if self._auto_cloud_root is not None:
+            # RemoteStorage enumerates only the default root, where this game
+            # never looks; its saves are listed through Steam web/cache.
+            fallback = self._web_or_cache_files()
+            if fallback is None:
+                self._status_hint = "список сохранений этой игры доступен только через Steam Cloud web"
+            return [] if fallback is None else fallback
         if self._helper is not None:
             self._configure_backend(self._helper)
             files = self._helper.list_files()
@@ -874,6 +1011,8 @@ class SteamNativeSubprocessWorker:
     def readback_file(self, filename: str) -> bytes:
         """Read post-write bytes from the writer backend, never stale web data."""
 
+        if self._auto_cloud_root is not None:
+            return self._fresh_web_read(filename)
         if self._helper is not None:
             return self._helper.read_file(filename)
         if self._native_writer_ready:
@@ -886,6 +1025,9 @@ class SteamNativeSubprocessWorker:
         if not capability.writable:
             raise CloudWriteNotAttemptedError(capability.reason)
         _refuse_automated_live_session(self.app_id or 0, "WriteFile")
+        if self._auto_cloud_root is not None:
+            self._write_auto_cloud(filename, bytes(data))
+            return
         if self._helper is not None:
             self._helper.write_file(filename, data)
             return
@@ -893,12 +1035,61 @@ class SteamNativeSubprocessWorker:
         if response.get("type") != "Ok":
             raise SteamCloudError(f"Steam native child вернул неожиданный write response: {response}")
 
+    def _write_auto_cloud(self, filename: str, data: bytes) -> None:
+        assert self._auto_cloud_root is not None
+        try:
+            target = auto_cloud_local_path(self._auto_cloud_root, filename)
+        except ValueError as exc:
+            raise CloudWriteNotAttemptedError(str(exc)) from exc
+        if not target.parent.is_dir():
+            raise CloudWriteNotAttemptedError(f"папка сохранений игры не найдена: {target.parent}")
+        if not self.game_session_active:
+            try:
+                self.begin_game_session()
+            except SteamCloudError as exc:
+                raise CloudWriteNotAttemptedError(str(exc)) from exc
+            # Let Steam finish the launch sync before the local file changes,
+            # otherwise it reports a cloud conflict.
+            time.sleep(self.session_settle)
+        import hashlib
+
+        self._last_write_sha256 = hashlib.sha256(data).hexdigest()
+        temporary = target.with_name(f".{target.name}.editor-part")
+        try:
+            temporary.write_bytes(data)
+            os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+        self.end_game_session()
+
+    def _fresh_web_read(self, filename: str) -> bytes:
+        if self._cdp is None:
+            raise SteamCloudError("Steam Cloud web недоступен для проверки записи")
+        self._configure_backend(self._cdp)
+        # A fresh list refreshes the signed download URLs.
+        self._cdp.list_files()
+        return bytes(self._cdp.read_file(filename))
+
     def sync(self) -> None:
         if self._helper is not None:
             self._helper.sync()
         # The child pumps callbacks after FileWrite and shuts down immediately.
 
     def wait_persisted(self, filename: str, expected_size: int, timeout: int = 120) -> bool:
+        if self._auto_cloud_root is not None:
+            # Steam web rounds sizes, so only the uploaded bytes prove it.
+            import hashlib
+
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                try:
+                    data = self._fresh_web_read(filename)
+                    if len(data) == expected_size and hashlib.sha256(data).hexdigest() == self._last_write_sha256:
+                        return True
+                except Exception as exc:
+                    self.log(f"Steam Cloud web: файл ещё не обновился: {exc}")
+                time.sleep(min(5.0, max(0.0, deadline - time.monotonic())))
+            return False
         if self._helper is not None:
             return self._helper.wait_persisted(filename, expected_size, timeout=timeout)
         if not self._native_writer_ready:
@@ -948,6 +1139,7 @@ class SteamNativeSubprocessWorker:
             time.sleep(min(2.0, remaining))
 
     def close(self) -> None:
+        self.end_game_session()
         self._closed = True
         with self._process_lock:
             process = self._active_process
@@ -965,6 +1157,38 @@ class SteamNativeSubprocessWorker:
                 self._cdp = None
 
 
+# A forgotten session must not keep the game "running" in Steam forever.
+GAME_SESSION_LIMIT_SECONDS = 3 * 60 * 60
+
+
+def _hold_game_session(worker: SteamNativeWorker, emit: Callable[[dict[str, Any]], None]) -> None:
+    """Stay initialised as the game until the parent closes stdin.
+
+    Steam treats this process as the running game: it syncs Auto-Cloud files
+    down on start and uploads changed local files once the process shuts the
+    API down.
+    """
+
+    closed = threading.Event()
+
+    def watch_stdin() -> None:
+        try:
+            sys.stdin.read()
+        finally:
+            closed.set()
+
+    threading.Thread(target=watch_stdin, daemon=True).start()
+    emit({"type": "Ready"})
+    deadline = time.monotonic() + GAME_SESSION_LIMIT_SECONDS
+    while not closed.wait(0.5) and time.monotonic() < deadline:
+        worker._run_callbacks()
+    # A few more callbacks let Steam see the final file state before exit.
+    for _ in range(4):
+        worker._run_callbacks()
+        time.sleep(0.25)
+    emit({"type": "Ok"})
+
+
 def run_cli_op(args: list[str]) -> int:
     """One-shot native cloud op for the isolated subprocess worker.
 
@@ -977,12 +1201,14 @@ def run_cli_op(args: list[str]) -> int:
       list                      -> {"type":"Files","files":[...]}
       read --name N --out PATH  -> {"type":"Ok","size":n}
       write --name N --in PATH  -> {"type":"Ok"}
+      session                   -> {"type":"Ready"}, then runs as the game
+                                   until stdin closes, then {"type":"Ok"}
     Errors: {"type":"Error"|"Unavailable","message":str}
     """
 
     import argparse
     parser = argparse.ArgumentParser(prog="SaveEditor --steam-native-op", add_help=False)
-    parser.add_argument("op", choices=("list", "read", "write"))
+    parser.add_argument("op", choices=("list", "read", "write", "session"))
     parser.add_argument("--name")
     parser.add_argument("--out")
     parser.add_argument("--in", dest="in_path")
@@ -1038,6 +1264,8 @@ def run_cli_op(args: list[str]) -> int:
             payload = Path(parsed.in_path).read_bytes()
             worker.write_file(parsed.name, payload)
             emit({"type": "Ok"})
+        elif parsed.op == "session":
+            _hold_game_session(worker, emit)
     except SteamCloudError as exc:
         emit({"type": "Error", "message": str(exc)})
     except Exception as exc:
