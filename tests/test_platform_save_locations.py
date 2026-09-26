@@ -685,3 +685,12 @@ def test_orphaned_install_saves_found_without_manifest(tmp_path: Path) -> None:
             steam_library_roots=(steam,),
         )
     )
+
+
+def test_linux_prefers_the_steam_clients_own_runtime_library(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    library = home / ".local" / "share" / "Steam" / "steamrt64" / "libsteam_api.so"
+    library.parent.mkdir(parents=True)
+    library.write_bytes(b"fixture so marker")
+
+    assert locate_libsteam_api(system="Linux", environ={}, home=home) == library
