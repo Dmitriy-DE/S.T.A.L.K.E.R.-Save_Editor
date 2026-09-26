@@ -108,7 +108,7 @@ def test_windows_installer_build_uses_inno_and_requires_output(
     assert calls and calls[0][0] == str(compiler)
 
 
-def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) -> None:
+def test_encoder_setup_is_portable_and_uses_cxx11_on_macos(tmp_path: Path) -> None:
     source_root = tmp_path / "source" / "pyooz-0.0.8"
     ooz_root = source_root / "ooz" / "dep" / "ooz"
     ooz_root.joinpath("simde").mkdir(parents=True)
@@ -117,11 +117,18 @@ def test_encoder_setup_uses_relative_paths_for_native_compilers(tmp_path: Path) 
     wrapper = tmp_path / "encoder_bindings.cpp"
     wrapper.write_text("// fixture\n", encoding="utf-8")
 
-    script = encoder_build._setup_script(source_root, wrapper, base_dir=tmp_path)
+    macos_script = encoder_build._setup_script(
+        source_root, wrapper, base_dir=tmp_path, target_platform="darwin"
+    )
+    windows_script = encoder_build._setup_script(
+        source_root, wrapper, base_dir=tmp_path, target_platform="win32"
+    )
 
-    assert str(tmp_path) not in script
-    assert "encoder_bindings.cpp" in script
-    assert "source/pyooz-0.0.8" in script
+    assert str(tmp_path) not in macos_script
+    assert "encoder_bindings.cpp" in macos_script
+    assert "source/pyooz-0.0.8" in macos_script
+    assert 'extra_compile_args=["-std=c++11"]' in macos_script
+    assert "-std=c++11" not in windows_script
 
 
 def test_encoder_binding_imports_standard_math_for_msvc() -> None:
