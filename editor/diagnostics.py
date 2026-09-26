@@ -168,7 +168,7 @@ def _short_path(value: Path | str) -> str:
     try:
         relative = path.relative_to(Path.home())
     except ValueError:
-        return str(path)
+        return str(Path(path.anchor) / "…") if path.is_absolute() else "…"
     return str(Path("~") / relative) if relative.parts else "~"
 
 
@@ -328,12 +328,11 @@ def check_icons() -> Check:
     name = tr("Иконки")
     try:
         desktop = tuple((PROJECT_ROOT / "assets" / "icons").rglob("*.png"))
-        web = tuple((PROJECT_ROOT / "web" / "icons").rglob("*.png"))
     except OSError as exc:
         return _result("Данные", name, "fail", _exception_detail(exc), tr("Проверьте файлы приложения."))
-    if not desktop or not web:
+    if not desktop:
         return _result("Данные", name, "fail", tr("Иконки отсутствуют"), tr("Восстановите файлы приложения."))
-    return _result("Данные", name, "ok", tr("Иконки найдены: {0} / {1}", len(desktop), len(web)))
+    return _result("Данные", name, "ok", tr("Иконки найдены: {0}", len(desktop)))
 
 
 def check_official_names() -> Check:

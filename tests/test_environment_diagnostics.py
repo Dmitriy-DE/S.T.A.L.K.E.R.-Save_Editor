@@ -64,7 +64,7 @@ def test_game_installation_check_reports_redacted_path_and_missing_install(
     result = _check("check_game_installation", release)
 
     assert result.status == "ok"
-    assert "~/steam-library" in result.detail
+    assert str(diagnostics.Path("~") / "steam-library") in result.detail
     assert str(tmp_path) not in result.detail
 
     monkeypatch.setattr(diagnostics, "_installed_releases", lambda: ())
@@ -75,6 +75,23 @@ def test_game_installation_check_reports_redacted_path_and_missing_install(
         lambda: (_ for _ in ()).throw(OSError("synthetic discovery failure")),
     )
     assert _check("check_game_installation", release).status == "fail"
+
+
+def test_game_installation_check_hides_external_library_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    release = _release()
+    external_root = tmp_path / "run" / "media" / "private-user"
+    installed = _installed_game(external_root, release)
+    monkeypatch.setattr(diagnostics, "_installed_releases", lambda: (installed,))
+    monkeypatch.setattr(diagnostics.Path, "home", classmethod(lambda _cls: tmp_path / "home"))
+
+    result = _check("check_game_installation", release)
+
+    assert result.status == "ok"
+    assert "private-user" not in result.detail
+    assert str(external_root) not in result.detail
+    assert str(diagnostics.Path(external_root.anchor) / "…") in result.detail
 
 
 def test_game_buildid_check_reports_present_and_missing_buildid(
@@ -115,7 +132,11 @@ def test_game_save_checks_report_available_and_missing_folders(
     result = _check(function, release)
 
     assert result.status == "ok"
-    assert "1" in result.detail or "saves" in result.detail
+    if function == "check_game_saves_folder":
+        assert str(tmp_path) not in result.detail
+        assert str(Path(tmp_path.anchor) / "…") in result.detail
+    else:
+        assert "1" in result.detail or "saves" in result.detail
     monkeypatch.setattr(diagnostics, "_save_directories", lambda _release: ())
     assert _check(function, release).status == "warn"
     monkeypatch.setattr(
@@ -144,17 +165,15 @@ def test_data_directory_check_reports_writable_and_unavailable_directory(
     assert _check("check_data_directory").status == "fail"
 
 
-def test_icons_check_reports_assets_and_missing_icons(
+def test_icons_check_reports_packaged_desktop_assets_and_missing_icons(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     (tmp_path / "assets" / "icons").mkdir(parents=True)
-    (tmp_path / "web" / "icons").mkdir(parents=True)
     (tmp_path / "assets" / "icons" / "desktop.png").write_bytes(b"png")
-    (tmp_path / "web" / "icons" / "web.png").write_bytes(b"png")
     monkeypatch.setattr(diagnostics, "PROJECT_ROOT", tmp_path)
 
     assert _check("check_icons").status == "ok"
-    (tmp_path / "web" / "icons" / "web.png").unlink()
+    (tmp_path / "assets" / "icons" / "desktop.png").unlink()
     assert _check("check_icons").status == "fail"
 
 
@@ -315,7 +334,8 @@ def test_steam_library_check_reports_loadable_and_missing_library(
     library = tmp_path / "libsteam_api.so"
     library.write_bytes(b"synthetic library marker")
     monkeypatch.setattr(diagnostics, "_find_steam_api_library", lambda: library)
-    monkeypatch.setattr(diagnostics.ctypes, "CDLL", lambda _path: object())
+    loader_name = "WinDLL" if diagnostics.os.name == "nt" else "CDLL"
+    monkeypatch.setattr(diagnostics.ctypes, loader_name, lambda _path: object(), raising=False)
 
     assert _check("check_steam_api_library").status == "ok"
     monkeypatch.setattr(diagnostics, "_find_steam_api_library", lambda: None)
@@ -323,8 +343,9 @@ def test_steam_library_check_reports_loadable_and_missing_library(
     monkeypatch.setattr(diagnostics, "_find_steam_api_library", lambda: library)
     monkeypatch.setattr(
         diagnostics.ctypes,
-        "CDLL",
+        loader_name,
         lambda _path: (_ for _ in ()).throw(OSError("synthetic loader failure")),
+        raising=False,
     )
     assert _check("check_steam_api_library").status == "fail"
 

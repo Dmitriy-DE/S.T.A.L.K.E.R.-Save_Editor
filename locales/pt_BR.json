@@ -1222,7 +1222,6 @@
  "Манифест доступен": "Update manifest is available",
  "Каталог недоступен: {0}": "Directory is unavailable: {0}",
  "Проверьте библиотеку Steam.": "Check the Steam library.",
- "Иконки найдены: {0} / {1}": "Icons found: {0} / {1}",
  "Проверить окружение": "Check environment",
  "Папка сохранений не найдена": "Save folder was not found",
  "Проверьте модуль X-Ray LZO.": "Check the X-Ray LZO module.",
@@ -1308,5 +1307,6 @@
  "Для S2 источник звука не подключён": "S2 in-game audio is not connected",
  "Проверьте Kraken encoder в сборке.": "Check the Kraken encoder in the build.",
  "Проверьте системные пути команд.": "Check the system command paths.",
- "Проверьте файл манифеста обновления.": "Check the update manifest file."
+ "Проверьте файл манифеста обновления.": "Check the update manifest file.",
+ "Иконки найдены: {0}": "Icons found: {0}"
 }
