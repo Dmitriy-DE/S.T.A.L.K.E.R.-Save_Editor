@@ -29,3 +29,5 @@ release-output/
 !.dev.vars.example
 # Generated review screenshots (tools/render_ui_review.py) and CI build output
 artifacts/
+# Built from assets/sounds/game by tools/build_web_bundle.py
+web/assets/sounds/
