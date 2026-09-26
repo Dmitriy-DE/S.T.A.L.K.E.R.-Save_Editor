@@ -611,456 +611,547 @@
   },
   "ArmUpg_backpack_01": {
    "names": {
+    "en": "Load-Bearing Vest",
     "ru": "Разгрузочный жилет"
    }
   },
   "ArmUpg_backpack_01_a": {
    "names": {
+    "en": "Webbing system",
     "ru": "Ременно-плечевая система"
    }
   },
   "ArmUpg_backpack_01_b": {
    "names": {
+    "en": "Larger pouches integration",
     "ru": "Интеграция увеличенных подсумков"
    }
   },
   "ArmUpg_backpack_02": {
    "names": {
+    "en": "Back Frame",
     "ru": "Спинной каркас"
    }
   },
   "ArmUpg_backpack_02_a": {
    "names": {
+    "en": "Tourist backpack",
     "ru": "Туристический рюкзак"
    }
   },
   "ArmUpg_backpack_02_b": {
    "names": {
+    "en": "Gear stacking",
     "ru": "Эшелонирование снаряжения"
    }
   },
   "ArmUpg_bp_01": {
    "names": {
+    "en": "Chainmail Inserts",
     "ru": "Кольчужные вставки"
    }
   },
   "ArmUpg_bp_01_a": {
    "names": {
+    "en": "Rubber-fabric shock absorbers",
     "ru": "Резинотканевые демпферы"
    }
   },
   "ArmUpg_bp_01_b": {
    "names": {
+    "en": "Overlapping seams",
     "ru": "Соединения с нахлёстом"
    }
   },
   "ArmUpg_bp_02": {
    "names": {
+    "en": "Aramid Lining",
     "ru": "Арамидная подкладка"
    }
   },
   "ArmUpg_bp_02_a": {
    "names": {
+    "en": "Side armor plates",
     "ru": "Боковые бронепластины"
    }
   },
   "ArmUpg_bp_02_b": {
    "names": {
+    "en": "Anti-ricochet coating",
     "ru": "Антирикошет"
    }
   },
   "ArmUpg_bp_03": {
    "names": {
+    "en": "Expanded Armor Plates",
     "ru": "Увеличенные бронепластины"
    }
   },
   "ArmUpg_bp_04": {
    "names": {
+    "en": "Dragon Skin Ceramic Armor",
     "ru": "Керамическая броня «Чешуя»"
    }
   },
   "ArmUpg_chem_01": {
    "names": {
+    "en": "Silicone Sealing",
     "ru": "Силиконовые уплотнители"
    }
   },
   "ArmUpg_chem_01_a": {
    "names": {
+    "en": "Ersatz NBC suit",
     "ru": "Эрзац ОЗК"
    }
   },
   "ArmUpg_chem_02": {
    "names": {
+    "en": "Infused Fabric",
     "ru": "Импрегнированная ткань"
    }
   },
   "ArmUpg_chem_02_a": {
    "names": {
+    "en": "Anomalous filters",
     "ru": "Аномальные фильтры"
    }
   },
   "ArmUpg_container_01": {
    "names": {
+    "en": "Makeshift Artifact Container",
     "ru": "Кустарный контейнер для артефакта"
    }
   },
   "ArmUpg_container_01_a": {
    "names": {
+    "en": "Lightweight container",
     "ru": "Облегчённый контейнер"
    }
   },
   "ArmUpg_container_01_b": {
    "names": {
+    "en": "Synevyr Container",
     "ru": "Контейнер «Синевир»"
    }
   },
   "ArmUpg_container_02": {
    "names": {
+    "en": "Additional Artifact Container",
     "ru": "Дополнительный контейнер для артефакта"
    }
   },
   "ArmUpg_container_radconsume_01": {
    "names": {
+    "en": "Lead Container",
     "ru": "Свинцовый контейнер"
    }
   },
   "ArmUpg_container_radconsume_02": {
    "names": {
+    "en": "Diffusion Container",
     "ru": "Контейнер с рассеивателем"
    }
   },
   "ArmUpg_container_radconsume_03": {
    "names": {
+    "en": "Wrenched Container",
     "ru": "Контейнер «Выверт»"
    }
   },
   "ArmUpg_durable_01": {
    "names": {
+    "en": "Synthetic Lining",
     "ru": "Синтетическая подкладка"
    }
   },
   "ArmUpg_durable_01_a": {
    "names": {
+    "en": "Shoe thread",
     "ru": "Обувная нить"
    }
   },
   "ArmUpg_durable_01_b": {
    "names": {
+    "en": "Reinforced weak spots",
     "ru": "Прошивка слабых мест"
    }
   },
   "ArmUpg_durable_02": {
    "names": {
+    "en": "Secondary Protective Layer",
     "ru": "Дублирующий предохранительный слой"
    }
   },
   "ArmUpg_durable_02_a": {
    "names": {
+    "en": "Quality zippers",
     "ru": "Качественные молнии"
    }
   },
   "ArmUpg_durable_02_b": {
    "names": {
+    "en": "Seam gluing",
     "ru": "Проклейка швов"
    }
   },
   "ArmUpg_el_chem_fire_01": {
    "names": {
+    "en": "External Filtering System",
     "ru": "Внешняя фильтрующая система"
    }
   },
   "ArmUpg_el_chem_fire_01_a": {
    "names": {
+    "en": "Graphene inserts",
     "ru": "Графеновые вставки"
    }
   },
   "ArmUpg_el_chem_fire_02": {
    "names": {
+    "en": "Fiberglass Thermal Protection",
     "ru": "Термозащита из стекловолокна"
    }
   },
   "ArmUpg_elecrt_chem_01": {
    "names": {
+    "en": "Airtight Polyethylene Lining",
     "ru": "Полиэтиленовая герметичная подкладка"
    }
   },
   "ArmUpg_elecrt_chem_01_a": {
    "names": {
+    "en": "Leather patches",
     "ru": "Накладки из кожи"
    }
   },
   "ArmUpg_elecrt_chem_02": {
    "names": {
+    "en": "Plexiglas Suit with Lead Mesh",
     "ru": "Плексигласовый комбинезон со свинцовой сеткой"
    }
   },
   "ArmUpg_elecrt_chem_02_a": {
    "names": {
+    "en": "Conductor insulation",
     "ru": "Изоляция проводников"
    }
   },
   "ArmUpg_electr_01": {
    "names": {
+    "en": "Constantan-Coated Lining",
     "ru": "Подкладка с константаном"
    }
   },
   "ArmUpg_electr_01_a": {
    "names": {
+    "en": "Grounding simulation",
     "ru": "Имитация заземления"
    }
   },
   "ArmUpg_electr_02": {
    "names": {
+    "en": "Vacuum Dielectric",
     "ru": "Вакуумный диэлектрик"
    }
   },
   "ArmUpg_electr_02_a": {
    "names": {
+    "en": "Dielectric materials",
     "ru": "Диэлектрические материалы"
    }
   },
   "ArmUpg_exo_bp_01": {
    "names": {
+    "en": "Segmented Protection",
     "ru": "Сегментная защита"
    }
   },
   "ArmUpg_exo_bp_02": {
    "names": {
+    "en": "All-Titanium Components",
     "ru": "Цельнотитановые составляющие"
    }
   },
   "ArmUpg_exo_dur_stam_01": {
    "names": {
+    "en": "Joint Protection",
     "ru": "Защита суставов"
    }
   },
   "ArmUpg_exo_dur_stam_02": {
    "names": {
+    "en": "Lightweight Titanium Frame",
     "ru": "Облегчённый каркас из титана"
    }
   },
   "ArmUpg_exo_durable_01": {
    "names": {
+    "en": "Carbon Fiber Reinforced Polymer Parts",
     "ru": "Углепластиковые детали"
    }
   },
   "ArmUpg_exo_durable_02": {
    "names": {
+    "en": "Sprayed Protective Layer",
     "ru": "Напыленный защитный слой"
    }
   },
   "ArmUpg_exo_hands_01": {
    "names": {
+    "en": "Arm Servos",
     "ru": "Сервомоторы рук"
    }
   },
   "ArmUpg_exo_sprint_01": {
    "names": {
+    "en": "Hydraulic Amplifiers for Servos",
     "ru": "Оснащение сервоприводов гидравлическими усилителям"
    }
   },
   "ArmUpg_exo_sprint_stabilize_01": {
    "names": {
+    "en": "High-Capacity Battery",
     "ru": "Аккумулятор повышенной ёмкости"
    }
   },
   "ArmUpg_exo_stamina_01": {
    "names": {
+    "en": "Aramid Helmet",
     "ru": "Арамидный шлем"
    }
   },
   "ArmUpg_exo_stamina_02": {
    "names": {
+    "en": "Ion Wind Cooling System",
     "ru": "Охлаждающая система «Ионный ветер»"
    }
   },
   "ArmUpg_fire_01": {
    "names": {
+    "en": "Asbestos Layer",
     "ru": "Асбестовый слой"
    }
   },
   "ArmUpg_fire_01_a": {
    "names": {
+    "en": "Heat-resistant foam",
     "ru": "Термостойкая пена"
    }
   },
   "ArmUpg_fire_02": {
    "names": {
+    "en": "Nickel Thermal Accumulators",
     "ru": "Никелевые термоаккумуляторы"
    }
   },
   "ArmUpg_fire_02_a": {
    "names": {
+    "en": "Active cooling",
     "ru": "Активное охлаждение"
    }
   },
   "ArmUpg_fire_chem_01": {
    "names": {
+    "en": "Airtight Insulation Layer",
     "ru": "Герметичный изолирующий слой"
    }
   },
   "ArmUpg_fire_chem_01_a": {
    "names": {
+    "en": "Homemade coating",
     "ru": "Кустарное напыление"
    }
   },
   "ArmUpg_fire_chem_01_b": {
    "names": {
+    "en": "Polyester inserts",
     "ru": "Вставки из полиэфира"
    }
   },
   "ArmUpg_fire_chem_02": {
    "names": {
+    "en": "Elimination System for Poisonous Substances",
     "ru": "Система выведения ядовитых веществ"
    }
   },
   "ArmUpg_fire_chem_02_a": {
    "names": {
+    "en": "Latex joints",
     "ru": "Латексные соединения"
    }
   },
   "ArmUpg_fire_elecrt_01": {
    "names": {
+    "en": "Meta-Aramid Suit Treatment",
     "ru": "Мета-арамидная пропитка костюма"
    }
   },
   "ArmUpg_fire_elecrt_01_a": {
    "names": {
+    "en": "Carbon Plates",
     "ru": "Карбоновые пластины"
    }
   },
   "ArmUpg_fire_elecrt_02": {
    "names": {
+    "en": "Dielectric Aerogel Lining",
     "ru": "Подкладка с диэлектрическим аэрогелем"
    }
   },
   "ArmUpg_fire_elecrt_02_a": {
    "names": {
+    "en": "Compensator System",
     "ru": "Система «Компенсаторика»"
    }
   },
   "ArmUpg_pockets_01": {
    "names": {
+    "en": "Sewn-on Pockets",
     "ru": "Накладные карманы"
    }
   },
   "ArmUpg_pockets_01_a": {
    "names": {
+    "en": "Admin Pouch",
     "ru": "Подсумок «Административка»"
    }
   },
   "ArmUpg_pockets_02": {
    "names": {
+    "en": "Expanded Backpack",
     "ru": "Увеличенный рюкзак"
    }
   },
   "ArmUpg_psy_01": {
    "names": {
+    "en": "Protective Coating",
     "ru": "Экранирующее покрытие"
    }
   },
   "ArmUpg_psy_02": {
    "names": {
+    "en": "Psi-Dome Band",
     "ru": "Обруч «Пси-купол»"
    }
   },
   "ArmUpg_rad_01": {
    "names": {
+    "en": "Active Filters",
     "ru": "Активные фильтры"
    }
   },
   "ArmUpg_rad_01_a": {
    "names": {
+    "en": "Additional lead layer",
     "ru": "Дополнительный свинцовый слой"
    }
   },
   "ArmUpg_rad_02": {
    "names": {
+    "en": "Static Field Generator",
     "ru": "Генератор статических полей"
    }
   },
   "ArmUpg_rad_02_a": {
    "names": {
+    "en": "Field Radioprotector",
     "ru": "«Полевой Радиопротектор»"
    }
   },
   "ArmUpg_rad_03": {
    "names": {
+    "en": "Protective Suit Lead Plating",
     "ru": "Освинцовывание защитного костюма"
    }
   },
   "ArmUpg_rad_container_01": {
    "names": {
+    "en": "Dual-Compartment Shielded Artifact Container",
     "ru": "Двухсекционный экранированный контейнер для артефактов"
    }
   },
   "ArmUpg_rad_psy_01": {
    "names": {
+    "en": "Plexiglas Overlays with Protective Coating",
     "ru": "Плексигласовые накладки с экранирующим покрытием"
    }
   },
   "ArmUpg_rad_psy_01_a": {
    "names": {
+    "en": "Makeshift sphere",
     "ru": "Самодельная сфера"
    }
   },
   "ArmUpg_rad_psy_02": {
    "names": {
+    "en": "Diverting Cables",
     "ru": "Отводящие кабели"
    }
   },
   "ArmUpg_stamina_01": {
    "names": {
+    "en": "Camel Hydration System",
     "ru": "Питьевая система «Верблюд»"
    }
   },
   "ArmUpg_stamina_01_a": {
    "names": {
+    "en": "Thermal underwear set",
     "ru": "Комплект термобелья"
    }
   },
   "ArmUpg_stamina_01_b": {
    "names": {
+    "en": "Cooling valves",
     "ru": "Клапаны для охлаждения"
    }
   },
   "ArmUpg_stamina_02": {
    "names": {
+    "en": "Internal Thermoregulation System",
     "ru": "Внутренняя система терморегуляции"
    }
   },
   "ArmUpg_weight_01": {
    "names": {
+    "en": "Fastening System",
     "ru": "Система креплений"
    }
   },
   "ArmUpg_weight_01_a": {
    "names": {
+    "en": "Lightweight accessories",
     "ru": "Облегчённая фурнитура"
    }
   },
   "ArmUpg_weight_01_b": {
    "names": {
+    "en": "Insulation removal",
     "ru": "Избавление от утеплителя"
    }
   },
   "ArmUpg_weight_02": {
    "names": {
+    "en": "Lightweight Materials",
     "ru": "Облегчённые материалы"
    }
   },
   "ArmUpg_weight_02_a": {
    "names": {
+    "en": "Steel armor plates replacement",
     "ru": "Избавление от стальных бронепластин"
    }
   },
   "ArmUpg_weight_02_b": {
    "names": {
+    "en": "Backpack integration",
     "ru": "Интеграция рюкзака"
    }
   },
   "ArmUpg_weight_03": {
    "names": {
+    "en": "Polyethylene Armor Plates",
     "ru": "Полиэтиленовые бронепластины"
    }
   },
@@ -3215,6 +3306,7 @@
     "ru": "Подствольный гранатомёт для немецкого штурмового комплекса GP37. Использует стандартные гранаты блока НАТО."
    },
    "names": {
+    "en": "GP37 Underbarrel Grenade Launcher",
     "ru": "Подствольный гранатомёт для GP37"
    }
   },
@@ -4448,46 +4540,55 @@
   },
   "GunAK74_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunAK74_Upgrade_Barrel_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunAK74_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunAK74_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunAK74_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunAK74_Upgrade_Body_2": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunAK74_Upgrade_Stock_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunAK74_Upgrade_Stock_2": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunAK74_Upgrade_Stock_3": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
@@ -4506,56 +4607,67 @@
   },
   "GunAKU_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunAKU_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunAKU_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunAKU_Upgrade_Body_2_1": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunAKU_Upgrade_Body_2_2": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunAKU_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunAKU_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunAKU_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunAKU_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunAKU_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunAKU_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
@@ -4590,76 +4702,91 @@
   },
   "GunAPB_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunAPB_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunAPB_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunAPB_Upgrade_Barrel_1": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunAPB_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunAPB_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunAPB_Upgrade_Barrel_3_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunAPB_Upgrade_Barrel_3_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunAPB_Upgrade_Body_1_1": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunAPB_Upgrade_Body_1_2": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunAPB_Upgrade_Body_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunAPB_Upgrade_Grip_1": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunAPB_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunAPB_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunAPB_Upgrade_Grip_3": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
@@ -4704,66 +4831,79 @@
   },
   "GunBucket_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunBucket_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunBucket_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunBucket_Upgrade_Barrel_1": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunBucket_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunBucket_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunBucket_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunBucket_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunBucket_Upgrade_Body_2": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunBucket_Upgrade_Body_3": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunBucket_Upgrade_Grip_1": {
    "names": {
+    "en": "Finger Slots",
     "ru": "Пазы под пальцы"
    }
   },
   "GunBucket_Upgrade_Grip_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunBucket_Upgrade_Grip_3": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
@@ -4807,121 +4947,145 @@
   },
   "GunD12_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunD12_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunD12_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunD12_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunD12_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunD12_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunD12_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunD12_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Rifled Barrel",
     "ru": "Нарезной ствол"
    }
   },
   "GunD12_Upgrade_Barrel_3_1": {
    "names": {
+    "en": "Choke",
     "ru": "Чок"
    }
   },
   "GunD12_Upgrade_Barrel_3_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunD12_Upgrade_Body_1": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunD12_Upgrade_Body_2_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunD12_Upgrade_Body_2_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunD12_Upgrade_Grip_1_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunD12_Upgrade_Grip_1_2": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunD12_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunD12_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunD12_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunD12_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunD12_Upgrade_Handguard_2": {
    "names": {
+    "en": "Polymer Parts",
     "ru": "Полимерные детали"
    }
   },
   "GunD12_Upgrade_Stock_1": {
    "names": {
+    "en": "Polymer Stock",
     "ru": "Полимерный приклад"
    }
   },
   "GunD12_Upgrade_Stock_2": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunD12_Upgrade_Stock_3_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunD12_Upgrade_Stock_3_2": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
@@ -4948,101 +5112,121 @@
   },
   "GunDnipro_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunDnipro_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunDnipro_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunDnipro_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunDnipro_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunDnipro_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunDnipro_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunDnipro_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunDnipro_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunDnipro_Upgrade_Body_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunDnipro_Upgrade_Body_2": {
    "names": {
+    "en": "Caliber Conversion 7.62",
     "ru": "Переделка под калибр [указать калибр]"
    }
   },
   "GunDnipro_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunDnipro_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunDnipro_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Polymer Parts",
     "ru": "Полимерные детали"
    }
   },
   "GunDnipro_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Ergonomic Handguard",
     "ru": "Эргономичная форма"
    }
   },
   "GunDnipro_Upgrade_Handguard_3": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunDnipro_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunDnipro_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunDnipro_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunDnipro_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
@@ -5074,76 +5258,91 @@
   },
   "GunFora_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunFora_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunFora_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunFora_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunFora_Upgrade_Barrel_1": {
    "names": {
+    "en": "Barrel Chrome Plating",
     "ru": "Хромирование ствола"
    }
   },
   "GunFora_Upgrade_Barrel_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunFora_Upgrade_Barrel_3": {
    "names": {
+    "en": "Titanium Barrel",
     "ru": "Титановый ствол"
    }
   },
   "GunFora_Upgrade_Body_1": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunFora_Upgrade_Body_2_1": {
    "names": {
+    "en": "Caliber Conversion [Specify Caliber]",
     "ru": "Переделка под калибр [указать калибр]"
    }
   },
   "GunFora_Upgrade_Body_2_2": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunFora_Upgrade_Body_3_1": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunFora_Upgrade_Body_3_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunFora_Upgrade_Handguard_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunFora_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunFora_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
@@ -5163,81 +5362,97 @@
   },
   "GunG37_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunG37_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunG37_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunG37_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunG37_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunG37_Upgrade_Barrel_1": {
    "names": {
+    "en": "Barrel Chrome Plating",
     "ru": "Хромирование ствола"
    }
   },
   "GunG37_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunG37_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunG37_Upgrade_Body_1_1": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunG37_Upgrade_Body_1_2": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunG37_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunG37_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunG37_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunG37_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunG37_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunG37_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
@@ -5328,96 +5543,115 @@
   },
   "GunGrim_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunGrim_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunGrim_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunGrim_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunGrim_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunGrim_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunGrim_Upgrade_Barrel_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunGrim_Upgrade_Body_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunGrim_Upgrade_Body_2_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunGrim_Upgrade_Body_2_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunGrim_Upgrade_Body_3_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunGrim_Upgrade_Body_3_2": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunGrim_Upgrade_Grip_1": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunGrim_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunGrim_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunGrim_Upgrade_Grip_3": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunGrim_Upgrade_Stock_1": {
    "names": {
+    "en": "Polymer Stock",
     "ru": "Полимерный приклад"
    }
   },
   "GunGrim_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunGrim_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
@@ -5445,66 +5679,79 @@
   },
   "GunGvintar_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunGvintar_Upgrade_Barrel_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunGvintar_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunGvintar_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunGvintar_Upgrade_Barrel_3": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunGvintar_Upgrade_Body_1_1": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunGvintar_Upgrade_Body_1_2": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunGvintar_Upgrade_Body_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunGvintar_Upgrade_Body_3": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunGvintar_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunGvintar_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunGvintar_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunGvintar_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
@@ -5532,81 +5779,97 @@
   },
   "GunIntegral_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunIntegral_Upgrade_Attachment_FrontExtension": {
    "names": {
+    "en": "Nozzle Compensator for Receiver",
     "ru": "Компенсаторная насадка для ствольной коробки"
    }
   },
   "GunIntegral_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunIntegral_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunIntegral_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunIntegral_Upgrade_Barrel_1": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunIntegral_Upgrade_Barrel_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunIntegral_Upgrade_Barrel_3_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunIntegral_Upgrade_Barrel_3_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunIntegral_Upgrade_Body_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunIntegral_Upgrade_Body_2_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunIntegral_Upgrade_Body_2_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunIntegral_Upgrade_Body_3": {
    "names": {
+    "en": "Caliber Conversion [Specify Caliber]",
     "ru": "Переделка под калибр [указать калибр]"
    }
   },
   "GunIntegral_Upgrade_Stock_1": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunIntegral_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunIntegral_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
@@ -5632,96 +5895,115 @@
   },
   "GunKharod_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunKharod_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunKharod_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunKharod_Upgrade_Barrel_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunKharod_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunKharod_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunKharod_Upgrade_Barrel_3_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunKharod_Upgrade_Barrel_3_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunKharod_Upgrade_Body_1": {
    "names": {
+    "en": "Caliber Conversion [Specify Caliber]",
     "ru": "Переделка под калибр [указать калибр]"
    }
   },
   "GunKharod_Upgrade_Grip_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunKharod_Upgrade_Grip_2": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunKharod_Upgrade_Grip_3": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunKharod_Upgrade_Handguard_1": {
    "names": {
+    "en": "Polymer Parts",
     "ru": "Полимерные детали"
    }
   },
   "GunKharod_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunKharod_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunKharod_Upgrade_Stock_1": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunKharod_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunKharod_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunKharod_Upgrade_Stock_3": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
@@ -5761,91 +6043,109 @@
   },
   "GunLavina_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunLavina_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunLavina_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunLavina_Upgrade_Barrel_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunLavina_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunLavina_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunLavina_Upgrade_Barrel_3": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunLavina_Upgrade_Body_1_1": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunLavina_Upgrade_Body_1_2": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunLavina_Upgrade_Body_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunLavina_Upgrade_Body_3": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunLavina_Upgrade_Grip_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunLavina_Upgrade_Grip_2": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunLavina_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Ergonomic Handguard",
     "ru": "Эргономичная форма"
    }
   },
   "GunLavina_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunLavina_Upgrade_Stock_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunLavina_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunLavina_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
@@ -5873,41 +6173,49 @@
   },
   "GunM10_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunM10_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunM10_Upgrade_Barrel_1": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunM10_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunM10_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunM10_Upgrade_Grip_1": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunM10_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunM10_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
@@ -5933,46 +6241,55 @@
   },
   "GunM16_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunM16_Upgrade_Barrel_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunM16_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunM16_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunM16_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunM16_Upgrade_Body_1": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunM16_Upgrade_Grip_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunM16_Upgrade_Grip_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunM16_Upgrade_Stock_1": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
@@ -5989,76 +6306,91 @@
   },
   "GunM701_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunM701_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunM701_Upgrade_Barrel_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunM701_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunM701_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunM701_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunM701_Upgrade_Body_1": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunM701_Upgrade_Body_2_1": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunM701_Upgrade_Body_2_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunM701_Upgrade_Body_3_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunM701_Upgrade_Body_3_2": {
    "names": {
+    "en": "Ergonomic Handguard",
     "ru": "Эргономичная форма"
    }
   },
   "GunM701_Upgrade_Stock_1": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
   "GunM701_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunM701_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunM701_Upgrade_Stock_3": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
@@ -6075,51 +6407,61 @@
   },
   "GunM860_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunM860_Upgrade_Attachment_Mag": {
    "names": {
+    "en": "Magazine Feed",
     "ru": "Магазинное питание"
    }
   },
   "GunM860_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Choke",
     "ru": "Чок"
    }
   },
   "GunM860_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Rifled Barrel",
     "ru": "Нарезной ствол"
    }
   },
   "GunM860_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunM860_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunM860_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunM860_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunM860_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunM860_Upgrade_Stock_3": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
@@ -6144,76 +6486,91 @@
   },
   "GunMark_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunMark_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunMark_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunMark_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunMark_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunMark_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunMark_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunMark_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunMark_Upgrade_Body_1_1": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunMark_Upgrade_Body_1_2": {
    "names": {
+    "en": "Trigger Replacement",
     "ru": "Замена спускового механизма"
    }
   },
   "GunMark_Upgrade_Grip_1_1": {
    "names": {
+    "en": "Finger Slots",
     "ru": "Пазы под пальцы"
    }
   },
   "GunMark_Upgrade_Grip_1_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunMark_Upgrade_Grip_2": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunMark_Upgrade_Grip_3_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunMark_Upgrade_Grip_3_2": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
@@ -6250,26 +6607,31 @@
   },
   "GunObrez_Upgrade_Barrel_1": {
    "names": {
+    "en": "Choke",
     "ru": "Чок"
    }
   },
   "GunObrez_Upgrade_Barrel_2": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunObrez_Upgrade_Grip_1": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunObrez_Upgrade_Grip_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunObrez_Upgrade_Handguard_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
@@ -6316,81 +6678,97 @@
   },
   "GunPKP_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunPKP_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunPKP_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunPKP_Upgrade_Barrel_1": {
    "names": {
+    "en": "Titanium Barrel",
     "ru": "Титановый ствол"
    }
   },
   "GunPKP_Upgrade_Barrel_2": {
    "names": {
+    "en": "Barrel Cooler",
     "ru": "Радиатор ствола"
    }
   },
   "GunPKP_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunPKP_Upgrade_Body_1_1": {
    "names": {
+    "en": "Protective Spray for Return Mechanism",
     "ru": "Защитное напыление на возвратный механизм"
    }
   },
   "GunPKP_Upgrade_Body_1_2": {
    "names": {
+    "en": "Impact-Resistant Anti-Corrosion Parts",
     "ru": "Ударопрочные антикоррозионные детали"
    }
   },
   "GunPKP_Upgrade_Body_2": {
    "names": {
+    "en": "Polymer Parts",
     "ru": "Полимерные детали"
    }
   },
   "GunPKP_Upgrade_Handguard_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunPKP_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunPKP_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunPKP_Upgrade_Stock_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunPKP_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Polymer Stock",
     "ru": "Полимерный приклад"
    }
   },
   "GunPKP_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunPKP_Upgrade_Stock_3": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
@@ -6420,16 +6798,19 @@
   },
   "GunPM_Upgrade_Barrel_1": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunPM_Upgrade_Barrel_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunPM_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
@@ -6470,71 +6851,85 @@
   },
   "GunRam2_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunRam2_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunRam2_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunRam2_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunRam2_Upgrade_Body_2": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunRam2_Upgrade_Handguard_1_1": {
    "names": {
+    "en": "Choke",
     "ru": "Чок"
    }
   },
   "GunRam2_Upgrade_Handguard_1_2": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunRam2_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunRam2_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunRam2_Upgrade_Stock_1": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunRam2_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunRam2_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunRam2_Upgrade_Stock_3_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunRam2_Upgrade_Stock_3_2": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
@@ -6551,66 +6946,79 @@
   },
   "GunRhino_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunRhino_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunRhino_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunRhino_Upgrade_Barrel_1": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunRhino_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunRhino_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunRhino_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunRhino_Upgrade_Body_1_1": {
    "names": {
+    "en": "Buckshot Conversion",
     "ru": "Переделка под дробь"
    }
   },
   "GunRhino_Upgrade_Body_1_2": {
    "names": {
+    "en": "Ergonomic Handguard",
     "ru": "Эргономичная форма"
    }
   },
   "GunRhino_Upgrade_Grip_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunRhino_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunRhino_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunRhino_Upgrade_Grip_3": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
@@ -6647,86 +7055,103 @@
   },
   "GunSPSA_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunSPSA_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunSPSA_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunSPSA_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunSPSA_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunSPSA_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Ultra-Strong Heat-Resistant Alloys",
     "ru": "Сверхпрочные термостойкие сплавы"
    }
   },
   "GunSPSA_Upgrade_Barrel_3_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunSPSA_Upgrade_Barrel_3_2": {
    "names": {
+    "en": "Choke",
     "ru": "Чок"
    }
   },
   "GunSPSA_Upgrade_Body_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunSPSA_Upgrade_Body_2_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunSPSA_Upgrade_Body_2_2": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunSPSA_Upgrade_Body_3_1": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunSPSA_Upgrade_Body_3_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunSPSA_Upgrade_Stock_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunSPSA_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunSPSA_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunSPSA_Upgrade_Stock_3": {
    "names": {
+    "en": "Polymer Stock",
     "ru": "Полимерный приклад"
    }
   },
@@ -6745,51 +7170,61 @@
   },
   "GunSVDM_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunSVDM_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunSVDM_Upgrade_Barrel_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunSVDM_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunSVDM_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunSVDM_Upgrade_Body_1_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunSVDM_Upgrade_Body_1_2": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunSVDM_Upgrade_Stock_1": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunSVDM_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunSVDM_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
@@ -6822,111 +7257,133 @@
   },
   "GunSVU_Upgrade_Attachment_Grip": {
    "names": {
+    "en": "Tactical Foregrip",
     "ru": "Тактическая рукоять"
    }
   },
   "GunSVU_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunSVU_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunSVU_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunSVU_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunSVU_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunSVU_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunSVU_Upgrade_Grip_1_1": {
    "names": {
+    "en": "Polymer Handle",
     "ru": "Полимерная рукоятка"
    }
   },
   "GunSVU_Upgrade_Grip_1_2": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunSVU_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Finger Slots",
     "ru": "Пазы под пальцы"
    }
   },
   "GunSVU_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunSVU_Upgrade_Grip_3_1": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunSVU_Upgrade_Grip_3_2": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunSVU_Upgrade_Handguard_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunSVU_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Polymer Parts",
     "ru": "Полимерные детали"
    }
   },
   "GunSVU_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Adjusted Bolt Locking Lugs",
     "ru": "Подгонка боевых упоров затвора"
    }
   },
   "GunSVU_Upgrade_Handguard_3": {
    "names": {
+    "en": "Ergonomic Handguard",
     "ru": "Эргономичная форма"
    }
   },
   "GunSVU_Upgrade_Stock_1_1": {
    "names": {
+    "en": "Enlarged Back Pad",
     "ru": "Увеличенный упор"
    }
   },
   "GunSVU_Upgrade_Stock_1_2": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
   "GunSVU_Upgrade_Stock_2_1": {
    "names": {
+    "en": "Cheek Pad",
     "ru": "Упор для щеки"
    }
   },
   "GunSVU_Upgrade_Stock_2_2": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunSVU_Upgrade_Stock_3": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
@@ -6943,46 +7400,55 @@
   },
   "GunTOZ_Upgrade_Barrel_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunTOZ_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Rifled Barrel",
     "ru": "Нарезной ствол"
    }
   },
   "GunTOZ_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunTOZ_Upgrade_Barrel_3": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunTOZ_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunTOZ_Upgrade_Handguard_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunTOZ_Upgrade_Stock_1": {
    "names": {
+    "en": "Rubber Stock Rear",
     "ru": "Каучуковый тыльник приклада"
    }
   },
   "GunTOZ_Upgrade_Stock_2": {
    "names": {
+    "en": "Rebalanced Stock",
     "ru": "Ребаланс приклада"
    }
   },
   "GunTOZ_Upgrade_Stock_3": {
    "names": {
+    "en": "Ergonomic Stock",
     "ru": "Эргономичная форма"
    }
   },
@@ -7031,31 +7497,37 @@
   },
   "GunUDP_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunUDP_Upgrade_Barrel_1": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunUDP_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunUDP_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunUDP_Upgrade_Body_1": {
    "names": {
+    "en": "Balanced Handle",
     "ru": "Балансировка рукоятки"
    }
   },
   "GunUDP_Upgrade_Body_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
@@ -7080,56 +7552,67 @@
   },
   "GunViper_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunViper_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunViper_Upgrade_Barrel_1_1": {
    "names": {
+    "en": "Tin Coating on Barrel’s Inner Surface",
     "ru": "Лужение внутренней поверхности ствола"
    }
   },
   "GunViper_Upgrade_Barrel_1_2": {
    "names": {
+    "en": "Barrel Chrome Plating",
     "ru": "Хромирование ствола"
    }
   },
   "GunViper_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunViper_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Return Mechanism Sleeve Tightener",
     "ru": "Уплотнитель муфты возвратного механизма"
    }
   },
   "GunViper_Upgrade_Barrel_3": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunViper_Upgrade_Body_1": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunViper_Upgrade_Body_2": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunViper_Upgrade_Body_3_1": {
    "names": {
+    "en": "Caliber Conversion [Specify Caliber]",
     "ru": "Переделка под калибр [указать калибр]"
    }
   },
   "GunViper_Upgrade_Body_3_2": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
@@ -7163,86 +7646,103 @@
   },
   "GunZubr_Upgrade_Attachment_AutMuz": {
    "names": {
+    "en": "Muzzle Brake",
     "ru": "Дульный тормоз"
    }
   },
   "GunZubr_Upgrade_Attachment_Laser": {
    "names": {
+    "en": "Laser Designator",
     "ru": "ЛЦУ"
    }
   },
   "GunZubr_Upgrade_Attachment_Rail": {
    "names": {
+    "en": "Scope Mount",
     "ru": "Крепление оптики"
    }
   },
   "GunZubr_Upgrade_Attachment_SinMuz": {
    "names": {
+    "en": "Flash Suppressor",
     "ru": "Пламегаситель"
    }
   },
   "GunZubr_Upgrade_Barrel_1": {
    "names": {
+    "en": "Modified Gas Block Geometry",
     "ru": "Изменение геометрии газблока"
    }
   },
   "GunZubr_Upgrade_Barrel_2_1": {
    "names": {
+    "en": "Extra Barrel Rifling",
     "ru": "Дополнительный нарез в стволе"
    }
   },
   "GunZubr_Upgrade_Barrel_2_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
   "GunZubr_Upgrade_Barrel_3": {
    "names": {
+    "en": "Barrel Lock",
     "ru": "Установка запирателя ствола"
    }
   },
   "GunZubr_Upgrade_Body_1": {
    "names": {
+    "en": "Milled Parts Replaced with Stamped Parts",
     "ru": "Замена фрезерованных деталей штампованными"
    }
   },
   "GunZubr_Upgrade_Body_2": {
    "names": {
+    "en": "Automatic Two-Stage Gas Regulator",
     "ru": "Автоматический двухпозиционный газовый регулятор"
    }
   },
   "GunZubr_Upgrade_Grip_1": {
    "names": {
+    "en": "Wrist Rest",
     "ru": "Кистевой упор"
    }
   },
   "GunZubr_Upgrade_Grip_2_1": {
    "names": {
+    "en": "Individual Adjustment",
     "ru": "Индивидуальная подгонка"
    }
   },
   "GunZubr_Upgrade_Grip_2_2": {
    "names": {
+    "en": "Finger Slots",
     "ru": "Пазы под пальцы"
    }
   },
   "GunZubr_Upgrade_Grip_3": {
    "names": {
+    "en": "Rubber Layer",
     "ru": "Прорезиненный слой"
    }
   },
   "GunZubr_Upgrade_Handguard_1": {
    "names": {
+    "en": "Rubber Coating",
     "ru": "Прорезиненное покрытие"
    }
   },
   "GunZubr_Upgrade_Handguard_2_1": {
    "names": {
+    "en": "Anatomical Adjustment",
     "ru": "Анатомическая подгонка"
    }
   },
   "GunZubr_Upgrade_Handguard_2_2": {
    "names": {
+    "en": "Counterweight",
     "ru": "Установка балансира"
    }
   },
@@ -8759,6 +9259,7 @@
     "ru": "USB-диск, содержащий информацию об апгрейде экипировки."
    },
    "names": {
+    "en": "Flash Drive with Blueprints",
     "ru": "Флешка с чертежами"
    }
   },
@@ -9608,6 +10109,7 @@
     "ru": "Оптический прицел, позволяющий кратно увеличить дальность и точность стрельбы из гранатомёта РПГ-7у."
    },
    "names": {
+    "en": "PG-7U Scope",
     "ru": "Прицел ПГ-7у"
    }
   },
@@ -9823,6 +10325,7 @@
   },
   "SuppressorUpgrade": {
    "names": {
+    "en": "Suppressor",
     "ru": "Подавитель"
    }
   },
