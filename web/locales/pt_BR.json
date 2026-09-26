@@ -1197,5 +1197,8 @@
  "●  НЕ НАЙДЕНО": "●  NÃO ENCONTRADO",
  "● БУДЕТ СОЗДАНО": "● SERÁ CRIADA",
  "● ГОТОВО": "● PRONTO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOIAR O PROJETO"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOIAR O PROJETO",
+ "Найден черновик": "Rascunho encontrado",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Há um rascunho de alterações para este salvamento. Restaurar?",
+ "Не удалось сохранить черновик изменений.": "Não foi possível salvar o rascunho de alterações."
 }

@@ -1197,5 +1197,8 @@
  "●  НЕ НАЙДЕНО": "●  NO ENCONTRADO",
  "● БУДЕТ СОЗДАНО": "● SE CREARÁ",
  "● ГОТОВО": "● LISTO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOYAR EL PROYECTO"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOYAR EL PROYECTO",
+ "Найден черновик": "Borrador encontrado",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Hay un borrador de cambios para esta partida. ¿Restaurarlo?",
+ "Не удалось сохранить черновик изменений.": "No se pudo guardar el borrador de cambios."
 }

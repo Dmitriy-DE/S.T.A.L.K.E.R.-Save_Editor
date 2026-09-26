@@ -1197,5 +1197,8 @@
  "●  НЕ НАЙДЕНО": "●  INTROUVABLE",
  "● БУДЕТ СОЗДАНО": "● SERA CRÉÉ",
  "● ГОТОВО": "● PRÊT",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  SOUTENIR LE PROJET"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  SOUTENIR LE PROJET",
+ "Найден черновик": "Brouillon trouvé",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Une ébauche de modifications existe pour cette sauvegarde. La restaurer ?",
+ "Не удалось сохранить черновик изменений.": "Impossible d’enregistrer le brouillon de modifications."
 }

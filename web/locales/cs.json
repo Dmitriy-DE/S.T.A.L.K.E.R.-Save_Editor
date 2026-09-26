@@ -1201,5 +1201,8 @@
  "●  НЕ НАЙДЕНО": "●  NENALEZENO",
  "● БУДЕТ СОЗДАНО": "● BUDE VYTVOŘENA",
  "● ГОТОВО": "● PŘIPRAVENO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT",
+ "Найден черновик": "Nalezen koncept",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Pro tuto pozici existuje koncept změn. Obnovit ho?",
+ "Не удалось сохранить черновик изменений.": "Koncept změn se nepodařilo uložit."
 }
