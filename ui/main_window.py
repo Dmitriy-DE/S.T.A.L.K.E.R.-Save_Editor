@@ -232,7 +232,9 @@ class MainWindow(QMainWindow):
         apply_theme(application if isinstance(application, QApplication) else None)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setWindowTitle("S.T.A.L.K.E.R. — Save Editor")
-        self.setMinimumSize(960, 620)
+        # The header (brand 498 px, icon-only tabs, support, window controls)
+        # needs 1180 px; narrower windows overlapped it.
+        self.setMinimumSize(1180, 620)
         self.resize(self._initial_size())
         self._build_ui()
         if self._auto_update_check:
@@ -252,7 +254,7 @@ class MainWindow(QMainWindow):
         if screen is None:
             return QSize(1280, 820)
         available = screen.availableGeometry()
-        width = max(960, min(1586, int(available.width() * 0.94)))
+        width = max(1180, min(1586, int(available.width() * 0.94)))
         height = max(620, min(992, int(available.height() * 0.94)))
         return QSize(width, height)
 
