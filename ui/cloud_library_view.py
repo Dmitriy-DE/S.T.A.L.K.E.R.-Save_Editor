@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.cloud_capabilities import cloud_write_capability
 from editor.i18n import source_text, tr
 from editor.releases import release_by_id
 
@@ -282,6 +283,11 @@ class CloudLibraryView(QWidget):
 
     def _on_files_ready(self, files) -> None:
         files = tuple(files or ())
+        # Once connected, the "write becomes available after connecting"
+        # banner only stays when the backend really refuses writes, and the
+        # stale "connecting…" line goes away.
+        self.read_only_banner.setVisible(not cloud_write_capability(self.backend.transport).writable)
+        self._set_result("")
         selected_file = self.backend.selected_file()
         self.save_table.blockSignals(True)
         self.save_table.setRowCount(0)
