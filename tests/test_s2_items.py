@@ -79,3 +79,13 @@ def test_coverage_floor_on_real_save_sids():
     for kind in ("weapon", "ammo"):
         assert stats[kind]["en"] == stats[kind]["icon"] == stats[kind]["total"]
     assert stats["item"]["en"] == stats["item"]["total"] and stats["item"]["icon"] >= 73
+
+
+def test_descriptions_follow_the_name_rule():
+    set_language("ru")
+    assert "свободовцем" in (s2_items.s2_description("Gun_SOFMOD_AR") or "")
+    set_language("de")
+    # No German text: English, never Russian.
+    text = s2_items.s2_description("Gun_SOFMOD_AR") or ""
+    assert text.startswith("A rifle") and not re.search("[А-Яа-я]", text)
+    assert s2_items.s2_description("Medkit") is None
