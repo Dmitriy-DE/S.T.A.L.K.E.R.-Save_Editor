@@ -189,11 +189,21 @@ def _verify_mutation(
             issues.append("stacks: повреждённая строка в manifest")
             mutation_matches = False
             continue
-        try:
-            handle = int(row["handle"])
-            target_count = int(row["after"])
-        except (TypeError, ValueError):
+        handle_value = row["handle"]
+        target_value = row["after"]
+        if (
+            isinstance(handle_value, bool)
+            or not isinstance(handle_value, int)
+            or isinstance(target_value, bool)
+            or not isinstance(target_value, int)
+        ):
             issues.append("stacks: handle/after имеют неверный тип")
+            mutation_matches = False
+            continue
+        handle = handle_value
+        target_count = target_value
+        if not 0 <= handle <= 0xFFFFFFFF:
+            issues.append("stacks: handle должен быть в диапазоне 0…4 294 967 295")
             mutation_matches = False
             continue
         if not 1 <= target_count <= 1_000_000:

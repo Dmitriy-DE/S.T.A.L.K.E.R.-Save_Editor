@@ -193,6 +193,46 @@ def test_verify_protocol_rejects_unmodified_s2_stack_resave(
     assert result.error and "stack" in result.error
 
 
+@pytest.mark.parametrize(
+    ("field", "expected", "replacement"),
+    (
+        ("after", 7, "7.9"),
+        ("after", 7, "1e999"),
+        ("handle", 0x30000001, "805306369.5"),
+    ),
+)
+def test_verify_protocol_rejects_non_integer_s2_stack_metadata(
+    tmp_path: Path,
+    synthetic_save: bytes,
+    field: str,
+    expected: int,
+    replacement: str,
+) -> None:
+    source = tmp_path / "source.sav"
+    source.write_bytes(synthetic_save)
+    manifest = prepare_source_copy(
+        source,
+        "stalker2",
+        tmp_path / "run",
+        stacks=((0x30000001, 7),),
+    )
+    resaved = tmp_path / "resaved.sav"
+    resaved.write_bytes(manifest.edited_path.read_bytes())
+
+    payload = manifest.manifest_path.read_text("utf-8")
+    target = f'"{field}": {expected}'
+    assert target in payload
+    manifest.manifest_path.write_text(
+        payload.replace(target, f'"{field}": {replacement}', 1), "utf-8"
+    )
+
+    result = verify_resaved_save(manifest.manifest_path, resaved)
+
+    assert result.parser_ok is True
+    assert result.mutation_matches is False
+    assert result.error and "неверный тип" in result.error
+
+
 def test_prepare_protocol_rejects_multiple_s2_durability_targets(
     tmp_path: Path,
     synthetic_save: bytes,
