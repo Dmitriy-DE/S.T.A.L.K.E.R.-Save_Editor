@@ -176,7 +176,7 @@ def _validate_target(
 
     # Separate file part from optional anchor or query
     clean_target = unquote(raw_target.split("#")[0].split("?")[0])
-    anchor = raw_target.split("#")[1] if "#" in raw_target else None
+    target_anchor = raw_target.split("#")[1] if "#" in raw_target else None
 
     if not clean_target:
         return None
@@ -190,12 +190,12 @@ def _validate_target(
         return f"target path does not exist: {dest}"
 
     # If anchor specified and target is a markdown document, verify anchor
-    if anchor and dest.suffix == ".md" and dest.is_file():
+    if target_anchor and dest.suffix == ".md" and dest.is_file():
         if dest not in anchor_cache:
             anchor_cache[dest] = extract_anchors(dest)
         valid = anchor_cache[dest]
-        if anchor.lower() not in valid and slugify_heading(anchor) not in valid:
-            return f"anchor '#{anchor}' not found in {dest.name}"
+        if target_anchor.lower() not in valid and slugify_heading(target_anchor) not in valid:
+            return f"anchor '#{target_anchor}' not found in {dest.name}"
 
     return None
 
