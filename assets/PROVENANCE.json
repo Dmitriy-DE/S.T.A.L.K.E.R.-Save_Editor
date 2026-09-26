@@ -1949,6 +1949,12 @@
     "origin_url": "https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save_Editor/tree/main/assets/readme",
     "source": "S.T.A.L.K.E.R. Save Editor README artwork and screenshots"
   },
+  "assets/sounds/game/*/*.ogg": {
+    "basis": "game-derived",
+    "generator": "ui/game_audio.py (extract_files)",
+    "origin_url": "https://store.steampowered.com/app/2427430/STALKER_Call_of_Prypiat__Enhanced_Edition/",
+    "source": "S.T.A.L.K.E.R. trilogy menu music and interface sounds (original and Enhanced Edition archives)"
+  },
   "assets/ui/item_glyphs/*.svg": {
     "basis": "own",
     "generator": null,
