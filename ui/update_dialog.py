@@ -133,6 +133,8 @@ class UpdateDialog(QDialog):
         layout.addWidget(self.restart_button)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText(tr("Закрыть"))
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
         self._render_result()
