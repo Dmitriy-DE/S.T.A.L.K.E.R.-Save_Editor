@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 import struct
 from dataclasses import dataclass, replace
 from typing import Literal
@@ -56,6 +57,19 @@ _MAX_OBJECTS = 1_000_000
 _MAX_STRING = 1 << 20
 _MAX_VECTOR = 1_000_000
 _MAX_AMMO_COUNT = 0xFFFF
+_STASH_DESTINATION_RE = re.compile(r"^stash:([0-9]+)$")
+
+
+def _stash_destination_box_id(destination: str) -> int | None:
+    if destination == "inventory":
+        return None
+    match = _STASH_DESTINATION_RE.fullmatch(destination)
+    if match is None:
+        raise ValueError("X-Ray item destination must be 'inventory' or 'stash:<box_id>'")
+    box_id = int(match.group(1))
+    if box_id > 0xFFFE:
+        raise ValueError("X-Ray stash box id must be in the range 0…65534")
+    return box_id
 
 
 @dataclass(frozen=True)
@@ -164,8 +178,9 @@ class XRayItemAdd:
             raise ValueError(
                 f"X-Ray item quantity must be in the range 1…{_MAX_AMMO_COUNT}"
             )
-        if self.destination != "inventory":
-            raise ValueError("X-Ray item destination must be 'inventory'")
+        if not isinstance(self.destination, str):
+            raise ValueError("X-Ray item destination must be text")
+        _stash_destination_box_id(self.destination)
 
 
 class _Reader:
@@ -1795,7 +1810,19 @@ def _patch_spawn_identity(
     if not 0 <= object_id <= 0xFFFF or not 0 <= parent_id <= 0xFFFF:
         raise _fail("object identity выходит за u16")
     original = bytes(packet)
-    reader = _Reader(original, label="SPAWN identity")
+    name_start, name_end, object_id_offset, parent_id_offset = _spawn_identity_offsets(original)
+
+    replacement = name.encode("utf-8") + b"\x00"
+    rewritten = bytearray(original[:name_start] + replacement + original[name_end:])
+    delta = len(replacement) - (name_end - name_start)
+    struct.pack_into("<H", rewritten, object_id_offset + delta, object_id)
+    struct.pack_into("<H", rewritten, parent_id_offset + delta, parent_id)
+    _parse_spawn(bytes(rewritten), 0)
+    return bytes(rewritten)
+
+
+def _spawn_identity_offsets(packet: bytes) -> tuple[int, int, int, int]:
+    reader = _Reader(packet, label="SPAWN identity")
     if reader.u16() != _M_SPAWN:
         raise _fail("SPAWN identity не начинается с M_SPAWN")
     name_start = reader.pos
@@ -1811,12 +1838,15 @@ def _patch_spawn_identity(
     reader.u16()
     parent_id_offset = reader.pos
     reader.u16()
+    return name_start, name_end, object_id_offset, parent_id_offset
 
-    replacement = name.encode("utf-8") + b"\x00"
-    rewritten = bytearray(original[:name_start] + replacement + original[name_end:])
-    delta = len(replacement) - (name_end - name_start)
-    struct.pack_into("<H", rewritten, object_id_offset + delta, object_id)
-    struct.pack_into("<H", rewritten, parent_id_offset + delta, parent_id)
+
+def _patch_spawn_parent_id(packet: bytes, parent_id: int) -> bytes:
+    if not 0 <= parent_id <= 0xFFFF:
+        raise _fail("parent id выходит за u16")
+    _, _, _, parent_id_offset = _spawn_identity_offsets(packet)
+    rewritten = bytearray(packet)
+    struct.pack_into("<H", rewritten, parent_id_offset, parent_id)
     _parse_spawn(bytes(rewritten), 0)
     return bytes(rewritten)
 
@@ -1957,19 +1987,32 @@ def _added_items_match(
     plan: EditPlan,
     catalog: ItemCatalog,
 ) -> bool:
-    before_handles = {item.handle for item in before.inventory}
-    for item_key, quantity, _destination in plan.adds:
+    before_handles = {item.object_id for item in before.objects}
+    for item_key, quantity, destination in plan.adds:
         definition = catalog.resolve(item_key)
         if definition is None:
             return False
         family = _definition_serialization_family(definition)
+        box_id = _stash_destination_box_id(destination)
+        expected_parent = before.actor_id if box_id is None else box_id
         added = tuple(
-            item
-            for item in after.inventory
-            if item.handle not in before_handles and item.type_key == item_key
+            obj
+            for obj in after.objects
+            if obj.object_id not in before_handles
+            and obj.name == item_key
+            and obj.parent_id == expected_parent
         )
         if family == "ammo":
-            if not any(item.count == quantity for item in added):
+            if len(added) != 1:
+                return False
+            item = added[0]
+            try:
+                _, state_count = _parse_ammo_state(after.container.raw, item)
+                update = after.update_bytes(item)
+                update_count = struct.unpack_from("<H", update, len(update) - 2)[0]
+            except (XRaySaveError, struct.error):
+                return False
+            if state_count != quantity or update_count != quantity:
                 return False
         elif len(added) != quantity:
             return False
@@ -2000,6 +2043,7 @@ def _apply_xray_structural_edits(
 
     for item_key, quantity, destination in plan.adds:
         request = XRayItemAdd(None, item_key, quantity, destination)
+        destination_box_id = _stash_destination_box_id(request.destination)
         if catalog is None:
             raise XRaySaveError(
                 f"X-Ray save: для добавления {request.item_key!r} нужен официальный catalog"
@@ -2036,6 +2080,8 @@ def _apply_xray_structural_edits(
             )
 
         current = parse_xray(working, spec, with_inventory=True)
+        if destination_box_id is not None:
+            _inventory_box(current, destination_box_id)
         prototype = _find_registry_template(
             current,
             catalog,
@@ -2063,6 +2109,20 @@ def _apply_xray_structural_edits(
             )
             working = _append_object_record(current, record)
             working = _reset_added_item_state(working, spec, new_id)
+            if destination_box_id is not None:
+                current = parse_xray(working, spec, with_inventory=True)
+                _inventory_box(current, destination_box_id)
+                created = current.object_by_id(new_id)
+                spawn = _patch_spawn_parent_id(
+                    current.spawn_bytes(created), destination_box_id
+                )
+                updated_record = (
+                    struct.pack("<H", len(spawn))
+                    + spawn
+                    + struct.pack("<H", len(current.update_bytes(created)))
+                    + current.update_bytes(created)
+                )
+                working = _replace_object_record(current, created, updated_record)
 
     return working
 
@@ -2133,6 +2193,15 @@ class XRayStash:
     items: tuple[XRayObject, ...]
 
 
+def _inventory_box(parsed: XRaySave, box_id: int) -> XRayObject:
+    box = next((obj for obj in parsed.objects if obj.object_id == box_id), None)
+    if box is None:
+        raise _fail(f"inventory_box 0x{box_id:04X} не найден в этом сейве")
+    if box.name != STASH_SECTION:
+        raise _fail(f"object 0x{box_id:04X} не является inventory_box")
+    return box
+
+
 def _object_name_replace(parsed: XRaySave, obj: XRayObject) -> str:
     reader = _Reader(parsed.spawn_bytes(obj), label="SPAWN name")
     reader.u16()
@@ -2155,6 +2224,60 @@ def xray_stashes(parsed: XRaySave) -> tuple[XRayStash, ...]:
             XRayStash(obj.object_id, name, LEVEL_PREFIXES.get(name.split("_", 1)[0]), tuple(children[obj.object_id]))
         )
     return tuple(sorted(result, key=lambda stash: (stash.level is None, stash.level or "", stash.name)))
+
+
+def put_to_stash(data: bytes, spec: XRayFormatSpec, object_id: int, box_id: int) -> bytes:
+    """Move a backpack item into a verified level inventory box.
+
+    The serialized STATE and UPDATE packets are preserved exactly. An item
+    must already be in the actor backpack; moving equipped, belt, or unresolved
+    placement data is refused so the caller must first place it in the ruck.
+    """
+
+    if not 0 <= int(box_id) <= 0xFFFE:
+        raise _fail(f"inventory_box id 0x{int(box_id):X} вне диапазона")
+    current = parse_xray(bytes(data), spec, with_inventory=True)
+    box = _inventory_box(current, int(box_id))
+    item = current.object_by_id(int(object_id))
+    if item.parent_id != current.actor_id:
+        raise _fail(f"object 0x{object_id:04X} не принадлежит actor inventory")
+    if item.storage == "equipped" or item.placement_type == "slot":
+        raise _fail(f"object 0x{object_id:04X} надет; сначала переместите его в рюкзак")
+    if item.placement_type != "ruck":
+        raise _fail(f"object 0x{object_id:04X}: положение в рюкзаке не подтверждено")
+    state_before = current.state_bytes(item)
+    update_before = current.update_bytes(item)
+    client_data_before = current.container.raw[item.client_data_offset : item.client_data_end]
+
+    spawn = _patch_spawn_parent_id(current.spawn_bytes(item), box.object_id)
+    record = (
+        struct.pack("<H", len(spawn))
+        + spawn
+        + struct.pack("<H", len(update_before))
+        + update_before
+    )
+    moved_data = _replace_object_record(current, item, record)
+    moved = parse_xray(moved_data, spec, with_inventory=True)
+    moved_item = moved.object_by_id(item.object_id)
+    _inventory_box(moved, box.object_id)
+    if moved_item.parent_id != box.object_id:
+        raise _fail(f"object 0x{object_id:04X}: перенос в inventory_box не подтвердился")
+    if moved.state_bytes(moved_item) != state_before or moved.update_bytes(moved_item) != update_before:
+        raise _fail(f"object 0x{object_id:04X}: при переносе изменились STATE/UPDATE")
+    client_data_after = moved.container.raw[
+        moved_item.client_data_offset : moved_item.client_data_end
+    ]
+    if client_data_after != client_data_before:
+        raise _fail(f"object 0x{object_id:04X}: при переносе изменились client-data")
+    return moved_data
+
+
+def _verify_xray_stash_puts(parsed: XRaySave, plan: EditPlan) -> None:
+    for object_id, box_id in plan.stash_puts:
+        _inventory_box(parsed, box_id)
+        item = parsed.object_by_id(object_id)
+        if item.parent_id != box_id:
+            raise _fail(f"object 0x{object_id:04X}: stash-put round-trip не совпал")
 
 
 def take_from_stash(data: bytes, spec: XRayFormatSpec, object_id: int) -> bytes:
@@ -2224,6 +2347,8 @@ def prepare_xray(
         )
     for handle in plan.stash_takes:
         working_data = take_from_stash(working_data, spec, handle)
+    for object_id, box_id in plan.stash_puts:
+        working_data = put_to_stash(working_data, spec, object_id, box_id)
     if plan.detach or plan.adds:
         working_data = _apply_xray_structural_edits(
             working_data,
@@ -2256,6 +2381,7 @@ def prepare_xray(
         _verify_xray_player_faction_edit(parsed, plan, faction_catalog)
         _verify_xray_upgrade_edits(parsed, plan, upgrade_catalog)
         _verify_xray_placement_edits(parsed, plan)
+        _verify_xray_stash_puts(parsed, plan)
         for handle, _ in plan.detach:
             if any(item.handle == handle for item in parsed.inventory):
                 raise XRaySaveError(
@@ -2310,6 +2436,7 @@ def prepare_xray(
     _verify_xray_player_faction_edit(after, plan, faction_catalog)
     _verify_xray_upgrade_edits(after, plan, upgrade_catalog)
     _verify_xray_placement_edits(after, plan)
+    _verify_xray_stash_puts(after, plan)
     if plan.money is not None and after.money != plan.money:
         raise XRaySaveError(
             f"X-Ray save: round-trip деньги={after.money}, ожидалось {plan.money}"
@@ -2367,4 +2494,5 @@ __all__ = [
     "parse_subchunks",
     "parse_xray",
     "prepare_xray",
+    "put_to_stash",
 ]

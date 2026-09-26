@@ -128,3 +128,171 @@ def test_items_in_a_level_stash_move_to_the_backpack_with_their_state() -> None:
     assert xray_stashes(moved) == ()
     with pytest.raises(Exception, match="не лежит в тайнике"):
         take_from_stash(data, COP_FORMAT, 0x0)
+
+
+def _stash_fixture(
+    *,
+    item_name: str = "bandage_existing",
+    item_parent: int = 0,
+    placement: int = 3,
+    ammo: bool = False,
+    upgrades: tuple[str, ...] = (),
+) -> bytes:
+    import struct
+
+    from test_xray_save import (
+        _base_item_state,
+        _chunk,
+        _item_state,
+        _object_record,
+        _spawn,
+        _state_base,
+        _z,
+    )
+
+    version, outer = 128, 6
+    actor_id, box_id = 0, 0x10
+    actor = _spawn("actor", actor_id, 0xFFFF, version, _state_base(version, money=1234), struct.pack("<H", 0))
+    box = _spawn(
+        "inventory_box", box_id, 0xFFFF, version, _base_item_state(version),
+        struct.pack("<H", 0) + b"\x00", name_replace="zat_actor_stash",
+    )
+    state = bytearray(_item_state(version, 7) if ammo else _base_item_state(version))
+    tail = 6 if ammo else 4
+    state = state[:-tail] + struct.pack("<I", len(upgrades))
+    state += b"".join(_z(value) for value in upgrades)
+    if ammo:
+        state += struct.pack("<H", 7)
+    client_data = b"\x00" + struct.pack("<H", placement)
+    item_update = struct.pack("<H", 0) + b"\x00"
+    if ammo:
+        item_update += struct.pack("<H", 7)
+    item = _spawn(
+        item_name, 0x2345, item_parent, version, bytes(state),
+        item_update, client_data,
+    )
+    objects = struct.pack("<I", 3) + b"".join(
+        _object_record(spawn, struct.pack("<H", 0) if index == 0 else item_update)
+        for index, spawn in enumerate((actor, box, item))
+    )
+    raw = b"".join((
+        _chunk(0, struct.pack("<I", outer)),
+        _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
+        _chunk(1, b"\x00" * 8),
+        _chunk(2, objects),
+        _chunk(9, b"registry"),
+    ))
+    from editor.xray_container import lzo1x_compress
+
+    return struct.pack("<III", 0xFFFFFFFF, outer, len(raw)) + lzo1x_compress(raw)
+
+
+def test_put_to_stash_moves_backpack_item_and_preserves_state_and_upgrades() -> None:
+    from editor.xray_save import COP_FORMAT, parse_xray, put_to_stash
+
+    data = _stash_fixture(item_parent=0, upgrades=("upg_original",))
+    before = parse_xray(data, COP_FORMAT, with_inventory=True)
+    item_before = before.object_by_id(0x2345)
+    assert item_before.placement_type == "ruck"
+    assert item_before.upgrades == ("upg_original",)
+
+    moved = parse_xray(put_to_stash(data, COP_FORMAT, 0x2345, 0x10), COP_FORMAT, with_inventory=True)
+    item_after = moved.object_by_id(0x2345)
+
+    assert item_after.parent_id == 0x10
+    assert moved.state_bytes(item_after) == before.state_bytes(item_before)
+    assert moved.update_bytes(item_after) == before.update_bytes(item_before)
+    assert moved.container.raw[item_after.client_data_offset : item_after.client_data_end] == before.container.raw[
+        item_before.client_data_offset : item_before.client_data_end
+    ]
+
+
+def test_put_to_stash_rejects_an_equipped_item() -> None:
+    from editor.xray_save import COP_FORMAT, XRaySaveError, put_to_stash
+
+    with pytest.raises(XRaySaveError, match="рюкзак|надет"):
+        put_to_stash(_stash_fixture(item_parent=0, placement=0x411), COP_FORMAT, 0x2345, 0x10)
+
+
+def test_put_to_stash_rejects_foreign_and_non_inventory_box_ids() -> None:
+    from editor.xray_save import COP_FORMAT, XRaySaveError, put_to_stash
+
+    data = _stash_fixture(item_parent=0)
+    with pytest.raises(XRaySaveError, match="не найден"):
+        put_to_stash(data, COP_FORMAT, 0x2345, 0x7777)
+    with pytest.raises(XRaySaveError, match="inventory_box"):
+        put_to_stash(data, COP_FORMAT, 0x2345, 0)
+
+
+def test_edit_plan_can_add_a_template_clone_directly_to_a_stash() -> None:
+    import struct
+
+    from test_xray_save import _ammo_catalog
+
+    from editor.xray_save import COP_FORMAT, parse_xray, prepare_xray
+
+    data = _stash_fixture(
+        item_name="ammo_existing", item_parent=0, placement=0x411, ammo=True, upgrades=("old_upgrade",)
+    )
+    before = parse_xray(data, COP_FORMAT, with_inventory=True)
+    prepared = prepare_xray(
+        data,
+        EditPlan(source=_source(data), adds=(("ammo_new", 12, "stash:16"),)),
+        COP_FORMAT,
+        catalog=_ammo_catalog(),
+    )
+    after = parse_xray(prepared.data, COP_FORMAT, with_inventory=True)
+    created = [obj for obj in after.objects if obj.object_id not in {item.object_id for item in before.objects}]
+    added = next(obj for obj in created if obj.name == "ammo_new")
+
+    assert added.parent_id == 0x10
+    state_offset, state_count = __import__("editor.xray_save", fromlist=["_parse_ammo_state"])._parse_ammo_state(
+        after.container.raw, added
+    )
+    assert state_count == 12
+    update = after.update_bytes(added)
+    assert struct.unpack_from("<H", update, len(update) - 2)[0] == 12
+    assert struct.unpack_from("<H", after.container.raw, added.client_data_offset + 1)[0] & 0x0F == 3
+    assert state_offset > added.state_offset
+    assert __import__("editor.xray_save", fromlist=["_parse_upgrade_state_window"])._parse_upgrade_state_window(
+        after.container.raw,
+        state_offset=added.state_offset,
+        state_end=added.state_end,
+        version=added.version,
+        label="added ammo",
+    )[1] == ()
+
+
+def test_stash_add_rejects_a_box_id_that_is_not_present_or_not_a_box() -> None:
+    from test_xray_save import _ammo_catalog
+
+    from editor.xray_save import COP_FORMAT, XRaySaveError, prepare_xray
+
+    data = _stash_fixture(item_name="ammo_existing", item_parent=0, ammo=True)
+    with pytest.raises(XRaySaveError, match="не найден"):
+        prepare_xray(
+            data,
+            EditPlan(source=_source(data), adds=(("ammo_new", 1, "stash:30583"),)),
+            COP_FORMAT,
+            catalog=_ammo_catalog(),
+        )
+    with pytest.raises(XRaySaveError, match="inventory_box"):
+        prepare_xray(
+            data,
+            EditPlan(source=_source(data), adds=(("ammo_new", 1, "stash:0"),)),
+            COP_FORMAT,
+            catalog=_ammo_catalog(),
+        )
+
+
+def test_stash_puts_is_a_valid_edit_plan_field() -> None:
+    from editor.formats import by_id
+    from editor.xray_save import COP_FORMAT, parse_xray
+
+    data = _stash_fixture(item_parent=0)
+    plan = EditPlan(source=_source(data), stash_puts=((0x2345, 0x10),))
+    prepared = by_id(COP_FORMAT.id).prepare(data, plan)
+    after = parse_xray(prepared.data, COP_FORMAT, with_inventory=True)
+
+    assert plan.stash_puts == ((0x2345, 0x10),)
+    assert after.object_by_id(0x2345).parent_id == 0x10

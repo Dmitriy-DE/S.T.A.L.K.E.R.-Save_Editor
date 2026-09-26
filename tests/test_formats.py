@@ -197,3 +197,20 @@ def test_stalker2_stack_edits_are_open_as_experimental_after_game_check(syntheti
     assert support.writable is True
     assert format_.capabilities.is_experimental("edit_stacks") is True
     require_plan_capabilities(format_.capabilities, replace(_plan(synthetic_save), money=None, stacks=((1, 2),)))
+
+
+def test_stash_puts_use_the_add_items_capability_gate(synthetic_save: bytes) -> None:
+    from dataclasses import replace
+
+    from editor.formats import require_plan_capabilities
+    from save_format import SaveError
+
+    format_ = by_id("stalker2")
+    plan = replace(
+        _plan(synthetic_save),
+        money=None,
+        stash_puts=((0x1234, 0x10),),
+    )
+
+    with pytest.raises(SaveError, match="add_items"):
+        require_plan_capabilities(format_.capabilities, plan)

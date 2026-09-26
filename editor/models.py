@@ -9,6 +9,7 @@ from typing import Literal
 from save_format import RawPatch
 
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_STASH_DESTINATION_RE = re.compile(r"^stash:([0-9]+)$")
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,8 @@ class EditPlan:
     placements: tuple[tuple[int, str, int | None], ...] = ()
     # Items taken from a level stash (inventory box) into the backpack.
     stash_takes: tuple[int, ...] = ()
+    # Actor-owned items moved from the backpack into a level inventory box.
+    stash_puts: tuple[tuple[int, int], ...] = ()
 
     def __post_init__(self) -> None:
         if self.money is not None and not isinstance(self.money, int):
@@ -71,10 +74,14 @@ class EditPlan:
             for handle, x, y, width, height in self.attach
         )
         raw = tuple(self.raw)
-        adds = tuple(
-            (str(item_key), int(quantity), str(destination))
-            for item_key, quantity, destination in self.adds
-        )
+        adds_list: list[tuple[str, int, str]] = []
+        for item_key, quantity, destination in self.adds:
+            normalized_destination = str(destination).strip()
+            stash_match = _STASH_DESTINATION_RE.fullmatch(normalized_destination)
+            if stash_match is not None:
+                normalized_destination = f"stash:{int(stash_match.group(1))}"
+            adds_list.append((str(item_key), int(quantity), normalized_destination))
+        adds = tuple(adds_list)
         durability = tuple(
             (int(handle), float(condition)) for handle, condition in self.durability
         )
@@ -114,6 +121,10 @@ class EditPlan:
                 raise ValueError("belt/ruck placement must not include a slot id")
             normalized_placements.append((int(handle), normalized_type, normalized_slot))
         placements = tuple(normalized_placements)
+        stash_takes = tuple(int(handle) for handle in self.stash_takes)
+        stash_puts = tuple(
+            (int(handle), int(box_id)) for handle, box_id in self.stash_puts
+        )
 
         if len({handle for handle, _ in stacks}) != len(stacks):
             raise ValueError("Duplicate stack handle in edit plan")
@@ -128,7 +139,19 @@ class EditPlan:
             | {handle for handle, _ in upgrades}
             | {handle for handle, *_ in placements}
             | {handle for handle, *_ in moves}
+            | {handle for handle, _ in stash_puts}
         )
+        other_edits = (
+            {handle for handle, _ in stacks}
+            | {handle for handle, *_ in moves}
+            | {handle for handle, _ in detach}
+            | {handle for handle, _ in durability}
+            | {handle for handle, _ in upgrades}
+            | {handle for handle, *_ in placements}
+            | {handle for handle, *_ in attach}
+        )
+        if {handle for handle, _ in stash_puts} & other_edits:
+            raise ValueError("Edit plan changes an item while moving it into a stash")
         if removed & edited:
             # The writer would edit an object it has just removed.
             raise ValueError("Edit plan changes an item that it also removes")
@@ -172,8 +195,20 @@ class EditPlan:
                 raise ValueError("Added item key must be non-empty")
             if quantity < 1:
                 raise ValueError("Added item quantity must be positive")
-            if destination != "inventory":
-                raise ValueError("Added item destination must be 'inventory'")
+            stash_match = _STASH_DESTINATION_RE.fullmatch(destination)
+            if destination != "inventory" and stash_match is None:
+                raise ValueError("Added item destination must be 'inventory' or 'stash:<box_id>'")
+            if stash_match is not None and int(stash_match.group(1)) > 0xFFFE:
+                raise ValueError("Added stash box id must be in the range 0…65534")
+        if len({handle for handle, _ in stash_puts}) != len(stash_puts):
+            raise ValueError("Duplicate stash-put item in edit plan")
+        if set(stash_takes) & {handle for handle, _ in stash_puts}:
+            raise ValueError("Edit plan both takes and puts the same stash item")
+        for handle, box_id in stash_puts:
+            if not 1 <= handle <= 0xFFFE:
+                raise ValueError("Stash-put item handle must be in the range 1…65534")
+            if not 0 <= box_id <= 0xFFFE:
+                raise ValueError("Stash box id must be in the range 0…65534")
 
         object.__setattr__(self, "stacks", stacks)
         object.__setattr__(self, "moves", moves)
@@ -186,12 +221,12 @@ class EditPlan:
         object.__setattr__(self, "player_faction", player_faction)
         object.__setattr__(self, "upgrades", upgrades)
         object.__setattr__(self, "placements", placements)
-        stash_takes = tuple(int(handle) for handle in self.stash_takes)
         if len(set(stash_takes)) != len(stash_takes):
             raise ValueError("Duplicate stash item in edit plan")
         if set(stash_takes) & removed:
             raise ValueError("Edit plan takes an item from a stash that it also removes")
         object.__setattr__(self, "stash_takes", stash_takes)
+        object.__setattr__(self, "stash_puts", stash_puts)
 
 
 @dataclass(frozen=True)
