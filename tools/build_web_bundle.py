@@ -98,6 +98,14 @@ def _versioned_index() -> str:
     return _VERSION_BADGE.sub(lambda match: f"{match.group(1)}v{version}{match.group(2)}", html, count=1)
 
 
+# Trilogy menu sounds (D4) are copied next to the page on every build for the
+# deploy, but not tracked in git a second time (web/assets/sounds is ignored).
+DEPLOY_ASSETS = tuple(
+    (path.relative_to(ROOT).as_posix(), "web/" + path.relative_to(ROOT).as_posix())
+    for path in sorted((ROOT / "assets" / "sounds" / "game").glob("*/*.ogg"))
+)
+
+
 def static_assets_current() -> bool:
     return all(
         (ROOT / target).is_file()
@@ -107,7 +115,7 @@ def static_assets_current() -> bool:
 
 
 def write_static_assets() -> None:
-    for source, target in STATIC_ASSETS:
+    for source, target in (*STATIC_ASSETS, *DEPLOY_ASSETS):
         destination = ROOT / target
         destination.parent.mkdir(parents=True, exist_ok=True)
         payload = (ROOT / source).read_bytes()
