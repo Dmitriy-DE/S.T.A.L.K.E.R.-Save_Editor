@@ -1,4 +1,17 @@
-# Состояние и пробелы — 2026-09-25
+# Состояние и пробелы — 2026-09-26
+
+## v0.7.4 — стаки S2 и запись в облако через папку игры — 2026-09-26
+
+- **Стаки S.T.A.L.K.E.R. 2** (#170): правка количества расходников и патронов
+  открыта как экспериментальная. Проверено в игре (GFN): 46→50, 33→40,
+  235→300, 330→400.
+- **Запись S2 в Steam Cloud** (#169): файл кладётся в локальную папку
+  Auto-Cloud, пока Steam считает игру запущенной; при «выходе» Steam выгружает
+  его. «Сохранено» ставится только когда Steam web отдаёт те же байты.
+  Прямой `FileWrite`, который писал мимо папки игры, для S2 отключён.
+- **Описания предметов S2** и пометка уникальных вариантов (#160).
+- **Обновление** не скачивается повторно, если проверенная копия уже есть (#167).
+- Шапка на узком окне, подписи настроек, профиль персонажа (#156, #159).
 
 ## v0.7.3 — официальные названия и иконки S2, починки по отзыву — 2026-09-25
 
@@ -765,9 +778,9 @@ shared registry для официальных PC-профилей. Ветка M1
 | S.T.A.L.K.E.R.: Shadow of Chernobyl | verified | verified | unsupported | verified | verified | experimental | unsupported | experimental | experimental | experimental | experimental | unsupported | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Clear Sky | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Call of Pripyat | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
-| S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
-| S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
-| S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
 <!-- END CAPABILITIES -->
 
 Матрица показывает значения maturity из реестра формата и реестра equipment
