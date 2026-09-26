@@ -137,6 +137,7 @@ def _serialize_plan(plan: EditPlan) -> dict[str, object]:
         "placements": [list(entry) for entry in plan.placements],
         "player_faction": plan.player_faction,
         "stash_takes": list(plan.stash_takes),
+        "stash_puts": [list(entry) for entry in plan.stash_puts],
         "raw": [
             {
                 "kind": patch.kind,
@@ -184,9 +185,9 @@ def _deserialize_plan(source: SourceRef, raw: object) -> EditPlan:
         "stacks",
         "upgrades",
     }
-    # Drafts written before stash takes existed simply have none.
-    raw = {"stash_takes": [], **raw}
-    expected.add("stash_takes")
+    # Drafts written before stash moves existed simply have none.
+    raw = {"stash_takes": [], "stash_puts": [], **raw}
+    expected.update({"stash_takes", "stash_puts"})
     if set(raw) != expected:
         raise ValueError("Draft plan has an unknown or missing field")
     money = raw["money"]
@@ -232,6 +233,7 @@ def _deserialize_plan(source: SourceRef, raw: object) -> EditPlan:
             for item in _triples(raw["placements"])
         ),
         stash_takes=tuple(_integer(item) for item in _list(raw["stash_takes"])),
+        stash_puts=tuple(_integer_pair(item) for item in _list(raw["stash_puts"])),
     )
 
 
@@ -309,6 +311,7 @@ def _has_changes(plan: EditPlan) -> bool:
         or plan.upgrades
         or plan.placements
         or plan.stash_takes
+        or plan.stash_puts
     )
 
 

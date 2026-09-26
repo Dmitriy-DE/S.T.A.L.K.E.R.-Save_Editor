@@ -50,6 +50,46 @@ def test_saved_draft_survives_store_recreation_without_persisting_source_locator
     )
 
 
+def test_stash_move_and_add_destination_survive_draft_recovery(tmp_path) -> None:
+    data = b"synthetic save bytes"
+    source = _source(data, "synthetic-slot.sav")
+    empty = EditPlan(source=source)
+    plan = EditPlan(
+        source=source,
+        adds=(("bandage", 1, "stash:0016"),),
+        stash_puts=((0x2345, 0x10),),
+    )
+    store = DraftStore(tmp_path / "drafts")
+
+    store.save(source.sha256, (empty, plan), 1)
+    recovered = store.load(source.sha256, source)
+
+    assert recovered is not None
+    assert recovered.current == EditPlan(
+        source=source,
+        adds=(("bandage", 1, "stash:16"),),
+        stash_puts=((0x2345, 0x10),),
+    )
+
+
+def test_drafts_without_stash_puts_remain_readable(tmp_path) -> None:
+    data = b"synthetic save bytes"
+    source = _source(data, "synthetic-slot.sav")
+    plan = EditPlan(source=source, money=123)
+    store = DraftStore(tmp_path / "drafts")
+    store.save(source.sha256, (EditPlan(source=source), plan), 1)
+
+    draft_path = store.path_for(source.sha256)
+    payload = json.loads(draft_path.read_text(encoding="utf-8"))
+    for step in payload["plans"]:
+        step.pop("stash_puts")
+    draft_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    recovered = store.load(source.sha256, source)
+
+    assert recovered is not None
+    assert recovered.current == plan
+
 def test_draft_survives_abrupt_process_exit(tmp_path) -> None:
     data = b"synthetic save"
     source = _source(data, "synthetic-slot.sav")
