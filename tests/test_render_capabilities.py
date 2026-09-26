@@ -115,9 +115,9 @@ def test_capability_tables_match_the_format_and_release_registries() -> None:
             "experimental",
             "experimental",
         ),
-        "S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition": ("research", "research", "unsupported", "research", "research") + ("unsupported",) * 10,
-        "S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition": ("research", "research", "unsupported", "research", "research") + ("unsupported",) * 10,
-        "S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition": ("research", "research", "unsupported", "research", "research") + ("unsupported",) * 10,
+        "S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition": ("experimental", "experimental", "unsupported", "experimental", "experimental") + ("unsupported",) * 10,
+        "S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition": ("experimental", "experimental", "unsupported", "experimental", "experimental") + ("unsupported",) * 10,
+        "S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition": ("experimental", "experimental", "unsupported", "experimental", "experimental") + ("unsupported",) * 10,
     }
     rendered_table = render_capability_table().splitlines()
     rendered_rows = {
