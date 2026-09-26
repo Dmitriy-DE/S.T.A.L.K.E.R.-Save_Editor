@@ -1183,5 +1183,8 @@
  "●  НЕ НАЙДЕНО": "●  BULUNAMADI",
  "● БУДЕТ СОЗДАНО": "● OLUŞTURULACAK",
  "● ГОТОВО": "● HAZIR",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE",
+ "Найден черновик": "Taslak bulundu",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Bu kayıt için bekleyen bir değişiklik taslağı var. Geri yüklensin mi?",
+ "Не удалось сохранить черновик изменений.": "Değişiklik taslağı kaydedilemedi."
 }

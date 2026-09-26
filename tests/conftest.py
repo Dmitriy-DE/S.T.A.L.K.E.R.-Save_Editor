@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 import save_format as sf
+from editor import drafts as draft_storage
 
 _ISOLATED_ENV_KEYS = (
     "HOME",
@@ -40,13 +41,17 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _no_external_applications(monkeypatch: pytest.MonkeyPatch) -> None:
+def _no_external_applications(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Never let a test launch an app or block on a modal message box.
 
     Static ``QMessageBox`` helpers run a nested event loop that waits for a
     human; headless CI then hangs until the job timeout.  Tests that need a
-    specific answer still monkeypatch these helpers themselves.
+    specific answer still monkeypatch these helpers themselves. Draft files
+    use the same per-test isolation so synthetic saves cannot leak between
+    otherwise independent UI tests.
     """
+
+    monkeypatch.setattr(draft_storage, "user_data_dir", lambda: tmp_path)
 
     try:
         from PySide6.QtGui import QDesktopServices

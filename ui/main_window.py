@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from PySide6.QtCore import QEvent, QProcess, QSize, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QGuiApplication
+from PySide6.QtGui import QDesktopServices, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -35,6 +35,7 @@ from editor.capabilities import FormatCapabilities
 from editor.catalog import CatalogLookupError, GameCatalog, ItemCatalog
 from editor.compare import compare_saves
 from editor.diagnostics import LOG_FILENAME, collect_log_bundle, log_directory, pending_crash_report
+from editor.drafts import DraftStore
 from editor.equipment import EquipmentItem
 from editor.equipment_edits import RepairStageResult, stage_bulk_repair
 from editor.formats import STALKER2_FORMAT, FormatDetectionError
@@ -186,6 +187,7 @@ class MainWindow(QMainWindow):
         settings_path: Path | None = None,
         update_client: UpdateClient | None = None,
         auto_update_check: bool = True,
+        draft_store: DraftStore | None = None,
     ) -> None:
         super().__init__()
         self.service = service
@@ -193,6 +195,10 @@ class MainWindow(QMainWindow):
         self.settings_path = self.settings_load.path
         self.settings = self.settings_load.settings
         self.slot_discovery = slot_discovery or self._discover_slots
+        self._draft_store = draft_store or DraftStore()
+        self._draft_history: list[EditPlan] = []
+        self._draft_history_index = -1
+        self._draft_shortcuts: list[tuple[str, QShortcut]] = []
         self.snapshot: LocalSnapshot | None = None
         self.staged_counts: dict[int, int] = {}
         self.staged_money: int | None = None
@@ -237,6 +243,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1180, 620)
         self.resize(self._initial_size())
         self._build_ui()
+        self._build_draft_shortcuts()
         if self._auto_update_check:
             QTimer.singleShot(0, lambda: self.check_for_updates(manual=False))
             QTimer.singleShot(1200, self._offer_crash_report)
@@ -435,6 +442,20 @@ class MainWindow(QMainWindow):
         self.backup_controller.refresh()
         self.discovery_controller.refresh()
         self._show_reference_library()
+
+    def _build_draft_shortcuts(self) -> None:
+        """Bind undo/redo to the editor surfaces without owning edit logic."""
+
+        for parent in (self.editor_view, self.character_view):
+            undo = QShortcut(QKeySequence("Ctrl+Z"), parent)
+            undo.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            undo.activated.connect(self._undo_draft)
+            self._draft_shortcuts.append(("undo", undo))
+            redo = QShortcut(QKeySequence("Ctrl+Shift+Z"), parent)
+            redo.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            redo.activated.connect(self._redo_draft)
+            self._draft_shortcuts.append(("redo", redo))
+        self._sync_draft_shortcuts()
 
     def _on_backup_records_changed(self, records) -> None:
         journal_entries = [
@@ -1096,6 +1117,9 @@ class MainWindow(QMainWindow):
             mapping.clear()
         self.staged_money = None
         self.staged_player_faction = None
+        self._draft_history = [self._current_draft_plan()]
+        self._draft_history_index = 0
+        self._sync_draft_shortcuts()
         self.prepared_edit = None
         self._pending_cloud_upload = False
         self._pending_replace = False
@@ -1127,6 +1151,7 @@ class MainWindow(QMainWindow):
         self.error_label.setVisible(False)
         self.edit_actions_enabled = True
         self._update_action_buttons()
+        self._restore_saved_draft()
         if show_editor:
             self._show_editor()
 
@@ -1703,6 +1728,130 @@ class MainWindow(QMainWindow):
         if hasattr(self, "cloud_reference_view"):
             self.cloud_reference_view.set_prepared(None)
         self._update_action_buttons()
+        self._record_draft_state()
+
+    def _current_draft_plan(self) -> EditPlan:
+        if self.snapshot is None:
+            raise SaveError(tr("Сначала открой сохранение"))
+        source_kind = self.snapshot.source_kind
+        if source_kind not in ("local", "cloud"):
+            raise SaveError(tr("Неизвестный тип источника: {0}", source_kind))
+        kind: Literal["local", "cloud"] = "local" if source_kind == "local" else "cloud"
+        return self._edit_plan(kind, self.snapshot.locator or str(self.snapshot.path))
+
+    def _record_draft_state(self) -> None:
+        if self.snapshot is None or getattr(self, "_applying_draft_history", False):
+            return
+        try:
+            plan = self._current_draft_plan()
+        except (SaveError, ValueError):
+            return
+        if not self._draft_history:
+            self._draft_history = [self._edit_plan(plan.source.kind, plan.source.locator)]
+            self._draft_history_index = 0
+        if plan == self._draft_history[self._draft_history_index]:
+            return
+        del self._draft_history[self._draft_history_index + 1 :]
+        self._draft_history.append(plan)
+        self._draft_history_index = len(self._draft_history) - 1
+        self._persist_draft_history()
+
+    def _persist_draft_history(self) -> None:
+        if self.snapshot is None or not self._draft_history or self._draft_history_index < 0:
+            self._sync_draft_shortcuts()
+            return
+        try:
+            self._draft_store.save(
+                self.snapshot.info.sha256,
+                tuple(self._draft_history),
+                self._draft_history_index,
+            )
+        except OSError:
+            self.status_label.setText(tr("Не удалось сохранить черновик изменений."))
+        self._sync_draft_shortcuts()
+
+    def _restore_saved_draft(self) -> None:
+        if self.snapshot is None:
+            return
+        try:
+            baseline = self._current_draft_plan()
+            journal = self._draft_store.load(self.snapshot.info.sha256, baseline.source)
+        except (OSError, SaveError, ValueError):
+            return
+        if journal is None:
+            return
+        answer = QMessageBox.question(
+            self,
+            tr("Найден черновик"),
+            tr("Для этого сохранения есть черновик правок. Восстановить его?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        if not self._apply_draft_plan(journal.current):
+            return
+        self._draft_history = list(journal.plans)
+        self._draft_history_index = journal.index
+        self._render_money(self.snapshot.info)
+        self._render_changes()
+        self._update_action_buttons()
+        self._sync_draft_shortcuts()
+        self._report_draft()
+
+    def _apply_draft_plan(self, plan: EditPlan) -> bool:
+        if self.snapshot is None or plan.source.sha256 != self.snapshot.info.sha256:
+            return False
+        if plan.moves or plan.attach or plan.raw:
+            return False
+        if any(destination != "inventory" for _key, _quantity, destination in plan.adds):
+            return False
+        self._applying_draft_history = True
+        try:
+            self.staged_money = plan.money
+            self.staged_counts = dict(plan.stacks)
+            self.staged_detach = dict(plan.detach)
+            self.staged_adds = {key: quantity for key, quantity, _ in plan.adds}
+            self.staged_durability = dict(plan.durability)
+            self.staged_faction_relations = dict(plan.faction_relations)
+            self.staged_player_faction = plan.player_faction
+            self.staged_upgrades = dict(plan.upgrades)
+            self.staged_placements = {
+                handle: (placement_type, slot_id)
+                for handle, placement_type, slot_id in plan.placements
+            }
+        finally:
+            self._applying_draft_history = False
+        return True
+
+    def _undo_draft(self) -> None:
+        if self.snapshot is None or self._draft_history_index <= 0:
+            return
+        self._draft_history_index -= 1
+        self._show_draft_history_step()
+
+    def _redo_draft(self) -> None:
+        if self._draft_history_index + 1 >= len(self._draft_history):
+            return
+        self._draft_history_index += 1
+        self._show_draft_history_step()
+
+    def _show_draft_history_step(self) -> None:
+        if self.snapshot is None or not self._draft_history:
+            return
+        if not self._apply_draft_plan(self._draft_history[self._draft_history_index]):
+            return
+        self._render_money(self.snapshot.info)
+        self._render_changes()
+        self._invalidate_preview("")
+        self._persist_draft_history()
+        self._report_draft()
+
+    def _sync_draft_shortcuts(self) -> None:
+        can_undo = self.snapshot is not None and self._draft_history_index > 0
+        can_redo = self.snapshot is not None and self._draft_history_index + 1 < len(self._draft_history)
+        for action, shortcut in self._draft_shortcuts:
+            shortcut.setEnabled(can_undo if action == "undo" else can_redo)
 
     def _build_edit_plan(self) -> EditPlan:
         if self.snapshot is None:

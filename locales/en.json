@@ -1187,5 +1187,8 @@
  "●  НЕ НАЙДЕНО": "●  NOT FOUND",
  "● БУДЕТ СОЗДАНО": "● WILL BE CREATED",
  "● ГОТОВО": "● READY",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  SUPPORT THE PROJECT"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  SUPPORT THE PROJECT",
+ "Найден черновик": "Draft found",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "This save has a pending edit draft. Restore it?",
+ "Не удалось сохранить черновик изменений.": "Could not save the edit draft."
 }

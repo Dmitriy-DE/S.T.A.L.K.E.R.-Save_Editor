@@ -1191,5 +1191,8 @@
  "●  НЕ НАЙДЕНО": "●  NIE ZNALEZIONO",
  "● БУДЕТ СОЗДАНО": "● ZOSTANIE UTWORZONY",
  "● ГОТОВО": "● GOTOWE",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  WESPRZYJ PROJEKT"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  WESPRZYJ PROJEKT",
+ "Найден черновик": "Znaleziono szkic",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Dla tego zapisu istnieje szkic zmian. Przywrócić go?",
+ "Не удалось сохранить черновик изменений.": "Nie udało się zapisać szkicu zmian."
 }

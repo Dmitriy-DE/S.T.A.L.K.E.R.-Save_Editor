@@ -1187,5 +1187,8 @@
  "●  НЕ НАЙДЕНО": "●  NICHT GEFUNDEN",
  "● БУДЕТ СОЗДАНО": "● WIRD ERSTELLT",
  "● ГОТОВО": "● BEREIT",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEKT UNTERSTÜTZEN"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEKT UNTERSTÜTZEN",
+ "Найден черновик": "Entwurf gefunden",
+ "Для этого сохранения есть черновик правок. Восстановить его?": "Für diesen Spielstand gibt es einen Bearbeitungsentwurf. Wiederherstellen?",
+ "Не удалось сохранить черновик изменений.": "Der Bearbeitungsentwurf konnte nicht gespeichert werden."
 }
