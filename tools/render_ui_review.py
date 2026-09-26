@@ -30,12 +30,12 @@ from editor.formats import STALKER2_FORMAT, STALKER_COP_FORMAT, formats
 from editor.releases import release_by_id
 from editor.service import EditorService
 from editor.storage import BackupRecord, ExportReceipt
-from editor.xray_save import COP_FORMAT, XRAY_FORMATS, inspect_xray
+from editor.xray_save import COP_FORMAT, XRAY_EE_FORMATS, XRAY_FORMATS, inspect_xray
 from save_format import inspect_save
 from steam_cloud import CloudFile
 from ui.fonts import REFERENCE_FONT_FAMILY
 from ui.main_window import LocalSnapshot, MainWindow
-from ui.save_discovery import SaveDiscovery, SaveSlot, UnsupportedSaveReason
+from ui.save_discovery import SaveDiscovery, SaveSlot
 from ui.theme import COLORS, SPACING, TYPOGRAPHY
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -406,35 +406,26 @@ def _review_library_slots(directory: Path, local: LocalSnapshot) -> tuple[SaveSl
     formats_by_family = {
         release_by_id(format_.release_id).family: format_
         for format_ in formats()
+        if release_by_id(format_.release_id).edition != "enhanced"
     }
+    enhanced_format = next(format_ for format_ in formats() if format_.release_id == enhanced.id)
     slots: list[SaveSlot] = []
     for name, family, modified, size in zip(names, families, times, sizes, strict=True):
-        is_enhanced_candidate = name == "slot_ee.sav"
-        format_ = formats_by_family[family]
+        # The Enhanced Edition row shows a readable EE save next to originals.
+        format_ = enhanced_format if name == "slot_ee.sav" else formats_by_family[family]
         release = release_by_id(format_.release_id)
         slots.append(
             SaveSlot(
                 path=directory / name,
                 candidate_game_id=family,
-                candidate_game_title=(enhanced.title if is_enhanced_candidate else release.title),
+                candidate_game_title=release.title,
                 size=size,
                 modified_ns=int(modified.timestamp() * 1_000_000_000),
-                format_id=None if is_enhanced_candidate else format_.id,
-                format_title=None if is_enhanced_candidate else format_.title,
-                candidate_release_id=(
-                    enhanced.id if is_enhanced_candidate else format_.release_id
-                ),
-                detected_release_id=(
-                    None if is_enhanced_candidate else format_.release_id
-                ),
-                unsupported_reason=(
-                    UnsupportedSaveReason(
-                        "unsupported_release",
-                        "Найден официальный сейв Enhanced Edition, но его формат не поддерживается",
-                    )
-                    if is_enhanced_candidate
-                    else None
-                ),
+                format_id=format_.id,
+                format_title=format_.title,
+                candidate_release_id=format_.release_id,
+                detected_release_id=format_.release_id,
+                unsupported_reason=None,
             )
         )
     return tuple(slots)
@@ -443,10 +434,6 @@ def _review_library_slots(directory: Path, local: LocalSnapshot) -> tuple[SaveSl
 def _review_library_payload(slot: SaveSlot, local: LocalSnapshot) -> bytes:
     """Create parser-valid review bytes for the row's release descriptor."""
 
-    enhanced_id = release_by_id("stalker-soc-ee").id
-    if slot.candidate_release_id == enhanced_id:
-        marker = b"STALKER-EE-REVIEW-CANDIDATE\x00"
-        return marker + bytes(max(0, slot.size - len(marker)))
     if slot.detected_release_id == local.release_id:
         return local.data
     return _xray_fixture_bytes(slot.detected_release_id or "")
@@ -504,10 +491,12 @@ def _fixture_bytes() -> bytes:
 
 def _xray_fixture_bytes(release_id: str = COP_FORMAT.id) -> bytes:
     namespace = runpy.run_path(str(ROOT / "tests" / "test_xray_save.py"))
-    spec = next(spec for spec in XRAY_FORMATS if spec.id == release_id)
+    spec = next(spec for spec in (*XRAY_FORMATS, *XRAY_EE_FORMATS) if spec.id == release_id)
     return namespace["_fixture"](
         min(spec.actor_versions),
         min(spec.outer_versions),
+        alife=min(spec.alife_versions) if spec.alife_versions else None,
+        section=f"ammo_{spec.object_markers[0].decode()}" if spec.object_markers else "ammo_9x39_pab9",
     )
 
 

@@ -122,6 +122,8 @@ def _fixture(
     *,
     registry: bytes = b"registry",
     player_community: int = -1,
+    alife: int | None = None,
+    section: str = "ammo_9x39_pab9",
 ) -> bytes:
     actor = _spawn(
         "actor",
@@ -133,7 +135,7 @@ def _fixture(
     )
     ammo_update = struct.pack("<H", 0) + b"\x00" + struct.pack("<H", 30)
     ammo = _spawn(
-        "ammo_9x39_pab9",
+        section,
         0x1234,
         0,
         version,
@@ -143,7 +145,7 @@ def _fixture(
     objects = struct.pack("<I", 2) + _object_record(actor, struct.pack("<H", 0)) + _object_record(ammo, ammo_update)
     raw = b"".join(
         (
-            _chunk(0, struct.pack("<I", outer)),
+            _chunk(0, struct.pack("<I", outer if alife is None else alife)),
             _chunk(5, struct.pack("<Qff", 123456, 10.0, 1.0)),
             _chunk(1, b"\x00" * 8),
             _chunk(2, objects),
@@ -419,3 +421,40 @@ def test_xray_edits_reject_structural_operations_and_oversized_ammo() -> None:
 
     with pytest.raises(XRaySaveError, match="65535|диапазон"):
         prepare_xray(data, _plan(data, stacks=((0x1234, 65536),)), COP_FORMAT)
+
+
+@pytest.mark.parametrize(
+    ("release_id", "actor", "outer", "alife", "section"),
+    [
+        ("stalker-soc-ee", 118, 3, 51, "ammo_9x18_fmj"),
+        ("stalker-cs-ee", 128, 6, 54, "ammo_marsh_test"),
+        ("stalker-cop-ee", 128, 6, 54, "ammo_zaton_test"),
+    ],
+)
+def test_enhanced_edition_saves_are_detected_by_content_and_stay_read_only(
+    release_id: str, actor: int, outer: int, alife: int, section: str
+) -> None:
+    from editor.formats import by_id, detect
+
+    data = _fixture(actor, outer, alife=alife, section=section)
+    fmt = detect(data)
+    assert fmt is not None and fmt.id == release_id
+    assert fmt.inspect(data).money == 1234
+    assert fmt.capabilities.edit_money is False
+    assert fmt.capabilities.edit_stacks is False
+    # An original with the same outer version is never taken for the EE.
+    original = {"stalker-soc-ee": "stalker-soc", "stalker-cs-ee": "stalker-cop", "stalker-cop-ee": "stalker-cop"}[release_id]
+    assert not by_id(release_id).detect(_fixture(actor, outer, section=section))
+    assert by_id(original).id != release_id
+
+
+def test_clear_sky_ee_and_call_of_pripyat_ee_are_told_apart_by_level_names() -> None:
+    from editor.formats import by_id
+
+    cop_ee = _fixture(128, 6, alife=54, section="ammo_zaton_test")
+    assert by_id("stalker-cop-ee").detect(cop_ee)
+    assert not by_id("stalker-cs-ee").detect(cop_ee)
+    # Neither marker: refuse rather than guess.
+    unknown = _fixture(128, 6, alife=54)
+    assert not by_id("stalker-cs-ee").detect(unknown)
+    assert not by_id("stalker-cop-ee").detect(unknown)

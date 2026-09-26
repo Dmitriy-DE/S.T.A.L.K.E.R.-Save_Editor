@@ -778,9 +778,9 @@ shared registry для официальных PC-профилей. Ветка M1
 | S.T.A.L.K.E.R.: Shadow of Chernobyl | verified | verified | unsupported | verified | verified | experimental | unsupported | experimental | experimental | experimental | experimental | unsupported | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Clear Sky | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
 | S.T.A.L.K.E.R.: Call of Pripyat | verified | verified | unsupported | verified | verified | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental | experimental |
-| S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
-| S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
-| S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Shadow of Chornobyl — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Clear Sky — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
+| S.T.A.L.K.E.R.: Call of Pripyat — Enhanced Edition | research | research | unsupported | research | research | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported | unsupported |
 <!-- END CAPABILITIES -->
 
 Матрица показывает значения maturity из реестра формата и реестра equipment

@@ -33,6 +33,9 @@ def test_registry_contains_stalker2_and_original_xray_families(synthetic_save: b
         "stalker-soc",
         "stalker-cs",
         "stalker-cop",
+        "stalker-soc-ee",
+        "stalker-cs-ee",
+        "stalker-cop-ee",
     ]
     assert by_id("stalker2") is registered[0]
     assert detect(synthetic_save) is registered[0]
