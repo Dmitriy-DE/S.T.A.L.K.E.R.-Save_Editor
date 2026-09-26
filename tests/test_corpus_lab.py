@@ -40,7 +40,7 @@ def test_corpus_report_is_path_free_and_tests_only_in_memory_copies(
     assert 0 <= sample["icon_coverage"]["covered"] <= 2
     assert "edit_money" in sample["available_operations"]
     assert sample["operation_levels"]["edit_money"] == "experimental"
-    assert sample["operation_levels"]["edit_stacks"] == "research"
+    assert sample["operation_levels"]["edit_stacks"] == "experimental"
     assert sample["no_op_round_trip"] == "passed"
     assert sample["test_mutations"]["money_plus_one"]["status"] == "passed"
     assert sample["test_mutations"]["stack_delta"]["status"] == "passed"
