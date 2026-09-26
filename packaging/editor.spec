@@ -8,6 +8,7 @@ import sys
 from pathlib import Path, PurePath
 
 from PyInstaller.building.build_main import Analysis, EXE, COLLECT, PYZ
+from PyInstaller.building.osx import BUNDLE
 
 
 _root_from_env = os.environ.get("SAVE_EDITOR_ROOT")
@@ -76,6 +77,20 @@ for locale_file in sorted((ROOT / "locales").glob("*.json")):
 provenance_dir = ROOT / "third_party" / "pyooz"
 if provenance_dir.is_dir():
     datas.append((str(provenance_dir), "third_party/pyooz"))
+if TARGET == "macos":
+    metadata_dir_text = os.environ.get("SAVE_EDITOR_BUILD_METADATA_DIR", "").strip()
+    if not metadata_dir_text:
+        raise SystemExit(
+            "spec: SAVE_EDITOR_BUILD_METADATA_DIR must name staged bundle metadata"
+        )
+    metadata_dir = Path(metadata_dir_text)
+    for metadata_name in ("BUILD_MANIFEST.json", "SOURCE_COMMIT.txt"):
+        metadata_path = metadata_dir / metadata_name
+        if not metadata_path.is_file():
+            raise SystemExit(
+                f"spec: staged bundle metadata is missing: {metadata_path.name}"
+            )
+        datas.append((str(metadata_path), "."))
 # The Linux .so is a compatibility fallback.  Windows must receive its own
 # platform pyooz extension from the Windows wheel and never this binary.
 if TARGET == "linux" and (ROOT / "vendor").is_dir():
@@ -169,7 +184,7 @@ updater = EXE(
     upx=False,
     console=True,
 )
-COLLECT(
+coll = COLLECT(
     gui,
     diagnostic,
     native,
@@ -180,3 +195,34 @@ COLLECT(
     upx=False,
     name="SaveEditor",
 )
+
+if TARGET == "macos":
+    app_icon = os.environ.get("SAVE_EDITOR_APP_ICON", "").strip()
+    if not app_icon or not Path(app_icon).is_file():
+        raise SystemExit("spec: SAVE_EDITOR_APP_ICON must name a generated .icns file")
+    app_version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    # COLLECT inherits console=True from its last helper executable. The app
+    # bundle's launch metadata belongs to the GUI executable, whose console is
+    # disabled; otherwise PyInstaller marks the whole app LSBackgroundOnly.
+    coll.console = False
+    BUNDLE(
+        coll,
+        name="SaveEditor.app",
+        icon=app_icon,
+        bundle_identifier="com.github.dmitriyde.stalker2saveeditor",
+        version=app_version,
+        info_plist={
+            "CFBundleName": "SaveEditor",
+            "CFBundleDisplayName": "S.T.A.L.K.E.R. Save Editor",
+            "CFBundleShortVersionString": app_version,
+            "CFBundleVersion": app_version,
+            "CFBundleDocumentTypes": [
+                {
+                    "CFBundleTypeName": "S.T.A.L.K.E.R. save file",
+                    "CFBundleTypeRole": "Viewer",
+                    "CFBundleTypeExtensions": ["sav", "scop"],
+                    "LSHandlerRank": "Alternate",
+                }
+            ],
+        },
+    )

@@ -13,6 +13,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -148,7 +149,8 @@ def _effective_root(
 
 
 def _system_name(system: str | None) -> str:
-    return (platform.system() if system is None else system).strip().lower()
+    name = (platform.system() if system is None else system).strip().lower()
+    return "darwin" if name == "macos" else name
 
 
 def _home_path(home: Path | None) -> Path:
@@ -235,7 +237,7 @@ def user_data_dir(
     environ: Mapping[str, str] | None = None,
     home: Path | None = None,
 ) -> Path:
-    """Return the writable application data directory for Linux or Windows."""
+    """Return the writable application data directory for the host platform."""
 
     env = _environment(environ)
     home_path = _home_path(home)
@@ -243,6 +245,8 @@ def user_data_dir(
     if name == "windows":
         root = env.get("APPDATA") or env.get("LOCALAPPDATA")
         base = Path(root).expanduser() if root else home_path / "AppData" / "Roaming"
+    elif name == "darwin":
+        base = home_path / "Library" / "Application Support"
     else:
         # Linux is the supported POSIX target.  The same XDG fallback is
         # harmless for other POSIX systems and keeps the path deterministic.
@@ -325,6 +329,11 @@ def discover_helper(
     env = _environment(environ)
     home_path = _home_path(home)
     windows = name == "windows"
+
+    # The published SteamCloudFileManager helper is a Windows executable or a
+    # Linux AppImage. Do not mistake either for a native macOS helper.
+    if name == "darwin":
+        return None
 
     explicit = env.get(HELPER_ENV)
     if explicit:
@@ -509,6 +518,8 @@ def locate_libsteam_api(
     lib_names = (
         ("steam_api64.dll", "steam_api.dll")
         if name == "windows"
+        else ("libsteam_api.dylib",)
+        if name == "darwin"
         else ("libsteam_api.so",)
     )
 
@@ -518,6 +529,25 @@ def locate_libsteam_api(
             if candidate.is_file():
                 return candidate
         return None
+
+    if name == "darwin":
+        home_path = _home_path(home)
+        steam_root = home_path / "Library" / "Application Support" / "Steam"
+        candidate_dirs = [
+            Path(sys.executable).expanduser().resolve().parent,
+            Path(sys.executable).expanduser().resolve().parent.parent / "Frameworks",
+            steam_root,
+            steam_root / "Steam.AppBundle" / "Steam" / "Contents" / "MacOS",
+            steam_root / "Steam.AppBundle" / "Steam" / "Contents" / "Frameworks",
+            home_path / "Applications" / "Steam.app" / "Contents" / "MacOS",
+            home_path / "Applications" / "Steam.app" / "Contents" / "Frameworks",
+            Path("/Applications/Steam.app/Contents/MacOS"),
+            Path("/Applications/Steam.app/Contents/Frameworks"),
+        ]
+        for directory in _dedupe_paths(candidate_dirs):
+            found = _first_lib(directory)
+            if found is not None:
+                return found
 
     # Cheap lookups first: a copy sitting next to the helper, then any
     # installed Steamworks game that ships the redistributable.  Extracting an
@@ -533,7 +563,15 @@ def locate_libsteam_api(
         found = _first_lib(game.install_dir)
         if found is not None:
             return found
-        for sub in ("bin", "Binaries", "_CommonRedist"):
+        subdirectories = ["bin", "Binaries", "_CommonRedist"]
+        if name == "darwin":
+            subdirectories.extend(
+                (
+                    "Contents/Frameworks",
+                    "Contents/Plugins/steam_api.bundle/Contents/MacOS",
+                )
+            )
+        for sub in subdirectories:
             found = _first_lib(game.install_dir / sub)
             if found is not None:
                 return found
@@ -614,7 +652,8 @@ def steam_roots(
     On Windows the current-user Steam registry value is authoritative when it
     can be read.  The injected ``registry_reader`` keeps that branch testable
     on non-Windows hosts.  Linux includes the regular, legacy, and Flatpak
-    locations; existence is intentionally checked by :func:`steam_libraries`.
+    locations; macOS uses its Application Support directory. Existence is
+    intentionally checked by :func:`steam_libraries`.
     """
 
     env = _environment(environ)
@@ -648,6 +687,9 @@ def steam_roots(
                 / "Steam"
             )
         return _dedupe_paths(candidates)
+
+    if name == "darwin":
+        return (home_path / "Library" / "Application Support" / "Steam",)
 
     return _dedupe_paths(
         (
@@ -1250,6 +1292,67 @@ def _stalker2_package_save_directories(
     )
 
 
+def _stalker2_macos_bottle_save_directories(
+    *, home: Path, environ: Mapping[str, str]
+) -> tuple[Path, ...]:
+    """Return S2 save candidates under known CrossOver and Whisky bottles.
+
+    This enumerates bottle/user directory names only. It never reads save
+    contents, starts either compatibility layer, or creates a missing path.
+    """
+
+    roots = [
+        home / "Library" / "Application Support" / "CrossOver" / "Bottles",
+        home / "Library" / "Application Support" / "CrossOver Games" / "Bottles",
+        Path("/Library/Application Support/CrossOver/Bottles"),
+        home
+        / "Library"
+        / "Containers"
+        / "com.isaacmarovitz.Whisky"
+        / "Bottles",
+    ]
+    for key in ("CX_BOTTLE_PATH", "CX_MANAGED_BOTTLE_PATH"):
+        value = _env_get(environ, key)
+        if value:
+            roots.extend(
+                _path_value(raw, home=home, environ=environ)
+                for raw in value.split(os.pathsep)
+                if raw.strip()
+            )
+
+    candidates: list[Path] = []
+    for root in _dedupe_paths(roots):
+        try:
+            bottles = tuple(root.iterdir())
+        except OSError:
+            continue
+        for bottle in bottles:
+            users_root = bottle / "drive_c" / "users"
+            try:
+                users = tuple(users_root.iterdir())
+            except OSError:
+                continue
+            for user in users:
+                for local_root in (
+                    user / "AppData" / "Local",
+                    user / "Local Settings" / "Application Data",
+                ):
+                    saved = local_root / "Stalker2" / "Saved"
+                    candidates.extend(
+                        (
+                            saved / "SaveGames",
+                            saved / "SaveGames" / "Data",
+                            saved / "STEAM" / "SaveGames",
+                            saved / "STEAM" / "SaveGames" / "Data",
+                            saved / "EOS" / "SaveGames",
+                            saved / "EOS" / "SaveGames" / "Data",
+                            saved / "GOG" / "SaveGames",
+                            saved / "GOG" / "SaveGames" / "Data",
+                        )
+                    )
+    return tuple(candidates)
+
+
 def _save_directory_candidates(
     game_id: str,
     *,
@@ -1290,6 +1393,10 @@ def _save_directory_candidates(
                 filesystem_root=filesystem_root,
             )
         )
+        if name == "darwin":
+            candidates.extend(
+                _stalker2_macos_bottle_save_directories(home=home_path, environ=env)
+            )
         # A cloud download may create a Proton prefix without installing the
         # game or leaving a current appmanifest behind. Search every known
         # Steam library directly in that case as well.

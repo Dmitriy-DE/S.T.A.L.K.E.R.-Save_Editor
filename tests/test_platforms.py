@@ -33,6 +33,14 @@ def test_linux_user_data_dir_defaults_to_home_local_share(tmp_path: Path) -> Non
     assert user_data_dir(system="Linux", environ={}, home=home) == home / ".local" / "share" / APP_DIR_NAME
 
 
+def test_macos_user_data_dir_uses_application_support(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+
+    assert user_data_dir(system="Darwin", environ={}, home=home) == (
+        home / "Library" / "Application Support" / APP_DIR_NAME
+    )
+
+
 def test_windows_user_data_dir_uses_appdata_before_localappdata(tmp_path: Path) -> None:
     appdata = tmp_path / "AppData" / "Roaming"
     local = tmp_path / "AppData" / "Local"
