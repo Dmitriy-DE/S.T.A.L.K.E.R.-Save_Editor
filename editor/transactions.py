@@ -1,7 +1,7 @@
 """Fail-closed cloud upload transaction.
 
 The transport is deliberately small and injectable.  This module owns the
-ordering and recovery artifacts; SteamWorker remains an IPC implementation.
+ordering and recovery artifacts; the native Steam Cloud worker supplies I/O.
 """
 
 from __future__ import annotations

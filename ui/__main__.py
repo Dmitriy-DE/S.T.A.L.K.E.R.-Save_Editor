@@ -34,9 +34,6 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
         return 0
 
     from editor.codec import CodecError, compress, decompress, load_decoder, load_encoder
-    from editor.platforms import discover_helper
-
-    helper = discover_helper()
     try:
         qt_version = importlib.metadata.version("PySide6")
     except importlib.metadata.PackageNotFoundError:
@@ -46,7 +43,6 @@ def diagnostic_main(argv: list[str] | None = None) -> int:
         "machine": platform.machine(),
         "executable": sys.executable,
         "qt": qt_version if importlib.util.find_spec("PySide6") is not None else "missing",
-        "helper": str(helper) if helper else None,
         "bundle_root": str(Path(__file__).resolve().parent.parent),
     }
     try:

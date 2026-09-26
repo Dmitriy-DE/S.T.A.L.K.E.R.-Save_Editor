@@ -272,7 +272,6 @@ def build_manifest(
             "decoder": "bundled pyooz==0.0.8 or Linux vendor fallback",
             "encoder": "bundled native ooz_encoder; required for changed compressed saves",
             "ui": "bundled PySide6==6.11.2",
-            "steam_helper": "external executable; never bundled",
         },
     }
 

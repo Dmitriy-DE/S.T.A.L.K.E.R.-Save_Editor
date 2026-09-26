@@ -1152,7 +1152,6 @@
  "Уникальный вариант: {0}": "Benzersiz varyant: {0}",
  "Уровень": "Seviye",
  "Успешно": "Başarılı",
- "Установите игру из Steam или её native helper.": "Oyunu Steam'den veya native helper üzerinden yükleyin.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Ses dosyalarını kontrol etmek için oyunu yükleyin.",
  "Установите системную команду, если она нужна этому способу установки.": "Bu kurulum türü için gerekliyse sistem komutunu yükleyin.",
  "Установка": "Kurulum",
@@ -1329,5 +1328,6 @@
  "●  НЕ НАЙДЕНО": "●  BULUNAMADI",
  "● БУДЕТ СОЗДАНО": "● OLUŞTURULACAK",
  "● ГОТОВО": "● HAZIR",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PROJEYİ DESTEKLE",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Native Steam Cloud'u kullanmak için oyunu Steam'den yükleyin."
 }

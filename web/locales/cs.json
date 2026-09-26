@@ -1154,7 +1154,6 @@
  "Уникальный вариант: {0}": "Unikátní varianta: {0}",
  "Уровень": "Úroveň",
  "Успешно": "Úspěch",
- "Установите игру из Steam или её native helper.": "Nainstalujte hru ze služby Steam nebo její native helper.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Nainstalujte hru pro kontrolu jejích zvukových souborů.",
  "Установите системную команду, если она нужна этому способу установки.": "Nainstalujte systémový příkaz, pokud je pro tento způsob instalace vyžadován.",
  "Установка": "Instalace",
@@ -1337,5 +1336,6 @@
  "●  НЕ НАЙДЕНО": "●  NENALEZENO",
  "● БУДЕТ СОЗДАНО": "● BUDE VYTVOŘENA",
  "● ГОТОВО": "● PŘIPRAVENO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  PODPOŘIT PROJEKT",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Nainstalujte hru ze Steamu, abyste mohli používat nativní Steam Cloud."
 }

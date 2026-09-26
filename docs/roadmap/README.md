@@ -187,7 +187,7 @@ Write-возможность получает `experimental` только с L5-
 | CL-4 | Мёртвый код | Codex | M | — | L2 | 1 | done (#154) |
 | CL-5 | Профилирование и оптимизация | Claude | M | RL-5 | L3 | 2 | todo |
 | SC-1 | Честный статус записи в облако (сервер не подтвердил → не «persisted») | Claude | S | — | L4 | 2 | done (#169): S2 пишется через папку игры + сеанс «игры», сверка SHA через Steam web; L5 в GFN |
-| SC-2 | Убрать запасной SteamCloudFileManager helper | Codex | S | SC-1 | L2 | 2 | in_progress: libsteam_api из Steam steamrt64 (#185); удаление helper — Codex (пакет 2) |
+| SC-2 | Убрать запасной SteamCloudFileManager helper | Codex | S | SC-1 | L2 | 2 | review: текущий PR удаляет helper, оставляет native worker + Steam web; локальные gates PASS, Actions blocked before runner start by account billing |
 | SC-3 | Достижения Steam: просмотр, разблокировка, сброс | Claude → Codex | M | — | L4 | 3 | done (#179) |
 | S2-FACTIONS | S2: отношения с группировками (ресерч по паре сейвов) | Claude | M | — | L5 | 3 | todo (отложено владельцем: очередь в GFN) |
 | UI-ICONS | Иконки предметов есть не везде (замечание владельца) | Claude | S | — | L4 | 2 | done: КПК/чертежи (#173), прицелы (#182); 10 предметов без источника |

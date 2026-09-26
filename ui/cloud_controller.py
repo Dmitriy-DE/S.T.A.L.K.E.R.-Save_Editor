@@ -31,7 +31,7 @@ from editor.steam_profiles import (
 )
 from editor.transactions import CloudTransport
 from save_format import SaveError, SaveInfo
-from steam_cloud import APP_ID, CloudFile, discover_helper
+from steam_cloud import APP_ID, CloudFile
 
 LOGGER = logging.getLogger("stalker2_save_editor.cloud")
 
@@ -40,7 +40,7 @@ class CloudSession(CloudTransport, Protocol):
     """A transport this view also owns the lifecycle of.
 
     ``editor.transactions.CloudTransport`` only describes what an upload needs.
-    The Cloud tab additionally starts, connects and closes the helper process,
+    The Cloud tab additionally starts, connects and closes the native worker,
     so the widget-level contract is stated here instead of being assumed.
     """
 
@@ -58,8 +58,7 @@ class CloudSession(CloudTransport, Protocol):
     def read_cloud_file(self, cloud_file: CloudFile) -> bytes: ...
 
 
-WorkerFactory = Callable[[Path | None], CloudSession]
-HelperFinder = Callable[[], Path | None]
+WorkerFactory = Callable[[], CloudSession]
 
 
 @dataclass(frozen=True)
@@ -82,7 +81,7 @@ class CloudSnapshot:
 
 
 class CloudOperationWorker(QThread):
-    """Run helper lifecycle, remote reads, and upload transactions off the UI thread."""
+    """Run native worker lifecycle, remote reads, and uploads off the UI thread."""
 
     completed = Signal(object)
     transport_ready = Signal(object)
@@ -94,7 +93,6 @@ class CloudOperationWorker(QThread):
         service: EditorService,
         *,
         mode: str,
-        helper_path: Path | None = None,
         transport: CloudSession | None = None,
         worker_factory: WorkerFactory = make_cloud_worker,
         cloud_file: CloudFile | None = None,
@@ -109,7 +107,6 @@ class CloudOperationWorker(QThread):
         super().__init__(parent)
         self.service = service
         self.mode = mode
-        self.helper_path = helper_path
         self.transport = transport
         self.worker_factory = worker_factory
         self.cloud_file = cloud_file
@@ -153,11 +150,8 @@ class CloudOperationWorker(QThread):
         )
         try:
             if self.mode == "list":
-                # A helper is optional: the native worker needs no AppImage.
-                # The factory tries native first and only needs the helper path
-                # for its fallback, so pass it through even when absent.
                 self.progress.emit(tr("Steam Cloud: подключение…"))
-                transport = self.worker_factory(self.helper_path)
+                transport = self.worker_factory()
                 self.transport = transport
                 created_transport = True
                 if self.isInterruptionRequested():
@@ -343,8 +337,6 @@ class CloudController(QObject):
         service: EditorService,
         *,
         worker_factory: WorkerFactory = make_cloud_worker,
-        helper_finder: HelperFinder = discover_helper,
-        helper_path: Path | None = None,
         backup_dir: Path | None = None,
         app_id: int = APP_ID,
         catalog_roots: tuple[Path, ...] = (),
@@ -354,14 +346,6 @@ class CloudController(QObject):
         self._opened: dict[tuple[str, int, int], CloudSnapshot] = {}
         self.service = service
         self.worker_factory = worker_factory
-        self.helper_finder = helper_finder
-        self.helper_path = (
-            Path(helper_path).expanduser()
-            if helper_path is not None
-            else self.helper_finder()
-        )
-        if self.helper_path is not None:
-            self.helper_path = self.helper_path.expanduser()
         self.backup_dir = (
             Path(backup_dir).expanduser()
             if backup_dir is not None
@@ -428,14 +412,6 @@ class CloudController(QObject):
         self.error_text = text
         self.error_changed.emit(text)
 
-    def _resolve_helper(self) -> Path | None:
-        # The native worker needs no helper; the discovered AppImage is only a
-        # fallback. Resolve it silently, never surfacing a path to the user.
-        found = self.helper_finder()
-        if found is not None:
-            self.helper_path = Path(found).expanduser()
-        return self.helper_path
-
     def _refuse_while_busy(self) -> bool:
         """Report a declined action instead of returning silently.
 
@@ -464,17 +440,12 @@ class CloudController(QObject):
     def start_connect(self) -> None:
         if self._refuse_while_busy():
             return
-        # A helper is optional — the native worker connects without one. Pass
-        # whatever discovery found (possibly None) so the factory can use it
-        # only if it needs the fallback.
-        helper = self._resolve_helper()
         self._close_transport()
         self.clear_error()
         self._set_status(tr("Steam Cloud: подключение…"))
         worker = CloudOperationWorker(
             self.service,
             mode="list",
-            helper_path=helper,
             worker_factory=self.worker_factory,
             app_id=self.app_id,
             profile=self.profile,

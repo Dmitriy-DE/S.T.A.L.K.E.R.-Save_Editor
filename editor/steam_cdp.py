@@ -2,10 +2,9 @@
 
 Steam's client RemoteStorage API can be connected successfully while returning
 an empty file list for an account that still has files in Steam's web cloud
-view.  The SteamCloudFileManager project handles that case with the same local
-Steam session: its CEF page exposes the file rows and short-lived download
-URLs.  This module keeps that path optional and local-only.  Writes continue
-through the existing authenticated Steamworks transport.
+view.  This module reads the file rows and short-lived download URLs from the
+same local Steam session.  It is a read-only fallback; writes continue through
+the in-project native Steamworks transport.
 """
 
 from __future__ import annotations

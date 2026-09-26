@@ -160,7 +160,7 @@ def test_manifest_is_machine_readable_and_declares_runtime_policy(tmp_path: Path
     assert loaded["architecture"] == "x86_64"
     assert loaded["runtime_policy"]["core"] == "Python standard library"
     assert "required for changed compressed saves" in loaded["runtime_policy"]["encoder"]
-    assert loaded["runtime_policy"]["steam_helper"] == "external executable; never bundled"
+    assert "steam_helper" not in loaded["runtime_policy"]
 
 
 def test_macos_manifest_records_arm64_without_linux_libc(tmp_path: Path) -> None:

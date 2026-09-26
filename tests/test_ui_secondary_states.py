@@ -37,7 +37,7 @@ def test_reference_stack_has_global_cloud_and_history_states(qtbot) -> None:
 
 def test_cloud_surface_exposes_read_only_gate_and_explicit_actions(qtbot) -> None:
     backend = __import__("ui.cloud_controller", fromlist=["CloudController"]).CloudController(
-        EditorService(), helper_finder=lambda: None
+        EditorService()
     )
     view = CloudLibraryView(backend)
     qtbot.addWidget(view)

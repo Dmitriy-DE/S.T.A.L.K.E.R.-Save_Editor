@@ -1153,7 +1153,6 @@
  "Уникальный вариант: {0}": "Variante única de: {0}",
  "Уровень": "Nível",
  "Успешно": "Sucesso",
- "Установите игру из Steam или её native helper.": "Instale o jogo pelo Steam ou seu native helper.",
  "Установите игру, чтобы проверить её звуковые файлы.": "Instale o jogo para verificar seus arquivos de áudio.",
  "Установите системную команду, если она нужна этому способу установки.": "Instale este comando do sistema se o tipo de instalação selecionado precisar dele.",
  "Установка": "Instalação",
@@ -1333,5 +1332,6 @@
  "●  НЕ НАЙДЕНО": "●  NÃO ENCONTRADO",
  "● БУДЕТ СОЗДАНО": "● SERÁ CRIADA",
  "● ГОТОВО": "● PRONTO",
- "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOIAR O PROJETO"
+ "♡  ПОДДЕРЖАТЬ ПРОЕКТ": "♡  APOIAR O PROJETO",
+ "Установите игру из Steam, чтобы использовать native Steam Cloud.": "Instale o jogo pelo Steam para usar o Steam Cloud nativo."
 }

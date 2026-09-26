@@ -532,7 +532,7 @@ def test_unknown_equipment_uses_a_friendly_name_not_its_internal_key(qtbot) -> N
 
 
 def test_cloud_result_copy_is_plain_and_preserves_diagnostics(qtbot) -> None:
-    backend = CloudController(EditorService(), helper_finder=lambda: None)
+    backend = CloudController(EditorService())
     view = CloudLibraryView(backend)
     qtbot.addWidget(view)
     digest = "b" * 64
@@ -551,7 +551,7 @@ def test_cloud_result_copy_is_plain_and_preserves_diagnostics(qtbot) -> None:
 
 
 def test_cloud_selection_and_write_results_use_clear_copy(qtbot) -> None:
-    backend = CloudController(EditorService(), helper_finder=lambda: None)
+    backend = CloudController(EditorService())
     view = CloudLibraryView(backend)
     qtbot.addWidget(view)
     file = CloudFile(
@@ -581,7 +581,7 @@ def test_cloud_selection_and_write_results_use_clear_copy(qtbot) -> None:
 
 
 def test_cloud_failure_keeps_raw_transport_error_out_of_visible_copy(qtbot) -> None:
-    backend = CloudController(EditorService(), helper_finder=lambda: None)
+    backend = CloudController(EditorService())
     view = CloudLibraryView(backend)
     qtbot.addWidget(view)
     detail = "Steam Cloud transport unavailable: ECONNRESET"

@@ -1,5 +1,10 @@
 # Steam Cloud: какие пути записи существуют — 2026-09-14
 
+> Исторический анализ до SC-2. Описанный ниже внешний helper удалён в
+> [PR #8](https://github.com/Dmitriy-DE/S.T.A.L.K.E.R.-Save-Editor-Next/pull/8).
+> Текущий код использует native worker для RemoteStorage и Steam CEF web через
+> CDP для чтения списка и скачивания.
+
 Вопрос владельца: раз есть
 <https://store.steampowered.com/account/remotestorage>, нельзя ли обойтись без
 локального helper?

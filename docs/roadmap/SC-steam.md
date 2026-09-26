@@ -15,9 +15,11 @@
 
 ## SC-2 — Убрать SteamCloudFileManager helper
 
+**Статус:** реализация подготовлена в текущем PR; не смержена.
+
 **Кто:** Codex · **Размер:** S · **Зависит:** SC-1
 
-Нативный ctypes-воркер (`editor/steam_native.py`) уже основной путь. Helper остался запасным. Удалить его вместе с кодом выбора и тестами, если нативный путь покрывает все сценарии: список, чтение, запись и web/cache. Проверка: полный набор тестов облака.
+Нативный ctypes-воркер (`editor/steam_native.py`) обслуживает RemoteStorage, а локальная Steam CEF-страница через CDP остаётся web-путём для чтения списка и скачивания. Внешний helper, его выбор, распаковка AppImage, упаковочные метаданные и transport-тесты удалены. Steam Cloud writes остаются в native worker или защищённом S2 Auto-Cloud flow. Полные pytest, Ruff, mypy и web bundle check проходят локально. GitHub CI не стартовал из-за account billing restriction.
 
 ## SC-3 — Достижения Steam (как Steam Achievement Manager)
 

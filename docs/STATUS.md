@@ -1,5 +1,14 @@
 # Состояние и пробелы — 2026-09-26
 
+## SC-2 — внешний Steam Cloud helper удалён
+
+Текущий PR удаляет helper discovery/AppImage extraction, subprocess transport,
+helper UI/diagnostics/packaging paths и их IPC-тесты. Cloud использует native
+RemoteStorage worker, Steam web через CDP для чтения/скачивания и существующие
+write guards. Локальные gates: full pytest, Ruff, mypy и web bundle check;
+GitHub Actions не стартовали из-за account billing restriction. Live Steam
+Cloud read/write и game load не проверялись.
+
 ## v0.7.6 — тайники трилогии, правка EE, исправление добавления — 2026-09-26
 
 - **Добавление в трилогии** (#187): новый предмет больше не наследует у шаблона
@@ -697,7 +706,8 @@ read/write, game load/re-save и установка системного `.deb` 
 - **Облако само подключается в фоне.** Поле «Steam helper» убрано целиком
   (это был footgun — туда попадал мусор вроде пути к `claude`). Вкладка Steam
   Cloud коннектится сама при открытии; ручной шаг и путь к helper'у больше не
-  показываются. Native worker хелпер не требует.
+  показываются. SC-2 позднее удалил внешний worker transport; подключение идёт
+  через native Steam worker.
 - **Веб-ссылки на скачивание починены.** Были захардкожены на `v0.4.0` → 404.
   Теперь ведут на `releases/latest` со стабильными именами; добавлена кнопка
   `.deb`-установщика и «Все сборки».
@@ -757,7 +767,8 @@ standalone workflow #35350988272 прошёл на Linux и Windows, assets оп
   строки из четырёх кнопок;
 - отсутствующие в текущем S2 parser location/time показываются как `не
   разобрано`, а не как пустая/выдуманная метрика;
-- SteamCloudFileManager уже используется как внешний JSON worker adapter.
+- На момент этого исторического снимка SteamCloudFileManager использовался как
+  внешний JSON worker adapter.
   Discovery находит распакованный Linux asset с соседней библиотекой,
   `Ping`/`Connect` прошли локально; `GetFiles` вернул 0, upload не выполнялся.
 

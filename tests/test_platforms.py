@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
-
-import pytest
 
 from editor.platforms import (
     APP_DIR_NAME,
-    HELPER_ENV,
     backup_dirs,
-    discover_helper,
     legacy_data_dir,
     user_data_dir,
 )
@@ -73,76 +68,3 @@ def test_legacy_directory_is_reported_without_mutation_or_migration(tmp_path: Pa
     assert legacy_backup.read_bytes() == b"legacy"
     assert legacy / "backups" in dirs
     assert dirs[0] == home / ".local" / "share" / APP_DIR_NAME / "backups"
-
-
-@pytest.mark.skipif(
-    os.name == "nt",
-    reason="the POSIX execute bit this case relies on does not exist on Windows filesystems",
-)
-def test_discover_helper_uses_explicit_unicode_path_first(tmp_path: Path) -> None:
-    helper = tmp_path / "папка с пробелами" / "SteamCloudFileManager.AppImage"
-    helper.parent.mkdir(parents=True)
-    helper.write_bytes(b"helper")
-    helper.chmod(0o755)
-
-    found = discover_helper(
-        system="Linux",
-        environ={HELPER_ENV: str(helper)},
-        home=tmp_path / "home",
-    )
-
-    assert found == helper
-
-
-@pytest.mark.skipif(os.name == "nt", reason="the case covers POSIX helper layout")
-def test_discover_helper_prefers_extracted_binary_with_neighbor_library(
-    tmp_path: Path,
-) -> None:
-    downloads = tmp_path / "Downloads"
-    downloads.mkdir()
-    appimage = downloads / "SteamCloudFileManager-1.3.5.AppImage"
-    appimage.write_bytes(b"appimage")
-    appimage.chmod(0o755)
-    extracted = downloads / "SteamCloudFileManager-1.3.5-linux-x86_64"
-    extracted.mkdir()
-    helper = extracted / "steam-cloud-file-manager"
-    helper.write_bytes(b"helper")
-    helper.chmod(0o755)
-    (extracted / "libsteam_api.so").write_bytes(b"library")
-
-    found = discover_helper(system="Linux", environ={}, home=tmp_path)
-
-    assert found == helper
-
-
-def test_discover_helper_returns_none_when_missing(tmp_path: Path) -> None:
-    assert discover_helper(system="Linux", environ={}, home=tmp_path) is None
-
-
-def test_discover_helper_rejects_non_executable_linux_file(tmp_path: Path) -> None:
-    helper = tmp_path / "Downloads" / "SteamCloudFileManager.AppImage"
-    helper.parent.mkdir()
-    helper.write_bytes(b"helper")
-    helper.chmod(0o644)
-
-    assert discover_helper(system="Linux", environ={}, home=tmp_path) is None
-
-
-def test_discover_helper_finds_windows_exe_with_neighbor_dlls(tmp_path: Path) -> None:
-    downloads = tmp_path / "Downloads"
-    downloads.mkdir()
-    helper = downloads / "SteamCloudFileManager.exe"
-    helper.write_bytes(b"MZ")
-    (downloads / "steam_api64.dll").write_bytes(b"dll")
-
-    found = discover_helper(system="Windows", environ={}, home=tmp_path)
-
-    assert found == helper
-
-
-def test_discover_helper_ignores_non_exe_windows_candidate(tmp_path: Path) -> None:
-    downloads = tmp_path / "Downloads"
-    downloads.mkdir()
-    (downloads / "SteamCloudFileManager.AppImage").write_bytes(b"helper")
-
-    assert discover_helper(system="Windows", environ={}, home=tmp_path) is None
