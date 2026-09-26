@@ -1110,6 +1110,108 @@ def _attach_orphan_in_raw(raw: bytes, handle: int, x: int, y: int, width: int, h
     return _rebuild_inventory_arrays(raw2, grid_cells=tuple(layout2.grid_cells) + tuple(new_cells))
 
 
+# --- S2 player stash (S2-STASH, ED-2 stage 1) ------------------------------
+# Evidence docs/evidence/S2_ADD_2026-09-26.md: the stash follows the player
+# inventory arrays with the same shape; taken items leave 0xFFFFFFFF slots in
+# its owned list and lose their grid cells, and their record drops the
+# "in stash" byte (+15) and bit 0x08 of byte +28.
+_STASH_MARKER = b"\xff\xff\xff\xff\x06\x01\x00\x00\x00\x06"
+_STASH_SEARCH_WINDOW = 512
+STASH_TOMBSTONE = 0xFFFFFFFF
+OBJ_STASH_FLAG_OFFSET = 15
+OBJ_FLAGS_OFFSET = 28
+OBJ_FLAGS_STASH_BIT = 0x08
+
+
+@dataclass(frozen=True)
+class StashLayout:
+    owned_count_offset: int
+    owned_handles: tuple[int, ...]
+    grid_cells: tuple[GridCell, ...]
+    grid_end_offset: int
+
+    @property
+    def live_handles(self) -> tuple[int, ...]:
+        return tuple(h for h in self.owned_handles if h != STASH_TOMBSTONE)
+
+
+def locate_stash_layout(raw: bytes) -> StashLayout:
+    """Parse the S2 player stash right after the player inventory arrays."""
+
+    player = locate_inventory_layout(raw)
+    start = player.grid_end_offset
+    marker = raw.find(_STASH_MARKER, start, start + _STASH_SEARCH_WINDOW)
+    if marker < 0 or raw.find(_STASH_MARKER, marker + 1, start + _STASH_SEARCH_WINDOW) >= 0:
+        raise SaveError("S2 stash: заголовок тайника не найден однозначно")
+    count_offset = marker + 20
+    if raw[marker + 16 : count_offset] != b"\x03\x00\x00\x00":
+        raise SaveError("S2 stash: неизвестная форма заголовка тайника")
+    (count,) = struct.unpack_from("<H", raw, count_offset)
+    handles = struct.unpack_from(f"<{count}I", raw, count_offset + 2)
+    grid_offset = count_offset + 2 + 4 * count
+    (cell_count,) = struct.unpack_from("<H", raw, grid_offset)
+    cells = tuple(
+        GridCell(*struct.unpack_from("<IHH", raw, grid_offset + 2 + 8 * index))
+        for index in range(cell_count)
+    )
+    live = {h for h in handles if h != STASH_TOMBSTONE}
+    if any(h >> 16 != 0x3000 for h in live) or any(c.handle not in live for c in cells):
+        raise SaveError("S2 stash: список или сетка тайника не согласованы")
+    return StashLayout(count_offset, tuple(handles), cells, grid_offset + 2 + 8 * cell_count)
+
+
+def _free_player_spot(occupied: set[tuple[int, int]], shape: list[tuple[int, int]]) -> tuple[int, int]:
+    for y in range(128):
+        for x in range(GRID_WIDTH):
+            if all(0 <= x + dx < GRID_WIDTH and (x + dx, y + dy) not in occupied for dx, dy in shape):
+                return x, y
+    raise SaveError("В рюкзаке нет свободного места под предмет")
+
+
+def _stash_to_player_in_raw(raw: bytes, handle: int) -> bytes:
+    """Move one stash item into the backpack exactly as the game records it."""
+
+    stash = locate_stash_layout(raw)
+    if handle not in stash.live_handles:
+        raise SaveError(f"Handle 0x{handle:08X} не лежит в тайнике")
+    player = locate_inventory_layout(raw)
+    if player.unresolved_handles:
+        raise SaveError("Перенос остановлен: в инвентаре есть unresolved handles")
+    if handle in player.owned_handles:
+        raise SaveError(f"Handle 0x{handle:08X} уже принадлежит игроку")
+    rec_off, _count, _weight, kind = locate_object_record(raw, handle)
+    if kind not in KNOWN_KIND_CODES | {3}:
+        raise SaveError(f"Перенос запрещён для неизвестного object kind={kind}")
+    if raw[rec_off + OBJ_STASH_FLAG_OFFSET] != 1 or not raw[rec_off + OBJ_FLAGS_OFFSET] & OBJ_FLAGS_STASH_BIT:
+        raise SaveError(f"Запись 0x{handle:08X} не помечена как предмет тайника")
+    own = [c for c in stash.grid_cells if c.handle == handle]
+    if not own:
+        raise SaveError(f"Handle 0x{handle:08X} не размещён в сетке тайника")
+    base_x = min(c.x for c in own)
+    base_y = min(c.y for c in own)
+    shape = sorted((c.x - base_x, c.y - base_y) for c in own)
+    x, y = _free_player_spot({(c.x, c.y) for c in player.grid_cells}, shape)
+
+    mutable = bytearray(raw)
+    struct.pack_into("<H", mutable, rec_off + OBJ_POS_X_OFFSET, x)
+    struct.pack_into("<H", mutable, rec_off + OBJ_POS_Y_OFFSET, y)
+    mutable[rec_off + OBJ_STASH_FLAG_OFFSET] = 0
+    mutable[rec_off + OBJ_FLAGS_OFFSET] &= ~OBJ_FLAGS_STASH_BIT & 0xFF
+    # Stash first: it lies after the player arrays, so its offsets stay valid.
+    slot = stash.owned_handles.index(handle)
+    struct.pack_into("<I", mutable, stash.owned_count_offset + 2 + 4 * slot, STASH_TOMBSTONE)
+    cells_offset = stash.owned_count_offset + 2 + 4 * len(stash.owned_handles)
+    kept = [c for c in stash.grid_cells if c.handle != handle]
+    stash_grid = struct.pack("<H", len(kept)) + b"".join(struct.pack("<IHH", c.handle, c.x, c.y) for c in kept)
+    raw = bytes(mutable[:cells_offset]) + stash_grid + bytes(mutable[stash.grid_end_offset :])
+    player = locate_inventory_layout(raw)
+    return _rebuild_inventory_arrays(
+        raw,
+        owned_handles=(*player.owned_handles, handle),
+        grid_cells=(*player.grid_cells, *(GridCell(handle, x + dx, y + dy) for dx, dy in shape)),
+    )
+
+
 def _patch_s2_durability_in_raw(
     raw: bytearray,
     handle: int,
