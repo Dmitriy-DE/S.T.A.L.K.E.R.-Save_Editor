@@ -79,6 +79,15 @@ _RULES: tuple[tuple[str, ProvenanceRecord], ...] = (
         ),
     ),
     (
+        "assets/sounds/game/*/*.ogg",
+        _record(
+            "S.T.A.L.K.E.R. trilogy menu music and interface sounds (original and Enhanced Edition archives)",
+            TRILOGY_EE,
+            "game-derived",
+            "ui/game_audio.py (extract_files)",
+        ),
+    ),
+    (
         "assets/fonts/LIBERATION-SANS-LICENSE.txt",
         _record(
             "Liberation Fonts project; SIL Open Font License 1.1",

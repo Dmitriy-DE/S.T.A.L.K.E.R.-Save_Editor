@@ -168,7 +168,7 @@ class SettingsView(QWidget):
         )
         category_icons = ("settings", "paths", "backups", "cloud", "diagnostics", "interface", "support")
         for index, name in enumerate(self.category_names):
-            button = QPushButton(name.replace("ОБНОВЛЕНИЯ И ДИАГНОСТИКА", "ОБНОВЛЕНИЯ И\nДИАГНОСТИКА"), rail)
+            button = QPushButton(_two_lines(name), rail)
             button.setObjectName("settingsCategoryButton")
             button.setAccessibleName(name)
             button.setIcon(QIcon(str(_SHELL_ICONS / f"{category_icons[index]}.svg")))
@@ -1045,3 +1045,19 @@ class SettingsView(QWidget):
 
 
 __all__ = ["SettingsView"]
+
+
+def _two_lines(caption: str, limit: int = 18) -> str:
+    """Break a long category caption at the space nearest its middle.
+
+    German, French, Italian, Spanish and Portuguese captions did not fit the
+    rail on one line; only the Russian one had a hand-placed break.
+    """
+
+    if len(caption) <= limit or " " not in caption:
+        return caption
+    middle = len(caption) // 2
+    spaces = [index for index, char in enumerate(caption) if char == " "]
+    split = min(spaces, key=lambda index: abs(index - middle))
+    return caption[:split] + "\n" + caption[split + 1 :]
+

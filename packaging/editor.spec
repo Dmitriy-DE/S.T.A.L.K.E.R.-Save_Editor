@@ -40,6 +40,9 @@ for _icon in ("app_icon.svg", "app_icon_256.png", "app_icon_128.png", "app_icon_
 icon_pack = ROOT / "assets" / "icons" / "xray"
 if icon_pack.is_dir():
     datas.append((str(icon_pack), "assets/icons/xray"))
+game_audio = ROOT / "assets" / "sounds" / "game"
+if game_audio.is_dir():
+    datas.append((str(game_audio), "assets/sounds/game"))
 s2_icon_pack = ROOT / "assets" / "icons" / "s2"
 if s2_icon_pack.is_dir():
     datas.append((str(s2_icon_pack), "assets/icons/s2"))

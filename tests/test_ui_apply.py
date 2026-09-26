@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import threading
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QMessageBox
 
 from editor.capabilities import CapabilitySupport, FormatCapabilities
+from editor.drafts import DraftStore
 from editor.models import EditPlan, PreparedEdit
 from editor.service import EditorService
 from save_format import SaveError, inspect_save
@@ -65,6 +67,88 @@ def test_preview_requires_staged_state_and_form_change_invalidates_preview(
     # re-run the internal preview on click; only the cached preview is invalid.
     assert window.save_copy_button.isEnabled()
     assert prepared is not None
+
+
+def test_draft_recovers_after_window_restart_and_ctrl_z_redoes_plan_steps(
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "fixture.sav"
+    source.write_bytes(synthetic_save)
+    store = DraftStore(tmp_path / "drafts")
+    prompts: list[str] = []
+
+    def accept_restore(_parent, title, _message, _buttons, _default):
+        prompts.append(title)
+        return QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(QMessageBox, "question", staticmethod(accept_restore))
+    interrupted = MainWindow(EditorService(), draft_store=store)
+    qtbot.addWidget(interrupted)
+    _show_snapshot(interrupted, source, synthetic_save)
+    interrupted._stage_money(300)
+    interrupted._stage_money(400)
+
+    assert store.path_for(inspect_save(synthetic_save).sha256).is_file()
+
+    restarted = MainWindow(EditorService(), draft_store=DraftStore(tmp_path / "drafts"))
+    qtbot.addWidget(restarted)
+    _show_snapshot(restarted, source, synthetic_save)
+
+    assert prompts == ["Найден черновик"]
+    assert restarted.staged_money == 400
+    undo = next(shortcut for action, shortcut in restarted._draft_shortcuts if action == "undo")
+    assert undo.key().toString() == "Ctrl+Z"
+    assert undo.isEnabled()
+    undo.activated.emit()
+    assert restarted.staged_money == 300
+    redo = next(shortcut for action, shortcut in restarted._draft_shortcuts if action == "redo")
+    assert redo.key().toString() == "Ctrl+Shift+Z"
+    assert redo.isEnabled()
+    redo.activated.emit()
+    assert restarted.staged_money == 400
+
+
+def test_draft_for_different_save_sha_is_not_offered_or_applied(
+    qtbot, synthetic_save: bytes, tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "fixture.sav"
+    source.write_bytes(synthetic_save)
+    store = DraftStore(tmp_path / "drafts")
+    interrupted = MainWindow(EditorService(), draft_store=store)
+    qtbot.addWidget(interrupted)
+    _show_snapshot(interrupted, source, synthetic_save)
+    interrupted._stage_money(300)
+
+    prompts: list[str] = []
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda _parent, title, *_args: prompts.append(title)),
+    )
+    changed_data = synthetic_save + b"changed"
+    changed_info = replace(
+        inspect_save(synthetic_save),
+        sha256=hashlib.sha256(changed_data).hexdigest(),
+    )
+    changed = MainWindow(EditorService(), draft_store=store)
+    qtbot.addWidget(changed)
+    changed._render_snapshot(
+        LocalSnapshot(
+            path=source,
+            data=changed_data,
+            info=changed_info,
+            capabilities=FormatCapabilities(
+                read_inventory=True,
+                mutation_support={
+                    "edit_money": CapabilitySupport("experimental"),
+                    "edit_stacks": CapabilitySupport("experimental"),
+                },
+            ),
+        )
+    )
+
+    assert changed.staged_money is None
+    assert prompts == []
 
 
 def test_double_click_apply_starts_one_export(

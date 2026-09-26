@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -217,6 +218,13 @@ class CloudOperationWorker(QThread):
                         result.game_catalog,
                     )
                 )
+                if getattr(transport, "uses_auto_cloud", False):
+                    # Run as the game while this save is edited; ending the
+                    # session on upload makes Steam sync the changed file.
+                    try:
+                        transport.begin_game_session()  # type: ignore[attr-defined]
+                    except Exception:
+                        LOGGER.exception("cloud game session did not start")
                 LOGGER.info("cloud operation complete mode=analyze bytes=%s", len(data))
                 return
 
@@ -304,6 +312,10 @@ class SteamWebEnableWorker(QThread):
             self.completed.emit()
 
 
+def _snapshot_key(cloud_file: CloudFile) -> tuple[str, int, int]:
+    return (cloud_file.name, cloud_file.size, cloud_file.timestamp)
+
+
 class CloudController(QObject):
     """Own Steam Cloud lifecycle and fail-closed transactions without UI."""
 
@@ -339,6 +351,7 @@ class CloudController(QObject):
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
+        self._opened: dict[tuple[str, int, int], CloudSnapshot] = {}
         self.service = service
         self.worker_factory = worker_factory
         self.helper_finder = helper_finder
@@ -536,7 +549,10 @@ class CloudController(QObject):
     def select_file(self, cloud_file: CloudFile | None) -> None:
         """Set the selected Data path after the presentation validates its row."""
 
-        self._selected_file = cloud_file if cloud_file in self._files else None
+        selected = cloud_file if cloud_file in self._files else None
+        if selected != self._selected_file:
+            self._end_game_session()
+        self._selected_file = selected
         self._on_selection_changed(preserve_prepared=self._reconciliation_receipt is not None)
 
     def set_review_files(
@@ -576,6 +592,17 @@ class CloudController(QObject):
             self._on_failed(tr("Steam Cloud не подключён; запись не выполнялась"))
             return
         self.clear_error()
+        cached = self._opened.get(_snapshot_key(cloud_file))
+        if cached is not None and self._reconciliation_receipt is None:
+            # Unchanged in the cloud since it was downloaded: open it again
+            # without another download.  An upload still re-reads and
+            # compares the cloud bytes before writing.
+            if getattr(self.transport, "uses_auto_cloud", False):
+                starter = getattr(self.transport, "begin_game_session", None)
+                if callable(starter):
+                    threading.Thread(target=starter, daemon=True).start()
+            self._on_snapshot_ready(cached)
+            return
         worker = CloudOperationWorker(
             self.service,
             mode="analyze",
@@ -791,6 +818,7 @@ class CloudController(QObject):
                 self.reconciliation_failed.emit(message)
             return
         self._prepared = None
+        self._opened[_snapshot_key(snapshot.file)] = snapshot
         self._set_result(
             f"Cloud snapshot: {snapshot.name}; CRC={'OK' if snapshot.info.crc_ok else 'FAIL'}; "
             f"SHA256 {snapshot.info.sha256}"
@@ -799,6 +827,7 @@ class CloudController(QObject):
         self.snapshot_ready.emit(snapshot)
 
     def _on_upload_ready(self, receipt: CloudReceipt) -> None:
+        self._opened.clear()
         prepared = self._prepared
         output_size = len(prepared.data) if prepared is not None else None
         # Do not discard the committed draft yet. A verified receipt still
@@ -897,6 +926,13 @@ class CloudController(QObject):
         self.set_busy(False)
         self._close_transport()
         return True
+
+    def _end_game_session(self) -> None:
+        """Leave the game in Steam without blocking the window."""
+
+        ender = getattr(self.transport, "end_game_session", None)
+        if callable(ender) and getattr(self.transport, "game_session_active", False):
+            threading.Thread(target=ender, daemon=True).start()
 
     def _close_transport(self) -> None:
         transport, self.transport = self.transport, None

@@ -17,7 +17,7 @@ SUPPORTED_ARTIFACTS = (
     "linux-x86_64",
     "linux-deb-amd64",
 )
-OPTIONAL_ARTIFACTS = ("windows-installer-x86_64",)
+OPTIONAL_ARTIFACTS = ("windows-installer-x86_64", "macos-arm64")
 _VERSION_RE = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
@@ -119,7 +119,7 @@ class ArtifactSpec:
             raise ManifestError("artifact download host or URL is not trusted")
         if parsed.path != f"/{file}":
             raise ManifestError("artifact URL does not match artifact filename")
-        if kind not in {"portable", "package", "installer"}:
+        if kind not in {"portable", "package", "installer", "disk-image"}:
             raise ManifestError("artifact.kind is unsupported")
         return cls(target, architecture, kind, file, size, sha256, url)
 
@@ -257,10 +257,12 @@ class ReleaseManifest:
             key = "linux-x86_64"
         elif target == "linux" and kind == "package":
             key = "linux-deb-amd64"
+        elif target == "macos" and kind == "disk-image":
+            key = "macos-arm64"
         else:
             raise ManifestError(f"artifact not available for target={target!r}, kind={kind!r}")
         artifact = self.artifacts.get(key)
-        if artifact is None or artifact.architecture != architecture:
+        if artifact is None or artifact.architecture != architecture or artifact.kind != kind:
             raise ManifestError(f"artifact not available for target={target!r}")
         return artifact
 

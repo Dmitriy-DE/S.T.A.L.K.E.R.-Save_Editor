@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QScrollArea,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -104,7 +105,15 @@ class CharacterView(QWidget):
         self.actor_facts.setToolTip(tr("Только просмотр: эти значения прочитаны из сохранения и не изменяются."))
         profile_layout.addWidget(self.actor_facts)
         profile_layout.addStretch(1)
-        workspace.addWidget(profile, 34)
+        # At low window heights the profile facts overlapped each other;
+        # a scroll area keeps every line readable instead.
+        profile_scroll = QScrollArea(self)
+        profile_scroll.setObjectName("characterProfileScroll")
+        profile_scroll.setWidgetResizable(True)
+        profile_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        profile_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        profile_scroll.setWidget(profile)
+        workspace.addWidget(profile_scroll, 34)
 
         relations = panel(self, object_name="characterRelationsPanel")
         relations_layout = QVBoxLayout(relations)

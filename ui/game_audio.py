@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
+import sys
 import wave
 from pathlib import Path
 
@@ -45,6 +47,18 @@ MUSIC_FILES = {
     "cop": ("sounds/music/menu.ogg",),
 }
 FAMILIES = frozenset(MUSIC_FILES)
+
+
+def bundled_audio_dir(family: str) -> Path | None:
+    """The menu audio shipped with the app (D4), complete or not at all."""
+
+    meipass = getattr(sys, "_MEIPASS", None)
+    base = Path(meipass) if meipass else Path(__file__).resolve().parent.parent
+    folder = base / "assets" / "sounds" / "game" / family
+    wanted = (*EVENT_FILES.values(), *MUSIC_FILES.get(family, ()))
+    if family in MUSIC_FILES and all((folder / name.rsplit("/", 1)[-1]).is_file() for name in wanted):
+        return folder
+    return None
 
 
 def install_root(family: str) -> Path | None:
@@ -155,6 +169,19 @@ class GameAudio(QObject):
         if family not in FAMILIES or family in self._pending or family in self._failed:
             return
         if self.prepared(family):
+            return
+        bundled = bundled_audio_dir(family)
+        if bundled is not None:
+            # Decoding consumes its inputs, so work on copies of the bundle.
+            raw = self._cache / family / "raw"
+            raw.mkdir(parents=True, exist_ok=True)
+            payload: dict[str, str] = {}
+            for relative in (*EVENT_FILES.values(), *MUSIC_FILES[family]):
+                name = relative.rsplit("/", 1)[-1]
+                shutil.copyfile(bundled / name, raw / name)
+                payload[relative] = str(raw / name)
+            self._pending.add(family)
+            self._extracted(family, payload)
             return
         root = install_root(family)
         if root is None:

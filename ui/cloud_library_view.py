@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.cloud_capabilities import cloud_write_capability
 from editor.i18n import source_text, tr
 from editor.releases import release_by_id
 
@@ -107,6 +108,10 @@ class CloudLibraryView(QWidget):
         self.web_button = action_button("STEAM WEB", controls)
         self.web_button.clicked.connect(self.backend.start_steam_web)
         controls_layout.addWidget(self.web_button)
+        self.achievements_button = action_button(tr("ДОСТИЖЕНИЯ"), controls)
+        self.achievements_button.setObjectName("cloudAchievementsButton")
+        self.achievements_button.clicked.connect(self._open_achievements)
+        controls_layout.addWidget(self.achievements_button)
         root.addWidget(controls)
 
         body = QHBoxLayout()
@@ -280,8 +285,21 @@ class CloudLibraryView(QWidget):
 
         self.backend.start_connect()
 
+    def _open_achievements(self) -> None:
+        from .achievements_dialog import AchievementsDialog
+
+        profile = self.backend.profile
+        dialog = AchievementsDialog(profile.app_id, profile.title, self)
+        dialog.setModal(False)
+        dialog.show()
+
     def _on_files_ready(self, files) -> None:
         files = tuple(files or ())
+        # Once connected, the "write becomes available after connecting"
+        # banner only stays when the backend really refuses writes, and the
+        # stale "connecting…" line goes away.
+        self.read_only_banner.setVisible(not cloud_write_capability(self.backend.transport).writable)
+        self._set_result("")
         selected_file = self.backend.selected_file()
         self.save_table.blockSignals(True)
         self.save_table.setRowCount(0)
