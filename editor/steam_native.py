@@ -318,41 +318,6 @@ class SteamNativeWorker:
     def write_capability(self) -> CloudWriteCapability:
         return CloudWriteCapability(True, "Steam RemoteStorage writer готов")
 
-    def _write_auto_cloud(self, filename: str, data: bytes) -> None:
-        assert self._auto_cloud_root is not None
-        try:
-            target = auto_cloud_local_path(self._auto_cloud_root, filename)
-        except ValueError as exc:
-            raise CloudWriteNotAttemptedError(str(exc)) from exc
-        if not target.parent.is_dir():
-            raise CloudWriteNotAttemptedError(f"папка сохранений игры не найдена: {target.parent}")
-        if not self.game_session_active:
-            try:
-                self.begin_game_session()
-            except SteamCloudError as exc:
-                raise CloudWriteNotAttemptedError(str(exc)) from exc
-            # Let Steam finish the launch sync before the local file changes,
-            # otherwise it reports a cloud conflict.
-            time.sleep(self.session_settle)
-        import hashlib
-
-        self._last_write_sha256 = hashlib.sha256(data).hexdigest()
-        temporary = target.with_name(f".{target.name}.editor-part")
-        try:
-            temporary.write_bytes(data)
-            os.replace(temporary, target)
-        finally:
-            temporary.unlink(missing_ok=True)
-        self.end_game_session()
-
-    def _fresh_web_read(self, filename: str) -> bytes:
-        if self._cdp is None:
-            raise SteamCloudError("Steam Cloud web недоступен для проверки записи")
-        self._configure_backend(self._cdp)
-        # A fresh list refreshes the signed download URLs.
-        self._cdp.list_files()
-        return bytes(self._cdp.read_file(filename))
-
     def sync(self) -> None:
         # RemoteStorage writes are queued to the cloud by the Steam client;
         # pumping callbacks lets that progress.  There is no explicit flat

@@ -222,7 +222,7 @@ class CloudOperationWorker(QThread):
                     # Run as the game while this save is edited; ending the
                     # session on upload makes Steam sync the changed file.
                     try:
-                        transport.begin_game_session()
+                        getattr(transport, "begin_game_session")()
                     except Exception:
                         LOGGER.exception("cloud game session did not start")
                 LOGGER.info("cloud operation complete mode=analyze bytes=%s", len(data))
